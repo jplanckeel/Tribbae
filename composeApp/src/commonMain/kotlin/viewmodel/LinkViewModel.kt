@@ -2,6 +2,8 @@ package viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import data.AiRepository
+import data.AiSuggestedLink
 import data.Folder
 import data.FolderColor
 import data.FolderIcon
@@ -17,6 +19,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     val folders: StateFlow<List<Folder>> = repository.folders
     val tags: StateFlow<List<String>> = repository.tags
     val children: StateFlow<List<data.Child>> = repository.children
+
+    /** Token JWT — injecté depuis MainActivity */
+    var authToken: String? = null
 
     /** Fonction pour récupérer l'image OG — injectée côté Android */
     var ogImageFetcher: (suspend (String) -> String?)? = null
@@ -177,6 +182,62 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         if (_selectedChildId.value == id) _selectedChildId.value = null
         repository.deleteChild(id)
         updateFilteredLinks()
+    }
+
+    // ── IA ────────────────────────────────────────────────────────────────────
+
+    private val aiRepository = AiRepository()
+
+    private val _aiIdeas = MutableStateFlow<List<AiSuggestedLink>>(emptyList())
+    val aiIdeas: StateFlow<List<AiSuggestedLink>> = _aiIdeas.asStateFlow()
+
+    private val _aiLoading = MutableStateFlow(false)
+    val aiLoading: StateFlow<Boolean> = _aiLoading.asStateFlow()
+
+    private val _aiError = MutableStateFlow<String?>(null)
+    val aiError: StateFlow<String?> = _aiError.asStateFlow()
+
+    fun generateAiIdeas(prompt: String) {
+        val token = authToken ?: return
+        viewModelScope.launch {
+            _aiLoading.value = true
+            _aiError.value = null
+            _aiIdeas.value = emptyList()
+            try {
+                val result = aiRepository.generateIdeas(prompt, token)
+                _aiIdeas.value = result.ideas
+            } catch (e: Exception) {
+                _aiError.value = e.message ?: "Erreur inconnue"
+            } finally {
+                _aiLoading.value = false
+            }
+        }
+    }
+
+    fun clearAiIdeas() {
+        _aiIdeas.value = emptyList()
+        _aiError.value = null
+    }
+
+    fun saveAiIdeas(ideas: List<AiSuggestedLink>, folderId: String?) {
+        ideas.forEach { idea ->
+            val category = try {
+                LinkCategory.valueOf(idea.category.removePrefix("LINK_CATEGORY_"))
+            } catch (_: Exception) { LinkCategory.IDEE }
+            addLink(
+                title = idea.title,
+                url = idea.url,
+                description = idea.description,
+                category = category,
+                folderId = folderId,
+                tags = idea.tags,
+                ageRange = idea.ageRange,
+                location = idea.location,
+                price = idea.price,
+                imageUrl = idea.imageUrl,
+                ingredients = idea.ingredients
+            )
+        }
     }
 
     /** Récupère les images OG manquantes pour les liens existants (sans image manuelle) */

@@ -29,6 +29,9 @@ const (
 	FolderService_AddCollaborator_FullMethodName      = "/tribbae.v1.FolderService/AddCollaborator"
 	FolderService_RemoveCollaborator_FullMethodName   = "/tribbae.v1.FolderService/RemoveCollaborator"
 	FolderService_ListCommunityFolders_FullMethodName = "/tribbae.v1.FolderService/ListCommunityFolders"
+	FolderService_LikeFolder_FullMethodName           = "/tribbae.v1.FolderService/LikeFolder"
+	FolderService_UnlikeFolder_FullMethodName         = "/tribbae.v1.FolderService/UnlikeFolder"
+	FolderService_ListTopFolders_FullMethodName       = "/tribbae.v1.FolderService/ListTopFolders"
 )
 
 // FolderServiceClient is the client API for FolderService service.
@@ -45,6 +48,9 @@ type FolderServiceClient interface {
 	AddCollaborator(ctx context.Context, in *AddCollaboratorRequest, opts ...grpc.CallOption) (*AddCollaboratorResponse, error)
 	RemoveCollaborator(ctx context.Context, in *RemoveCollaboratorRequest, opts ...grpc.CallOption) (*RemoveCollaboratorResponse, error)
 	ListCommunityFolders(ctx context.Context, in *ListCommunityFoldersRequest, opts ...grpc.CallOption) (*ListCommunityFoldersResponse, error)
+	LikeFolder(ctx context.Context, in *LikeFolderRequest, opts ...grpc.CallOption) (*LikeFolderResponse, error)
+	UnlikeFolder(ctx context.Context, in *UnlikeFolderRequest, opts ...grpc.CallOption) (*UnlikeFolderResponse, error)
+	ListTopFolders(ctx context.Context, in *ListTopFoldersRequest, opts ...grpc.CallOption) (*ListTopFoldersResponse, error)
 }
 
 type folderServiceClient struct {
@@ -155,6 +161,36 @@ func (c *folderServiceClient) ListCommunityFolders(ctx context.Context, in *List
 	return out, nil
 }
 
+func (c *folderServiceClient) LikeFolder(ctx context.Context, in *LikeFolderRequest, opts ...grpc.CallOption) (*LikeFolderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LikeFolderResponse)
+	err := c.cc.Invoke(ctx, FolderService_LikeFolder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) UnlikeFolder(ctx context.Context, in *UnlikeFolderRequest, opts ...grpc.CallOption) (*UnlikeFolderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnlikeFolderResponse)
+	err := c.cc.Invoke(ctx, FolderService_UnlikeFolder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) ListTopFolders(ctx context.Context, in *ListTopFoldersRequest, opts ...grpc.CallOption) (*ListTopFoldersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTopFoldersResponse)
+	err := c.cc.Invoke(ctx, FolderService_ListTopFolders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FolderServiceServer is the server API for FolderService service.
 // All implementations should embed UnimplementedFolderServiceServer
 // for forward compatibility.
@@ -169,6 +205,9 @@ type FolderServiceServer interface {
 	AddCollaborator(context.Context, *AddCollaboratorRequest) (*AddCollaboratorResponse, error)
 	RemoveCollaborator(context.Context, *RemoveCollaboratorRequest) (*RemoveCollaboratorResponse, error)
 	ListCommunityFolders(context.Context, *ListCommunityFoldersRequest) (*ListCommunityFoldersResponse, error)
+	LikeFolder(context.Context, *LikeFolderRequest) (*LikeFolderResponse, error)
+	UnlikeFolder(context.Context, *UnlikeFolderRequest) (*UnlikeFolderResponse, error)
+	ListTopFolders(context.Context, *ListTopFoldersRequest) (*ListTopFoldersResponse, error)
 }
 
 // UnimplementedFolderServiceServer should be embedded to have
@@ -207,6 +246,15 @@ func (UnimplementedFolderServiceServer) RemoveCollaborator(context.Context, *Rem
 }
 func (UnimplementedFolderServiceServer) ListCommunityFolders(context.Context, *ListCommunityFoldersRequest) (*ListCommunityFoldersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListCommunityFolders not implemented")
+}
+func (UnimplementedFolderServiceServer) LikeFolder(context.Context, *LikeFolderRequest) (*LikeFolderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LikeFolder not implemented")
+}
+func (UnimplementedFolderServiceServer) UnlikeFolder(context.Context, *UnlikeFolderRequest) (*UnlikeFolderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UnlikeFolder not implemented")
+}
+func (UnimplementedFolderServiceServer) ListTopFolders(context.Context, *ListTopFoldersRequest) (*ListTopFoldersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTopFolders not implemented")
 }
 func (UnimplementedFolderServiceServer) testEmbeddedByValue() {}
 
@@ -408,6 +456,60 @@ func _FolderService_ListCommunityFolders_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FolderService_LikeFolder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LikeFolderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).LikeFolder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_LikeFolder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).LikeFolder(ctx, req.(*LikeFolderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_UnlikeFolder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnlikeFolderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).UnlikeFolder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_UnlikeFolder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).UnlikeFolder(ctx, req.(*UnlikeFolderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_ListTopFolders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTopFoldersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).ListTopFolders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_ListTopFolders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).ListTopFolders(ctx, req.(*ListTopFoldersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FolderService_ServiceDesc is the grpc.ServiceDesc for FolderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -454,6 +556,18 @@ var FolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListCommunityFolders",
 			Handler:    _FolderService_ListCommunityFolders_Handler,
+		},
+		{
+			MethodName: "LikeFolder",
+			Handler:    _FolderService_LikeFolder_Handler,
+		},
+		{
+			MethodName: "UnlikeFolder",
+			Handler:    _FolderService_UnlikeFolder_Handler,
+		},
+		{
+			MethodName: "ListTopFolders",
+			Handler:    _FolderService_ListTopFolders_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

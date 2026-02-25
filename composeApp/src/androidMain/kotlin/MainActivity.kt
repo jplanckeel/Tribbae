@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val viewModel = remember {
                 LinkViewModel(repository).also {
+                    it.authToken = storage.loadToken()
                     it.ogImageFetcher = { url -> OgImageFetcher.fetch(url) }
                     it.reminderScheduler = { link ->
                         if (link.eventDate != null) {
