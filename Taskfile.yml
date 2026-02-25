@@ -1,0 +1,111 @@
+version: '3'
+
+tasks:
+  clean:
+    desc: "Nettoyer le projet"
+    cmds:
+      - ./gradlew clean
+
+  build:
+    desc: "Compiler l'application en mode debug"
+    cmds:
+      - ./gradlew :composeApp:assembleDebug
+
+  build-release:
+    desc: "Compiler l'application en mode release"
+    cmds:
+      - ./gradlew :composeApp:assembleRelease
+
+  install:
+    desc: "Installer l'application sur un appareil connecté"
+    deps: [build]
+    cmds:
+      - ./gradlew :composeApp:installDebug
+
+  run:
+    desc: "Compiler et lancer l'application"
+    cmds:
+      - ./gradlew :composeApp:installDebug
+      - adb shell am start -n com.linkkeeper.app/MainActivity
+
+  uninstall:
+    desc: "Désinstaller l'application"
+    cmds:
+      - adb uninstall com.linkkeeper.app
+
+  devices:
+    desc: "Lister les appareils connectés"
+    cmds:
+      - adb devices
+
+  logs:
+    desc: "Afficher les logs de l'application"
+    cmds:
+      - adb logcat -s LinkKeeper:* AndroidRuntime:E
+
+  check:
+    desc: "Vérifier le code (lint, tests)"
+    cmds:
+      - ./gradlew check
+
+  dependencies:
+    desc: "Afficher l'arbre des dépendances"
+    cmds:
+      - ./gradlew :composeApp:dependencies
+
+  gradle-wrapper:
+    desc: "Générer le wrapper Gradle"
+    cmds:
+      - gradle wrapper --gradle-version 8.5
+
+  setup:
+    desc: "Configuration initiale du projet"
+    cmds:
+      - task: gradle-wrapper
+      - chmod +x gradlew
+      - ./gradlew --version
+
+  rebuild:
+    desc: "Nettoyer et recompiler"
+    cmds:
+      - task: clean
+      - task: build
+
+  # ── Backend ──────────────────────────────────────────────
+  backend:
+    desc: "Lancer le backend Go (gRPC + HTTP gateway)"
+    dir: backend
+    dotenv: ['backend/.env.example']
+    cmds:
+      - go run ./cmd/server
+
+  backend:build:
+    desc: "Compiler le backend"
+    dir: backend
+    cmds:
+      - go build -o ../build/server ./cmd/server
+
+  backend:proto:
+    desc: "Générer le code protobuf"
+    dir: backend
+    cmds:
+      - buf generate
+
+  # ── Frontend ─────────────────────────────────────────────
+  frontend:dev:
+    desc: "Lancer le frontend en mode développement"
+    dir: frontend
+    cmds:
+      - npm run dev
+
+  frontend:build:
+    desc: "Compiler le frontend pour la production"
+    dir: frontend
+    cmds:
+      - npm run build
+
+  frontend:install:
+    desc: "Installer les dépendances frontend"
+    dir: frontend
+    cmds:
+      - npm install

@@ -1,0 +1,142 @@
+import { useEffect, useState } from "react";
+import { community, links as linksApi } from "../api";
+import { Search, Globe, ArrowLeft, Users, X } from "lucide-react";
+import LinkCard from "../components/LinkCard";
+import { useNavigate } from "react-router-dom";
+
+export default function Community() {
+  const [folders, setFolders] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [nextToken, setNextToken] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState<any | null>(null);
+  const [folderLinks, setFolderLinks] = useState<any[]>([]);
+  const navigate = useNavigate();
+
+  const fetchFolders = async (append = false) => {
+    setLoading(true);
+    try {
+      const res = await community.list(search || undefined, 20, append ? nextToken : undefined);
+      setFolders(append ? [...folders, ...(res.folders || [])] : (res.folders || []));
+      setNextToken(res.nextPageToken || "");
+    } catch {
+      // ignore
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchFolders(); }, []);
+
+  const handleSearch = () => {
+    setNextToken("");
+    fetchFolders();
+  };
+
+  const openFolder = async (folder: any) => {
+    setSelectedFolder(folder);
+    try {
+      const res = await linksApi.list(folder.id);
+      setFolderLinks(res.links || []);
+    } catch {
+      setFolderLinks([]);
+    }
+  };
+
+  if (selectedFolder) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        <button onClick={() => setSelectedFolder(null)} className="flex items-center gap-1 text-orange-500 mb-4">
+          <ArrowLeft size={18} /> Communauté
+        </button>
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-gray-800">{selectedFolder.name}</h2>
+          <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
+            <Globe size={14} className="text-green-500" />
+            {selectedFolder.ownerDisplayName && (
+              <span>par {selectedFolder.ownerDisplayName}</span>
+            )}
+            {selectedFolder.linkCount > 0 && (
+              <span>· {selectedFolder.linkCount} idée{selectedFolder.linkCount > 1 ? "s" : ""}</span>
+            )}
+          </div>
+        </div>
+        {folderLinks.length === 0 ? (
+          <p className="text-center text-gray-400 py-12">Liste vide</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {folderLinks.map((link) => (
+              <LinkCard key={link.id} link={link} onClick={() => navigate(`/links/${link.id}`)} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="flex items-center gap-2 mb-6">
+        <Globe size={24} className="text-green-500" />
+        <h2 className="text-xl font-bold text-gray-800">Communauté</h2>
+      </div>
+
+      {/* Barre de recherche */}
+      <div className="relative mb-6">
+        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          placeholder="Rechercher une liste communautaire..."
+          className="w-full pl-10 pr-10 py-2.5 rounded-full border border-gray-200 focus:border-green-400 focus:outline-none bg-white text-sm"
+        />
+        {search && (
+          <button onClick={() => { setSearch(""); setTimeout(fetchFolders, 0); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      {folders.length === 0 && !loading ? (
+        <div className="text-center py-20 text-gray-400">
+          <Globe size={48} className="mx-auto mb-4 text-gray-300" />
+          <p>Aucune liste communautaire trouvée</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {folders.map((folder) => (
+            <div
+              key={folder.id}
+              onClick={() => openFolder(folder)}
+              className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm hover:shadow cursor-pointer"
+            >
+              <span className="text-2xl">🌍</span>
+              <div className="flex-1">
+                <p className="font-medium text-gray-800">{folder.name}</p>
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  {folder.ownerDisplayName && <span>par {folder.ownerDisplayName}</span>}
+                  {folder.linkCount > 0 && (
+                    <span>· {folder.linkCount} idée{folder.linkCount > 1 ? "s" : ""}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {nextToken && (
+        <div className="text-center mt-6">
+          <button
+            onClick={() => fetchFolders(true)}
+            disabled={loading}
+            className="px-6 py-2 rounded-full bg-green-500 text-white text-sm font-medium hover:bg-green-600 disabled:opacity-50"
+          >
+            {loading ? "Chargement..." : "Voir plus"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

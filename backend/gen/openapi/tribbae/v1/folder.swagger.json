@@ -1,0 +1,695 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "tribbae/v1/folder.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "FolderService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/community/folders": {
+      "get": {
+        "operationId": "FolderService_ListCommunityFolders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListCommunityFoldersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/folders": {
+      "get": {
+        "operationId": "FolderService_ListFolders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListFoldersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "FolderService"
+        ]
+      },
+      "post": {
+        "operationId": "FolderService_CreateFolder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateFolderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateFolderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/folders/{folderId}": {
+      "get": {
+        "operationId": "FolderService_GetFolder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetFolderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      },
+      "delete": {
+        "operationId": "FolderService_DeleteFolder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteFolderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      },
+      "put": {
+        "operationId": "FolderService_UpdateFolder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateFolderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FolderServiceUpdateFolderBody"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/folders/{folderId}/collaborators": {
+      "post": {
+        "operationId": "FolderService_AddCollaborator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddCollaboratorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FolderServiceAddCollaboratorBody"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/folders/{folderId}/collaborators/{userId}": {
+      "delete": {
+        "operationId": "FolderService_RemoveCollaborator",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RemoveCollaboratorResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/folders/{folderId}/share": {
+      "post": {
+        "operationId": "FolderService_GenerateShareToken",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GenerateShareTokenResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FolderServiceGenerateShareTokenBody"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/share/{shareToken}": {
+      "get": {
+        "operationId": "FolderService_GetSharedFolder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetSharedFolderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "shareToken",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "FolderServiceAddCollaboratorBody": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/v1CollaboratorRole"
+        }
+      }
+    },
+    "FolderServiceGenerateShareTokenBody": {
+      "type": "object"
+    },
+    "FolderServiceUpdateFolderBody": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "visibility": {
+          "$ref": "#/definitions/v1Visibility"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1AddCollaboratorResponse": {
+      "type": "object",
+      "properties": {
+        "folder": {
+          "$ref": "#/definitions/v1Folder"
+        }
+      }
+    },
+    "v1Collaborator": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/v1CollaboratorRole"
+        },
+        "addedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "v1CollaboratorRole": {
+      "type": "string",
+      "enum": [
+        "COLLABORATOR_ROLE_UNSPECIFIED",
+        "COLLABORATOR_ROLE_VIEWER",
+        "COLLABORATOR_ROLE_EDITOR"
+      ],
+      "default": "COLLABORATOR_ROLE_UNSPECIFIED"
+    },
+    "v1CreateFolderRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "visibility": {
+          "$ref": "#/definitions/v1Visibility"
+        }
+      }
+    },
+    "v1CreateFolderResponse": {
+      "type": "object",
+      "properties": {
+        "folder": {
+          "$ref": "#/definitions/v1Folder"
+        }
+      }
+    },
+    "v1DeleteFolderResponse": {
+      "type": "object"
+    },
+    "v1Folder": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "ownerId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "visibility": {
+          "$ref": "#/definitions/v1Visibility"
+        },
+        "shareToken": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "collaborators": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Collaborator"
+          }
+        },
+        "ownerDisplayName": {
+          "type": "string"
+        },
+        "linkCount": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v1GenerateShareTokenResponse": {
+      "type": "object",
+      "properties": {
+        "shareToken": {
+          "type": "string"
+        },
+        "shareUrl": {
+          "type": "string"
+        }
+      }
+    },
+    "v1GetFolderResponse": {
+      "type": "object",
+      "properties": {
+        "folder": {
+          "$ref": "#/definitions/v1Folder"
+        }
+      }
+    },
+    "v1GetSharedFolderResponse": {
+      "type": "object",
+      "properties": {
+        "folder": {
+          "$ref": "#/definitions/v1Folder"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Link"
+          }
+        }
+      }
+    },
+    "v1Link": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "ownerId": {
+          "type": "string"
+        },
+        "folderId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "category": {
+          "$ref": "#/definitions/v1LinkCategory"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ageRange": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "eventDate": {
+          "type": "string",
+          "format": "int64"
+        },
+        "reminderEnabled": {
+          "type": "boolean"
+        },
+        "rating": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "v1LinkCategory": {
+      "type": "string",
+      "enum": [
+        "LINK_CATEGORY_UNSPECIFIED",
+        "LINK_CATEGORY_IDEE",
+        "LINK_CATEGORY_CADEAU",
+        "LINK_CATEGORY_ACTIVITE",
+        "LINK_CATEGORY_EVENEMENT",
+        "LINK_CATEGORY_RECETTE"
+      ],
+      "default": "LINK_CATEGORY_UNSPECIFIED"
+    },
+    "v1ListCommunityFoldersResponse": {
+      "type": "object",
+      "properties": {
+        "folders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Folder"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        }
+      }
+    },
+    "v1ListFoldersResponse": {
+      "type": "object",
+      "properties": {
+        "folders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Folder"
+          }
+        }
+      }
+    },
+    "v1RemoveCollaboratorResponse": {
+      "type": "object",
+      "properties": {
+        "folder": {
+          "$ref": "#/definitions/v1Folder"
+        }
+      }
+    },
+    "v1UpdateFolderResponse": {
+      "type": "object",
+      "properties": {
+        "folder": {
+          "$ref": "#/definitions/v1Folder"
+        }
+      }
+    },
+    "v1Visibility": {
+      "type": "string",
+      "enum": [
+        "VISIBILITY_UNSPECIFIED",
+        "VISIBILITY_PRIVATE",
+        "VISIBILITY_PUBLIC",
+        "VISIBILITY_SHARED"
+      ],
+      "default": "VISIBILITY_UNSPECIFIED",
+      "title": "- VISIBILITY_PUBLIC: communautaire, visible par tous\n - VISIBILITY_SHARED: partagé avec des collaborateurs spécifiques"
+    }
+  }
+}
