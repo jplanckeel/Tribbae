@@ -65,6 +65,10 @@ export const links = {
     request(`/links/${id}`, { method: "PUT", body: JSON.stringify({ linkId: id, ...data }) }),
   delete: (id: string) =>
     request(`/links/${id}`, { method: "DELETE" }),
+  preview: (url: string) =>
+    request<{ title: string; description: string; image: string }>(
+      `/links/preview?url=${encodeURIComponent(url)}`
+    ),
 };
 
 // Shared

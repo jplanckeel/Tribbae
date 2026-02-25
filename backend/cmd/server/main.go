@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
 )
@@ -66,7 +67,17 @@ func main() {
 
 	// grpc-gateway HTTP mux
 	ctx := context.Background()
-	mux := runtime.NewServeMux()
+	mux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				UseEnumNumbers:  false,
+				EmitUnpopulated: false,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
+		}),
+	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
 	if err := pb.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
@@ -84,7 +95,18 @@ func main() {
 
 	httpAddr := ":" + cfg.Port
 	log.Printf("HTTP gateway listening on %s", httpAddr)
-	log.Fatal(http.ListenAndServe(httpAddr, cors(mux)))
+	log.Fatal(http.ListenAndServe(httpAddr, cors(withPreview(mux))))
+}
+
+func withPreview(next http.Handler) http.Handler {
+	preview := link.PreviewHandler()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/links/preview" && r.Method == http.MethodGet {
+			preview(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func cors(next http.Handler) http.Handler {

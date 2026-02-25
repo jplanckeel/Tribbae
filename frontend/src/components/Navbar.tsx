@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, FolderOpen, Tag, Globe, LogOut, Baby, ChevronDown } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faHome, faFolderOpen, faTag, faGlobe, faSignOutAlt, faBaby, faChevronDown } from "@fortawesome/free-solid-svg-icons";
 
 export default function Navbar() {
   const location = useLocation();
@@ -40,16 +41,16 @@ export default function Navbar() {
 
         <div className="flex items-center gap-5">
           <Link to="/" className={`flex items-center gap-1 pb-1 text-sm font-medium ${active("/")}`}>
-            <Home size={18} /> Accueil
+            <FontAwesomeIcon icon={faHome} className="w-4 h-4" /> Accueil
           </Link>
           <Link to="/folders" className={`flex items-center gap-1 pb-1 text-sm font-medium ${active("/folders")}`}>
-            <FolderOpen size={18} /> Listes
+            <FontAwesomeIcon icon={faFolderOpen} className="w-4 h-4" /> Listes
           </Link>
           <Link to="/tags" className={`flex items-center gap-1 pb-1 text-sm font-medium ${active("/tags")}`}>
-            <Tag size={18} /> Tags
+            <FontAwesomeIcon icon={faTag} className="w-4 h-4" /> Tags
           </Link>
           <Link to="/community" className={`flex items-center gap-1 pb-1 text-sm font-medium ${active("/community")}`}>
-            <Globe size={18} /> Communauté
+            <FontAwesomeIcon icon={faGlobe} className="w-4 h-4" /> Communauté
           </Link>
 
           {/* Menu Plus */}
@@ -60,7 +61,7 @@ export default function Navbar() {
                 location.pathname === "/children" ? "text-orange-500 border-b-2 border-orange-500" : ""
               }`}
             >
-              {displayName || "Plus"} <ChevronDown size={14} />
+              {displayName || "Plus"} <FontAwesomeIcon icon={faChevronDown} className="w-3 h-3" />
             </button>
             {showMore && (
               <div className="absolute right-0 top-8 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-44 z-50">
@@ -69,14 +70,14 @@ export default function Navbar() {
                   onClick={() => setShowMore(false)}
                   className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-500"
                 >
-                  <Baby size={16} /> Mes enfants
+                  <FontAwesomeIcon icon={faBaby} className="w-4 h-4" /> Mes enfants
                 </Link>
                 <hr className="my-1 border-gray-100" />
                 <button
                   onClick={logout}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-500 hover:bg-red-50 hover:text-red-500"
                 >
-                  <LogOut size={16} /> Déconnexion
+                  <FontAwesomeIcon icon={faSignOutAlt} className="w-4 h-4" /> Déconnexion
                 </button>
               </div>
             )}

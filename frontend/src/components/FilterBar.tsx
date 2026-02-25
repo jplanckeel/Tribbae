@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Search, Star, X, SlidersHorizontal, Baby, FolderOpen } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSearch, faStar, faTimes, faSlidersH, faBaby, faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { CATEGORIES, CATEGORY_COLORS } from "../types";
 
 interface Props {
@@ -42,7 +43,7 @@ export default function FilterBar({
       <div className="space-y-3">
         {/* Search */}
         <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-400" />
+          <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-400 w-4 h-4" />
           <input
             type="text" value={search} onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Rechercher une idée..."
@@ -50,7 +51,7 @@ export default function FilterBar({
           />
           {search && (
             <button onClick={() => onSearchChange("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <X size={16} />
+              <FontAwesomeIcon icon={faTimes} className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -74,14 +75,14 @@ export default function FilterBar({
               favoritesOnly ? "bg-yellow-400 text-black" : "bg-yellow-50 text-yellow-600"
             }`}
           >
-            <Star size={14} /> Favoris
+            <FontAwesomeIcon icon={faStar} className="w-3 h-3" /> Favoris
           </button>
           <button onClick={() => setShowSheet(true)}
             className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
               activeCount > 0 ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-500"
             }`}
           >
-            <SlidersHorizontal size={14} />
+            <FontAwesomeIcon icon={faSlidersH} className="w-3 h-3" />
             {activeCount > 0 ? `Filtres (${activeCount})` : "+ Filtres"}
           </button>
         </div>
@@ -105,7 +106,7 @@ export default function FilterBar({
                     Réinitialiser
                   </button>
                 )}
-                <button onClick={() => setShowSheet(false)} className="text-gray-400"><X size={20} /></button>
+                <button onClick={() => setShowSheet(false)} className="text-gray-400"><FontAwesomeIcon icon={faTimes} className="w-5 h-5" /></button>
               </div>
             </div>
 
@@ -137,7 +138,7 @@ export default function FilterBar({
             {folders.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-gray-500 mb-2 flex items-center gap-1">
-                  <FolderOpen size={14} /> Liste
+                  <FontAwesomeIcon icon={faFolderOpen} className="w-3.5 h-3.5" /> Liste
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button onClick={() => onFolderChange?.(null)}
@@ -160,7 +161,7 @@ export default function FilterBar({
             {children.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-gray-500 mb-2 flex items-center gap-1">
-                  <Baby size={14} /> Enfant
+                  <FontAwesomeIcon icon={faBaby} className="w-3.5 h-3.5" /> Enfant
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <button onClick={() => onChildChange?.(null)}
@@ -185,7 +186,7 @@ export default function FilterBar({
               <button onClick={onFavoritesToggle}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${favoritesOnly ? "bg-yellow-400 text-black" : "bg-yellow-50 text-yellow-600"}`}
               >
-                <Star size={14} /> Favoris uniquement ♥
+                <FontAwesomeIcon icon={faStar} className="w-3 h-3" /> Favoris uniquement ♥
               </button>
             </div>
 

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { X, Star } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTimes, faStar, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { links as linksApi, folders as foldersApi } from "../api";
 import { CATEGORIES, CATEGORY_COLORS } from "../types";
 
@@ -21,12 +22,32 @@ export default function AddLinkModal({ onClose, onCreated, initialFolderId }: Pr
   const [folderId, setFolderId] = useState(initialFolderId || "");
   const [rating, setRating] = useState(0);
   const [ingredients, setIngredients] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [folderList, setFolderList] = useState<any[]>([]);
   const [error, setError] = useState("");
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const lastFetchedUrl = useRef("");
 
   useEffect(() => {
     foldersApi.list().then((res) => setFolderList(res.folders || []));
   }, []);
+
+  const fetchPreview = async (rawUrl: string) => {
+    const trimmed = rawUrl.trim();
+    if (!trimmed || trimmed === lastFetchedUrl.current) return;
+    if (!/^https?:\/\/.+/.test(trimmed)) return;
+    lastFetchedUrl.current = trimmed;
+    setLoadingPreview(true);
+    try {
+      const meta = await linksApi.preview(trimmed);
+      if (!title && meta.title) setTitle(meta.title);
+      if (!description && meta.description) setDescription(meta.description);
+      if (meta.image) setImageUrl(meta.image);
+    } catch {
+      // silencieux
+    }
+    setLoadingPreview(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +64,7 @@ export default function AddLinkModal({ onClose, onCreated, initialFolderId }: Pr
         ageRange: ageRange.trim(),
         folderId: folderId || undefined,
         rating,
+        imageUrl: imageUrl.trim(),
         ingredients: category === "LINK_CATEGORY_RECETTE"
           ? ingredients.split("\n").map((s) => s.trim()).filter(Boolean)
           : [],
@@ -60,14 +82,43 @@ export default function AddLinkModal({ onClose, onCreated, initialFolderId }: Pr
       <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-800">Nouvelle idée</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={22} /></button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <FontAwesomeIcon icon={faTimes} className="w-5 h-5" />
+          </button>
         </div>
 
         {error && <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-3">
+          {/* URL avec preview auto */}
+          <div className="relative">
+            <input
+              type="url" placeholder="URL (optionnel)"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onBlur={(e) => fetchPreview(e.target.value)}
+              className={inputCls}
+            />
+            {loadingPreview && (
+              <FontAwesomeIcon icon={faSpinner} className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-400 w-4 h-4 animate-spin" />
+            )}
+          </div>
+
+          {/* Preview image */}
+          {imageUrl && (
+            <div className="relative rounded-xl overflow-hidden h-32">
+              <img src={imageUrl} alt="preview" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setImageUrl("")}
+                className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/70"
+              >
+                <FontAwesomeIcon icon={faTimes} className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           <input type="text" placeholder="Titre *" value={title} onChange={(e) => setTitle(e.target.value)} required className={inputCls} />
-          <input type="url" placeholder="URL" value={url} onChange={(e) => setUrl(e.target.value)} className={inputCls} />
           <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className={`${inputCls} resize-none`} />
 
           {/* Catégorie */}
@@ -86,7 +137,7 @@ export default function AddLinkModal({ onClose, onCreated, initialFolderId }: Pr
             })}
           </div>
 
-          {/* Liste (dossier) */}
+          {/* Liste */}
           <select value={folderId} onChange={(e) => setFolderId(e.target.value)}
             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm bg-white"
           >
@@ -105,7 +156,6 @@ export default function AddLinkModal({ onClose, onCreated, initialFolderId }: Pr
             <input type="text" placeholder="Tags (virgule)" value={tags} onChange={(e) => setTags(e.target.value)} className={inputCls} />
           </div>
 
-          {/* Ingrédients si recette */}
           {category === "LINK_CATEGORY_RECETTE" && (
             <textarea
               placeholder="Ingrédients (un par ligne)"
@@ -119,7 +169,7 @@ export default function AddLinkModal({ onClose, onCreated, initialFolderId }: Pr
             <span className="text-sm text-gray-500">Note :</span>
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} type="button" onClick={() => setRating(rating === n ? 0 : n)}>
-                <Star size={20} fill={n <= rating ? "#FFD700" : "none"} stroke="#FFD700" />
+                <FontAwesomeIcon icon={faStar} className="w-5 h-5" style={{ color: n <= rating ? "#FFD700" : "#e5e7eb" }} />
               </button>
             ))}
           </div>
