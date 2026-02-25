@@ -34,9 +34,10 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-14">
-        <Link to="/" className="text-xl font-bold text-orange-500">
-          Tribbae
+      <div className="max-w-5xl mx-auto px-4 flex items-center justify-between h-16">
+        <Link to="/" className="flex items-center gap-3">
+          <img src="/tribbae.jpg" alt="Tribbae" className="h-11 w-11 rounded-2xl object-cover shadow-md" />
+          <span className="text-2xl font-bold text-orange-500 tracking-tight">Tribbae</span>
         </Link>
 
         <div className="flex items-center gap-5">
