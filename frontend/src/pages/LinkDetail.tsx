@@ -5,7 +5,7 @@ import { CATEGORIES, CATEGORY_COLORS, normalizeCategory } from "../types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft, faExternalLinkAlt, faMapMarkerAlt, faStar,
-  faTag, faCalendar, faTrash, faPen, faHeart, faFolderOpen,
+  faTag, faCalendar, faTrash, faPen, faHeart, faFolderOpen, faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 
@@ -47,6 +47,7 @@ export default function LinkDetail() {
       category: form.category, tags: form.tags, location: form.location,
       price: form.price, ageRange: form.ageRange, rating: form.rating,
       ingredients: form.ingredients, folderId: form.folderId || "",
+      imageUrl: form.imageUrl || "",
     });
     setLink({ ...form });
     setEditing(false);
@@ -73,6 +74,28 @@ export default function LinkDetail() {
           <input value={form.title || ""} onChange={(e) => setForm({ ...form, title: e.target.value })} className={`${inputCls} font-semibold`} placeholder="Titre" />
           <input value={form.url || ""} onChange={(e) => setForm({ ...form, url: e.target.value })} className={inputCls} placeholder="URL" />
           <textarea value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className={`${inputCls} resize-none`} placeholder="Description" />
+
+          {/* Image personnalisée */}
+          <div className="space-y-2">
+            <input
+              value={form.imageUrl || ""}
+              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+              className={inputCls}
+              placeholder="URL de l'image (bandeau)"
+            />
+            {form.imageUrl && (
+              <div className="relative rounded-xl overflow-hidden h-32">
+                <img src={form.imageUrl} alt="aperçu" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, imageUrl: "" })}
+                  className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/70"
+                >
+                  <FontAwesomeIcon icon={faTimes} className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Catégorie */}
           <div className="flex gap-2 flex-wrap">
