@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package tribbae.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
+
+enum LinkCategory {
+  LINK_CATEGORY_UNSPECIFIED = 0;
+  LINK_CATEGORY_IDEE = 1;
+  LINK_CATEGORY_CADEAU = 2;
+  LINK_CATEGORY_ACTIVITE = 3;
+  LINK_CATEGORY_EVENEMENT = 4;
+  LINK_CATEGORY_RECETTE = 5;
+}
+
+message Link {
+  string id = 1;
+  string owner_id = 2;
+  string folder_id = 3;
+  string title = 4;
+  string url = 5;
+  string description = 6;
+  LinkCategory category = 7;
+  repeated string tags = 8;
+  string age_range = 9;
+  string location = 10;
+  string price = 11;
+  string image_url = 12;
+  int64 event_date = 13;
+  bool reminder_enabled = 14;
+  int32 rating = 15;
+  repeated string ingredients = 16;
+  google.protobuf.Timestamp created_at = 17;
+  google.protobuf.Timestamp updated_at = 18;
+}
+
+message CreateLinkRequest {
+  string folder_id = 1;
+  string title = 2;
+  string url = 3;
+  string description = 4;
+  LinkCategory category = 5;
+  repeated string tags = 6;
+  string age_range = 7;
+  string location = 8;
+  string price = 9;
+  string image_url = 10;
+  int64 event_date = 11;
+  bool reminder_enabled = 12;
+  int32 rating = 13;
+  repeated string ingredients = 14;
+}
+
+message CreateLinkResponse {
+  Link link = 1;
+}
+
+message GetLinkRequest {
+  string link_id = 1;
+}
+
+message GetLinkResponse {
+  Link link = 1;
+}
+
+message ListLinksRequest {
+  string folder_id = 1;
+}
+
+message ListLinksResponse {
+  repeated Link links = 1;
+}
+
+message UpdateLinkRequest {
+  string link_id = 1;
+  string folder_id = 2;
+  string title = 3;
+  string url = 4;
+  string description = 5;
+  LinkCategory category = 6;
+  repeated string tags = 7;
+  string age_range = 8;
+  string location = 9;
+  string price = 10;
+  string image_url = 11;
+  int64 event_date = 12;
+  bool reminder_enabled = 13;
+  int32 rating = 14;
+  repeated string ingredients = 15;
+}
+
+message UpdateLinkResponse {
+  Link link = 1;
+}
+
+message DeleteLinkRequest {
+  string link_id = 1;
+}
+
+message DeleteLinkResponse {}
+
+service LinkService {
+  rpc CreateLink(CreateLinkRequest) returns (CreateLinkResponse) {
+    option (google.api.http) = {
+      post: "/v1/links"
+      body: "*"
+    };
+  }
+  rpc GetLink(GetLinkRequest) returns (GetLinkResponse) {
+    option (google.api.http) = {
+      get: "/v1/links/{link_id}"
+    };
+  }
+  rpc ListLinks(ListLinksRequest) returns (ListLinksResponse) {
+    option (google.api.http) = {
+      get: "/v1/links"
+    };
+  }
+  rpc UpdateLink(UpdateLinkRequest) returns (UpdateLinkResponse) {
+    option (google.api.http) = {
+      put: "/v1/links/{link_id}"
+      body: "*"
+    };
+  }
+  rpc DeleteLink(DeleteLinkRequest) returns (DeleteLinkResponse) {
+    option (google.api.http) = {
+      delete: "/v1/links/{link_id}"
+    };
+  }
+}

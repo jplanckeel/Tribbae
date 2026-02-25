@@ -1,0 +1,197 @@
+syntax = "proto3";
+
+package tribbae.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "tribbae/v1/link.proto";
+
+option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
+
+enum Visibility {
+  VISIBILITY_UNSPECIFIED = 0;
+  VISIBILITY_PRIVATE = 1;
+  VISIBILITY_PUBLIC = 2;       // communautaire, visible par tous
+  VISIBILITY_SHARED = 3;       // partagé avec des collaborateurs spécifiques
+}
+
+enum CollaboratorRole {
+  COLLABORATOR_ROLE_UNSPECIFIED = 0;
+  COLLABORATOR_ROLE_VIEWER = 1;
+  COLLABORATOR_ROLE_EDITOR = 2;
+}
+
+message Collaborator {
+  string user_id = 1;
+  string email = 2;
+  string display_name = 3;
+  CollaboratorRole role = 4;
+  google.protobuf.Timestamp added_at = 5;
+}
+
+message Folder {
+  string id = 1;
+  string owner_id = 2;
+  string name = 3;
+  string icon = 4;
+  string color = 5;
+  Visibility visibility = 6;
+  string share_token = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+  repeated Collaborator collaborators = 10;
+  string owner_display_name = 11;
+  int32 link_count = 12;
+}
+
+message CreateFolderRequest {
+  string name = 1;
+  string icon = 2;
+  string color = 3;
+  Visibility visibility = 4;
+}
+
+message CreateFolderResponse {
+  Folder folder = 1;
+}
+
+message GetFolderRequest {
+  string folder_id = 1;
+}
+
+message GetFolderResponse {
+  Folder folder = 1;
+}
+
+message ListFoldersRequest {}
+
+message ListFoldersResponse {
+  repeated Folder folders = 1;
+}
+
+message UpdateFolderRequest {
+  string folder_id = 1;
+  string name = 2;
+  string icon = 3;
+  string color = 4;
+  Visibility visibility = 5;
+}
+
+message UpdateFolderResponse {
+  Folder folder = 1;
+}
+
+message DeleteFolderRequest {
+  string folder_id = 1;
+}
+
+message DeleteFolderResponse {}
+
+message GenerateShareTokenRequest {
+  string folder_id = 1;
+}
+
+message GenerateShareTokenResponse {
+  string share_token = 1;
+  string share_url = 2;
+}
+
+message GetSharedFolderRequest {
+  string share_token = 1;
+}
+
+message GetSharedFolderResponse {
+  Folder folder = 1;
+  repeated Link links = 2;
+}
+
+// --- Collaborateurs ---
+
+message AddCollaboratorRequest {
+  string folder_id = 1;
+  string email = 2;
+  CollaboratorRole role = 3;
+}
+
+message AddCollaboratorResponse {
+  Folder folder = 1;
+}
+
+message RemoveCollaboratorRequest {
+  string folder_id = 1;
+  string user_id = 2;
+}
+
+message RemoveCollaboratorResponse {
+  Folder folder = 1;
+}
+
+// --- Communautaire ---
+
+message ListCommunityFoldersRequest {
+  string search = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListCommunityFoldersResponse {
+  repeated Folder folders = 1;
+  string next_page_token = 2;
+}
+
+service FolderService {
+  rpc CreateFolder(CreateFolderRequest) returns (CreateFolderResponse) {
+    option (google.api.http) = {
+      post: "/v1/folders"
+      body: "*"
+    };
+  }
+  rpc GetFolder(GetFolderRequest) returns (GetFolderResponse) {
+    option (google.api.http) = {
+      get: "/v1/folders/{folder_id}"
+    };
+  }
+  rpc ListFolders(ListFoldersRequest) returns (ListFoldersResponse) {
+    option (google.api.http) = {
+      get: "/v1/folders"
+    };
+  }
+  rpc UpdateFolder(UpdateFolderRequest) returns (UpdateFolderResponse) {
+    option (google.api.http) = {
+      put: "/v1/folders/{folder_id}"
+      body: "*"
+    };
+  }
+  rpc DeleteFolder(DeleteFolderRequest) returns (DeleteFolderResponse) {
+    option (google.api.http) = {
+      delete: "/v1/folders/{folder_id}"
+    };
+  }
+  rpc GenerateShareToken(GenerateShareTokenRequest) returns (GenerateShareTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/folders/{folder_id}/share"
+      body: "*"
+    };
+  }
+  rpc GetSharedFolder(GetSharedFolderRequest) returns (GetSharedFolderResponse) {
+    option (google.api.http) = {
+      get: "/v1/share/{share_token}"
+    };
+  }
+  rpc AddCollaborator(AddCollaboratorRequest) returns (AddCollaboratorResponse) {
+    option (google.api.http) = {
+      post: "/v1/folders/{folder_id}/collaborators"
+      body: "*"
+    };
+  }
+  rpc RemoveCollaborator(RemoveCollaboratorRequest) returns (RemoveCollaboratorResponse) {
+    option (google.api.http) = {
+      delete: "/v1/folders/{folder_id}/collaborators/{user_id}"
+    };
+  }
+  rpc ListCommunityFolders(ListCommunityFoldersRequest) returns (ListCommunityFoldersResponse) {
+    option (google.api.http) = {
+      get: "/v1/community/folders"
+    };
+  }
+}
