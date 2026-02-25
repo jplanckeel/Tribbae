@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net"
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/tribbae/backend/internal/ai"
 	"github.com/tribbae/backend/internal/auth"
 	"github.com/tribbae/backend/internal/child"
 	"github.com/tribbae/backend/internal/config"
@@ -36,12 +38,53 @@ func main() {
 	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)
 	linkSvc := link.NewService(database.Col("links"), database.Col("folders"))
 	childSvc := child.NewService(database.Col("children"))
+	aiSvc := ai.NewService(cfg.OllamaURL, cfg.OllamaModel, cfg.SearxURL)
 
 	// Handlers (gRPC servers)
 	authH := auth.NewHandler(authSvc)
 	folderH := folder.NewHandler(folderSvc)
 	linkH := link.NewHandler(linkSvc)
 	childH := child.NewHandler(childSvc)
+	aiH := ai.NewHandler(aiSvc,
+		// Token parser : extrait le userID du header Authorization
+		func(r *http.Request) (string, error) {
+			h := r.Header.Get("Authorization")
+			if h == "" {
+				return "", nil
+			}
+			token := h
+			if len(h) > 7 && h[:7] == "Bearer " {
+				token = h[7:]
+			}
+			return authSvc.ValidateToken(token)
+		},
+		// Folder creator : crée un dossier communautaire IA
+		func(ctx context.Context, ownerID, name string) (string, error) {
+			f, err := folderSvc.CreateAiFolder(ctx, ownerID, name)
+			if err != nil {
+				return "", err
+			}
+			return f.ID.Hex(), nil
+		},
+		// Link creator : crée un lien dans le dossier
+		func(ctx context.Context, ownerID string, idea ai.SuggestedLink, folderID string) error {
+			l := &link.Link{
+				FolderID:    folderID,
+				Title:       idea.Title,
+				URL:         idea.URL,
+				Description: idea.Description,
+				Category:    idea.Category,
+				Tags:        idea.Tags,
+				AgeRange:    idea.AgeRange,
+				Location:    idea.Location,
+				Price:       idea.Price,
+				ImageURL:    idea.ImageURL,
+				Ingredients: idea.Ingredients,
+			}
+			_, err := linkSvc.Create(ctx, ownerID, l)
+			return err
+		},
+	)
 
 	// Serveur gRPC
 	grpcServer := grpc.NewServer(
@@ -77,6 +120,12 @@ func main() {
 				DiscardUnknown: true,
 			},
 		}),
+		runtime.WithErrorHandler(func(ctx context.Context, mux *runtime.ServeMux, m runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+			// Retourne une erreur JSON propre au lieu du log gRPC
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
+		}),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
@@ -95,7 +144,17 @@ func main() {
 
 	httpAddr := ":" + cfg.Port
 	log.Printf("HTTP gateway listening on %s", httpAddr)
-	log.Fatal(http.ListenAndServe(httpAddr, cors(withPreview(mux))))
+	log.Fatal(http.ListenAndServe(httpAddr, cors(withAI(aiH, withPreview(mux)))))
+}
+
+func withAI(aiH http.Handler, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/ai/generate" && r.Method == http.MethodPost {
+			aiH.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func withPreview(next http.Handler) http.Handler {

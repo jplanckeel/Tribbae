@@ -29,6 +29,7 @@ fun HomeScreen(
     viewModel: LinkViewModel,
     modifier: Modifier = Modifier,
     onAddClick: () -> Unit,
+    onAiClick: () -> Unit,
     onLinkClick: (Link) -> Unit
 ) {
     val filteredLinks by viewModel.filteredLinks.collectAsState()
@@ -210,20 +211,40 @@ fun HomeScreen(
             }
         }
 
-        // FAB
-        FloatingActionButton(
-            onClick = onAddClick,
-            containerColor = Orange,
-            contentColor = Color.White,
-            shape = CircleShape,
+        // FABs
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(20.dp)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.End
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Ajouter"
-            )
+            // FAB IA
+            FloatingActionButton(
+                onClick = onAiClick,
+                containerColor = Purple,
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = "Générer avec l'IA",
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            // FAB Ajouter
+            FloatingActionButton(
+                onClick = onAddClick,
+                containerColor = Orange,
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Ajouter"
+                )
+            }
         }
     }
 

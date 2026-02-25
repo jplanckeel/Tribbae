@@ -32,6 +32,13 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-amber-50 flex items-center justify-center px-4">
       <div className="bg-white rounded-3xl shadow-lg p-8 w-full max-w-sm">
+        <div className="flex justify-center mb-4">
+          <img
+            src="/tribbae.jpg"
+            alt="Tribbae"
+            className="w-20 h-20 rounded-2xl object-cover shadow-md"
+          />
+        </div>
         <h1 className="text-2xl font-bold text-orange-500 text-center mb-2">
           Tribbae
         </h1>

@@ -89,6 +89,12 @@ export const community = {
       `/community/folders${qs ? `?${qs}` : ""}`
     );
   },
+  top: (limit?: number) =>
+    request<{ folders: any[] }>(`/community/top${limit ? `?limit=${limit}` : ""}`),
+  like: (folderId: string) =>
+    request<{ likeCount: number }>(`/folders/${folderId}/like`, { method: "POST", body: JSON.stringify({}) }),
+  unlike: (folderId: string) =>
+    request<{ likeCount: number }>(`/folders/${folderId}/like`, { method: "DELETE" }),
 };
 
 // Children
@@ -100,4 +106,24 @@ export const children = {
     request(`/children/${childId}`, { method: "PUT", body: JSON.stringify({ childId, name, birthDate }) }),
   delete: (childId: string) =>
     request(`/children/${childId}`, { method: "DELETE" }),
+};
+
+// AI
+export const ai = {
+  generate: (prompt: string, model?: string) =>
+    request<{ ideas: Array<{
+      title: string;
+      description: string;
+      url?: string;
+      imageUrl?: string;
+      category: string;
+      tags: string[];
+      ageRange?: string;
+      price?: string;
+      location?: string;
+      ingredients?: string[];
+    }> }>("/ai/generate", {
+      method: "POST",
+      body: JSON.stringify({ prompt, model }),
+    }),
 };

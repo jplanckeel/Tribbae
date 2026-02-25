@@ -91,6 +91,10 @@ fun App(vm: LinkViewModel = viewModel(), sharedUrl: String? = null) {
             CommunityScreen(apiClient = ApiClient(), modifier = Modifier)
             return
         }
+        is SubScreen.AiGenerate -> {
+            AiGenerateScreen(viewModel = vm, onBack = { subScreen = null })
+            return
+        }
         null -> {} // continue to tabs
     }
 
@@ -122,6 +126,7 @@ fun App(vm: LinkViewModel = viewModel(), sharedUrl: String? = null) {
                 viewModel = vm,
                 modifier = Modifier.padding(padding),
                 onAddClick = { subScreen = SubScreen.AddLink },
+                onAiClick = { subScreen = SubScreen.AiGenerate },
                 onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
             )
             Tab.FOLDERS -> FoldersTabScreen(
@@ -159,4 +164,5 @@ sealed class SubScreen {
     object Detail : SubScreen()
     object Edit : SubScreen()
     object Community : SubScreen()
+    object AiGenerate : SubScreen()
 }

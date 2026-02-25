@@ -12,4 +12,6 @@ interface Storage {
     fun loadTags(): List<String>
     fun saveChildren(children: List<Child>)
     fun loadChildren(): List<Child>
+    fun saveToken(token: String)
+    fun loadToken(): String?
 }

@@ -27,6 +27,7 @@ var publicMethods = map[string]bool{
 	"/tribbae.v1.AuthService/RefreshToken":           true,
 	"/tribbae.v1.FolderService/GetSharedFolder":      true,
 	"/tribbae.v1.FolderService/ListCommunityFolders": true,
+	"/tribbae.v1.FolderService/ListTopFolders":       true,
 }
 
 func UnaryAuth(validator TokenValidator) grpc.UnaryServerInterceptor {

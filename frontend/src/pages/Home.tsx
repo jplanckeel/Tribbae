@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { links as linksApi, folders as foldersApi, children as childrenApi } from "../api";
+import { links as linksApi, folders as foldersApi, children as childrenApi, community as communityApi } from "../api";
 import LinkCard from "../components/LinkCard";
 import FilterBar from "../components/FilterBar";
+import TopFolders from "../components/TopFolders";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
 import AddLinkModal from "../components/AddLinkModal";
+import AiGenerateModal from "../components/AiGenerateModal";
 import { normalizeCategory } from "../types";
 
 function parseAgeMonths(ageRange: string): number {
@@ -27,6 +29,8 @@ export default function Home() {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [showAi, setShowAi] = useState(false);
+  const [topFolders, setTopFolders] = useState<any[]>([]);
   const navigate = useNavigate();
 
   const fetchLinks = async () => {
@@ -38,10 +42,18 @@ export default function Home() {
     }
   };
 
+  const fetchTopFolders = async () => {
+    try {
+      const res = await communityApi.top(6);
+      setTopFolders(res.folders || []);
+    } catch { /* silencieux */ }
+  };
+
   useEffect(() => {
     fetchLinks();
     foldersApi.list().then((r) => setFolderList(r.folders || []));
     childrenApi.list().then((r) => setChildList(r.children || []));
+    fetchTopFolders();
   }, []);
 
   // Calcul de l'âge max en mois pour le filtre enfant
@@ -83,6 +95,11 @@ export default function Home() {
         children={childList} selectedChildId={selectedChildId} onChildChange={setSelectedChildId}
       />
 
+      {/* Top listes communautaires */}
+      {topFolders.length > 0 && !search && !selectedCategory && !selectedFolderId && (
+        <TopFolders folders={topFolders} onRefresh={fetchTopFolders} />
+      )}
+
       {filtered.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <p className="text-5xl mb-4">💡</p>
@@ -97,6 +114,14 @@ export default function Home() {
       )}
 
       <button
+        onClick={() => setShowAi(true)}
+        className="fixed bottom-6 right-24 w-14 h-14 rounded-full bg-purple-500 text-white shadow-lg hover:bg-purple-600 flex items-center justify-center transition-colors"
+        title="Générer avec l'IA"
+      >
+        <FontAwesomeIcon icon={faWandMagicSparkles} className="w-6 h-6" />
+      </button>
+
+      <button
         onClick={() => setShowAdd(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-orange-500 text-white shadow-lg hover:bg-orange-600 flex items-center justify-center transition-colors"
       >
@@ -107,6 +132,13 @@ export default function Home() {
         <AddLinkModal
           onClose={() => setShowAdd(false)}
           onCreated={() => { setShowAdd(false); fetchLinks(); }}
+        />
+      )}
+
+      {showAi && (
+        <AiGenerateModal
+          onClose={() => setShowAi(false)}
+          onCreated={() => { setShowAi(false); fetchLinks(); }}
         />
       )}
     </div>

@@ -10,6 +10,7 @@ val YellowLight = Color(0xFFFFF8E1)
 val BlueSky = Color(0xFF4FC3F7)
 val BlueSkyLight = Color(0xFFE1F5FE)
 val Coral = Color(0xFFFF7043)
+val Purple = Color(0xFF9C27B0)
 
 val SurfaceColor = Color(0xFFFFFBF5)
 val CardColor = Color(0xFFFFFFFF)

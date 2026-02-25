@@ -54,6 +54,12 @@ func (h *Handler) toProto(ctx context.Context, f *Folder) *pb.Folder {
 		})
 	}
 
+	// Vérifier si l'utilisateur courant a liké
+	likedByMe := false
+	if userID, err := interceptor.UserIDFromContext(ctx); err == nil {
+		likedByMe = h.svc.IsLikedBy(ctx, f.ID.Hex(), userID)
+	}
+
 	return &pb.Folder{
 		Id:               f.ID.Hex(),
 		OwnerId:          f.OwnerID,
@@ -67,6 +73,9 @@ func (h *Handler) toProto(ctx context.Context, f *Folder) *pb.Folder {
 		Collaborators:    collabs,
 		OwnerDisplayName: h.svc.GetOwnerDisplayName(ctx, f.OwnerID),
 		LinkCount:        h.svc.CountLinks(ctx, f.ID.Hex()),
+		LikeCount:        f.LikeCount,
+		LikedByMe:        likedByMe,
+		AiGenerated:      f.AiGenerated,
 	}
 }
 
@@ -224,6 +233,42 @@ func (h *Handler) ListCommunityFolders(ctx context.Context, req *pb.ListCommunit
 		pbFolders = append(pbFolders, h.toProto(ctx, f))
 	}
 	return &pb.ListCommunityFoldersResponse{Folders: pbFolders, NextPageToken: nextToken}, nil
+}
+
+func (h *Handler) LikeFolder(ctx context.Context, req *pb.LikeFolderRequest) (*pb.LikeFolderResponse, error) {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+	}
+	count, err := h.svc.Like(ctx, req.FolderId, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &pb.LikeFolderResponse{LikeCount: count}, nil
+}
+
+func (h *Handler) UnlikeFolder(ctx context.Context, req *pb.UnlikeFolderRequest) (*pb.UnlikeFolderResponse, error) {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+	}
+	count, err := h.svc.Unlike(ctx, req.FolderId, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &pb.UnlikeFolderResponse{LikeCount: count}, nil
+}
+
+func (h *Handler) ListTopFolders(ctx context.Context, req *pb.ListTopFoldersRequest) (*pb.ListTopFoldersResponse, error) {
+	folders, err := h.svc.ListTop(ctx, req.Limit)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	var pbFolders []*pb.Folder
+	for _, f := range folders {
+		pbFolders = append(pbFolders, h.toProto(ctx, f))
+	}
+	return &pb.ListTopFoldersResponse{Folders: pbFolders}, nil
 }
 
 func toString(v any) string {
