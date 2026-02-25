@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { links as linksApi, folders as foldersApi, children as childrenApi } from "../api";
 import LinkCard from "../components/LinkCard";
 import FilterBar from "../components/FilterBar";
-import { Plus } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import AddLinkModal from "../components/AddLinkModal";
+import { normalizeCategory } from "../types";
 
 function parseAgeMonths(ageRange: string): number {
   const lower = ageRange.toLowerCase();
@@ -52,7 +54,7 @@ export default function Home() {
     : null;
 
   const filtered = allLinks.filter((l) => {
-    if (selectedCategory && l.category !== selectedCategory) return false;
+    if (selectedCategory && normalizeCategory(l.category) !== selectedCategory) return false;
     if (selectedFolderId && l.folderId !== selectedFolderId) return false;
     if (favoritesOnly && !l.favorite) return false;
     if (childAgeMonths !== null && l.ageRange) {
@@ -98,7 +100,7 @@ export default function Home() {
         onClick={() => setShowAdd(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-orange-500 text-white shadow-lg hover:bg-orange-600 flex items-center justify-center transition-colors"
       >
-        <Plus size={28} />
+        <FontAwesomeIcon icon={faPlus} className="w-7 h-7" />
       </button>
 
       {showAdd && (

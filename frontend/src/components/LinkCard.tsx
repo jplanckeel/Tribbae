@@ -1,5 +1,6 @@
-import { MapPin, Star, ExternalLink } from "lucide-react";
-import { CATEGORIES, CATEGORY_COLORS } from "../types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faMapMarkerAlt, faStar, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { CATEGORIES, CATEGORY_COLORS, normalizeCategory } from "../types";
 
 interface Props {
   link: any;
@@ -20,7 +21,8 @@ function catIcon(value: string) {
 }
 
 export default function LinkCard({ link, onClick }: Props) {
-  const color = CATEGORY_COLORS[link.category] || "#FF8C00";
+  const category = normalizeCategory(link.category);
+  const color = CATEGORY_COLORS[category] || "#FF8C00";
   const hasImage = link.imageUrl && link.imageUrl.length > 0;
 
   return (
@@ -40,7 +42,7 @@ export default function LinkCard({ link, onClick }: Props) {
             className="absolute top-2 right-2 text-white text-xs font-medium px-2 py-1 rounded-lg"
             style={{ backgroundColor: color }}
           >
-            {catIcon(link.category)} {catLabel(link.category)}
+            {catIcon(category)} {catLabel(category)}
           </span>
         </div>
       ) : (
@@ -58,7 +60,7 @@ export default function LinkCard({ link, onClick }: Props) {
               >
                 {Array.from({ length: 10 }).map((_, i) => (
                   <span key={i} className="text-lg rotate-45">
-                    {catIcon(link.category)}
+                    {catIcon(category)}
                   </span>
                 ))}
               </div>
@@ -68,7 +70,7 @@ export default function LinkCard({ link, onClick }: Props) {
             className="absolute top-2 right-2 text-white text-xs font-medium px-2 py-1 rounded-lg z-10"
             style={{ backgroundColor: color }}
           >
-            {catIcon(link.category)} {catLabel(link.category)}
+            {catIcon(category)} {catLabel(category)}
           </span>
         </div>
       )}
@@ -83,14 +85,14 @@ export default function LinkCard({ link, onClick }: Props) {
         <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-400">
           {link.location && (
             <span className="flex items-center gap-1">
-              <MapPin size={12} /> {extractCity(link.location)}
+              <FontAwesomeIcon icon={faMapMarkerAlt} className="w-3 h-3" /> {extractCity(link.location)}
             </span>
           )}
           {link.price && <span>💰 {link.price}</span>}
           {link.rating > 0 && (
             <span className="flex items-center gap-0.5">
               {Array.from({ length: link.rating }).map((_, i) => (
-                <Star key={i} size={12} fill="#FFD700" stroke="#FFD700" />
+                <FontAwesomeIcon key={i} icon={faStar} className="w-3 h-3 text-yellow-400" />
               ))}
             </span>
           )}
@@ -102,7 +104,7 @@ export default function LinkCard({ link, onClick }: Props) {
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-1 text-orange-500 hover:underline"
             >
-              <ExternalLink size={12} /> Lien
+              <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3" /> Lien
             </a>
           )}
         </div>

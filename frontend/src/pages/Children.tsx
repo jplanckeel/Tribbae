@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { children as childrenApi } from "../api";
-import { Plus, Edit3, Trash2, X, Check, Baby } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faPen, faTrash, faTimes, faCheck, faBaby } from "@fortawesome/free-solid-svg-icons";
 
 function calcAge(birthDateMs: number): string {
   const now = Date.now();
@@ -70,14 +71,14 @@ export default function Children() {
     <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Baby size={24} className="text-blue-400" />
+          <FontAwesomeIcon icon={faBaby} className="w-6 h-6 text-blue-400" />
           <h2 className="text-xl font-bold text-gray-800">Mes enfants</h2>
         </div>
         <button
           onClick={() => { resetForm(); setShowAdd(true); setEditingId(null); }}
           className="flex items-center gap-1 px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600"
         >
-          <Plus size={16} /> Ajouter
+          <FontAwesomeIcon icon={faPlus} className="w-4 h-4" /> Ajouter
         </button>
       </div>
 
@@ -117,7 +118,7 @@ export default function Children() {
 
       {list.length === 0 && !showAdd ? (
         <div className="text-center py-16 text-gray-400">
-          <Baby size={48} className="mx-auto mb-4 text-gray-300" />
+          <FontAwesomeIcon icon={faBaby} className="mx-auto mb-4 text-gray-300 w-12 h-12" />
           <p>Aucun enfant ajouté</p>
         </div>
       ) : (
@@ -141,10 +142,10 @@ export default function Children() {
                     />
                     <div className="flex gap-2">
                       <button onClick={() => handleEdit(child.id)} className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-orange-500 text-white text-sm">
-                        <Check size={14} /> Enregistrer
+                        <FontAwesomeIcon icon={faCheck} className="w-3.5 h-3.5" /> Enregistrer
                       </button>
                       <button onClick={() => { setEditingId(null); resetForm(); }} className="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-600 text-sm">
-                        <X size={14} />
+                        <FontAwesomeIcon icon={faTimes} className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -163,10 +164,10 @@ export default function Children() {
                       </p>
                     </div>
                     <button onClick={() => startEdit(child)} className="text-gray-400 hover:text-orange-500 p-1">
-                      <Edit3 size={16} />
+                      <FontAwesomeIcon icon={faPen} className="w-4 h-4" />
                     </button>
                     <button onClick={() => handleDelete(child.id)} className="text-gray-400 hover:text-red-500 p-1">
-                      <Trash2 size={16} />
+                      <FontAwesomeIcon icon={faTrash} className="w-4 h-4" />
                     </button>
                   </div>
                 )}

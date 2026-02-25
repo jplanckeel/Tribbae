@@ -27,7 +27,7 @@ func toProto(l *Link) *pb.Link {
 		Title:           l.Title,
 		Url:             l.URL,
 		Description:     l.Description,
-		Category:        pb.LinkCategory(pb.LinkCategory_value["LINK_CATEGORY_"+l.Category]),
+		Category:        pb.LinkCategory(pb.LinkCategory_value[l.Category]),
 		Tags:            l.Tags,
 		AgeRange:        l.AgeRange,
 		Location:        l.Location,
@@ -62,6 +62,20 @@ func (h *Handler) CreateLink(ctx context.Context, req *pb.CreateLinkRequest) (*p
 		ReminderEnabled: req.ReminderEnabled,
 		Rating:          req.Rating,
 		Ingredients:     req.Ingredients,
+	}
+	// Scraper OG si pas d'image fournie
+	if l.ImageURL == "" && l.URL != "" {
+		if meta, err := scrapeOG(l.URL); err == nil {
+			if l.Title == "" && meta.Title != "" {
+				l.Title = meta.Title
+			}
+			if l.Description == "" && meta.Description != "" {
+				l.Description = meta.Description
+			}
+			if meta.Image != "" {
+				l.ImageURL = meta.Image
+			}
+		}
 	}
 	created, err := h.svc.Create(ctx, ownerID, l)
 	if err != nil {

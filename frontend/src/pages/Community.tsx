@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { community, links as linksApi } from "../api";
-import { Search, Globe, ArrowLeft, Users, X } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSearch, faGlobe, faArrowLeft, faTimes } from "@fortawesome/free-solid-svg-icons";
 import LinkCard from "../components/LinkCard";
 import { useNavigate } from "react-router-dom";
 
@@ -46,12 +47,12 @@ export default function Community() {
     return (
       <div className="max-w-5xl mx-auto px-4 py-6">
         <button onClick={() => setSelectedFolder(null)} className="flex items-center gap-1 text-orange-500 mb-4">
-          <ArrowLeft size={18} /> Communauté
+          <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Communauté
         </button>
         <div className="mb-4">
           <h2 className="text-xl font-bold text-gray-800">{selectedFolder.name}</h2>
           <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
-            <Globe size={14} className="text-green-500" />
+            <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5 text-green-500" />
             {selectedFolder.ownerDisplayName && (
               <span>par {selectedFolder.ownerDisplayName}</span>
             )}
@@ -76,13 +77,13 @@ export default function Community() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
       <div className="flex items-center gap-2 mb-6">
-        <Globe size={24} className="text-green-500" />
+        <FontAwesomeIcon icon={faGlobe} className="w-6 h-6 text-green-500" />
         <h2 className="text-xl font-bold text-gray-800">Communauté</h2>
       </div>
 
       {/* Barre de recherche */}
       <div className="relative mb-6">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
         <input
           type="text"
           value={search}
@@ -93,14 +94,14 @@ export default function Community() {
         />
         {search && (
           <button onClick={() => { setSearch(""); setTimeout(fetchFolders, 0); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-            <X size={16} />
+            <FontAwesomeIcon icon={faTimes} className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
       {folders.length === 0 && !loading ? (
         <div className="text-center py-20 text-gray-400">
-          <Globe size={48} className="mx-auto mb-4 text-gray-300" />
+          <FontAwesomeIcon icon={faGlobe} className="mx-auto mb-4 text-gray-300 w-12 h-12" />
           <p>Aucune liste communautaire trouvée</p>
         </div>
       ) : (

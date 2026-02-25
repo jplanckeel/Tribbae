@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { folders as foldersApi, links as linksApi } from "../api";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  Plus, Share2, ArrowLeft, Trash2, Users, UserPlus, X, Eye, Edit3, Globe, Lock,
-} from "lucide-react";
+  faPlus, faShareAlt, faArrowLeft, faTrash, faUsers, faUserPlus,
+  faTimes, faEye, faPen, faGlobe, faLock,
+} from "@fortawesome/free-solid-svg-icons";
 import LinkCard from "../components/LinkCard";
 import { useNavigate } from "react-router-dom";
 
@@ -80,9 +82,9 @@ export default function Folders() {
   };
 
   const visIcon = (v: string) => {
-    if (v === "VISIBILITY_PUBLIC") return <Globe size={14} className="text-green-500" />;
-    if (v === "VISIBILITY_SHARED") return <Users size={14} className="text-blue-500" />;
-    return <Lock size={14} className="text-gray-400" />;
+    if (v === "VISIBILITY_PUBLIC") return <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5 text-green-500" />;
+    if (v === "VISIBILITY_SHARED") return <FontAwesomeIcon icon={faUsers} className="w-3.5 h-3.5 text-blue-500" />;
+    return <FontAwesomeIcon icon={faLock} className="w-3.5 h-3.5 text-gray-400" />;
   };
 
   const visLabel = (v: string) => {
@@ -98,7 +100,7 @@ export default function Folders() {
       <div className="max-w-5xl mx-auto px-4 py-6">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => setSelectedFolder(null)} className="text-orange-500">
-            <ArrowLeft size={22} />
+            <FontAwesomeIcon icon={faArrowLeft} className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-800">{selectedFolder.name}</h2>
@@ -110,13 +112,13 @@ export default function Folders() {
             </div>
           </div>
           <button onClick={() => setShowCollabModal(true)} className="text-gray-400 hover:text-blue-500" title="Collaborateurs">
-            <UserPlus size={18} />
+            <FontAwesomeIcon icon={faUserPlus} className="w-4 h-4" />
           </button>
           <button onClick={() => shareFolder(selectedFolder.id)} className="text-gray-400 hover:text-orange-500" title="Lien de partage">
-            <Share2 size={18} />
+            <FontAwesomeIcon icon={faShareAlt} className="w-4 h-4" />
           </button>
           <button onClick={() => deleteFolder(selectedFolder.id)} className="text-gray-400 hover:text-red-500" title="Supprimer">
-            <Trash2 size={18} />
+            <FontAwesomeIcon icon={faTrash} className="w-4 h-4" />
           </button>
         </div>
 
@@ -125,10 +127,10 @@ export default function Folders() {
           <div className="flex flex-wrap gap-2 mb-4">
             {collabs.map((c: any) => (
               <span key={c.userId} className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600">
-                {c.role === "COLLABORATOR_ROLE_EDITOR" ? <Edit3 size={10} /> : <Eye size={10} />}
+                {c.role === "COLLABORATOR_ROLE_EDITOR" ? <FontAwesomeIcon icon={faPen} className="w-2.5 h-2.5" /> : <FontAwesomeIcon icon={faEye} className="w-2.5 h-2.5" />}
                 {c.displayName || c.email}
                 <button onClick={() => removeCollaborator(c.userId)} className="ml-1 hover:text-red-500">
-                  <X size={10} />
+                  <FontAwesomeIcon icon={faTimes} className="w-2.5 h-2.5" />
                 </button>
               </span>
             ))}
@@ -152,7 +154,7 @@ export default function Folders() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-800">Ajouter un collaborateur</h3>
                 <button onClick={() => { setShowCollabModal(false); setCollabError(""); }} className="text-gray-400">
-                  <X size={20} />
+                  <FontAwesomeIcon icon={faTimes} className="w-5 h-5" />
                 </button>
               </div>
               {collabError && (
@@ -171,7 +173,7 @@ export default function Folders() {
                       ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
                   }`}
                 >
-                  <Edit3 size={14} /> Éditeur
+                  <FontAwesomeIcon icon={faPen} className="w-3.5 h-3.5" /> Éditeur
                 </button>
                 <button
                   onClick={() => setCollabRole("COLLABORATOR_ROLE_VIEWER")}
@@ -180,7 +182,7 @@ export default function Folders() {
                       ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
                   }`}
                 >
-                  <Eye size={14} /> Lecteur
+                  <FontAwesomeIcon icon={faEye} className="w-3.5 h-3.5" /> Lecteur
                 </button>
               </div>
               <button
@@ -205,7 +207,7 @@ export default function Folders() {
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-1 px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600"
         >
-          <Plus size={16} /> Nouvelle
+          <FontAwesomeIcon icon={faPlus} className="w-4 h-4" /> Nouvelle
         </button>
       </div>
 
@@ -219,9 +221,9 @@ export default function Folders() {
           />
           <div className="flex gap-2">
             {[
-              { val: "VISIBILITY_PRIVATE", label: "Privée", icon: <Lock size={14} /> },
-              { val: "VISIBILITY_SHARED", label: "Partagée", icon: <Users size={14} /> },
-              { val: "VISIBILITY_PUBLIC", label: "Communautaire", icon: <Globe size={14} /> },
+              { val: "VISIBILITY_PRIVATE", label: "Privée", icon: <FontAwesomeIcon icon={faLock} className="w-3.5 h-3.5" /> },
+              { val: "VISIBILITY_SHARED", label: "Partagée", icon: <FontAwesomeIcon icon={faUsers} className="w-3.5 h-3.5" /> },
+              { val: "VISIBILITY_PUBLIC", label: "Communautaire", icon: <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> },
             ].map((opt) => (
               <button
                 key={opt.val}
@@ -259,7 +261,7 @@ export default function Folders() {
                   <span>{visLabel(folder.visibility)}</span>
                   {(folder.collaborators?.length > 0) && (
                     <span className="flex items-center gap-0.5">
-                      <Users size={10} /> {folder.collaborators.length}
+                      <FontAwesomeIcon icon={faUsers} className="w-2.5 h-2.5" /> {folder.collaborators.length}
                     </span>
                   )}
                   {folder.linkCount > 0 && (
