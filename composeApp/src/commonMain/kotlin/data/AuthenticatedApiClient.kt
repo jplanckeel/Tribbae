@@ -54,7 +54,9 @@ data class ApiAuthLink(
     val eventDate: Long = 0,
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
-    val ingredients: List<String> = emptyList()
+    val ingredients: List<String> = emptyList(),
+    val likeCount: Int = 0,
+    val likedByMe: Boolean = false
 )
 
 @Serializable
@@ -194,3 +196,20 @@ class AuthenticatedApiClient(
         request("/v1/links/$linkId", "DELETE", null) { _ -> Unit }
     }
 }
+
+    // Link likes
+    suspend fun likeLink(linkId: String): Int {
+        return request("/v1/links/$linkId/like", "POST", "{}") { response ->
+            @Serializable
+            data class LikeResponse(val likeCount: Int)
+            json.decodeFromString<LikeResponse>(response).likeCount
+        }
+    }
+
+    suspend fun unlikeLink(linkId: String): Int {
+        return request("/v1/links/$linkId/like", "DELETE", null) { response ->
+            @Serializable
+            data class LikeResponse(val likeCount: Int)
+            json.decodeFromString<LikeResponse>(response).likeCount
+        }
+    }

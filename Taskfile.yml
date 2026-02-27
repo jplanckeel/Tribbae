@@ -112,9 +112,9 @@ tasks:
 
   # ── Ollama ───────────────────────────────────────────────
   ollama:
-    desc: "Démarrer Ollama en Docker + pull qwen2.5:3b (optimisé CPU, 8Go RAM)"
+    desc: "Démarrer Ollama en Docker + pull qwen2.5:1.5b (optimisé CPU, 4Go RAM)"
     vars:
-      MODEL: '{{.OLLAMA_MODEL | default "qwen2.5:3b"}}'
+      MODEL: '{{.OLLAMA_MODEL | default "qwen2.5:1.5b"}}'
     env:
       OLLAMA_MODEL: "{{.MODEL}}"
     cmds:
@@ -182,14 +182,15 @@ tasks:
           echo "Redemarrage du conteneur SearXNG existant..."
           docker start tribbae-searxng
         else
+          echo "Build de l'image SearXNG custom..."
+          docker build -t tribbae-searxng-custom ./searxng
           echo "Creation du conteneur SearXNG..."
           docker run -d \
             --name tribbae-searxng \
             --restart unless-stopped \
             -p 8888:8080 \
-            -v searxng_data:/etc/searxng \
             -e SEARXNG_BASE_URL=http://localhost:8888/ \
-            searxng/searxng
+            tribbae-searxng-custom
         fi
       - |
         echo "Attente du demarrage de SearXNG..."
@@ -260,3 +261,15 @@ tasks:
       - docker build -t jplanckeel/tribbae:{{.TAG}} -f Dockerfile .
       - docker push jplanckeel/tribbae:{{.TAG}}
       - echo "jplanckeel/tribbae:{{.TAG}} pushed"
+
+  # ── Seed data ────────────────────────────────────────────
+  seed:
+    desc: "Générer des données de test avec k6"
+    cmds:
+      - k6 run scripts/seed-data.js
+
+  seed:clean:
+    desc: "Nettoyer toutes les données de test"
+    cmds:
+      - docker exec tribbae-mongo mongosh tribbae --eval "db.dropDatabase()"
+      - echo "Base de données nettoyée"

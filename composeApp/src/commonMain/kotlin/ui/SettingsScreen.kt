@@ -251,8 +251,8 @@ fun SettingsScreen(
                 Icon(imageVector = Icons.Default.Public, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(28.dp))
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Communauté", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                    Text("Découvrir les listes partagées", fontSize = 12.sp, color = TextSecondary)
+                    Text("Explorer", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                    Text("Découvrir les listes publiques", fontSize = 12.sp, color = TextSecondary)
                 }
                 Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
             }

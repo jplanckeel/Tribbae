@@ -14,7 +14,7 @@ export default function Folders() {
   const [folderLinks, setFolderLinks] = useState<any[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newVisibility, setNewVisibility] = useState("VISIBILITY_PRIVATE");
+  const [newVisibility, setNewVisibility] = useState("VISIBILITY_PUBLIC");
   const [newBannerUrl, setNewBannerUrl] = useState("");
   const [newTags, setNewTags] = useState("");
   const [showCollabModal, setShowCollabModal] = useState(false);
@@ -123,7 +123,7 @@ export default function Folders() {
   };
 
   const visLabel = (v: string) => {
-    if (v === "VISIBILITY_PUBLIC") return "Communautaire";
+    if (v === "VISIBILITY_PUBLIC") return "Publique";
     if (v === "VISIBILITY_SHARED") return "Partagée";
     return "Privée";
   };
@@ -274,7 +274,7 @@ export default function Folders() {
                   {[
                     { val: "VISIBILITY_PRIVATE", label: "Privée", icon: <FontAwesomeIcon icon={faLock} className="w-3.5 h-3.5" /> },
                     { val: "VISIBILITY_SHARED", label: "Partagée", icon: <FontAwesomeIcon icon={faUsers} className="w-3.5 h-3.5" /> },
-                    { val: "VISIBILITY_PUBLIC", label: "Communautaire", icon: <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> },
+                    { val: "VISIBILITY_PUBLIC", label: "Publique", icon: <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> },
                   ].map((opt) => (
                     <button
                       key={opt.val}
@@ -342,7 +342,7 @@ export default function Folders() {
             {[
               { val: "VISIBILITY_PRIVATE", label: "Privée", icon: <FontAwesomeIcon icon={faLock} className="w-3.5 h-3.5" /> },
               { val: "VISIBILITY_SHARED", label: "Partagée", icon: <FontAwesomeIcon icon={faUsers} className="w-3.5 h-3.5" /> },
-              { val: "VISIBILITY_PUBLIC", label: "Communautaire", icon: <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> },
+              { val: "VISIBILITY_PUBLIC", label: "Publique", icon: <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> },
             ].map((opt) => (
               <button
                 key={opt.val}

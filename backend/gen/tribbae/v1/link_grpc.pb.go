@@ -19,11 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LinkService_CreateLink_FullMethodName = "/tribbae.v1.LinkService/CreateLink"
-	LinkService_GetLink_FullMethodName    = "/tribbae.v1.LinkService/GetLink"
-	LinkService_ListLinks_FullMethodName  = "/tribbae.v1.LinkService/ListLinks"
-	LinkService_UpdateLink_FullMethodName = "/tribbae.v1.LinkService/UpdateLink"
-	LinkService_DeleteLink_FullMethodName = "/tribbae.v1.LinkService/DeleteLink"
+	LinkService_CreateLink_FullMethodName         = "/tribbae.v1.LinkService/CreateLink"
+	LinkService_GetLink_FullMethodName            = "/tribbae.v1.LinkService/GetLink"
+	LinkService_ListLinks_FullMethodName          = "/tribbae.v1.LinkService/ListLinks"
+	LinkService_UpdateLink_FullMethodName         = "/tribbae.v1.LinkService/UpdateLink"
+	LinkService_DeleteLink_FullMethodName         = "/tribbae.v1.LinkService/DeleteLink"
+	LinkService_LikeLink_FullMethodName           = "/tribbae.v1.LinkService/LikeLink"
+	LinkService_UnlikeLink_FullMethodName         = "/tribbae.v1.LinkService/UnlikeLink"
+	LinkService_ListCommunityLinks_FullMethodName = "/tribbae.v1.LinkService/ListCommunityLinks"
+	LinkService_ListNewLinks_FullMethodName       = "/tribbae.v1.LinkService/ListNewLinks"
 )
 
 // LinkServiceClient is the client API for LinkService service.
@@ -35,6 +39,10 @@ type LinkServiceClient interface {
 	ListLinks(ctx context.Context, in *ListLinksRequest, opts ...grpc.CallOption) (*ListLinksResponse, error)
 	UpdateLink(ctx context.Context, in *UpdateLinkRequest, opts ...grpc.CallOption) (*UpdateLinkResponse, error)
 	DeleteLink(ctx context.Context, in *DeleteLinkRequest, opts ...grpc.CallOption) (*DeleteLinkResponse, error)
+	LikeLink(ctx context.Context, in *LikeLinkRequest, opts ...grpc.CallOption) (*LikeLinkResponse, error)
+	UnlikeLink(ctx context.Context, in *UnlikeLinkRequest, opts ...grpc.CallOption) (*UnlikeLinkResponse, error)
+	ListCommunityLinks(ctx context.Context, in *ListCommunityLinksRequest, opts ...grpc.CallOption) (*ListCommunityLinksResponse, error)
+	ListNewLinks(ctx context.Context, in *ListNewLinksRequest, opts ...grpc.CallOption) (*ListNewLinksResponse, error)
 }
 
 type linkServiceClient struct {
@@ -95,6 +103,46 @@ func (c *linkServiceClient) DeleteLink(ctx context.Context, in *DeleteLinkReques
 	return out, nil
 }
 
+func (c *linkServiceClient) LikeLink(ctx context.Context, in *LikeLinkRequest, opts ...grpc.CallOption) (*LikeLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LikeLinkResponse)
+	err := c.cc.Invoke(ctx, LinkService_LikeLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linkServiceClient) UnlikeLink(ctx context.Context, in *UnlikeLinkRequest, opts ...grpc.CallOption) (*UnlikeLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnlikeLinkResponse)
+	err := c.cc.Invoke(ctx, LinkService_UnlikeLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linkServiceClient) ListCommunityLinks(ctx context.Context, in *ListCommunityLinksRequest, opts ...grpc.CallOption) (*ListCommunityLinksResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCommunityLinksResponse)
+	err := c.cc.Invoke(ctx, LinkService_ListCommunityLinks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linkServiceClient) ListNewLinks(ctx context.Context, in *ListNewLinksRequest, opts ...grpc.CallOption) (*ListNewLinksResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListNewLinksResponse)
+	err := c.cc.Invoke(ctx, LinkService_ListNewLinks_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LinkServiceServer is the server API for LinkService service.
 // All implementations should embed UnimplementedLinkServiceServer
 // for forward compatibility.
@@ -104,6 +152,10 @@ type LinkServiceServer interface {
 	ListLinks(context.Context, *ListLinksRequest) (*ListLinksResponse, error)
 	UpdateLink(context.Context, *UpdateLinkRequest) (*UpdateLinkResponse, error)
 	DeleteLink(context.Context, *DeleteLinkRequest) (*DeleteLinkResponse, error)
+	LikeLink(context.Context, *LikeLinkRequest) (*LikeLinkResponse, error)
+	UnlikeLink(context.Context, *UnlikeLinkRequest) (*UnlikeLinkResponse, error)
+	ListCommunityLinks(context.Context, *ListCommunityLinksRequest) (*ListCommunityLinksResponse, error)
+	ListNewLinks(context.Context, *ListNewLinksRequest) (*ListNewLinksResponse, error)
 }
 
 // UnimplementedLinkServiceServer should be embedded to have
@@ -127,6 +179,18 @@ func (UnimplementedLinkServiceServer) UpdateLink(context.Context, *UpdateLinkReq
 }
 func (UnimplementedLinkServiceServer) DeleteLink(context.Context, *DeleteLinkRequest) (*DeleteLinkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteLink not implemented")
+}
+func (UnimplementedLinkServiceServer) LikeLink(context.Context, *LikeLinkRequest) (*LikeLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LikeLink not implemented")
+}
+func (UnimplementedLinkServiceServer) UnlikeLink(context.Context, *UnlikeLinkRequest) (*UnlikeLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UnlikeLink not implemented")
+}
+func (UnimplementedLinkServiceServer) ListCommunityLinks(context.Context, *ListCommunityLinksRequest) (*ListCommunityLinksResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCommunityLinks not implemented")
+}
+func (UnimplementedLinkServiceServer) ListNewLinks(context.Context, *ListNewLinksRequest) (*ListNewLinksResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListNewLinks not implemented")
 }
 func (UnimplementedLinkServiceServer) testEmbeddedByValue() {}
 
@@ -238,6 +302,78 @@ func _LinkService_DeleteLink_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LinkService_LikeLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LikeLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).LikeLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_LikeLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).LikeLink(ctx, req.(*LikeLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinkService_UnlikeLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnlikeLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).UnlikeLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_UnlikeLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).UnlikeLink(ctx, req.(*UnlikeLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinkService_ListCommunityLinks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCommunityLinksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).ListCommunityLinks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_ListCommunityLinks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).ListCommunityLinks(ctx, req.(*ListCommunityLinksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinkService_ListNewLinks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListNewLinksRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).ListNewLinks(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_ListNewLinks_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).ListNewLinks(ctx, req.(*ListNewLinksRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LinkService_ServiceDesc is the grpc.ServiceDesc for LinkService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -264,6 +400,22 @@ var LinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteLink",
 			Handler:    _LinkService_DeleteLink_Handler,
+		},
+		{
+			MethodName: "LikeLink",
+			Handler:    _LinkService_LikeLink_Handler,
+		},
+		{
+			MethodName: "UnlikeLink",
+			Handler:    _LinkService_UnlikeLink_Handler,
+		},
+		{
+			MethodName: "ListCommunityLinks",
+			Handler:    _LinkService_ListCommunityLinks_Handler,
+		},
+		{
+			MethodName: "ListNewLinks",
+			Handler:    _LinkService_ListNewLinks_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

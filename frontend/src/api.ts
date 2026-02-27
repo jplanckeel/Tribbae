@@ -77,6 +77,10 @@ export const links = {
     request<{ title: string; description: string; image: string }>(
       `/links/preview?url=${encodeURIComponent(url)}`
     ),
+  like: (linkId: string) =>
+    request<{ likeCount: number }>(`/links/${linkId}/like`, { method: "POST", body: JSON.stringify({}) }),
+  unlike: (linkId: string) =>
+    request<{ likeCount: number }>(`/links/${linkId}/like`, { method: "DELETE" }),
 };
 
 // Shared
@@ -99,6 +103,15 @@ export const community = {
   },
   top: (limit?: number) =>
     request<{ folders: any[] }>(`/community/top${limit ? `?limit=${limit}` : ""}`),
+  links: (category?: string, limit?: number) => {
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (limit) params.set("limit", String(limit));
+    const qs = params.toString();
+    return request<{ links: any[] }>(`/community/links${qs ? `?${qs}` : ""}`);
+  },
+  newLinks: (limit?: number) =>
+    request<{ links: any[] }>(`/community/new${limit ? `?limit=${limit}` : ""}`),
   like: (folderId: string) =>
     request<{ likeCount: number }>(`/folders/${folderId}/like`, { method: "POST", body: JSON.stringify({}) }),
   unlike: (folderId: string) =>

@@ -28,7 +28,7 @@ services:
       GRPC_PORT: "9090"
       BASE_URL: ${BASE_URL:-http://localhost:8080}
       OLLAMA_URL: http://ollama:11434
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:1.5b}
       SEARXNG_URL: http://searxng:8080
 
   # ── Ollama (IA) ──────────────────────────────────────────
@@ -43,7 +43,8 @@ services:
 
   # ── SearXNG (recherche web) ──────────────────────────────
   searxng:
-    image: searxng/searxng
+    build:
+      context: ./searxng
     restart: unless-stopped
     volumes:
       - searxng_data:/etc/searxng

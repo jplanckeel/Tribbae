@@ -1,0 +1,47 @@
+use_default_settings: true
+
+search:
+  formats:
+    - html
+    - json
+  default_lang: "fr"
+
+server:
+  secret_key: "tribbae-searxng-secret-key-change-me"
+  bind_address: "0.0.0.0"
+  port: 8080
+  limiter: false
+  public_instance: false
+  image_proxy: false
+
+outgoing:
+  request_timeout: 10.0
+
+ui:
+  static_use_hash: true
+
+general:
+  instance_name: "Tribbae Search"
+
+engines:
+  # Désactiver les moteurs problématiques
+  - name: duckduckgo
+    disabled: true
+  - name: wikidata
+    disabled: true
+  - name: brave
+    disabled: true
+    shortcut: br
+  # Activer des moteurs plus fiables
+  - name: google
+    disabled: false
+    shortcut: g
+  - name: wikipedia
+    disabled: false
+    shortcut: wp
+  - name: qwant
+    disabled: false
+    shortcut: qw
+  - name: startpage
+    disabled: false
+    shortcut: sp

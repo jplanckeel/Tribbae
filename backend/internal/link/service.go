@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Link struct {
@@ -31,13 +32,25 @@ type Link struct {
 	UpdatedAt       time.Time          `bson:"updated_at"       json:"updated_at"`
 }
 
+type LinkLike struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	LinkID    string             `bson:"link_id"`
+	UserID    string             `bson:"user_id"`
+	CreatedAt time.Time          `bson:"created_at"`
+}
+
 type Service struct {
-	col       *mongo.Collection
-	folderCol *mongo.Collection
+	col         *mongo.Collection
+	folderCol   *mongo.Collection
+	linkLikeCol *mongo.Collection
 }
 
 func NewService(col *mongo.Collection, folderCol *mongo.Collection) *Service {
-	return &Service{col: col, folderCol: folderCol}
+	return &Service{
+		col:         col,
+		folderCol:   folderCol,
+		linkLikeCol: col.Database().Collection("link_likes"),
+	}
 }
 
 // accessibleFolderIDs retourne les IDs de dossiers auxquels l'utilisateur a accès
@@ -239,4 +252,146 @@ func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 
 	_, err = s.col.DeleteOne(ctx, bson.M{"_id": id})
 	return err
+}
+
+// LikeLink ajoute un like à un lien
+func (s *Service) LikeLink(ctx context.Context, linkID, userID string) (int32, error) {
+	// Vérifier que le lien existe
+	id, err := primitive.ObjectIDFromHex(linkID)
+	if err != nil {
+		return 0, errors.New("invalid link id")
+	}
+	var l Link
+	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&l); err != nil {
+		return 0, err
+	}
+
+	// Vérifier si déjà liké
+	count, _ := s.linkLikeCol.CountDocuments(ctx, bson.M{"link_id": linkID, "user_id": userID})
+	if count > 0 {
+		// Déjà liké, retourner le compteur actuel
+		return s.GetLikeCount(ctx, linkID)
+	}
+
+	// Ajouter le like
+	like := LinkLike{
+		ID:        primitive.NewObjectID(),
+		LinkID:    linkID,
+		UserID:    userID,
+		CreatedAt: time.Now(),
+	}
+	if _, err := s.linkLikeCol.InsertOne(ctx, like); err != nil {
+		return 0, err
+	}
+
+	return s.GetLikeCount(ctx, linkID)
+}
+
+// UnlikeLink retire un like d'un lien
+func (s *Service) UnlikeLink(ctx context.Context, linkID, userID string) (int32, error) {
+	// Supprimer le like
+	_, err := s.linkLikeCol.DeleteOne(ctx, bson.M{"link_id": linkID, "user_id": userID})
+	if err != nil {
+		return 0, err
+	}
+	return s.GetLikeCount(ctx, linkID)
+}
+
+// GetLikeCount retourne le nombre de likes d'un lien
+func (s *Service) GetLikeCount(ctx context.Context, linkID string) (int32, error) {
+	count, err := s.linkLikeCol.CountDocuments(ctx, bson.M{"link_id": linkID})
+	if err != nil {
+		return 0, err
+	}
+	return int32(count), nil
+}
+
+// IsLikedByUser vérifie si un utilisateur a liké un lien
+func (s *Service) IsLikedByUser(ctx context.Context, linkID, userID string) (bool, error) {
+	count, err := s.linkLikeCol.CountDocuments(ctx, bson.M{"link_id": linkID, "user_id": userID})
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// publicFolderIDs retourne les IDs des dossiers publics
+func (s *Service) publicFolderIDs(ctx context.Context) ([]string, error) {
+	cursor, err := s.folderCol.Find(ctx, bson.M{"visibility": "VISIBILITY_PUBLIC"})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var ids []string
+	for cursor.Next(ctx) {
+		var f struct {
+			ID primitive.ObjectID `bson:"_id"`
+		}
+		if err := cursor.Decode(&f); err == nil {
+			ids = append(ids, f.ID.Hex())
+		}
+	}
+	return ids, nil
+}
+
+// ListCommunity retourne les liens des dossiers publics
+func (s *Service) ListCommunity(ctx context.Context, category string, limit int32) ([]*Link, error) {
+	if limit <= 0 {
+		limit = 6
+	}
+
+	folderIDs, err := s.publicFolderIDs(ctx)
+	if err != nil || len(folderIDs) == 0 {
+		return []*Link{}, nil
+	}
+
+	filter := bson.M{"folder_id": bson.M{"$in": folderIDs}}
+	if category != "" {
+		filter["category"] = category
+	}
+
+	linkCursor, err := s.col.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer linkCursor.Close(ctx)
+
+	var links []*Link
+	if err := linkCursor.All(ctx, &links); err != nil {
+		return nil, err
+	}
+	if links == nil {
+		links = []*Link{}
+	}
+	return links, nil
+}
+
+// ListNew retourne les derniers liens des dossiers publics, triés par date de création décroissante
+func (s *Service) ListNew(ctx context.Context, limit int32) ([]*Link, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+
+	folderIDs, err := s.publicFolderIDs(ctx)
+	if err != nil || len(folderIDs) == 0 {
+		return []*Link{}, nil
+	}
+
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(int64(limit))
+
+	cursor, err := s.col.Find(ctx, bson.M{"folder_id": bson.M{"$in": folderIDs}}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var links []*Link
+	if err := cursor.All(ctx, &links); err != nil {
+		return nil, err
+	}
+	if links == nil {
+		links = []*Link{}
+	}
+	return links, nil
 }

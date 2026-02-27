@@ -1,10 +1,13 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMapMarkerAlt, faStar, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { faMapMarkerAlt, faStar, faExternalLinkAlt, faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
+import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
 import { CATEGORIES, CATEGORY_COLORS, normalizeCategory } from "../types";
 
 interface Props {
   link: any;
   onClick?: () => void;
+  onLike?: (linkId: string, isLiked: boolean) => void;
+  liking?: string | null;
 }
 
 function extractCity(location: string): string {
@@ -20,10 +23,11 @@ function catIcon(value: string) {
   return CATEGORIES.find((c) => c.value === value)?.icon ?? "💡";
 }
 
-export default function LinkCard({ link, onClick }: Props) {
+export default function LinkCard({ link, onClick, onLike, liking }: Props) {
   const category = normalizeCategory(link.category);
   const color = CATEGORY_COLORS[category] || "#FF8C00";
   const hasImage = link.imageUrl && link.imageUrl.length > 0;
+  const isLoggedIn = !!localStorage.getItem("token");
 
   return (
     <div
@@ -44,6 +48,21 @@ export default function LinkCard({ link, onClick }: Props) {
           >
             {catIcon(category)} {catLabel(category)}
           </span>
+          {isLoggedIn && onLike && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onLike(link.id, link.likedByMe); }}
+              disabled={liking === link.id}
+              className="absolute top-2 left-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs hover:bg-white transition-colors"
+            >
+              <FontAwesomeIcon
+                icon={link.likedByMe ? faHeartSolid : faHeartOutline}
+                className={`w-3 h-3 ${link.likedByMe ? "text-red-500" : "text-gray-400"}`}
+              />
+              <span className={link.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
+                {link.likeCount || 0}
+              </span>
+            </button>
+          )}
         </div>
       ) : (
         <div
@@ -72,6 +91,21 @@ export default function LinkCard({ link, onClick }: Props) {
           >
             {catIcon(category)} {catLabel(category)}
           </span>
+          {isLoggedIn && onLike && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onLike(link.id, link.likedByMe); }}
+              disabled={liking === link.id}
+              className="absolute top-2 left-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs hover:bg-white transition-colors z-10"
+            >
+              <FontAwesomeIcon
+                icon={link.likedByMe ? faHeartSolid : faHeartOutline}
+                className={`w-3 h-3 ${link.likedByMe ? "text-red-500" : "text-gray-400"}`}
+              />
+              <span className={link.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
+                {link.likeCount || 0}
+              </span>
+            </button>
+          )}
         </div>
       )}
 
