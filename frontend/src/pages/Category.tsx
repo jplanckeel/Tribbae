@@ -28,8 +28,8 @@ export default function Category() {
     const fetchLinks = async () => {
       try {
         setLoading(true);
-        // Endpoint public — pas besoin d'être connecté
-        const res = await communityApi.links();
+        // Endpoint public avec filtre catégorie côté backend
+        const res = await communityApi.links(`LINK_CATEGORY_${categoryKey}`, 100);
         setAllLinks(res.links || []);
       } catch (err) {
         console.error("Error fetching links:", err);
@@ -39,13 +39,10 @@ export default function Category() {
     };
 
     fetchLinks();
-  }, [category]);
+  }, [category, categoryKey]);
 
-  // Filtrer par catégorie
-  const filteredLinks = allLinks.filter((link) => {
-    const linkCategory = link.category?.replace("LINK_CATEGORY_", "") || "IDEE";
-    return linkCategory === categoryKey;
-  });
+  // Les liens sont déjà filtrés par catégorie côté backend
+  const filteredLinks = allLinks;
 
   // Trier par likes décroissants pour le top
   const topLinks = [...filteredLinks].sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
