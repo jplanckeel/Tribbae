@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"google.golang.org/genai"
 )
 
 // SuggestedLink représente une idée générée par l'IA
@@ -66,7 +68,7 @@ func (s *Service) Generate(ctx context.Context, prompt, model string, isPremium 
 	}
 
 	start := time.Now()
-	fmt.Printf("[AI] Starting generation for prompt: %q (Premium: %v)\n", prompt, isPremium)
+	fmt.Printf("[AI] Starting generation for prompt: %q (Premium: %v, Gemini Key configured: %v)\n", prompt, isPremium, s.geminiAPIKey != "")
 
 	// Timeout global : 2 minutes max
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -75,9 +77,10 @@ func (s *Service) Generate(ctx context.Context, prompt, model string, isPremium 
 	// Étape 1 : Recherche web
 	var searchResults []SearchResult
 	var searchContext string
-	
+
 	// Si premium et clé Gemini disponible, utiliser Gemini
 	if isPremium && s.geminiAPIKey != "" {
+		fmt.Printf("[AI] Using Gemini for premium user\n")
 		t := time.Now()
 		results, err := s.searchWithGemini(ctx, prompt)
 		fmt.Printf("[AI] Gemini search took %v, got %d results\n", time.Since(t), len(results))
@@ -277,86 +280,47 @@ func normalizeCategory(cat string) string {
 	}
 }
 
-
-// searchWithGemini utilise l'API Gemini pour rechercher des informations
+// searchWithGemini utilise le SDK officiel Google Gemini pour générer du contexte de recherche
 func (s *Service) searchWithGemini(ctx context.Context, query string) ([]SearchResult, error) {
 	if s.geminiAPIKey == "" {
 		return nil, fmt.Errorf("gemini API key not configured")
 	}
 
-	// Préparer la requête Gemini avec grounding (recherche web)
-	reqBody := map[string]interface{}{
-		"contents": []map[string]interface{}{
-			{
-				"parts": []map[string]string{
-					{
-						"text": fmt.Sprintf("Recherche des informations pertinentes sur : %s. Fournis 5 résultats avec titre, description et contexte utile pour des idées familiales.", query),
-					},
-				},
-			},
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:  s.geminiAPIKey,
+		Backend: genai.BackendGeminiAPI,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create gemini client: %w", err)
+	}
+
+	prompt := fmt.Sprintf(
+		"Recherche des informations pertinentes sur : %s. Fournis un résumé détaillé avec des idées concrètes, des suggestions pratiques et du contexte utile pour une famille. Réponds en français.",
+		query,
+	)
+
+	result, err := client.Models.GenerateContent(ctx,
+		"gemini-2.5-flash",
+		genai.Text(prompt),
+		&genai.GenerateContentConfig{
+			Temperature:     genai.Ptr[float32](0.2),
+			MaxOutputTokens: 1000,
 		},
-		"generationConfig": map[string]interface{}{
-			"temperature":     0.2,
-			"maxOutputTokens": 1000,
-		},
-	}
-
-	jsonData, err := json.Marshal(reqBody)
+	)
 	if err != nil {
-		return nil, fmt.Errorf("marshal request: %w", err)
+		return nil, fmt.Errorf("gemini generate: %w", err)
 	}
 
-	// Utiliser Gemini Pro
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=%s", s.geminiAPIKey)
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("gemini request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("gemini returned status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var geminiResp struct {
-		Candidates []struct {
-			Content struct {
-				Parts []struct {
-					Text string `json:"text"`
-				} `json:"parts"`
-			} `json:"content"`
-			GroundingMetadata struct {
-				WebSearchQueries []string `json:"webSearchQueries"`
-			} `json:"groundingMetadata"`
-		} `json:"candidates"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&geminiResp); err != nil {
-		return nil, fmt.Errorf("decode response: %w", err)
-	}
-
-	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+	if result == nil || len(result.Candidates) == 0 {
 		return nil, fmt.Errorf("no results from gemini")
 	}
 
-	// Convertir la réponse Gemini en SearchResults
-	content := geminiResp.Candidates[0].Content.Parts[0].Text
-	results := []SearchResult{
+	content := result.Text()
+	return []SearchResult{
 		{
 			Title:   "Résultats Gemini pour: " + query,
 			Content: content,
 			URL:     "",
 		},
-	}
-
-	return results, nil
+	}, nil
 }
