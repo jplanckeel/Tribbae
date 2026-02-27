@@ -317,7 +317,7 @@ func (s *Service) IsLikedByUser(ctx context.Context, linkID, userID string) (boo
 
 // publicFolderIDs retourne les IDs des dossiers publics
 func (s *Service) publicFolderIDs(ctx context.Context) ([]string, error) {
-	cursor, err := s.folderCol.Find(ctx, bson.M{"visibility": "VISIBILITY_PUBLIC"})
+	cursor, err := s.folderCol.Find(ctx, bson.M{"visibility": "public"})
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +351,8 @@ func (s *Service) ListCommunity(ctx context.Context, category string, limit int3
 		filter["category"] = category
 	}
 
-	linkCursor, err := s.col.Find(ctx, filter)
+	opts := options.Find().SetLimit(int64(limit))
+	linkCursor, err := s.col.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
