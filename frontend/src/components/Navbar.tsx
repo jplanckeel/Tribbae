@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHome, faFolderOpen, faTag, faGlobe, faSignOutAlt, faBaby, faChevronDown, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faFolderOpen, faTag, faGlobe, faSignOutAlt, faBaby, faChevronDown, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 
 export default function Navbar() {
   const location = useLocation();
@@ -43,7 +43,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-5">
           <Link to="/" className={`flex items-center gap-1 pb-1 text-sm font-medium ${active("/")}`}>
-            <FontAwesomeIcon icon={faHome} className="w-4 h-4" /> Accueil
+            <FontAwesomeIcon icon={faCampground} className="w-4 h-4" /> Accueil
           </Link>
 
           {isLoggedIn ? (

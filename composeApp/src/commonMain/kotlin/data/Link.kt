@@ -9,6 +9,7 @@ data class Folder(
     val icon: FolderIcon = FolderIcon.FOLDER,
     val color: FolderColor = FolderColor.BLUE,
     val bannerUrl: String = "",
+    val tags: List<String> = emptyList(),
     val visibility: String = "",
     val ownerDisplayName: String = "",
     val linkCount: Int = 0,

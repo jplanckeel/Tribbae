@@ -16,11 +16,13 @@ export default function Folders() {
   const [newName, setNewName] = useState("");
   const [newVisibility, setNewVisibility] = useState("VISIBILITY_PRIVATE");
   const [newBannerUrl, setNewBannerUrl] = useState("");
+  const [newTags, setNewTags] = useState("");
   const [showCollabModal, setShowCollabModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editName, setEditName] = useState("");
   const [editVisibility, setEditVisibility] = useState("");
   const [editBannerUrl, setEditBannerUrl] = useState("");
+  const [editTags, setEditTags] = useState("");
   const [collabEmail, setCollabEmail] = useState("");
   const [collabRole, setCollabRole] = useState("COLLABORATOR_ROLE_EDITOR");
   const [collabError, setCollabError] = useState("");
@@ -43,17 +45,20 @@ export default function Folders() {
     setEditName(selectedFolder.name);
     setEditVisibility(selectedFolder.visibility);
     setEditBannerUrl(selectedFolder.bannerUrl || "");
+    setEditTags((selectedFolder.tags || []).join(", "));
     setShowEditModal(true);
   };
 
   const updateFolder = async () => {
     if (!editName.trim() || !selectedFolder) return;
+    const tags = editTags.split(",").map(t => t.trim()).filter(t => t);
     const res: any = await foldersApi.update(selectedFolder.id, {
       name: editName.trim(),
       icon: "FOLDER",
       color: "BLUE",
       visibility: editVisibility,
       bannerUrl: editBannerUrl.trim() || undefined,
+      tags,
     });
     setSelectedFolder(res.folder || selectedFolder);
     setShowEditModal(false);
@@ -62,13 +67,16 @@ export default function Folders() {
 
   const createFolder = async () => {
     if (!newName.trim()) return;
+    const tags = newTags.split(",").map(t => t.trim()).filter(t => t);
     await foldersApi.create({
       name: newName.trim(), icon: "FOLDER", color: "BLUE",
       visibility: newVisibility, bannerUrl: newBannerUrl.trim() || undefined,
+      tags,
     });
     setNewName("");
     setNewVisibility("VISIBILITY_PRIVATE");
     setNewBannerUrl("");
+    setNewTags("");
     setShowCreate(false);
     fetchFolders();
   };
@@ -252,6 +260,11 @@ export default function Folders() {
                   onChange={(e) => setEditBannerUrl(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
                 />
+                <input
+                  type="text" placeholder="Tags (séparés par des virgules)" value={editTags}
+                  onChange={(e) => setEditTags(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
+                />
                 {editBannerUrl && (
                   <div className="h-24 rounded-xl overflow-hidden bg-gray-100">
                     <img src={editBannerUrl} alt="Aperçu" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
@@ -315,6 +328,11 @@ export default function Folders() {
             onChange={(e) => setNewBannerUrl(e.target.value)}
             className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
           />
+          <input
+            type="text" placeholder="Tags (séparés par des virgules)" value={newTags}
+            onChange={(e) => setNewTags(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
+          />
           {newBannerUrl && (
             <div className="h-24 rounded-xl overflow-hidden bg-gray-100">
               <img src={newBannerUrl} alt="Aperçu" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
@@ -366,6 +384,18 @@ export default function Folders() {
               </div>
               <div className="p-3">
                 <p className="font-semibold text-gray-800 line-clamp-1">{folder.name}</p>
+                {folder.tags && folder.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                    {folder.tags.slice(0, 3).map((tag: string, i: number) => (
+                      <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-600">
+                        {tag}
+                      </span>
+                    ))}
+                    {folder.tags.length > 3 && (
+                      <span className="text-xs text-gray-400">+{folder.tags.length - 3}</span>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
                   <span>{visLabel(folder.visibility)}</span>
                   {(folder.collaborators?.length > 0) && (

@@ -22,6 +22,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     /** Token JWT — injecté depuis MainActivity */
     var authToken: String? = null
+    
+    /** Client API authentifié */
+    private var authenticatedClient: data.AuthenticatedApiClient? = null
+    
+    private val _syncStatus = MutableStateFlow<String?>(null)
+    val syncStatus: StateFlow<String?> = _syncStatus.asStateFlow()
 
     /** Fonction pour récupérer l'image OG — injectée côté Android */
     var ogImageFetcher: (suspend (String) -> String?)? = null
@@ -76,6 +82,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         )
         repository.addLink(link)
         updateFilteredLinks()
+        
+        // Sauvegarder sur le backend si authentifié
+        if (authenticatedClient != null) {
+            saveToBackend(link)
+        }
 
         // Planifie le rappel si activé
         if (reminderEnabled && eventDate != null) {
@@ -98,6 +109,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         reminderCanceller?.invoke(id)
         repository.deleteLink(id)
         updateFilteredLinks()
+        
+        // Supprimer du backend si authentifié
+        if (authenticatedClient != null) {
+            deleteFromBackend(id)
+        }
     }
 
     fun updateLink(link: Link) {
@@ -121,13 +137,27 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         repository.links.value.filter { it.eventDate != null }.sortedBy { it.eventDate }
 
     fun addFolder(name: String, icon: FolderIcon, color: FolderColor) {
-        repository.addFolder(Folder(
+        val folder = Folder(
             id = kotlin.random.Random.nextLong().toString(),
             name = name, icon = icon, color = color
-        ))
+        )
+        repository.addFolder(folder)
+        
+        // Sauvegarder sur le backend si authentifié
+        if (authenticatedClient != null) {
+            saveFolderToBackend(folder)
+        }
     }
 
-    fun deleteFolder(id: String) { repository.deleteFolder(id); updateFilteredLinks() }
+    fun deleteFolder(id: String) { 
+        repository.deleteFolder(id)
+        updateFilteredLinks()
+        
+        // Supprimer du backend si authentifié
+        if (authenticatedClient != null) {
+            deleteFolderFromBackend(id)
+        }
+    }
 
     fun addTag(tag: String) { repository.addTag(tag) }
     fun deleteTag(tag: String) { repository.deleteTag(tag) }
@@ -270,5 +300,149 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             results = results.filter { it.favorite }
         }
         _filteredLinks.value = results
+    }
+    
+    // ── Backend Sync ──────────────────────────────────────────────────────────
+    
+    fun initAuthenticatedClient(sessionManager: data.SessionManager) {
+        authenticatedClient = data.AuthenticatedApiClient(sessionManager = sessionManager)
+        authToken = sessionManager.getToken()
+    }
+    
+    fun syncWithBackend(sessionManager: data.SessionManager) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                _syncStatus.value = "Synchronisation..."
+                
+                // Charger les dossiers
+                val foldersResponse = client.listFolders()
+                foldersResponse.folders.forEach { apiFolder ->
+                    val folder = Folder(
+                        id = apiFolder.id,
+                        name = apiFolder.name,
+                        icon = try { FolderIcon.valueOf(apiFolder.icon) } catch (_: Exception) { FolderIcon.FOLDER },
+                        color = try { FolderColor.valueOf(apiFolder.color) } catch (_: Exception) { FolderColor.ORANGE },
+                        bannerUrl = apiFolder.bannerUrl,
+                        tags = apiFolder.tags
+                    )
+                    // Ajouter seulement si pas déjà présent
+                    if (repository.folders.value.none { it.id == folder.id }) {
+                        repository.addFolder(folder)
+                    }
+                }
+                
+                // Charger les liens
+                val linksResponse = client.listLinks()
+                linksResponse.links.forEach { apiLink ->
+                    val category = try {
+                        LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
+                    } catch (_: Exception) { LinkCategory.IDEE }
+                    
+                    val link = Link(
+                        id = apiLink.id,
+                        title = apiLink.title,
+                        url = apiLink.url,
+                        description = apiLink.description,
+                        category = category,
+                        folderId = apiLink.folderId.ifBlank { null },
+                        tags = apiLink.tags,
+                        ageRange = apiLink.ageRange,
+                        location = apiLink.location,
+                        price = apiLink.price,
+                        imageUrl = apiLink.imageUrl,
+                        eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
+                        reminderEnabled = apiLink.reminderEnabled,
+                        rating = apiLink.rating,
+                        ingredients = apiLink.ingredients,
+                        favorite = false // Le backend ne gère pas encore les favoris
+                    )
+                    // Ajouter seulement si pas déjà présent
+                    if (repository.links.value.none { it.id == link.id }) {
+                        repository.addLink(link)
+                    }
+                }
+                
+                _syncStatus.value = "Synchronisé"
+                updateFilteredLinks()
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur: ${e.message}"
+            }
+        }
+    }
+    
+    fun saveToBackend(link: Link) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                val req = data.CreateLinkRequest(
+                    folderId = link.folderId ?: "",
+                    title = link.title,
+                    url = link.url,
+                    description = link.description,
+                    category = "LINK_CATEGORY_${link.category.name}",
+                    tags = link.tags,
+                    ageRange = link.ageRange,
+                    location = link.location,
+                    price = link.price,
+                    imageUrl = link.imageUrl,
+                    eventDate = link.eventDate ?: 0,
+                    reminderEnabled = link.reminderEnabled,
+                    rating = link.rating,
+                    ingredients = link.ingredients
+                )
+                val savedLink = client.createLink(req)
+                // Mettre à jour l'ID local avec l'ID du backend
+                repository.updateLink(link.copy(id = savedLink.id))
+                updateFilteredLinks()
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur sauvegarde: ${e.message}"
+            }
+        }
+    }
+    
+    fun saveFolderToBackend(folder: Folder) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                val req = data.CreateFolderRequest(
+                    name = folder.name,
+                    icon = folder.icon.name,
+                    color = folder.color.name,
+                    visibility = "PRIVATE",
+                    bannerUrl = folder.bannerUrl,
+                    tags = folder.tags
+                )
+                val savedFolder = client.createFolder(req)
+                // Mettre à jour l'ID local avec l'ID du backend
+                val updatedFolder = folder.copy(id = savedFolder.id)
+                repository.deleteFolder(folder.id)
+                repository.addFolder(updatedFolder)
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur sauvegarde dossier: ${e.message}"
+            }
+        }
+    }
+    
+    fun deleteFromBackend(linkId: String) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                client.deleteLink(linkId)
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur suppression: ${e.message}"
+            }
+        }
+    }
+    
+    fun deleteFolderFromBackend(folderId: String) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                client.deleteFolder(folderId)
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur suppression dossier: ${e.message}"
+            }
+        }
     }
 }

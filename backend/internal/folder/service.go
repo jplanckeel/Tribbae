@@ -28,6 +28,7 @@ type Folder struct {
 	Icon          string              `bson:"icon"`
 	Color         string              `bson:"color"`
 	BannerURL     string              `bson:"banner_url,omitempty"`
+	Tags          []string            `bson:"tags,omitempty"`
 	Visibility    string              `bson:"visibility"` // "private" | "public" | "shared"
 	ShareToken    string              `bson:"share_token,omitempty"`
 	Collaborators []CollaboratorEntry `bson:"collaborators,omitempty"`
@@ -49,7 +50,10 @@ func NewService(col *mongo.Collection, linkCol *mongo.Collection, userCol *mongo
 	return &Service{col: col, linkCol: linkCol, userCol: userCol, baseURL: baseURL}
 }
 
-func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibility, bannerURL string) (*Folder, error) {
+func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibility, bannerURL string, tags []string) (*Folder, error) {
+	if tags == nil {
+		tags = []string{}
+	}
 	f := &Folder{
 		ID:         primitive.NewObjectID(),
 		OwnerID:    ownerID,
@@ -57,6 +61,7 @@ func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibi
 		Icon:       icon,
 		Color:      color,
 		BannerURL:  bannerURL,
+		Tags:       tags,
 		Visibility: visibility,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
@@ -104,7 +109,10 @@ func (s *Service) List(ctx context.Context, ownerID string) ([]*Folder, error) {
 	return folders, cursor.All(ctx, &folders)
 }
 
-func (s *Service) Update(ctx context.Context, folderID, ownerID, name, icon, color, visibility, bannerURL string) (*Folder, error) {
+func (s *Service) Update(ctx context.Context, folderID, ownerID, name, icon, color, visibility, bannerURL string, tags []string) (*Folder, error) {
+	if tags == nil {
+		tags = []string{}
+	}
 	id, err := primitive.ObjectIDFromHex(folderID)
 	if err != nil {
 		return nil, errors.New("invalid folder id")
@@ -119,7 +127,7 @@ func (s *Service) Update(ctx context.Context, folderID, ownerID, name, icon, col
 	}
 	update := bson.M{"$set": bson.M{
 		"name": name, "icon": icon, "color": color,
-		"visibility": visibility, "banner_url": bannerURL, "updated_at": time.Now(),
+		"visibility": visibility, "banner_url": bannerURL, "tags": tags, "updated_at": time.Now(),
 	}}
 	res, err := s.col.UpdateOne(ctx, filter, update)
 	if err != nil {
