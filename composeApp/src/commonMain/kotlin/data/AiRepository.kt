@@ -39,8 +39,8 @@ class AiRepository(private val baseUrl: String = "http://10.0.2.2:8080") {
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Authorization", "Bearer $token")
             conn.doOutput = true
-            conn.connectTimeout = 60_000 // Ollama peut être lent
-            conn.readTimeout = 60_000
+            conn.connectTimeout = 120_000 // 2 minutes - Ollama peut être très lent
+            conn.readTimeout = 120_000 // 2 minutes
 
             val body = """{"prompt":${json.encodeToString(kotlinx.serialization.serializer(), prompt)}}"""
             OutputStreamWriter(conn.outputStream).use { it.write(body) }
@@ -48,6 +48,13 @@ class AiRepository(private val baseUrl: String = "http://10.0.2.2:8080") {
             try {
                 val response = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
                 json.decodeFromString(response)
+            } catch (e: Exception) {
+                val errorStream = conn.errorStream
+                if (errorStream != null) {
+                    val error = BufferedReader(InputStreamReader(errorStream)).use { it.readText() }
+                    throw Exception("AI generation failed (${conn.responseCode}): $error")
+                }
+                throw e
             } finally {
                 conn.disconnect()
             }

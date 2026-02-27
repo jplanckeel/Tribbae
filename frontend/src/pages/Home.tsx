@@ -10,6 +10,55 @@ import AddLinkModal from "../components/AddLinkModal";
 import AiGenerateModal from "../components/AiGenerateModal";
 import { normalizeCategory } from "../types";
 
+// Composant réutilisable pour les cartes de dossiers
+function FolderCard({ folder, onOpen, onLike, liking }: any) {
+  return (
+    <div
+      onClick={() => onOpen(folder)}
+      className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+    >
+      <div className="h-32 bg-gradient-to-br from-green-100 to-teal-50 relative">
+        {folder.bannerUrl ? (
+          <img src={folder.bannerUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">
+            {folder.aiGenerated ? "✨" : "🌍"}
+          </div>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onLike(folder.id, folder.likedByMe); }}
+          disabled={liking === folder.id}
+          className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs"
+        >
+          <FontAwesomeIcon
+            icon={folder.likedByMe ? faHeartSolid : faHeartOutline}
+            className={`w-3 h-3 ${folder.likedByMe ? "text-red-500" : "text-gray-400"}`}
+          />
+          <span className={folder.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
+            {folder.likeCount || 0}
+          </span>
+        </button>
+      </div>
+      <div className="p-3">
+        <p className="font-semibold text-gray-800 line-clamp-1">{folder.name}</p>
+        <p className="text-xs text-gray-400 mt-0.5">
+          {folder.ownerDisplayName && <span>par {folder.ownerDisplayName}</span>}
+          {folder.linkCount > 0 && <span> · {folder.linkCount} idée{folder.linkCount > 1 ? "s" : ""}</span>}
+        </p>
+        {folder.tags && folder.tags.length > 0 && (
+          <div className="flex gap-1 mt-1.5 flex-wrap">
+            {folder.tags.slice(0, 2).map((tag: string, i: number) => (
+              <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-600">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function parseAgeMonths(ageRange: string): number {
   const lower = ageRange.toLowerCase();
   const isMois = lower.includes("mois");
@@ -227,6 +276,15 @@ export default function Home() {
                       <p className="text-xs text-gray-400 mt-0.5">
                         par {f.ownerDisplayName || "Anonyme"} · {f.linkCount || 0} idées
                       </p>
+                      {f.tags && f.tags.length > 0 && (
+                        <div className="flex gap-1 mt-1.5 flex-wrap">
+                          {f.tags.slice(0, 3).map((tag: string, i: number) => (
+                            <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-600">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -234,9 +292,68 @@ export default function Home() {
             </div>
           )}
 
+          {/* Top Recettes */}
+          {communityFolders.filter((f) => f.tags?.some((t: string) => t.toLowerCase().includes("recette"))).length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-gray-800 mb-3">🍳 Top Recettes</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {communityFolders
+                  .filter((f) => f.tags?.some((t: string) => t.toLowerCase().includes("recette")))
+                  .slice(0, 4)
+                  .map((f) => (
+                    <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Cadeaux */}
+          {communityFolders.filter((f) => f.tags?.some((t: string) => t.toLowerCase().includes("cadeau"))).length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-gray-800 mb-3">🎁 Top Cadeaux</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {communityFolders
+                  .filter((f) => f.tags?.some((t: string) => t.toLowerCase().includes("cadeau")))
+                  .slice(0, 4)
+                  .map((f) => (
+                    <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Activités */}
+          {communityFolders.filter((f) => f.tags?.some((t: string) => t.toLowerCase().includes("activité") || t.toLowerCase().includes("activite"))).length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-gray-800 mb-3">🏃 Top Activités</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {communityFolders
+                  .filter((f) => f.tags?.some((t: string) => t.toLowerCase().includes("activité") || t.toLowerCase().includes("activite")))
+                  .slice(0, 4)
+                  .map((f) => (
+                    <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nouveautés */}
+          {communityFolders.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-gray-800 mb-3">✨ Nouveautés</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {communityFolders
+                  .slice(0, 8)
+                  .map((f) => (
+                    <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Toutes les listes communautaires */}
           <div>
-            <h2 className="text-lg font-bold text-gray-800 mb-3">🌍 Listes communautaires</h2>
+            <h2 className="text-lg font-bold text-gray-800 mb-3">🌍 Toutes les listes</h2>
             {communityFolders.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
                 <FontAwesomeIcon icon={faGlobe} className="mx-auto mb-3 text-gray-300 w-10 h-10" />
@@ -245,41 +362,7 @@ export default function Home() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {communityFolders.map((f) => (
-                  <div
-                    key={f.id}
-                    onClick={() => openCommunityFolder(f)}
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
-                  >
-                    <div className="h-32 bg-gradient-to-br from-green-100 to-teal-50 relative">
-                      {f.bannerUrl ? (
-                        <img src={f.bannerUrl} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">
-                          {f.aiGenerated ? "✨" : "🌍"}
-                        </div>
-                      )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleLike(f.id, f.likedByMe); }}
-                        disabled={liking === f.id}
-                        className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs"
-                      >
-                        <FontAwesomeIcon
-                          icon={f.likedByMe ? faHeartSolid : faHeartOutline}
-                          className={`w-3 h-3 ${f.likedByMe ? "text-red-500" : "text-gray-400"}`}
-                        />
-                        <span className={f.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
-                          {f.likeCount || 0}
-                        </span>
-                      </button>
-                    </div>
-                    <div className="p-3">
-                      <p className="font-semibold text-gray-800 line-clamp-1">{f.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {f.ownerDisplayName && <span>par {f.ownerDisplayName}</span>}
-                        {f.linkCount > 0 && <span> · {f.linkCount} idée{f.linkCount > 1 ? "s" : ""}</span>}
-                      </p>
-                    </div>
-                  </div>
+                  <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
                 ))}
               </div>
             )}
