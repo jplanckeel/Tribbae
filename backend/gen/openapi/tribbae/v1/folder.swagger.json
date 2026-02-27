@@ -477,6 +477,9 @@
         },
         "visibility": {
           "$ref": "#/definitions/v1Visibility"
+        },
+        "bannerUrl": {
+          "type": "string"
         }
       }
     },
@@ -560,6 +563,9 @@
         },
         "visibility": {
           "$ref": "#/definitions/v1Visibility"
+        },
+        "bannerUrl": {
+          "type": "string"
         }
       }
     },
@@ -629,6 +635,9 @@
         },
         "aiGenerated": {
           "type": "boolean"
+        },
+        "bannerUrl": {
+          "type": "string"
         }
       }
     },

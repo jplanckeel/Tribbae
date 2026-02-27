@@ -66,6 +66,7 @@ func (h *Handler) toProto(ctx context.Context, f *Folder) *pb.Folder {
 		Name:             f.Name,
 		Icon:             f.Icon,
 		Color:            f.Color,
+		BannerUrl:        f.BannerURL,
 		Visibility:       vis,
 		ShareToken:       f.ShareToken,
 		CreatedAt:        timestamppb.New(f.CreatedAt),
@@ -95,7 +96,7 @@ func (h *Handler) CreateFolder(ctx context.Context, req *pb.CreateFolderRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
 	}
-	f, err := h.svc.Create(ctx, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility))
+	f, err := h.svc.Create(ctx, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility), req.BannerUrl)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -136,7 +137,7 @@ func (h *Handler) UpdateFolder(ctx context.Context, req *pb.UpdateFolderRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
 	}
-	f, err := h.svc.Update(ctx, req.FolderId, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility))
+	f, err := h.svc.Update(ctx, req.FolderId, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility), req.BannerUrl)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

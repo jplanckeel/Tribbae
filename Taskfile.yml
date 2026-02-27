@@ -75,7 +75,7 @@ tasks:
   backend:
     desc: "Lancer le backend Go (gRPC + HTTP gateway)"
     dir: backend
-    dotenv: ['backend/.env.example']
+    dotenv: ['.env.example']
     cmds:
       - go run ./cmd/server
 
@@ -216,43 +216,47 @@ tasks:
   # ── Dev (tout en un) ─────────────────────────────────────
   dev:
     desc: "Demarrer tout l'environnement de dev (SearXNG + Ollama + backend + frontend)"
+    deps: [searxng, ollama, dev:backend, dev:frontend]
     cmds:
-      - task: searxng
-      - task: ollama
-      - echo "Démarrage du backend..."
-      - cmd: |
-          cd backend && \
-          export $(cat .env.example | grep -v '^#' | xargs) && \
-          go run ./cmd/server &
-          echo $! > /tmp/tribbae-backend.pid
-          echo "Backend démarré (PID $(cat /tmp/tribbae-backend.pid))"
-      - echo "Démarrage du frontend..."
-      - cmd: |
-          cd frontend && npm run dev &
-          echo $! > /tmp/tribbae-frontend.pid
-          echo "Frontend démarré (PID $(cat /tmp/tribbae-frontend.pid))"
-      - echo ""
-      - echo "╔══════════════════════════════════════╗"
-      - echo "║   Tribbae dev env démarré ✅          ║"
-      - echo "║                                      ║"
-      - echo "║  Frontend  → http://localhost:5173   ║"
-      - echo "║  Backend   → http://localhost:8080   ║"
-      - echo "║  Ollama    → http://localhost:11434  ║"
-      - echo "╚══════════════════════════════════════╝"
-      - echo ""
-      - echo "Ctrl+C pour arrêter. Logs backend/frontend dans /tmp/tribbae-*.pid"
-      - wait
+      - echo "Tous les services sont arretes."
+
+  dev:backend:
+    desc: "Backend pour task dev (usage interne)"
+    dir: backend
+    dotenv: ['.env.example']
+    cmds:
+      - go run ./cmd/server
+
+  dev:frontend:
+    desc: "Frontend pour task dev (usage interne)"
+    dir: frontend
+    cmds:
+      - npm run dev
+
+  dev:docker:
+    desc: "Demarrer tout via Docker Compose local"
+    cmds:
+      - docker compose -f docker-compose.local.yml up --build
 
   dev:stop:
-    desc: "Arrêter le backend et le frontend (Ollama reste actif)"
+    desc: "Arrêter Docker Compose local"
     cmds:
-      - cmd: |
-          if [ -f /tmp/tribbae-backend.pid ]; then
-            kill $(cat /tmp/tribbae-backend.pid) 2>/dev/null && echo "Backend arrêté" || true
-            rm /tmp/tribbae-backend.pid
-          fi
-      - cmd: |
-          if [ -f /tmp/tribbae-frontend.pid ]; then
-            kill $(cat /tmp/tribbae-frontend.pid) 2>/dev/null && echo "Frontend arrêté" || true
-            rm /tmp/tribbae-frontend.pid
-          fi
+      - docker compose -f docker-compose.local.yml down
+
+  # ── Docker build & push ──────────────────────────────────
+  docker:build:
+    desc: "Build l'image Docker Tribbae (backend + frontend)"
+    vars:
+      TAG: '{{.TAG | default "latest"}}'
+    cmds:
+      - docker build -t jplanckeel/tribbae:{{.TAG}} -f Dockerfile .
+      - echo "jplanckeel/tribbae:{{.TAG}} built"
+
+  docker:push:
+    desc: "Build et push l'image Docker Tribbae"
+    vars:
+      TAG: '{{.TAG | default "latest"}}'
+    cmds:
+      - docker build -t jplanckeel/tribbae:{{.TAG}} -f Dockerfile .
+      - docker push jplanckeel/tribbae:{{.TAG}}
+      - echo "jplanckeel/tribbae:{{.TAG}} pushed"

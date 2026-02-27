@@ -217,6 +217,7 @@ type Folder struct {
 	LikeCount        int32                  `protobuf:"varint,13,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
 	LikedByMe        bool                   `protobuf:"varint,14,opt,name=liked_by_me,json=likedByMe,proto3" json:"liked_by_me,omitempty"`
 	AiGenerated      bool                   `protobuf:"varint,15,opt,name=ai_generated,json=aiGenerated,proto3" json:"ai_generated,omitempty"`
+	BannerUrl        string                 `protobuf:"bytes,16,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -356,12 +357,20 @@ func (x *Folder) GetAiGenerated() bool {
 	return false
 }
 
+func (x *Folder) GetBannerUrl() string {
+	if x != nil {
+		return x.BannerUrl
+	}
+	return ""
+}
+
 type CreateFolderRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Icon          string                 `protobuf:"bytes,2,opt,name=icon,proto3" json:"icon,omitempty"`
 	Color         string                 `protobuf:"bytes,3,opt,name=color,proto3" json:"color,omitempty"`
 	Visibility    Visibility             `protobuf:"varint,4,opt,name=visibility,proto3,enum=tribbae.v1.Visibility" json:"visibility,omitempty"`
+	BannerUrl     string                 `protobuf:"bytes,5,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -422,6 +431,13 @@ func (x *CreateFolderRequest) GetVisibility() Visibility {
 		return x.Visibility
 	}
 	return Visibility_VISIBILITY_UNSPECIFIED
+}
+
+func (x *CreateFolderRequest) GetBannerUrl() string {
+	if x != nil {
+		return x.BannerUrl
+	}
+	return ""
 }
 
 type CreateFolderResponse struct {
@@ -643,6 +659,7 @@ type UpdateFolderRequest struct {
 	Icon          string                 `protobuf:"bytes,3,opt,name=icon,proto3" json:"icon,omitempty"`
 	Color         string                 `protobuf:"bytes,4,opt,name=color,proto3" json:"color,omitempty"`
 	Visibility    Visibility             `protobuf:"varint,5,opt,name=visibility,proto3,enum=tribbae.v1.Visibility" json:"visibility,omitempty"`
+	BannerUrl     string                 `protobuf:"bytes,6,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -710,6 +727,13 @@ func (x *UpdateFolderRequest) GetVisibility() Visibility {
 		return x.Visibility
 	}
 	return Visibility_VISIBILITY_UNSPECIFIED
+}
+
+func (x *UpdateFolderRequest) GetBannerUrl() string {
+	if x != nil {
+		return x.BannerUrl
+	}
+	return ""
 }
 
 type UpdateFolderResponse struct {
@@ -1615,7 +1639,7 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x120\n" +
 	"\x04role\x18\x04 \x01(\x0e2\x1c.tribbae.v1.CollaboratorRoleR\x04role\x125\n" +
-	"\badded_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\aaddedAt\"\xaf\x04\n" +
+	"\badded_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\aaddedAt\"\xce\x04\n" +
 	"\x06Folder\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x12\n" +
@@ -1639,14 +1663,18 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\n" +
 	"like_count\x18\r \x01(\x05R\tlikeCount\x12\x1e\n" +
 	"\vliked_by_me\x18\x0e \x01(\bR\tlikedByMe\x12!\n" +
-	"\fai_generated\x18\x0f \x01(\bR\vaiGenerated\"\x8b\x01\n" +
+	"\fai_generated\x18\x0f \x01(\bR\vaiGenerated\x12\x1d\n" +
+	"\n" +
+	"banner_url\x18\x10 \x01(\tR\tbannerUrl\"\xaa\x01\n" +
 	"\x13CreateFolderRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04icon\x18\x02 \x01(\tR\x04icon\x12\x14\n" +
 	"\x05color\x18\x03 \x01(\tR\x05color\x126\n" +
 	"\n" +
 	"visibility\x18\x04 \x01(\x0e2\x16.tribbae.v1.VisibilityR\n" +
-	"visibility\"B\n" +
+	"visibility\x12\x1d\n" +
+	"\n" +
+	"banner_url\x18\x05 \x01(\tR\tbannerUrl\"B\n" +
 	"\x14CreateFolderResponse\x12*\n" +
 	"\x06folder\x18\x01 \x01(\v2\x12.tribbae.v1.FolderR\x06folder\"/\n" +
 	"\x10GetFolderRequest\x12\x1b\n" +
@@ -1655,7 +1683,7 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x06folder\x18\x01 \x01(\v2\x12.tribbae.v1.FolderR\x06folder\"\x14\n" +
 	"\x12ListFoldersRequest\"C\n" +
 	"\x13ListFoldersResponse\x12,\n" +
-	"\afolders\x18\x01 \x03(\v2\x12.tribbae.v1.FolderR\afolders\"\xa8\x01\n" +
+	"\afolders\x18\x01 \x03(\v2\x12.tribbae.v1.FolderR\afolders\"\xc7\x01\n" +
 	"\x13UpdateFolderRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -1663,7 +1691,9 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x05color\x18\x04 \x01(\tR\x05color\x126\n" +
 	"\n" +
 	"visibility\x18\x05 \x01(\x0e2\x16.tribbae.v1.VisibilityR\n" +
-	"visibility\"B\n" +
+	"visibility\x12\x1d\n" +
+	"\n" +
+	"banner_url\x18\x06 \x01(\tR\tbannerUrl\"B\n" +
 	"\x14UpdateFolderResponse\x12*\n" +
 	"\x06folder\x18\x01 \x01(\v2\x12.tribbae.v1.FolderR\x06folder\"2\n" +
 	"\x13DeleteFolderRequest\x12\x1b\n" +

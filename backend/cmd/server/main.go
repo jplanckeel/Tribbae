@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/tribbae/backend/internal/ai"
@@ -120,12 +122,7 @@ func main() {
 				DiscardUnknown: true,
 			},
 		}),
-		runtime.WithErrorHandler(func(ctx context.Context, mux *runtime.ServeMux, m runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-			// Retourne une erreur JSON propre au lieu du log gRPC
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
-		}),
+		runtime.WithErrorHandler(runtime.DefaultHTTPErrorHandler),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 
@@ -143,8 +140,9 @@ func main() {
 	}
 
 	httpAddr := ":" + cfg.Port
-	log.Printf("HTTP gateway listening on %s", httpAddr)
-	log.Fatal(http.ListenAndServe(httpAddr, cors(withAI(aiH, withPreview(mux)))))
+	log.Printf("HTTP server listening on %s", httpAddr)
+	handler := cors(withAI(aiH, withPreview(withSPA(mux))))
+	log.Fatal(http.ListenAndServe(httpAddr, handler))
 }
 
 func withAI(aiH http.Handler, next http.Handler) http.Handler {
@@ -178,5 +176,38 @@ func cors(next http.Handler) http.Handler {
 			return
 		}
 		next.ServeHTTP(w, r)
+	})
+}
+
+// withSPA sert les fichiers statiques du frontend depuis /public.
+// Si le fichier n'existe pas, renvoie index.html (SPA fallback).
+func withSPA(apiHandler http.Handler) http.Handler {
+	const staticDir = "/public"
+
+	// Si le dossier n'existe pas, on ne sert que l'API
+	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
+		log.Println("No /public directory found, serving API only")
+		return apiHandler
+	}
+
+	log.Println("Serving frontend from /public")
+	fs := http.FileServer(http.Dir(staticDir))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Les routes API passent directement au handler gRPC-gateway
+		if strings.HasPrefix(r.URL.Path, "/v1/") {
+			apiHandler.ServeHTTP(w, r)
+			return
+		}
+
+		// Essayer de servir le fichier statique
+		path := filepath.Join(staticDir, r.URL.Path)
+		if info, err := os.Stat(path); err == nil && !info.IsDir() {
+			fs.ServeHTTP(w, r)
+			return
+		}
+
+		// SPA fallback : renvoyer index.html
+		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 	})
 }
