@@ -502,10 +502,13 @@ export default function Home() {
         <>
           <button
             onClick={() => setShowAi(true)}
-            className="fixed bottom-6 right-24 w-14 h-14 rounded-full bg-purple-500 text-white shadow-lg hover:bg-purple-600 flex items-center justify-center transition-colors"
-            title="Générer avec l'IA"
+            className="fixed bottom-6 right-24 w-14 h-14 rounded-full bg-purple-500 text-white shadow-lg hover:bg-purple-600 flex items-center justify-center transition-colors group"
+            title="Générer avec l'IA (Expérimental)"
           >
             <FontAwesomeIcon icon={faWandMagicSparkles} className="w-6 h-6" />
+            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+              EXP
+            </span>
           </button>
           <button
             onClick={() => setShowAdd(true)}

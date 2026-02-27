@@ -195,7 +195,6 @@ class AuthenticatedApiClient(
     suspend fun deleteLink(linkId: String) {
         request("/v1/links/$linkId", "DELETE", null) { _ -> Unit }
     }
-}
 
     // Link likes
     suspend fun likeLink(linkId: String): Int {
@@ -213,3 +212,4 @@ class AuthenticatedApiClient(
             json.decodeFromString<LikeResponse>(response).likeCount
         }
     }
+}

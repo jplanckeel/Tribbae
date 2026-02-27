@@ -34,7 +34,8 @@ private val childColors = listOf(
 fun SettingsScreen(
     viewModel: LinkViewModel, 
     modifier: Modifier = Modifier, 
-    onCommunityClick: () -> Unit = {},
+    onShoppingClick: () -> Unit = {},
+    onCalendarClick: () -> Unit = {},
     sessionManager: data.SessionManager,
     authRepository: data.AuthRepository,
     onLoginSuccess: () -> Unit = {}
@@ -237,9 +238,9 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Bouton Communauté
+        // Bouton Courses
         Card(
-            onClick = onCommunityClick,
+            onClick = onShoppingClick,
             shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(containerColor = CardColor),
             elevation = CardDefaults.cardElevation(2.dp)
@@ -248,11 +249,34 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth().padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(imageVector = Icons.Default.Public, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(28.dp))
+                Icon(imageVector = Icons.Default.ShoppingCart, contentDescription = null, tint = Orange, modifier = Modifier.size(28.dp))
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Explorer", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                    Text("Découvrir les listes publiques", fontSize = 12.sp, color = TextSecondary)
+                    Text("Courses", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                    Text("Ma liste de courses", fontSize = 12.sp, color = TextSecondary)
+                }
+                Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Bouton Agenda
+        Card(
+            onClick = onCalendarClick,
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = CardColor),
+            elevation = CardDefaults.cardElevation(2.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFF4FC3F7), modifier = Modifier.size(28.dp))
+                Spacer(modifier = Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Agenda", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                    Text("Mes événements à venir", fontSize = 12.sp, color = TextSecondary)
                 }
                 Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
             }
