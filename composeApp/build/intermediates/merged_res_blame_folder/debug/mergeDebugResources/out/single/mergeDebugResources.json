@@ -1,86 +1,90 @@
 [
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-xhdpi_ic_launcher.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xhdpi/ic_launcher.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-anydpi-v26/ic_launcher_round.xml"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-ldpi_ic_launcher.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-ldpi/ic_launcher.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-xxhdpi_ic_launcher_foreground.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxhdpi/ic_launcher_foreground.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-xxxhdpi_ic_launcher_foreground.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxxhdpi/ic_launcher_foreground.png"
+        "merged": "com.linkkeeper.app.composeApp-debug-46:/xml_network_security_config.xml.flat",
+        "source": "com.linkkeeper.app.composeApp-androidMain-48:/xml/network_security_config.xml"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/xml_file_paths.xml.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/xml/file_paths.xml"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-hdpi/ic_launcher.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-xxxhdpi_ic_launcher.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxxhdpi/ic_launcher.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/xml_backup_rules.xml.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/xml/backup_rules.xml"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-xxhdpi_ic_launcher_round.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxhdpi/ic_launcher_round.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xhdpi/ic_launcher.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-hdpi_ic_launcher.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-hdpi/ic_launcher.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-anydpi-v26/ic_launcher.xml"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-mdpi_ic_launcher_round.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-mdpi/ic_launcher_round.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-mdpi/ic_launcher.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-anydpi-v26/ic_launcher_round.xml"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/xml_file_paths.xml.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/xml/file_paths.xml"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-anydpi-v26/ic_launcher.xml"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-xhdpi_ic_launcher_foreground.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xhdpi/ic_launcher_foreground.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-xxhdpi_ic_launcher_foreground.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxhdpi/ic_launcher_foreground.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-hdpi_ic_launcher_foreground.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-hdpi/ic_launcher_foreground.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-ldpi_ic_launcher.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-ldpi/ic_launcher.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-xhdpi_ic_launcher_foreground.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xhdpi/ic_launcher_foreground.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-mdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-xhdpi_ic_launcher_round.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xhdpi/ic_launcher_round.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxxhdpi/ic_launcher.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/xml_backup_rules.xml.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/xml/backup_rules.xml"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-hdpi_ic_launcher_foreground.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-hdpi/ic_launcher_foreground.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-ldpi_ic_launcher_round.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-ldpi/ic_launcher_round.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-mdpi_ic_launcher_foreground.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-mdpi/ic_launcher_foreground.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-xxhdpi_ic_launcher.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxhdpi/ic_launcher.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-mdpi_ic_launcher_foreground.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-mdpi/ic_launcher_foreground.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-xxxhdpi_ic_launcher_foreground.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxxhdpi/ic_launcher_foreground.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-mdpi_ic_launcher.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-mdpi/ic_launcher.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxxhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-hdpi_ic_launcher_round.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-hdpi/ic_launcher_round.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-hdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.linkkeeper.app.composeApp-debug-46:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
-        "source": "com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxxhdpi/ic_launcher_round.png"
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-debug-46:/mipmap-ldpi_ic_launcher_round.png.flat",
+        "source": "/home/jplanckeel/.gradle/daemon/9.3.1/com.linkkeeper.app.composeApp-androidMain-48:/mipmap-ldpi/ic_launcher_round.png"
     }
 ]

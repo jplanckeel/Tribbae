@@ -44,7 +44,7 @@ export const auth = {
 // Folders
 export const folders = {
   list: () => request<{ folders: any[] }>("/folders"),
-  create: (data: { name: string; icon: string; color: string; visibility: string; bannerUrl?: string }) =>
+  create: (data: { name: string; icon: string; color: string; visibility: string; bannerUrl?: string; tags?: string[] }) =>
     request("/folders", { method: "POST", body: JSON.stringify(data) }),
   get: (id: string) => request<{ folder: any }>(`/folders/${id}`),
   update: (id: string, data: any) =>

@@ -1,5 +1,6 @@
 package com.linkkeeper.app
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -9,16 +10,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
-import data.ApiClient
-import data.Link
+import data.*
 import ui.*
 import viewmodel.LinkViewModel
 
 enum class Tab(val label: String, val icon: ImageVector) {
-    HOME("Accueil", Icons.Default.Home),
+    HOME("Accueil", Icons.Default.Cabin),
     FOLDERS("Listes", Icons.Default.Folder),
     CALENDAR("Agenda", Icons.Default.CalendarMonth),
     TAGS("Tags", Icons.Default.Tag),
@@ -28,6 +29,29 @@ enum class Tab(val label: String, val icon: ImageVector) {
 
 @Composable
 fun App(vm: LinkViewModel = viewModel(), sharedUrl: String? = null) {
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
+    val authRepository = remember { AuthRepository() }
+    val isLoggedIn by sessionManager.isLoggedIn.collectAsState()
+    
+    // Initialiser le client API authentifié si connecté
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            vm.initAuthenticatedClient(sessionManager)
+            vm.syncWithBackend(sessionManager)
+        }
+    }
+    
+    MainApp(vm = vm, sharedUrl = sharedUrl, sessionManager = sessionManager, authRepository = authRepository)
+}
+
+@Composable
+private fun MainApp(
+    vm: LinkViewModel, 
+    sharedUrl: String?, 
+    sessionManager: SessionManager,
+    authRepository: AuthRepository
+) {
     var currentTab by remember { mutableStateOf(Tab.HOME) }
     var subScreen by remember { mutableStateOf<SubScreen?>(
         if (sharedUrl != null) SubScreen.AddLink else null
@@ -152,7 +176,13 @@ fun App(vm: LinkViewModel = viewModel(), sharedUrl: String? = null) {
             Tab.SETTINGS -> SettingsScreen(
                 viewModel = vm,
                 modifier = Modifier.padding(padding),
-                onCommunityClick = { subScreen = SubScreen.Community }
+                onCommunityClick = { subScreen = SubScreen.Community },
+                sessionManager = sessionManager,
+                authRepository = authRepository,
+                onLoginSuccess = {
+                    // Recharger les données depuis le backend après connexion
+                    vm.syncWithBackend(sessionManager)
+                }
             )
         }
     }

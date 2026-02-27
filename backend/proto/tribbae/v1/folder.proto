@@ -46,6 +46,7 @@ message Folder {
   bool liked_by_me = 14;
   bool ai_generated = 15;
   string banner_url = 16;
+  repeated string tags = 17;
 }
 
 message CreateFolderRequest {
@@ -54,6 +55,7 @@ message CreateFolderRequest {
   string color = 3;
   Visibility visibility = 4;
   string banner_url = 5;
+  repeated string tags = 6;
 }
 
 message CreateFolderResponse {
@@ -81,6 +83,7 @@ message UpdateFolderRequest {
   string color = 4;
   Visibility visibility = 5;
   string banner_url = 6;
+  repeated string tags = 7;
 }
 
 message UpdateFolderResponse {

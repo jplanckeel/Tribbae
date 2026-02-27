@@ -480,6 +480,12 @@
         },
         "bannerUrl": {
           "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -566,6 +572,12 @@
         },
         "bannerUrl": {
           "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -638,6 +650,12 @@
         },
         "bannerUrl": {
           "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
