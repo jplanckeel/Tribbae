@@ -67,11 +67,9 @@ function HorizontalLinkRow({ title, items, onLike, likingLink, navigate, viewAll
           </Link>
         )}
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
-        {items.map((link: any) => (
-          <div key={link.id} className="flex-shrink-0 w-64">
-            <LinkCard link={link} onClick={() => navigate(`/links/${link.id}`)} onLike={onLike} liking={likingLink} />
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {items.slice(0, 4).map((link: any) => (
+          <LinkCard key={link.id} link={link} onClick={() => navigate(`/links/${link.id}`)} onLike={onLike} liking={likingLink} />
         ))}
       </div>
     </div>
@@ -332,12 +330,12 @@ export default function Home() {
           {topFolders.length > 0 && (
             <div className="mb-8">
               <h2 className="text-lg font-bold text-gray-800 mb-3">🔥 Listes populaires</h2>
-              <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
-                {topFolders.map((f) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {topFolders.slice(0, 4).map((f) => (
                   <div
                     key={f.id}
                     onClick={() => openCommunityFolder(f)}
-                    className="flex-shrink-0 w-64 bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
                   >
                     <div className="h-28 bg-gradient-to-br from-orange-200 to-amber-100 relative">
                       {f.bannerUrl ? (
