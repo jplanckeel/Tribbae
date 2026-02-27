@@ -4,7 +4,7 @@ import { links as linksApi, folders as foldersApi, children as childrenApi, comm
 import LinkCard from "../components/LinkCard";
 import FilterBar from "../components/FilterBar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faWandMagicSparkles, faGlobe, faLightbulb, faHeart as faHeartSolid, faArrowLeft, faStar, faClock } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faWandMagicSparkles, faGlobe, faLightbulb, faHeart as faHeartSolid, faArrowLeft, faStar, faClock, faSearch, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
 import AddLinkModal from "../components/AddLinkModal";
 import AiGenerateModal from "../components/AiGenerateModal";
@@ -108,6 +108,7 @@ export default function Home() {
   const [likingLink, setLikingLink] = useState<string | null>(null);
   const [communityLinks, setCommunityLinks] = useState<any[]>([]);
   const [newLinks, setNewLinks] = useState<any[]>([]);
+  const [discoverSearch, setDiscoverSearch] = useState("");
   const navigate = useNavigate();
 
   const fetchLinks = async () => {
@@ -281,6 +282,68 @@ export default function Home() {
 
       {tab === "discover" ? (
         <>
+          {/* Barre de recherche */}
+          <div className="relative mb-6">
+            <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-400 w-4 h-4" />
+            <input
+              type="text"
+              value={discoverSearch}
+              onChange={(e) => setDiscoverSearch(e.target.value)}
+              placeholder="Rechercher une idée, une liste..."
+              className="w-full pl-10 pr-10 py-2.5 rounded-full border border-orange-200 focus:border-orange-400 focus:outline-none bg-white text-sm"
+            />
+            {discoverSearch && (
+              <button onClick={() => setDiscoverSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <FontAwesomeIcon icon={faXmark} className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Résultats de recherche ou contenu normal */}
+          {discoverSearch ? (() => {
+            const q = discoverSearch.toLowerCase();
+            const matchedLinks = communityLinks.filter((l) =>
+              l.title?.toLowerCase().includes(q) ||
+              l.description?.toLowerCase().includes(q) ||
+              l.location?.toLowerCase().includes(q) ||
+              l.tags?.some((t: string) => t.toLowerCase().includes(q))
+            );
+            const matchedFolders = communityFolders.filter((f) =>
+              f.name?.toLowerCase().includes(q) ||
+              f.tags?.some((t: string) => t.toLowerCase().includes(q))
+            );
+            return (
+              <>
+                {matchedLinks.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="text-lg font-bold text-gray-800 mb-3">🔍 Idées trouvées ({matchedLinks.length})</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {matchedLinks.map((link) => (
+                        <LinkCard key={link.id} link={link} onClick={() => navigate(`/links/${link.id}`)} onLike={handleLinkLike} liking={likingLink} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {matchedFolders.length > 0 && (
+                  <div className="mb-8">
+                    <h2 className="text-lg font-bold text-gray-800 mb-3">📁 Listes trouvées ({matchedFolders.length})</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {matchedFolders.map((f) => (
+                        <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {matchedLinks.length === 0 && matchedFolders.length === 0 && (
+                  <div className="text-center py-20 text-gray-400">
+                    <p className="text-5xl mb-4">🔍</p>
+                    <p>Aucun résultat pour "{discoverSearch}"</p>
+                  </div>
+                )}
+              </>
+            );
+          })() : (
+          <>
           {/* Catégories */}
           <div className="mb-8">
             <h2 className="text-lg font-bold text-gray-800 mb-3">🎯 Explorer par catégorie</h2>
@@ -387,6 +450,8 @@ export default function Home() {
               </div>
             )}
           </div>
+          </>
+          )}
         </>
       ) : (
         <>
