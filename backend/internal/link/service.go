@@ -148,19 +148,30 @@ func (s *Service) List(ctx context.Context, ownerID, folderID string) ([]*Link, 
 		return nil, err
 	}
 
-	filter := bson.M{
-		"$or": bson.A{
-			bson.M{"owner_id": ownerID},
-			bson.M{"folder_id": bson.M{"$in": folderIDs}},
-		},
+	// Construire le filtre : toujours inclure les liens propres
+	// N'ajouter le filtre folder_id que si l'utilisateur a des dossiers accessibles
+	conditions := bson.A{
+		bson.M{"owner_id": ownerID},
 	}
+	if len(folderIDs) > 0 {
+		conditions = append(conditions, bson.M{"folder_id": bson.M{"$in": folderIDs}})
+	}
+	filter := bson.M{"$or": conditions}
+
 	cursor, err := s.col.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
 	var links []*Link
-	return links, cursor.All(ctx, &links)
+	if err := cursor.All(ctx, &links); err != nil {
+		return nil, err
+	}
+	// Toujours retourner un slice vide plutôt que nil
+	if links == nil {
+		links = []*Link{}
+	}
+	return links, nil
 }
 
 func (s *Service) listByFolder(ctx context.Context, folderID string) ([]*Link, error) {
@@ -170,7 +181,13 @@ func (s *Service) listByFolder(ctx context.Context, folderID string) ([]*Link, e
 	}
 	defer cursor.Close(ctx)
 	var links []*Link
-	return links, cursor.All(ctx, &links)
+	if err := cursor.All(ctx, &links); err != nil {
+		return nil, err
+	}
+	if links == nil {
+		links = []*Link{}
+	}
+	return links, nil
 }
 
 func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*Link, error) {

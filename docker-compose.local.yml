@@ -1,0 +1,65 @@
+version: "3.8"
+
+services:
+  # ── MongoDB ──────────────────────────────────────────────
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: tribbae
+
+  # ── Backend + Frontend (build unifié) ────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - mongo
+      - ollama
+      - searxng
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB: tribbae
+      JWT_SECRET: dev-secret-change-me
+      PORT: "8080"
+      GRPC_PORT: "9090"
+      BASE_URL: http://localhost:8080
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: qwen2.5:3b
+      SEARXNG_URL: http://searxng:8080
+
+  # ── Ollama (IA) ──────────────────────────────────────────
+  ollama:
+    image: ollama/ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+
+  # ── SearXNG (recherche web) ──────────────────────────────
+  searxng:
+    image: searxng/searxng
+    restart: unless-stopped
+    ports:
+      - "8888:8080"
+    volumes:
+      - searxng_data:/etc/searxng
+    environment:
+      SEARXNG_BASE_URL: http://localhost:8888/
+
+volumes:
+  mongo_data:
+  ollama_data:
+  searxng_data:

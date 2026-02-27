@@ -45,6 +45,7 @@ message Folder {
   int32 like_count = 13;
   bool liked_by_me = 14;
   bool ai_generated = 15;
+  string banner_url = 16;
 }
 
 message CreateFolderRequest {
@@ -52,6 +53,7 @@ message CreateFolderRequest {
   string icon = 2;
   string color = 3;
   Visibility visibility = 4;
+  string banner_url = 5;
 }
 
 message CreateFolderResponse {
@@ -78,6 +80,7 @@ message UpdateFolderRequest {
   string icon = 3;
   string color = 4;
   Visibility visibility = 5;
+  string banner_url = 6;
 }
 
 message UpdateFolderResponse {

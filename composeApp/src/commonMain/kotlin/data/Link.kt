@@ -7,7 +7,14 @@ data class Folder(
     val id: String,
     val name: String,
     val icon: FolderIcon = FolderIcon.FOLDER,
-    val color: FolderColor = FolderColor.BLUE
+    val color: FolderColor = FolderColor.BLUE,
+    val bannerUrl: String = "",
+    val visibility: String = "",
+    val ownerDisplayName: String = "",
+    val linkCount: Int = 0,
+    val likeCount: Int = 0,
+    val likedByMe: Boolean = false,
+    val aiGenerated: Boolean = false
 )
 
 @Serializable

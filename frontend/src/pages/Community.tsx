@@ -49,6 +49,11 @@ export default function Community() {
         <button onClick={() => setSelectedFolder(null)} className="flex items-center gap-1 text-orange-500 mb-4">
           <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Communauté
         </button>
+        {selectedFolder.bannerUrl && (
+          <div className="h-40 rounded-2xl overflow-hidden mb-4">
+            <img src={selectedFolder.bannerUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
         <div className="mb-4">
           <h2 className="text-xl font-bold text-gray-800">{selectedFolder.name}</h2>
           <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
@@ -105,17 +110,25 @@ export default function Community() {
           <p>Aucune liste communautaire trouvée</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {folders.map((folder) => (
             <div
               key={folder.id}
               onClick={() => openFolder(folder)}
-              className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm hover:shadow cursor-pointer"
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
             >
-              <span className="text-2xl">🌍</span>
-              <div className="flex-1">
-                <p className="font-medium text-gray-800">{folder.name}</p>
-                <div className="flex items-center gap-2 text-xs text-gray-400">
+              <div className="h-28 bg-gradient-to-br from-green-100 to-teal-50 relative">
+                {folder.bannerUrl ? (
+                  <img src={folder.bannerUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">
+                    {folder.aiGenerated ? "✨" : "🌍"}
+                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <p className="font-semibold text-gray-800 line-clamp-1">{folder.name}</p>
+                <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
                   {folder.ownerDisplayName && <span>par {folder.ownerDisplayName}</span>}
                   {folder.linkCount > 0 && (
                     <span>· {folder.linkCount} idée{folder.linkCount > 1 ? "s" : ""}</span>

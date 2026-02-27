@@ -68,7 +68,7 @@ fun AiGenerateScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 },
-                colorAppBarDefaults.topAppBarColors(containerColor = SurfaceColor)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceColor)
             )
         }
     ) { padding ->

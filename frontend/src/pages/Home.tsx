@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { links as linksApi, folders as foldersApi, children as childrenApi, community as communityApi } from "../api";
 import LinkCard from "../components/LinkCard";
 import FilterBar from "../components/FilterBar";
-import TopFolders from "../components/TopFolders";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faWandMagicSparkles, faGlobe, faLightbulb, faHeart as faHeartSolid, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
 import AddLinkModal from "../components/AddLinkModal";
 import AiGenerateModal from "../components/AiGenerateModal";
 import { normalizeCategory } from "../types";
@@ -19,7 +19,11 @@ function parseAgeMonths(ageRange: string): number {
   return isMois ? max : max * 12;
 }
 
+type Tab = "discover" | "my-ideas";
+
 export default function Home() {
+  const isLoggedIn = !!localStorage.getItem("token");
+  const [tab, setTab] = useState<Tab>("discover");
   const [allLinks, setAllLinks] = useState<any[]>([]);
   const [folderList, setFolderList] = useState<any[]>([]);
   const [childList, setChildList] = useState<any[]>([]);
@@ -31,32 +35,75 @@ export default function Home() {
   const [showAdd, setShowAdd] = useState(false);
   const [showAi, setShowAi] = useState(false);
   const [topFolders, setTopFolders] = useState<any[]>([]);
+  const [communityFolders, setCommunityFolders] = useState<any[]>([]);
+  const [selectedCommunityFolder, setSelectedCommunityFolder] = useState<any | null>(null);
+  const [communityFolderLinks, setCommunityFolderLinks] = useState<any[]>([]);
+  const [liking, setLiking] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const fetchLinks = async () => {
     try {
       const res = await linksApi.list();
       setAllLinks(res.links || []);
-    } catch {
-      navigate("/login");
+    } catch (err: any) {
+      if (err?.status === 401 || err?.status === 403) {
+        navigate("/login");
+      }
     }
   };
 
   const fetchTopFolders = async () => {
     try {
-      const res = await communityApi.top(6);
+      const res = await communityApi.top(12);
       setTopFolders(res.folders || []);
     } catch { /* silencieux */ }
   };
 
+  const fetchCommunityFolders = async () => {
+    try {
+      const res = await communityApi.list(undefined, 30);
+      setCommunityFolders(res.folders || []);
+    } catch { /* silencieux */ }
+  };
+
   useEffect(() => {
-    fetchLinks();
-    foldersApi.list().then((r) => setFolderList(r.folders || []));
-    childrenApi.list().then((r) => setChildList(r.children || []));
+    // Données communautaires : toujours charger
     fetchTopFolders();
+    fetchCommunityFolders();
+    // Données personnelles : uniquement si connecté
+    if (isLoggedIn) {
+      fetchLinks();
+      foldersApi.list().then((r) => setFolderList(r.folders || [])).catch(() => {});
+      childrenApi.list().then((r) => setChildList(r.children || [])).catch(() => {});
+    }
   }, []);
 
-  // Calcul de l'âge max en mois pour le filtre enfant
+  const handleLike = async (folderId: string, isLiked: boolean) => {
+    if (!isLoggedIn) { navigate("/login"); return; }
+    if (liking) return;
+    setLiking(folderId);
+    try {
+      if (isLiked) {
+        await communityApi.unlike(folderId);
+      } else {
+        await communityApi.like(folderId);
+      }
+      fetchTopFolders();
+      fetchCommunityFolders();
+    } catch { /* silencieux */ }
+    setLiking(null);
+  };
+
+  const openCommunityFolder = async (folder: any) => {
+    setSelectedCommunityFolder(folder);
+    try {
+      const res = await linksApi.list(folder.id);
+      setCommunityFolderLinks(res.links || []);
+    } catch {
+      setCommunityFolderLinks([]);
+    }
+  };
+
   const childAgeMonths = selectedChildId
     ? (() => {
         const child = childList.find((c) => c.id === selectedChildId);
@@ -85,48 +132,218 @@ export default function Home() {
     return true;
   });
 
+  // Vue détail d'un dossier communautaire
+  if (selectedCommunityFolder) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        <button onClick={() => setSelectedCommunityFolder(null)} className="flex items-center gap-1 text-orange-500 mb-4 text-sm font-medium">
+          <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Retour
+        </button>
+        {selectedCommunityFolder.bannerUrl && (
+          <div className="h-40 rounded-2xl overflow-hidden mb-4">
+            <img src={selectedCommunityFolder.bannerUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-gray-800">{selectedCommunityFolder.name}</h2>
+          <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
+            <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5 text-green-500" />
+            {selectedCommunityFolder.ownerDisplayName && <span>par {selectedCommunityFolder.ownerDisplayName}</span>}
+            {selectedCommunityFolder.linkCount > 0 && <span>· {selectedCommunityFolder.linkCount} idée{selectedCommunityFolder.linkCount > 1 ? "s" : ""}</span>}
+          </div>
+        </div>
+        {communityFolderLinks.length === 0 ? (
+          <p className="text-center text-gray-400 py-12">Liste vide</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {communityFolderLinks.map((link) => (
+              <LinkCard key={link.id} link={link} onClick={() => navigate(`/links/${link.id}`)} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
-      <FilterBar
-        search={search} onSearchChange={setSearch}
-        selectedCategory={selectedCategory} onCategoryChange={setSelectedCategory}
-        favoritesOnly={favoritesOnly} onFavoritesToggle={() => setFavoritesOnly(!favoritesOnly)}
-        folders={folderList} selectedFolderId={selectedFolderId} onFolderChange={setSelectedFolderId}
-        children={childList} selectedChildId={selectedChildId} onChildChange={setSelectedChildId}
-      />
+      {/* Onglets */}
+      <div className="flex gap-1 mb-6 bg-gray-100 rounded-full p-1 w-fit">
+        <button
+          onClick={() => setTab("discover")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            tab === "discover" ? "bg-white text-orange-500 shadow-sm" : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> Découvrir
+        </button>
+        <button
+          onClick={() => setTab("my-ideas")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            tab === "my-ideas" ? "bg-white text-orange-500 shadow-sm" : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <FontAwesomeIcon icon={faLightbulb} className="w-3.5 h-3.5" /> Mes idées
+        </button>
+      </div>
 
-      {/* Top listes communautaires */}
-      {topFolders.length > 0 && !search && !selectedCategory && !selectedFolderId && (
-        <TopFolders folders={topFolders} onRefresh={fetchTopFolders} />
-      )}
+      {tab === "discover" ? (
+        <>
+          {/* Top listes populaires */}
+          {topFolders.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-lg font-bold text-gray-800 mb-3">🔥 Listes populaires</h2>
+              <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
+                {topFolders.map((f) => (
+                  <div
+                    key={f.id}
+                    onClick={() => openCommunityFolder(f)}
+                    className="flex-shrink-0 w-64 bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                  >
+                    <div className="h-28 bg-gradient-to-br from-orange-200 to-amber-100 relative">
+                      {f.bannerUrl ? (
+                        <img src={f.bannerUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl opacity-60">
+                          {f.aiGenerated ? "✨" : "📋"}
+                        </div>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleLike(f.id, f.likedByMe); }}
+                        disabled={liking === f.id}
+                        className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs"
+                      >
+                        <FontAwesomeIcon
+                          icon={f.likedByMe ? faHeartSolid : faHeartOutline}
+                          className={`w-3 h-3 ${f.likedByMe ? "text-red-500" : "text-gray-400"}`}
+                        />
+                        <span className={f.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
+                          {f.likeCount || 0}
+                        </span>
+                      </button>
+                    </div>
+                    <div className="p-3">
+                      <p className="text-sm font-semibold text-gray-800 line-clamp-1">{f.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        par {f.ownerDisplayName || "Anonyme"} · {f.linkCount || 0} idées
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
-          <p className="text-5xl mb-4">💡</p>
-          <p>Ajoutez votre première idée</p>
-        </div>
+          {/* Toutes les listes communautaires */}
+          <div>
+            <h2 className="text-lg font-bold text-gray-800 mb-3">🌍 Listes communautaires</h2>
+            {communityFolders.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <FontAwesomeIcon icon={faGlobe} className="mx-auto mb-3 text-gray-300 w-10 h-10" />
+                <p>Aucune liste communautaire pour le moment</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {communityFolders.map((f) => (
+                  <div
+                    key={f.id}
+                    onClick={() => openCommunityFolder(f)}
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                  >
+                    <div className="h-32 bg-gradient-to-br from-green-100 to-teal-50 relative">
+                      {f.bannerUrl ? (
+                        <img src={f.bannerUrl} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">
+                          {f.aiGenerated ? "✨" : "🌍"}
+                        </div>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleLike(f.id, f.likedByMe); }}
+                        disabled={liking === f.id}
+                        className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs"
+                      >
+                        <FontAwesomeIcon
+                          icon={f.likedByMe ? faHeartSolid : faHeartOutline}
+                          className={`w-3 h-3 ${f.likedByMe ? "text-red-500" : "text-gray-400"}`}
+                        />
+                        <span className={f.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
+                          {f.likeCount || 0}
+                        </span>
+                      </button>
+                    </div>
+                    <div className="p-3">
+                      <p className="font-semibold text-gray-800 line-clamp-1">{f.name}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {f.ownerDisplayName && <span>par {f.ownerDisplayName}</span>}
+                        {f.linkCount > 0 && <span> · {f.linkCount} idée{f.linkCount > 1 ? "s" : ""}</span>}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {filtered.map((link) => (
-            <LinkCard key={link.id} link={link} onClick={() => navigate(`/links/${link.id}`)} />
-          ))}
-        </div>
+        <>
+          {!isLoggedIn ? (
+            <div className="text-center py-20">
+              <p className="text-5xl mb-4">🔒</p>
+              <p className="text-gray-500 mb-4">Connectez-vous pour voir et gérer vos idées</p>
+              <button
+                onClick={() => navigate("/login")}
+                className="px-6 py-2.5 rounded-full bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors"
+              >
+                Se connecter
+              </button>
+            </div>
+          ) : (
+            <>
+              <FilterBar
+                search={search} onSearchChange={setSearch}
+                selectedCategory={selectedCategory} onCategoryChange={setSelectedCategory}
+                favoritesOnly={favoritesOnly} onFavoritesToggle={() => setFavoritesOnly(!favoritesOnly)}
+                folders={folderList} selectedFolderId={selectedFolderId} onFolderChange={setSelectedFolderId}
+                children={childList} selectedChildId={selectedChildId} onChildChange={setSelectedChildId}
+              />
+
+              {filtered.length === 0 ? (
+                <div className="text-center py-20 text-gray-400">
+                  <p className="text-5xl mb-4">💡</p>
+                  <p>Ajoutez votre première idée</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                  {filtered.map((link) => (
+                    <LinkCard key={link.id} link={link} onClick={() => navigate(`/links/${link.id}`)} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </>
       )}
 
-      <button
-        onClick={() => setShowAi(true)}
-        className="fixed bottom-6 right-24 w-14 h-14 rounded-full bg-purple-500 text-white shadow-lg hover:bg-purple-600 flex items-center justify-center transition-colors"
-        title="Générer avec l'IA"
-      >
-        <FontAwesomeIcon icon={faWandMagicSparkles} className="w-6 h-6" />
-      </button>
+      {/* FABs — uniquement si connecté */}
+      {isLoggedIn && (
+        <>
+          <button
+            onClick={() => setShowAi(true)}
+            className="fixed bottom-6 right-24 w-14 h-14 rounded-full bg-purple-500 text-white shadow-lg hover:bg-purple-600 flex items-center justify-center transition-colors"
+            title="Générer avec l'IA"
+          >
+            <FontAwesomeIcon icon={faWandMagicSparkles} className="w-6 h-6" />
+          </button>
 
-      <button
-        onClick={() => setShowAdd(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-orange-500 text-white shadow-lg hover:bg-orange-600 flex items-center justify-center transition-colors"
-      >
-        <FontAwesomeIcon icon={faPlus} className="w-7 h-7" />
-      </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-orange-500 text-white shadow-lg hover:bg-orange-600 flex items-center justify-center transition-colors"
+          >
+            <FontAwesomeIcon icon={faPlus} className="w-7 h-7" />
+          </button>
+        </>
+      )}
 
       {showAdd && (
         <AddLinkModal

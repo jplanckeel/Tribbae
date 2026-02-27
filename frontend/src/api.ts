@@ -4,6 +4,14 @@ function getToken(): string | null {
   return localStorage.getItem("token");
 }
 
+class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -14,7 +22,7 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { ...opts, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || res.statusText);
+    throw new ApiError(body.message || res.statusText, res.status);
   }
   return res.json();
 }
@@ -36,7 +44,7 @@ export const auth = {
 // Folders
 export const folders = {
   list: () => request<{ folders: any[] }>("/folders"),
-  create: (data: { name: string; icon: string; color: string; visibility: string }) =>
+  create: (data: { name: string; icon: string; color: string; visibility: string; bannerUrl?: string }) =>
     request("/folders", { method: "POST", body: JSON.stringify(data) }),
   get: (id: string) => request<{ folder: any }>(`/folders/${id}`),
   update: (id: string, data: any) =>

@@ -48,8 +48,10 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
-# Garder .env.example en version control
+.env.production
+# Garder .env.example et .env.production en template
 !backend/.env.example
+!.env.production.example
 
 # ── Docker ───────────────────────────────────────────────
 docker-compose.override.yml
