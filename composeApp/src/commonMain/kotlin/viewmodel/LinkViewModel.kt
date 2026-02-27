@@ -228,7 +228,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     val aiError: StateFlow<String?> = _aiError.asStateFlow()
 
     fun generateAiIdeas(prompt: String) {
-        val token = authToken ?: return
+        val token = authToken
+        if (token == null) {
+            _aiError.value = "Vous devez être connecté pour utiliser l'IA. Allez dans Profil pour vous connecter."
+            return
+        }
         viewModelScope.launch {
             _aiLoading.value = true
             _aiError.value = null
@@ -237,7 +241,16 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 val result = aiRepository.generateIdeas(prompt, token)
                 _aiIdeas.value = result.ideas
             } catch (e: Exception) {
-                _aiError.value = e.message ?: "Erreur inconnue"
+                val errorMsg = when {
+                    e.message?.contains("timeout") == true || e.message?.contains("timed out") == true ->
+                        "Timeout : la génération prend trop de temps. Vérifiez que le backend et Ollama sont lancés."
+                    e.message?.contains("Connection refused") == true ->
+                        "Impossible de se connecter au backend. Vérifiez qu'il est lancé sur http://10.0.2.2:8080"
+                    e.message?.contains("401") == true || e.message?.contains("403") == true ->
+                        "Session expirée. Reconnectez-vous dans Profil."
+                    else -> e.message ?: "Erreur inconnue"
+                }
+                _aiError.value = errorMsg
             } finally {
                 _aiLoading.value = false
             }

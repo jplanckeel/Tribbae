@@ -133,7 +133,11 @@ fun EditLinkScreen(link: Link, viewModel: LinkViewModel, onBack: () -> Unit) {
                 AgeField(value = ageRange, onValueChange = { ageRange = it }, modifier = Modifier.weight(1f))
                 StyledField(price, { price = it }, "Prix", Icons.Default.Euro, modifier = Modifier.weight(1f))
             }
-            LocationAutocompleteField(value = location, onValueChange = { location = it })
+            
+            // Lieu (sauf pour les recettes)
+            if (selectedCategory != LinkCategory.RECETTE) {
+                LocationAutocompleteField(value = location, onValueChange = { location = it })
+            }
 
             // Note étoiles
             Text("Note", fontWeight = FontWeight.SemiBold, color = TextSecondary)

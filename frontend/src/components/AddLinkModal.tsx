@@ -148,7 +148,9 @@ export default function AddLinkModal({ onClose, onCreated, initialFolderId }: Pr
           </select>
 
           <div className="grid grid-cols-2 gap-3">
-            <input type="text" placeholder="Lieu" value={location} onChange={(e) => setLocation(e.target.value)} className={inputCls} />
+            {category !== "LINK_CATEGORY_RECETTE" && (
+              <input type="text" placeholder="Lieu" value={location} onChange={(e) => setLocation(e.target.value)} className={inputCls} />
+            )}
             <input type="text" placeholder="Prix" value={price} onChange={(e) => setPrice(e.target.value)} className={inputCls} />
           </div>
           <div className="grid grid-cols-2 gap-3">

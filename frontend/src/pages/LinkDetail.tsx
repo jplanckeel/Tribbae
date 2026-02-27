@@ -122,7 +122,9 @@ export default function LinkDetail() {
           </select>
 
           <div className="grid grid-cols-2 gap-3">
-            <input value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} placeholder="Lieu" />
+            {form.category !== "LINK_CATEGORY_RECETTE" && (
+              <input value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} placeholder="Lieu" />
+            )}
             <input value={form.price || ""} onChange={(e) => setForm({ ...form, price: e.target.value })} className={inputCls} placeholder="Prix" />
           </div>
           <div className="grid grid-cols-2 gap-3">
