@@ -39,8 +39,8 @@ class AiRepository(private val baseUrl: String = "http://10.0.2.2:8080") {
             conn.setRequestProperty("Content-Type", "application/json")
             conn.setRequestProperty("Authorization", "Bearer $token")
             conn.doOutput = true
-            conn.connectTimeout = 120_000 // 2 minutes - Ollama peut être très lent
-            conn.readTimeout = 120_000 // 2 minutes
+            conn.connectTimeout = 180_000 // 3 minutes - Ollama peut être très lent
+            conn.readTimeout = 180_000 // 3 minutes
 
             val body = """{"prompt":${json.encodeToString(kotlinx.serialization.serializer(), prompt)}}"""
             OutputStreamWriter(conn.outputStream).use { it.write(body) }
