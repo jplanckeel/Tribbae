@@ -35,6 +35,8 @@ message Link {
   repeated string ingredients = 16;
   google.protobuf.Timestamp created_at = 17;
   google.protobuf.Timestamp updated_at = 18;
+  int32 like_count = 19;
+  bool liked_by_me = 20;
 }
 
 message CreateLinkRequest {
@@ -102,6 +104,39 @@ message DeleteLinkRequest {
 
 message DeleteLinkResponse {}
 
+message LikeLinkRequest {
+  string link_id = 1;
+}
+
+message LikeLinkResponse {
+  int32 like_count = 1;
+}
+
+message UnlikeLinkRequest {
+  string link_id = 1;
+}
+
+message UnlikeLinkResponse {
+  int32 like_count = 1;
+}
+
+message ListCommunityLinksRequest {
+  string category = 1;  // optionnel, filtre par catégorie
+  int32 limit = 2;      // max par catégorie, défaut 6
+}
+
+message ListCommunityLinksResponse {
+  repeated Link links = 1;
+}
+
+message ListNewLinksRequest {
+  int32 limit = 1;  // nombre de nouveautés, défaut 10
+}
+
+message ListNewLinksResponse {
+  repeated Link links = 1;
+}
+
 service LinkService {
   rpc CreateLink(CreateLinkRequest) returns (CreateLinkResponse) {
     option (google.api.http) = {
@@ -128,6 +163,27 @@ service LinkService {
   rpc DeleteLink(DeleteLinkRequest) returns (DeleteLinkResponse) {
     option (google.api.http) = {
       delete: "/v1/links/{link_id}"
+    };
+  }
+  rpc LikeLink(LikeLinkRequest) returns (LikeLinkResponse) {
+    option (google.api.http) = {
+      post: "/v1/links/{link_id}/like"
+      body: "*"
+    };
+  }
+  rpc UnlikeLink(UnlikeLinkRequest) returns (UnlikeLinkResponse) {
+    option (google.api.http) = {
+      delete: "/v1/links/{link_id}/like"
+    };
+  }
+  rpc ListCommunityLinks(ListCommunityLinksRequest) returns (ListCommunityLinksResponse) {
+    option (google.api.http) = {
+      get: "/v1/community/links"
+    };
+  }
+  rpc ListNewLinks(ListNewLinksRequest) returns (ListNewLinksResponse) {
+    option (google.api.http) = {
+      get: "/v1/community/new"
     };
   }
 }

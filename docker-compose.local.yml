@@ -33,7 +33,7 @@ services:
       GRPC_PORT: "9090"
       BASE_URL: http://localhost:8080
       OLLAMA_URL: http://ollama:11434
-      OLLAMA_MODEL: qwen2.5:3b
+      OLLAMA_MODEL: qwen2.5:1.5b
       SEARXNG_URL: http://searxng:8080
 
   # ── Ollama (IA) ──────────────────────────────────────────
@@ -50,16 +50,14 @@ services:
 
   # ── SearXNG (recherche web) ──────────────────────────────
   searxng:
-    image: searxng/searxng
+    build:
+      context: ./searxng
     restart: unless-stopped
     ports:
       - "8888:8080"
-    volumes:
-      - searxng_data:/etc/searxng
     environment:
       SEARXNG_BASE_URL: http://localhost:8888/
 
 volumes:
   mongo_data:
   ollama_data:
-  searxng_data:

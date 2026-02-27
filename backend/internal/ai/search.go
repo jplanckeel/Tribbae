@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -19,77 +20,64 @@ type SearchResult struct {
 	ImageURL string `json:"img_src,omitempty"`
 }
 
-// buildSearchQueries génère plusieurs requêtes de recherche ciblées à partir du prompt utilisateur
+// buildSearchQueries génère des requêtes de recherche ciblées (max 2 pour la perf)
 func buildSearchQueries(prompt string) []string {
 	p := strings.TrimSpace(prompt)
 	queries := []string{p}
 
-	// Ajouter des variantes pour améliorer la couverture
 	lower := strings.ToLower(p)
-
-	// Détecter un lieu dans le prompt et ajouter des requêtes géo-ciblées
-	locationKeywords := []string{
-		"à ", "a ", "en ", "au ", "aux ", "sur ", "dans ", "près de ", "autour de ",
-	}
-	for _, kw := range locationKeywords {
-		if idx := strings.Index(lower, kw); idx >= 0 {
-			location := strings.TrimSpace(p[idx+len(kw):])
-			// Prendre les premiers mots comme lieu (max 4 mots)
-			words := strings.Fields(location)
-			if len(words) > 4 {
-				words = words[:4]
-			}
-			loc := strings.Join(words, " ")
-			if loc != "" {
-				queries = append(queries, loc+" tourisme")
-				queries = append(queries, loc+" que faire")
-			}
-			break
-		}
-	}
-
-	// Ajouter "avis" ou "recommandation" pour des résultats plus fiables
 	if !strings.Contains(lower, "recette") {
 		queries = append(queries, p+" avis recommandation")
 	} else {
 		queries = append(queries, p+" recette facile")
 	}
 
-	// Limiter à 4 requêtes max
-	if len(queries) > 4 {
-		queries = queries[:4]
-	}
 	return queries
 }
 
-// searchWebMulti lance plusieurs requêtes SearXNG et déduplique les résultats
+// searchWebMulti lance les requêtes SearXNG en parallèle et déduplique
 func searchWebMulti(ctx context.Context, searxURL, prompt string, maxResults int) ([]SearchResult, error) {
 	if searxURL == "" {
 		return nil, nil
 	}
 	if maxResults == 0 {
-		maxResults = 15
+		maxResults = 8
 	}
 
+	// Timeout global pour toute la recherche : 15s max
+	searchCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
 	queries := buildSearchQueries(prompt)
+
+	type queryResult struct {
+		results []SearchResult
+		err     error
+	}
+
+	ch := make(chan queryResult, len(queries))
+	for _, q := range queries {
+		go func(query string) {
+			results, err := searchWeb(searchCtx, searxURL, query, 5)
+			ch <- queryResult{results, err}
+		}(q)
+	}
+
 	seen := make(map[string]bool)
 	var allResults []SearchResult
 
-	for _, q := range queries {
-		results, err := searchWeb(ctx, searxURL, q, 8)
-		if err != nil {
-			fmt.Printf("search query %q failed: %v\n", q, err)
+	for range queries {
+		qr := <-ch
+		if qr.err != nil {
+			fmt.Printf("search query failed: %v\n", qr.err)
 			continue
 		}
-		for _, r := range results {
+		for _, r := range qr.results {
 			if seen[r.URL] {
 				continue
 			}
 			seen[r.URL] = true
 			allResults = append(allResults, r)
-		}
-		if len(allResults) >= maxResults {
-			break
 		}
 	}
 
@@ -105,7 +93,7 @@ func searchWeb(ctx context.Context, searxURL, query string, maxResults int) ([]S
 		return nil, nil
 	}
 	if maxResults == 0 {
-		maxResults = 10
+		maxResults = 5
 	}
 
 	params := url.Values{
@@ -114,14 +102,16 @@ func searchWeb(ctx context.Context, searxURL, query string, maxResults int) ([]S
 		"lang":   {"fr"},
 	}
 
-	reqURL := fmt.Sprintf("%s/search?%s", strings.TrimRight(searxURL, "/"), params.Encode())
+	reqURL := fmt.Sprintf("%s/search", strings.TrimRight(searxURL, "/"))
 
-	client := &http.Client{Timeout: 15 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -129,9 +119,22 @@ func searchWeb(ctx context.Context, searxURL, query string, maxResults int) ([]S
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("searxng returned status %d", resp.StatusCode)
+	}
+
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	trimmed := strings.TrimSpace(string(raw))
+	if len(trimmed) > 0 && trimmed[0] != '{' {
+		preview := trimmed
+		if len(preview) > 200 {
+			preview = preview[:200]
+		}
+		return nil, fmt.Errorf("searxng returned non-JSON (status %d), starts with: %s", resp.StatusCode, preview)
 	}
 
 	var searxResp struct {
@@ -155,8 +158,8 @@ func searchWeb(ctx context.Context, searxURL, query string, maxResults int) ([]S
 			continue
 		}
 		content := r.Content
-		if len(content) > 500 {
-			content = content[:500] + "..."
+		if len(content) > 150 {
+			content = content[:150] + "..."
 		}
 		results = append(results, SearchResult{
 			Title:    r.Title,
@@ -169,25 +172,48 @@ func searchWeb(ctx context.Context, searxURL, query string, maxResults int) ([]S
 	return results, nil
 }
 
-// formatSearchContext formate les résultats de recherche pour le prompt LLM
+// formatSearchContext formate les résultats de recherche pour le prompt LLM (compact)
 func formatSearchContext(results []SearchResult) string {
 	if len(results) == 0 {
 		return ""
 	}
 
 	var sb strings.Builder
-	sb.WriteString("\n\n--- RÉSULTATS DE RECHERCHE WEB (données réelles vérifiées) ---\n")
-	sb.WriteString("RAPPEL : Utilise UNIQUEMENT les informations ci-dessous. Ne modifie PAS les lieux, pays ou adresses.\n\n")
+	sb.WriteString("\n\n--- RÉSULTATS WEB ---\n")
 	for i, r := range results {
 		fmt.Fprintf(&sb, "[%d] %s\n", i+1, r.Title)
 		if r.URL != "" {
 			fmt.Fprintf(&sb, "    URL: %s\n", r.URL)
 		}
 		if r.Content != "" {
-			fmt.Fprintf(&sb, "    Extrait: %s\n", r.Content)
+			fmt.Fprintf(&sb, "    %s\n", r.Content)
 		}
-		sb.WriteString("\n")
 	}
-	sb.WriteString("--- FIN DES RÉSULTATS ---\n")
+	sb.WriteString("---\n")
 	return sb.String()
+}
+
+// enrichImagesFromOG scrape les OG images en parallèle (max 3, timeout 3s chacun)
+func enrichImagesFromOG(ctx context.Context, ideas []SuggestedLink) {
+	ogCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	defer cancel()
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 3) // max 3 en parallèle
+
+	for i := range ideas {
+		if ideas[i].URL == "" || ideas[i].ImageURL != "" {
+			continue
+		}
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			if img := scrapeOGImage(ogCtx, ideas[idx].URL); img != "" {
+				ideas[idx].ImageURL = img
+			}
+		}(i)
+	}
+	wg.Wait()
 }

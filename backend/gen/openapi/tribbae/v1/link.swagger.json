@@ -16,6 +16,77 @@
     "application/json"
   ],
   "paths": {
+    "/v1/community/links": {
+      "get": {
+        "operationId": "LinkService_ListCommunityLinks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListCommunityLinksResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "category",
+            "description": "optionnel, filtre par catégorie",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "description": "max par catégorie, défaut 6",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      }
+    },
+    "/v1/community/new": {
+      "get": {
+        "operationId": "LinkService_ListNewLinks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListNewLinksResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "description": "nombre de nouveautés, défaut 10",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      }
+    },
     "/v1/links": {
       "get": {
         "operationId": "LinkService_ListLinks",
@@ -169,9 +240,78 @@
           "LinkService"
         ]
       }
+    },
+    "/v1/links/{linkId}/like": {
+      "delete": {
+        "operationId": "LinkService_UnlikeLink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UnlikeLinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      },
+      "post": {
+        "operationId": "LinkService_LikeLink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LikeLinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LinkServiceLikeLinkBody"
+            }
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      }
     }
   },
   "definitions": {
+    "LinkServiceLikeLinkBody": {
+      "type": "object"
+    },
     "LinkServiceUpdateLinkBody": {
       "type": "object",
       "properties": {
@@ -329,6 +469,15 @@
         }
       }
     },
+    "v1LikeLinkResponse": {
+      "type": "object",
+      "properties": {
+        "likeCount": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "v1Link": {
       "type": "object",
       "properties": {
@@ -395,6 +544,13 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "likeCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "likedByMe": {
+          "type": "boolean"
         }
       }
     },
@@ -410,6 +566,18 @@
       ],
       "default": "LINK_CATEGORY_UNSPECIFIED"
     },
+    "v1ListCommunityLinksResponse": {
+      "type": "object",
+      "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Link"
+          }
+        }
+      }
+    },
     "v1ListLinksResponse": {
       "type": "object",
       "properties": {
@@ -419,6 +587,27 @@
             "type": "object",
             "$ref": "#/definitions/v1Link"
           }
+        }
+      }
+    },
+    "v1ListNewLinksResponse": {
+      "type": "object",
+      "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Link"
+          }
+        }
+      }
+    },
+    "v1UnlikeLinkResponse": {
+      "type": "object",
+      "properties": {
+        "likeCount": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },

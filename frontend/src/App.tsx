@@ -6,8 +6,8 @@ import Folders from "./pages/Folders";
 import Tags from "./pages/Tags";
 import LinkDetail from "./pages/LinkDetail";
 import SharedFolder from "./pages/SharedFolder";
-import Community from "./pages/Community";
 import Children from "./pages/Children";
+import Category from "./pages/Category";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("token");
@@ -36,6 +36,12 @@ export default function App() {
           }
         />
         <Route
+          path="/category/:category"
+          element={
+            <AppLayout><Category /></AppLayout>
+          }
+        />
+        <Route
           path="/folders"
           element={
             <PrivateRoute>
@@ -56,14 +62,6 @@ export default function App() {
           element={
             <PrivateRoute>
               <AppLayout><LinkDetail /></AppLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/community"
-          element={
-            <PrivateRoute>
-              <AppLayout><Community /></AppLayout>
             </PrivateRoute>
           }
         />

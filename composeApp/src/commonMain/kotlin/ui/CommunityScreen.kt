@@ -91,7 +91,7 @@ fun CommunityScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(imageVector = Icons.Default.Public, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(28.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Communauté", fontWeight = FontWeight.Bold, fontSize = 24.sp, color = TextPrimary)
+            Text("Explorer", fontWeight = FontWeight.Bold, fontSize = 24.sp, color = TextPrimary)
         }
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -135,7 +135,7 @@ fun CommunityScreen(
                     Icon(imageVector = Icons.Default.Public, contentDescription = null,
                         modifier = Modifier.size(64.dp), tint = Color(0xFF4CAF50).copy(alpha = 0.3f))
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Aucune liste communautaire", color = TextSecondary)
+                    Text("Aucune liste publique", color = TextSecondary)
                 }
             }
         } else {

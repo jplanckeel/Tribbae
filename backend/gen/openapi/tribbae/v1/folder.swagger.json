@@ -768,6 +768,13 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "likeCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "likedByMe": {
+          "type": "boolean"
         }
       }
     },

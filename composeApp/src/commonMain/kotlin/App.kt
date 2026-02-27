@@ -65,7 +65,7 @@ private fun MainApp(
             is SubScreen.Edit -> {
                 subScreen = SubScreen.Detail
             }
-            is SubScreen.Community -> {
+            is SubScreen.Explore -> {
                 subScreen = null
             }
             else -> subScreen = null
@@ -111,7 +111,7 @@ private fun MainApp(
             }
             return
         }
-        is SubScreen.Community -> {
+        is SubScreen.Explore -> {
             CommunityScreen(apiClient = ApiClient(), modifier = Modifier)
             return
         }
@@ -176,7 +176,7 @@ private fun MainApp(
             Tab.SETTINGS -> SettingsScreen(
                 viewModel = vm,
                 modifier = Modifier.padding(padding),
-                onCommunityClick = { subScreen = SubScreen.Community },
+                onCommunityClick = { subScreen = SubScreen.Explore },
                 sessionManager = sessionManager,
                 authRepository = authRepository,
                 onLoginSuccess = {
@@ -193,6 +193,6 @@ sealed class SubScreen {
     object AddFolder : SubScreen()
     object Detail : SubScreen()
     object Edit : SubScreen()
-    object Community : SubScreen()
+    object Explore : SubScreen()
     object AiGenerate : SubScreen()
 }

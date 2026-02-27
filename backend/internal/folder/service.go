@@ -409,7 +409,7 @@ func (s *Service) ListTop(ctx context.Context, limit int32) ([]*Folder, error) {
 	return folders, cursor.All(ctx, &folders)
 }
 
-// CreateAiFolder crée un dossier communautaire pour les idées générées par IA
+// CreateAiFolder crée un dossier public pour les idées générées par IA
 func (s *Service) CreateAiFolder(ctx context.Context, ownerID, name string) (*Folder, error) {
 	f := &Folder{
 		ID:          primitive.NewObjectID(),
