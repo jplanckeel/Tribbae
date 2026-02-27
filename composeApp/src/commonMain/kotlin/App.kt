@@ -21,9 +21,7 @@ import viewmodel.LinkViewModel
 enum class Tab(val label: String, val icon: ImageVector) {
     HOME("Accueil", Icons.Default.Cabin),
     FOLDERS("Listes", Icons.Default.Folder),
-    CALENDAR("Agenda", Icons.Default.CalendarMonth),
     TAGS("Tags", Icons.Default.Tag),
-    SHOPPING("Courses", Icons.Default.ShoppingCart),
     SETTINGS("Plus", Icons.Default.MoreHoriz)
 }
 
@@ -65,7 +63,7 @@ private fun MainApp(
             is SubScreen.Edit -> {
                 subScreen = SubScreen.Detail
             }
-            is SubScreen.Explore -> {
+            is SubScreen.Shopping, is SubScreen.Calendar -> {
                 subScreen = null
             }
             else -> subScreen = null
@@ -111,12 +109,20 @@ private fun MainApp(
             }
             return
         }
-        is SubScreen.Explore -> {
-            CommunityScreen(apiClient = ApiClient(), modifier = Modifier)
-            return
-        }
         is SubScreen.AiGenerate -> {
             AiGenerateScreen(viewModel = vm, onBack = { subScreen = null })
+            return
+        }
+        is SubScreen.Shopping -> {
+            ShoppingListScreen(viewModel = vm, modifier = Modifier)
+            return
+        }
+        is SubScreen.Calendar -> {
+            CalendarScreen(
+                viewModel = vm,
+                modifier = Modifier,
+                onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
+            )
             return
         }
         null -> {} // continue to tabs
@@ -159,28 +165,19 @@ private fun MainApp(
                 onAddFolderClick = { subScreen = SubScreen.AddFolder },
                 onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
             )
-            Tab.CALENDAR -> CalendarScreen(
-                viewModel = vm,
-                modifier = Modifier.padding(padding),
-                onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
-            )
             Tab.TAGS -> TagsTabScreen(
                 viewModel = vm,
                 modifier = Modifier.padding(padding),
                 onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
             )
-            Tab.SHOPPING -> ShoppingListScreen(
-                viewModel = vm,
-                modifier = Modifier.padding(padding)
-            )
             Tab.SETTINGS -> SettingsScreen(
                 viewModel = vm,
                 modifier = Modifier.padding(padding),
-                onCommunityClick = { subScreen = SubScreen.Explore },
+                onShoppingClick = { subScreen = SubScreen.Shopping },
+                onCalendarClick = { subScreen = SubScreen.Calendar },
                 sessionManager = sessionManager,
                 authRepository = authRepository,
                 onLoginSuccess = {
-                    // Recharger les données depuis le backend après connexion
                     vm.syncWithBackend(sessionManager)
                 }
             )
@@ -193,6 +190,7 @@ sealed class SubScreen {
     object AddFolder : SubScreen()
     object Detail : SubScreen()
     object Edit : SubScreen()
-    object Explore : SubScreen()
     object AiGenerate : SubScreen()
+    object Shopping : SubScreen()
+    object Calendar : SubScreen()
 }

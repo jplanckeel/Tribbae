@@ -26,15 +26,142 @@ import data.AiSuggestedLink
 import data.LinkCategory
 import viewmodel.LinkViewModel
 
-private val EXAMPLE_PROMPTS = listOf(
+private val ALL_PROMPTS = listOf(
+    // Anniversaires (15)
     "Anniversaire pirate pour un enfant de 2 ans",
-    "Cadeaux de Noël pour une fille de 5 ans",
+    "Anniversaire princesse pour une fille de 4 ans",
+    "Anniversaire dinosaures pour un garçon de 3 ans",
+    "Anniversaire super-héros pour un enfant de 6 ans",
+    "Anniversaire licorne pour une fille de 5 ans",
+    "Anniversaire spatial pour un enfant de 7 ans",
+    "Anniversaire sirène pour une fille de 6 ans",
+    "Anniversaire Pokémon pour un enfant de 8 ans",
+    "Anniversaire Harry Potter pour un enfant de 10 ans",
+    "Anniversaire Reine des Neiges pour une fille de 4 ans",
+    "Anniversaire football pour un garçon de 9 ans",
+    "Anniversaire danse pour une fille de 8 ans",
+    "Anniversaire scientifique pour un enfant de 11 ans",
+    "Anniversaire jungle pour un enfant de 3 ans",
+    "Anniversaire cirque pour un enfant de 5 ans",
+    
+    // Cadeaux (20)
+    "Cadeaux de Noël pour une petite fille de 5 ans",
+    "Cadeaux de Noël pour un garçon de 8 ans",
+    "Idées cadeaux pour un bébé de 1 an",
+    "Cadeaux d'anniversaire pour une adolescente de 13 ans",
+    "Cadeaux éducatifs pour un enfant de 4 ans",
+    "Cadeaux créatifs pour un enfant de 6 ans",
+    "Cadeaux sportifs pour un garçon de 10 ans",
+    "Cadeaux musicaux pour un enfant de 7 ans",
+    "Cadeaux de naissance originaux",
+    "Cadeaux pour enfant passionné de lecture",
+    "Cadeaux écologiques pour enfants",
+    "Cadeaux technologiques pour ado de 14 ans",
+    "Cadeaux pour enfant qui aime cuisiner",
+    "Cadeaux pour enfant qui aime les animaux",
+    "Cadeaux pour enfant qui aime dessiner",
+    "Cadeaux pour enfant qui aime la nature",
+    "Cadeaux pour enfant qui aime les sciences",
+    "Cadeaux pour enfant qui aime construire",
+    "Cadeaux pour enfant qui aime la magie",
+    "Cadeaux pour enfant qui aime les puzzles",
+    
+    // Activités intérieures (15)
     "Activités en famille pour un week-end pluvieux",
+    "Activités créatives pour enfants de 3 à 6 ans",
+    "Jeux de société pour toute la famille",
+    "Activités manuelles pour enfants de 5 ans",
+    "Bricolages de Noël avec les enfants",
+    "Activités Montessori pour enfants de 2 ans",
+    "Expériences scientifiques à faire à la maison",
+    "Activités de peinture pour enfants",
+    "Jeux d'intérieur pour anniversaire",
+    "Activités de lecture pour enfants",
+    "Ateliers cuisine avec les enfants",
+    "Activités de yoga pour enfants",
+    "Jeux de construction pour enfants",
+    "Activités de musique pour enfants",
+    "Théâtre et spectacles pour enfants à la maison",
+    
+    // Activités extérieures (15)
+    "Sorties en famille autour de Lyon",
+    "Activités nature pour enfants en été",
+    "Parcs d'attractions en France pour familles",
+    "Randonnées faciles avec enfants en bas âge",
+    "Activités à la plage avec des enfants",
+    "Sorties culturelles pour enfants à Paris",
+    "Fermes pédagogiques près de chez moi",
+    "Activités sportives en famille",
+    "Balades à vélo avec enfants",
+    "Zoos et aquariums à visiter en famille",
+    "Châteaux à visiter avec des enfants",
+    "Parcs et jardins pour pique-nique en famille",
+    "Activités nautiques pour enfants",
+    "Accrobranche et parcours aventure pour enfants",
+    "Musées interactifs pour enfants",
+    
+    // Recettes (15)
     "Recettes faciles pour goûter d'anniversaire",
-    "Idées de voyage en Europe avec des enfants"
+    "Recettes de gâteaux sans gluten pour enfants",
+    "Idées de repas rapides pour toute la famille",
+    "Recettes de smoothies pour les enfants",
+    "Recettes de biscuits à faire avec les enfants",
+    "Recettes de crêpes originales",
+    "Recettes de légumes pour enfants difficiles",
+    "Recettes de goûters sains pour enfants",
+    "Recettes de petit-déjeuner équilibré",
+    "Recettes de desserts sans sucre ajouté",
+    "Recettes végétariennes pour enfants",
+    "Recettes de pain maison avec les enfants",
+    "Recettes de pizzas maison pour enfants",
+    "Recettes de compotes et purées de fruits",
+    "Recettes de snacks pour la boîte à lunch",
+    
+    // Voyages et vacances (15)
+    "Idées de voyage en Europe avec des enfants",
+    "Destinations vacances famille en France",
+    "Activités à faire à Paris avec des enfants",
+    "Vacances à la mer avec des enfants en bas âge",
+    "Road trip en famille en Bretagne",
+    "Week-end en famille en Normandie",
+    "Vacances à la montagne en été avec enfants",
+    "Destinations ski pour familles débutantes",
+    "Camping en famille avec jeunes enfants",
+    "Croisières adaptées aux familles",
+    "Parcs d'attractions en Europe",
+    "Vacances en Espagne avec enfants",
+    "Séjour en Italie en famille",
+    "Vacances nature en famille",
+    "City trip avec enfants en Europe",
+    
+    // Événements et fêtes (10)
+    "Organisation d'une fête de fin d'année scolaire",
+    "Idées pour un pique-nique en famille",
+    "Activités pour les vacances de Pâques",
+    "Idées pour Halloween avec des enfants",
+    "Activités pour la fête des mères",
+    "Idées pour la fête des pères",
+    "Organisation d'une chasse aux œufs de Pâques",
+    "Activités pour le carnaval avec enfants",
+    "Idées pour fêter le Nouvel An en famille",
+    "Organisation d'une fête d'été dans le jardin",
+    
+    // Éducation et apprentissage (10)
+    "Activités pour apprendre l'alphabet en s'amusant",
+    "Jeux pour apprendre les chiffres aux enfants",
+    "Activités pour développer la motricité fine",
+    "Livres pour apprendre l'anglais aux enfants",
+    "Applications éducatives pour enfants de 5 ans",
+    "Activités pour apprendre les couleurs",
+    "Jeux de mémoire pour enfants",
+    "Activités pour apprendre à lire",
+    "Jeux pour développer la logique",
+    "Activités pour apprendre les saisons"
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+private fun getRandomPrompts(count: Int = 5) = ALL_PROMPTS.shuffled().take(count)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AiGenerateScreen(
     viewModel: LinkViewModel,
@@ -49,12 +176,26 @@ fun AiGenerateScreen(
     var selectedIndices by remember { mutableStateOf(emptySet<Int>()) }
     var selectedFolderId by remember { mutableStateOf<String?>(null) }
     var saved by remember { mutableStateOf(false) }
+    var editedCategories by remember { mutableStateOf(mapOf<Int, String>()) }
+    var showExitDialog by remember { mutableStateOf(false) }
+    val examplePrompts = remember { getRandomPrompts(5) }
 
     // Tout sélectionner quand les idées arrivent
     LaunchedEffect(ideas) {
         if (ideas.isNotEmpty()) {
             selectedIndices = ideas.indices.toSet()
             saved = false
+            editedCategories = emptyMap()
+        }
+    }
+
+    // Gestion du retour
+    fun handleBack() {
+        if (ideas.isNotEmpty() && !saved) {
+            showExitDialog = true
+        } else {
+            viewModel.clearAiIdeas()
+            onBack()
         }
     }
 
@@ -62,9 +203,25 @@ fun AiGenerateScreen(
         containerColor = SurfaceColor,
         topBar = {
             TopAppBar(
-                title = { Text("Générer avec l'IA ✨", fontWeight = FontWeight.Bold) },
+                title = { 
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Générer avec l'IA ✨", fontWeight = FontWeight.Bold)
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Orange.copy(alpha = 0.15f)
+                        ) {
+                            Text(
+                                "Expérimental",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Orange,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
-                    IconButton(onClick = { viewModel.clearAiIdeas(); onBack() }) {
+                    IconButton(onClick = { handleBack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 },
@@ -99,13 +256,12 @@ fun AiGenerateScreen(
 
             // Exemples rapides (seulement si pas encore de résultats)
             if (ideas.isEmpty() && !loading) {
-                Row(
-                    modifier = Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    EXAMPLE_PROMPTS.forEach { ex ->
+                    examplePrompts.forEach { ex ->
                         SuggestionChip(
                             onClick = { prompt = ex },
                             label = { Text(ex, fontSize = 11.sp) },
@@ -222,16 +378,52 @@ fun AiGenerateScreen(
                         AiIdeaCard(
                             idea = idea,
                             selected = index in selectedIndices,
+                            editedCategory = editedCategories[index],
                             onToggle = {
                                 selectedIndices = if (index in selectedIndices)
                                     selectedIndices - index
                                 else
                                     selectedIndices + index
+                            },
+                            onCategoryChange = { newCategory ->
+                                editedCategories = editedCategories + (index to newCategory)
                             }
                         )
                     }
                 }
             }
+        }
+
+        // Dialog de confirmation de sortie
+        if (showExitDialog) {
+            AlertDialog(
+                onDismissRequest = { showExitDialog = false },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Orange
+                    )
+                },
+                title = { Text("Quitter sans sauvegarder ?", fontWeight = FontWeight.Bold) },
+                text = { Text("Les idées générées seront perdues si vous ne les sauvegardez pas.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showExitDialog = false
+                            viewModel.clearAiIdeas()
+                            onBack()
+                        }
+                    ) {
+                        Text("Quitter", color = Orange, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showExitDialog = false }) {
+                        Text("Annuler")
+                    }
+                }
+            )
         }
 
         // FAB Sauvegarder
@@ -240,7 +432,15 @@ fun AiGenerateScreen(
                 ExtendedFloatingActionButton(
                     onClick = {
                         if (!saved) {
-                            val toSave = selectedIndices.sorted().map { ideas[it] }
+                            val toSave = selectedIndices.sorted().map { idx ->
+                                val idea = ideas[idx]
+                                // Appliquer la catégorie éditée si elle existe
+                                if (editedCategories.containsKey(idx)) {
+                                    idea.copy(category = editedCategories[idx]!!)
+                                } else {
+                                    idea
+                                }
+                            }
                             viewModel.saveAiIdeas(toSave, selectedFolderId)
                             saved = true
                             viewModel.clearAiIdeas()
@@ -275,11 +475,16 @@ fun AiGenerateScreen(
 private fun AiIdeaCard(
     idea: AiSuggestedLink,
     selected: Boolean,
-    onToggle: () -> Unit
+    editedCategory: String?,
+    onToggle: () -> Unit,
+    onCategoryChange: (String) -> Unit
 ) {
+    val displayCategoryStr = editedCategory ?: idea.category
     val category = try {
-        LinkCategory.valueOf(idea.category.removePrefix("LINK_CATEGORY_"))
+        LinkCategory.valueOf(displayCategoryStr.removePrefix("LINK_CATEGORY_"))
     } catch (_: Exception) { LinkCategory.IDEE }
+
+    var showCategoryMenu by remember { mutableStateOf(false) }
 
     val catColor = CategoryColors[category.name] ?: Orange
     val borderColor = if (selected) Purple else Color.Transparent
@@ -336,14 +541,56 @@ private fun AiIdeaCard(
                         color = TextPrimary,
                         modifier = Modifier.weight(1f)
                     )
-                    // Badge catégorie
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(catColor.copy(alpha = 0.15f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(category.label, fontSize = 10.sp, color = catColor, fontWeight = FontWeight.Medium)
+                    // Badge catégorie cliquable
+                    Box {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(catColor.copy(alpha = 0.15f))
+                                .clickable(onClick = { showCategoryMenu = true })
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Text(category.label, fontSize = 10.sp, color = catColor, fontWeight = FontWeight.Medium)
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Modifier",
+                                    tint = catColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                        
+                        DropdownMenu(
+                            expanded = showCategoryMenu,
+                            onDismissRequest = { showCategoryMenu = false }
+                        ) {
+                            LinkCategory.entries.forEach { cat ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = categoryIcon(cat),
+                                                contentDescription = null,
+                                                tint = CategoryColors[cat.name] ?: Orange,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Text(cat.label, fontSize = 13.sp)
+                                        }
+                                    },
+                                    onClick = {
+                                        onCategoryChange("LINK_CATEGORY_${cat.name}")
+                                        showCategoryMenu = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
 
