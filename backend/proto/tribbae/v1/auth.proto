@@ -17,6 +17,7 @@ message RegisterRequest {
 message RegisterResponse {
   string user_id = 1;
   string token = 2;
+  bool is_admin = 3;
 }
 
 message LoginRequest {
@@ -28,6 +29,7 @@ message LoginResponse {
   string user_id = 1;
   string token = 2;
   string display_name = 3;
+  bool is_admin = 4;
 }
 
 message RefreshTokenRequest {

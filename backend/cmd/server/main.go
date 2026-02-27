@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/tribbae/backend/internal/admin"
 	"github.com/tribbae/backend/internal/ai"
 	"github.com/tribbae/backend/internal/auth"
 	"github.com/tribbae/backend/internal/child"
@@ -40,14 +41,19 @@ func main() {
 	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)
 	linkSvc := link.NewService(database.Col("links"), database.Col("folders"))
 	childSvc := child.NewService(database.Col("children"))
-	aiSvc := ai.NewService(cfg.OllamaURL, cfg.OllamaModel, cfg.SearxURL)
+	aiSvc := ai.NewService(cfg.OllamaURL, cfg.OllamaModel, cfg.SearxURL, cfg.GeminiAPIKey)
 
 	// Handlers (gRPC servers)
 	authH := auth.NewHandler(authSvc)
 	folderH := folder.NewHandler(folderSvc)
 	linkH := link.NewHandler(linkSvc)
 	childH := child.NewHandler(childSvc)
-	aiH := ai.NewHandler(aiSvc,
+	adminH := admin.NewHandler(authSvc)
+	
+	// Adaptateur pour récupérer le statut premium d'un utilisateur
+	userGetter := &userGetterAdapter{authSvc: authSvc}
+	
+	aiH := ai.NewHandler(aiSvc, userGetter,
 		// Token parser : extrait le userID du header Authorization
 		func(r *http.Request) (string, error) {
 			h := r.Header.Get("Authorization")
@@ -90,12 +96,16 @@ func main() {
 
 	// Serveur gRPC
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(interceptor.UnaryAuth(authSvc)),
+		grpc.ChainUnaryInterceptor(
+			interceptor.UnaryAuth(authSvc),
+			interceptor.UnaryAdminAuth(authSvc),
+		),
 	)
 	pb.RegisterAuthServiceServer(grpcServer, authH)
 	pb.RegisterFolderServiceServer(grpcServer, folderH)
 	pb.RegisterLinkServiceServer(grpcServer, linkH)
 	pb.RegisterChildServiceServer(grpcServer, childH)
+	pb.RegisterAdminServiceServer(grpcServer, adminH)
 	reflection.Register(grpcServer)
 
 	grpcAddr := ":" + cfg.GRPCPort
@@ -137,6 +147,9 @@ func main() {
 	}
 	if err := pb.RegisterChildServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
 		log.Fatalf("register child gateway: %v", err)
+	}
+	if err := pb.RegisterAdminServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
+		log.Fatalf("register admin gateway: %v", err)
 	}
 
 	httpAddr := ":" + cfg.Port
@@ -210,4 +223,17 @@ func withSPA(apiHandler http.Handler) http.Handler {
 		// SPA fallback : renvoyer index.html
 		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 	})
+}
+
+// userGetterAdapter adapte auth.Service pour l'interface ai.UserGetter
+type userGetterAdapter struct {
+	authSvc *auth.Service
+}
+
+func (u *userGetterAdapter) GetUser(ctx context.Context, userID string) (bool, error) {
+	user, err := u.authSvc.GetUser(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+	return user.IsPremium, nil
 }

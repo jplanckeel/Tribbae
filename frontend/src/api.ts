@@ -30,12 +30,12 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
 // Auth
 export const auth = {
   register: (email: string, password: string, displayName: string) =>
-    request("/auth/register", {
+    request<{ userId: string; token: string; isAdmin: boolean }>("/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password, displayName }),
     }),
   login: (email: string, password: string) =>
-    request<{ userId: string; token: string; displayName: string }>(
+    request<{ userId: string; token: string; displayName: string; isAdmin: boolean }>(
       "/auth/login",
       { method: "POST", body: JSON.stringify({ email, password }) }
     ),
@@ -146,5 +146,23 @@ export const ai = {
     }> }>("/ai/generate", {
       method: "POST",
       body: JSON.stringify({ prompt, model }),
+    }),
+};
+
+// Admin
+export const admin = {
+  listUsers: () =>
+    request<{ users: Array<{
+      id: string;
+      email: string;
+      displayName: string;
+      isAdmin: boolean;
+      isPremium: boolean;
+      createdAt: number;
+    }> }>("/admin/users"),
+  updateUserPremium: (userId: string, isPremium: boolean) =>
+    request<{ user: any }>(`/admin/users/${userId}/premium`, {
+      method: "PUT",
+      body: JSON.stringify({ isPremium }),
     }),
 };

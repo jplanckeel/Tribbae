@@ -91,3 +91,35 @@ func UserIDFromContext(ctx context.Context) (string, error) {
 	}
 	return v, nil
 }
+
+// AdminChecker vérifie si un utilisateur est admin
+type AdminChecker interface {
+	IsAdmin(ctx context.Context, userID string) (bool, error)
+}
+
+// adminMethods sont les méthodes qui nécessitent des droits admin
+var adminMethods = map[string]bool{
+	"/tribbae.v1.AdminService/ListUsers":         true,
+	"/tribbae.v1.AdminService/UpdateUserPremium": true,
+}
+
+// UnaryAdminAuth vérifie que l'utilisateur est admin pour les méthodes admin
+func UnaryAdminAuth(checker AdminChecker) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		if !adminMethods[info.FullMethod] {
+			return handler(ctx, req)
+		}
+
+		userID, err := UserIDFromContext(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		}
+
+		isAdmin, err := checker.IsAdmin(ctx, userID)
+		if err != nil || !isAdmin {
+			return nil, status.Errorf(codes.PermissionDenied, "admin access required")
+		}
+
+		return handler(ctx, req)
+	}
+}
