@@ -35,41 +35,68 @@ type GenerateResponse struct {
 }
 
 type Service struct {
-	ollamaURL string
-	model     string
-	searxURL  string
+	ollamaURL    string
+	model        string
+	searxURL     string
+	geminiAPIKey string
 }
 
-func NewService(ollamaURL, model, searxURL string) *Service {
+func NewService(ollamaURL, model, searxURL, geminiAPIKey string) *Service {
 	if ollamaURL == "" {
 		ollamaURL = "http://localhost:11434"
 	}
 	if model == "" {
 		model = "qwen2.5:1.5b"
 	}
-	return &Service{ollamaURL: ollamaURL, model: model, searxURL: searxURL}
+	return &Service{
+		ollamaURL:    ollamaURL,
+		model:        model,
+		searxURL:     searxURL,
+		geminiAPIKey: geminiAPIKey,
+	}
 }
 
 const systemPrompt = `Assistant familial français. Génère 3 idées en JSON.
 Format: {"ideas":[{"title":"...","description":"...","url":"...","category":"LINK_CATEGORY_CADEAU|LINK_CATEGORY_ACTIVITE|LINK_CATEGORY_RECETTE|LINK_CATEGORY_EVENEMENT|LINK_CATEGORY_IDEE","tags":["..."],"ageRange":"...","price":"...","location":"...","ingredients":[]}]}
 Règles: français uniquement, JSON valide sans markdown, base-toi sur les résultats web fournis.`
 
-func (s *Service) Generate(ctx context.Context, prompt, model string) (*GenerateResponse, error) {
+func (s *Service) Generate(ctx context.Context, prompt, model string, isPremium bool) (*GenerateResponse, error) {
 	if model == "" {
 		model = s.model
 	}
 
 	start := time.Now()
-	fmt.Printf("[AI] Starting generation for prompt: %q\n", prompt)
+	fmt.Printf("[AI] Starting generation for prompt: %q (Premium: %v)\n", prompt, isPremium)
 
 	// Timeout global : 2 minutes max
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
-	// Étape 1 : Recherche web (max 15s, en parallèle)
+	// Étape 1 : Recherche web
 	var searchResults []SearchResult
 	var searchContext string
-	if s.searxURL != "" {
+	
+	// Si premium et clé Gemini disponible, utiliser Gemini
+	if isPremium && s.geminiAPIKey != "" {
+		t := time.Now()
+		results, err := s.searchWithGemini(ctx, prompt)
+		fmt.Printf("[AI] Gemini search took %v, got %d results\n", time.Since(t), len(results))
+		if err != nil {
+			fmt.Printf("[AI] Gemini search failed: %v, falling back to SearXNG\n", err)
+			// Fallback sur SearXNG en cas d'erreur
+			if s.searxURL != "" {
+				results, err = searchWebMulti(ctx, s.searxURL, prompt, 5)
+				if err == nil {
+					searchResults = results
+					searchContext = formatSearchContext(results)
+				}
+			}
+		} else {
+			searchResults = results
+			searchContext = formatSearchContext(results)
+		}
+	} else if s.searxURL != "" {
+		// Utilisateurs non-premium : SearXNG
 		t := time.Now()
 		results, err := searchWebMulti(ctx, s.searxURL, prompt, 5)
 		fmt.Printf("[AI] Search took %v, got %d results\n", time.Since(t), len(results))
@@ -250,3 +277,86 @@ func normalizeCategory(cat string) string {
 	}
 }
 
+
+// searchWithGemini utilise l'API Gemini pour rechercher des informations
+func (s *Service) searchWithGemini(ctx context.Context, query string) ([]SearchResult, error) {
+	if s.geminiAPIKey == "" {
+		return nil, fmt.Errorf("gemini API key not configured")
+	}
+
+	// Préparer la requête Gemini avec grounding (recherche web)
+	reqBody := map[string]interface{}{
+		"contents": []map[string]interface{}{
+			{
+				"parts": []map[string]string{
+					{
+						"text": fmt.Sprintf("Recherche des informations pertinentes sur : %s. Fournis 5 résultats avec titre, description et contexte utile pour des idées familiales.", query),
+					},
+				},
+			},
+		},
+		"generationConfig": map[string]interface{}{
+			"temperature":     0.2,
+			"maxOutputTokens": 1000,
+		},
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	// Utiliser Gemini Pro
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=%s", s.geminiAPIKey)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("gemini request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("gemini returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var geminiResp struct {
+		Candidates []struct {
+			Content struct {
+				Parts []struct {
+					Text string `json:"text"`
+				} `json:"parts"`
+			} `json:"content"`
+			GroundingMetadata struct {
+				WebSearchQueries []string `json:"webSearchQueries"`
+			} `json:"groundingMetadata"`
+		} `json:"candidates"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&geminiResp); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+
+	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+		return nil, fmt.Errorf("no results from gemini")
+	}
+
+	// Convertir la réponse Gemini en SearchResults
+	content := geminiResp.Candidates[0].Content.Parts[0].Text
+	results := []SearchResult{
+		{
+			Title:   "Résultats Gemini pour: " + query,
+			Content: content,
+			URL:     "",
+		},
+	}
+
+	return results, nil
+}

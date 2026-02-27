@@ -15,13 +15,15 @@ export default function Login() {
     setError("");
     try {
       if (isRegister) {
-        const res: any = await auth.register(email, password, displayName);
+        const res = await auth.register(email, password, displayName);
         localStorage.setItem("token", res.token);
         localStorage.setItem("displayName", displayName);
+        localStorage.setItem("isAdmin", String(res.isAdmin));
       } else {
         const res = await auth.login(email, password);
         localStorage.setItem("token", res.token);
         localStorage.setItem("displayName", res.displayName || "");
+        localStorage.setItem("isAdmin", String(res.isAdmin));
       }
       navigate("/");
     } catch (err: any) {

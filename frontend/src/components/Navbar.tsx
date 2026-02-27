@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCampground, faFolderOpen, faTag, faSignOutAlt, faBaby, faChevronDown, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
+import { faCampground, faFolderOpen, faTag, faSignOutAlt, faBaby, faChevronDown, faSignInAlt, faCrown } from "@fortawesome/free-solid-svg-icons";
 
 export default function Navbar() {
   const location = useLocation();
   const [showMore, setShowMore] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   const isLoggedIn = !!localStorage.getItem("token");
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
 
   const active = (path: string) =>
     location.pathname === path
@@ -17,6 +18,7 @@ export default function Navbar() {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("displayName");
+    localStorage.removeItem("isAdmin");
     window.location.href = "/login";
   };
 
@@ -60,7 +62,7 @@ export default function Navbar() {
                 <button
                   onClick={() => setShowMore(!showMore)}
                   className={`flex items-center gap-1 pb-1 text-sm font-medium text-gray-500 hover:text-orange-400 ${
-                    location.pathname === "/children" ? "text-orange-500 border-b-2 border-orange-500" : ""
+                    location.pathname === "/children" || location.pathname === "/admin" ? "text-orange-500 border-b-2 border-orange-500" : ""
                   }`}
                 >
                   {displayName || "Plus"} <FontAwesomeIcon icon={faChevronDown} className="w-3 h-3" />
@@ -74,6 +76,15 @@ export default function Navbar() {
                     >
                       <FontAwesomeIcon icon={faBaby} className="w-4 h-4" /> Mes enfants
                     </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setShowMore(false)}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-500"
+                      >
+                        <FontAwesomeIcon icon={faCrown} className="w-4 h-4" /> Administration
+                      </Link>
+                    )}
                     <hr className="my-1 border-gray-100" />
                     <button
                       onClick={logout}

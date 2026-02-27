@@ -8,6 +8,7 @@ import LinkDetail from "./pages/LinkDetail";
 import SharedFolder from "./pages/SharedFolder";
 import Children from "./pages/Children";
 import Category from "./pages/Category";
+import Admin from "./pages/Admin";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("token");
@@ -70,6 +71,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <AppLayout><Children /></AppLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute>
+              <AppLayout><Admin /></AppLayout>
             </PrivateRoute>
           }
         />

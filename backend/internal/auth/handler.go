@@ -18,19 +18,19 @@ func NewHandler(svc *Service) *Handler {
 }
 
 func (h *Handler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	userID, token, err := h.svc.Register(ctx, req.Email, req.Password, req.DisplayName)
+	userID, token, isAdmin, err := h.svc.Register(ctx, req.Email, req.Password, req.DisplayName)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	return &pb.RegisterResponse{UserId: userID, Token: token}, nil
+	return &pb.RegisterResponse{UserId: userID, Token: token, IsAdmin: isAdmin}, nil
 }
 
 func (h *Handler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	userID, token, displayName, err := h.svc.Login(ctx, req.Email, req.Password)
+	userID, token, displayName, isAdmin, err := h.svc.Login(ctx, req.Email, req.Password)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, err.Error())
 	}
-	return &pb.LoginResponse{UserId: userID, Token: token, DisplayName: displayName}, nil
+	return &pb.LoginResponse{UserId: userID, Token: token, DisplayName: displayName, IsAdmin: isAdmin}, nil
 }
 
 func (h *Handler) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
