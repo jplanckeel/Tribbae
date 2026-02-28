@@ -26,6 +26,7 @@ const (
 	LinkService_DeleteLink_FullMethodName         = "/tribbae.v1.LinkService/DeleteLink"
 	LinkService_LikeLink_FullMethodName           = "/tribbae.v1.LinkService/LikeLink"
 	LinkService_UnlikeLink_FullMethodName         = "/tribbae.v1.LinkService/UnlikeLink"
+	LinkService_ToggleFavoriteLink_FullMethodName = "/tribbae.v1.LinkService/ToggleFavoriteLink"
 	LinkService_ListCommunityLinks_FullMethodName = "/tribbae.v1.LinkService/ListCommunityLinks"
 	LinkService_ListNewLinks_FullMethodName       = "/tribbae.v1.LinkService/ListNewLinks"
 )
@@ -41,6 +42,7 @@ type LinkServiceClient interface {
 	DeleteLink(ctx context.Context, in *DeleteLinkRequest, opts ...grpc.CallOption) (*DeleteLinkResponse, error)
 	LikeLink(ctx context.Context, in *LikeLinkRequest, opts ...grpc.CallOption) (*LikeLinkResponse, error)
 	UnlikeLink(ctx context.Context, in *UnlikeLinkRequest, opts ...grpc.CallOption) (*UnlikeLinkResponse, error)
+	ToggleFavoriteLink(ctx context.Context, in *ToggleFavoriteLinkRequest, opts ...grpc.CallOption) (*ToggleFavoriteLinkResponse, error)
 	ListCommunityLinks(ctx context.Context, in *ListCommunityLinksRequest, opts ...grpc.CallOption) (*ListCommunityLinksResponse, error)
 	ListNewLinks(ctx context.Context, in *ListNewLinksRequest, opts ...grpc.CallOption) (*ListNewLinksResponse, error)
 }
@@ -123,6 +125,16 @@ func (c *linkServiceClient) UnlikeLink(ctx context.Context, in *UnlikeLinkReques
 	return out, nil
 }
 
+func (c *linkServiceClient) ToggleFavoriteLink(ctx context.Context, in *ToggleFavoriteLinkRequest, opts ...grpc.CallOption) (*ToggleFavoriteLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ToggleFavoriteLinkResponse)
+	err := c.cc.Invoke(ctx, LinkService_ToggleFavoriteLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *linkServiceClient) ListCommunityLinks(ctx context.Context, in *ListCommunityLinksRequest, opts ...grpc.CallOption) (*ListCommunityLinksResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListCommunityLinksResponse)
@@ -154,6 +166,7 @@ type LinkServiceServer interface {
 	DeleteLink(context.Context, *DeleteLinkRequest) (*DeleteLinkResponse, error)
 	LikeLink(context.Context, *LikeLinkRequest) (*LikeLinkResponse, error)
 	UnlikeLink(context.Context, *UnlikeLinkRequest) (*UnlikeLinkResponse, error)
+	ToggleFavoriteLink(context.Context, *ToggleFavoriteLinkRequest) (*ToggleFavoriteLinkResponse, error)
 	ListCommunityLinks(context.Context, *ListCommunityLinksRequest) (*ListCommunityLinksResponse, error)
 	ListNewLinks(context.Context, *ListNewLinksRequest) (*ListNewLinksResponse, error)
 }
@@ -185,6 +198,9 @@ func (UnimplementedLinkServiceServer) LikeLink(context.Context, *LikeLinkRequest
 }
 func (UnimplementedLinkServiceServer) UnlikeLink(context.Context, *UnlikeLinkRequest) (*UnlikeLinkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UnlikeLink not implemented")
+}
+func (UnimplementedLinkServiceServer) ToggleFavoriteLink(context.Context, *ToggleFavoriteLinkRequest) (*ToggleFavoriteLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ToggleFavoriteLink not implemented")
 }
 func (UnimplementedLinkServiceServer) ListCommunityLinks(context.Context, *ListCommunityLinksRequest) (*ListCommunityLinksResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListCommunityLinks not implemented")
@@ -338,6 +354,24 @@ func _LinkService_UnlikeLink_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LinkService_ToggleFavoriteLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ToggleFavoriteLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).ToggleFavoriteLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_ToggleFavoriteLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).ToggleFavoriteLink(ctx, req.(*ToggleFavoriteLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _LinkService_ListCommunityLinks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListCommunityLinksRequest)
 	if err := dec(in); err != nil {
@@ -408,6 +442,10 @@ var LinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UnlikeLink",
 			Handler:    _LinkService_UnlikeLink_Handler,
+		},
+		{
+			MethodName: "ToggleFavoriteLink",
+			Handler:    _LinkService_ToggleFavoriteLink_Handler,
 		},
 		{
 			MethodName: "ListCommunityLinks",

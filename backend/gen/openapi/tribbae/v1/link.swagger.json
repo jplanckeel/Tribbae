@@ -241,6 +241,44 @@
         ]
       }
     },
+    "/v1/links/{linkId}/favorite": {
+      "post": {
+        "operationId": "LinkService_ToggleFavoriteLink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ToggleFavoriteLinkResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LinkServiceToggleFavoriteLinkBody"
+            }
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      }
+    },
     "/v1/links/{linkId}/like": {
       "delete": {
         "operationId": "LinkService_UnlikeLink",
@@ -312,6 +350,9 @@
     "LinkServiceLikeLinkBody": {
       "type": "object"
     },
+    "LinkServiceToggleFavoriteLinkBody": {
+      "type": "object"
+    },
     "LinkServiceUpdateLinkBody": {
       "type": "object",
       "properties": {
@@ -364,6 +405,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "favorite": {
+          "type": "boolean"
         }
       }
     },
@@ -447,6 +491,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "favorite": {
+          "type": "boolean"
         }
       }
     },
@@ -551,6 +598,9 @@
         },
         "likedByMe": {
           "type": "boolean"
+        },
+        "favorite": {
+          "type": "boolean"
         }
       }
     },
@@ -599,6 +649,14 @@
             "type": "object",
             "$ref": "#/definitions/v1Link"
           }
+        }
+      }
+    },
+    "v1ToggleFavoriteLinkResponse": {
+      "type": "object",
+      "properties": {
+        "favorite": {
+          "type": "boolean"
         }
       }
     },

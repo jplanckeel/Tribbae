@@ -107,7 +107,7 @@ data class UpdateLinkRequest(
 )
 
 class AuthenticatedApiClient(
-    private val baseUrl: String = "http://10.0.2.2:8080",
+    private val baseUrl: String = "https://tribbae.bananaops.cloud",
     private val sessionManager: SessionManager
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -212,4 +212,51 @@ class AuthenticatedApiClient(
             json.decodeFromString<LikeResponse>(response).likeCount
         }
     }
+
+    // Children
+    suspend fun listChildren(): ApiChildrenListResponse {
+        return request("/v1/children", "GET") { response ->
+            json.decodeFromString(response)
+        }
+    }
+
+    suspend fun createChild(name: String, birthDate: Long): ApiChild {
+        @Serializable
+        data class CreateChildRequest(val name: String, val birthDate: Long)
+        val body = json.encodeToString(CreateChildRequest.serializer(), CreateChildRequest(name, birthDate))
+        return request("/v1/children", "POST", body) { response ->
+            @Serializable
+            data class ChildResponse(val child: ApiChild)
+            json.decodeFromString<ChildResponse>(response).child
+        }
+    }
+
+    suspend fun updateChild(childId: String, name: String, birthDate: Long): ApiChild {
+        @Serializable
+        data class UpdateChildRequest(val childId: String, val name: String, val birthDate: Long)
+        val body = json.encodeToString(UpdateChildRequest.serializer(), UpdateChildRequest(childId, name, birthDate))
+        return request("/v1/children/$childId", "PUT", body) { response ->
+            @Serializable
+            data class ChildResponse(val child: ApiChild)
+            json.decodeFromString<ChildResponse>(response).child
+        }
+    }
+
+    suspend fun deleteChild(childId: String) {
+        request("/v1/children/$childId", "DELETE", null) { _ -> Unit }
+    }
 }
+
+@Serializable
+data class ApiChildrenListResponse(
+    val children: List<ApiChild> = emptyList()
+)
+
+@Serializable
+data class ApiChild(
+    val id: String = "",
+    val ownerId: String = "",
+    val name: String = "",
+    val birthDate: Long = 0,
+    val createdAt: Long = 0
+)

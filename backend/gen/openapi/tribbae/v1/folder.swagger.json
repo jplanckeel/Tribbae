@@ -775,6 +775,9 @@
         },
         "likedByMe": {
           "type": "boolean"
+        },
+        "favorite": {
+          "type": "boolean"
         }
       }
     },

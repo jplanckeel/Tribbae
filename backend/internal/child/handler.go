@@ -4,10 +4,9 @@ import (
 	"context"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
-	"github.com/tribbae/backend/internal/interceptor"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Handler struct {
@@ -15,65 +14,98 @@ type Handler struct {
 	svc *Service
 }
 
-func NewHandler(svc *Service) *Handler { return &Handler{svc: svc} }
-
-func toProto(c *Child) *pb.Child {
-	return &pb.Child{
-		Id:        c.ID.Hex(),
-		OwnerId:   c.OwnerID,
-		Name:      c.Name,
-		BirthDate: c.BirthDate,
-		CreatedAt: timestamppb.New(c.CreatedAt),
-	}
+func NewHandler(svc *Service) *Handler {
+	return &Handler{svc: svc}
 }
 
 func (h *Handler) CreateChild(ctx context.Context, req *pb.CreateChildRequest) (*pb.CreateChildResponse, error) {
-	ownerID, err := interceptor.UserIDFromContext(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+	ownerID, ok := ctx.Value("userID").(primitive.ObjectID)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
-	c, err := h.svc.Create(ctx, ownerID, req.Name, req.BirthDate)
+
+	child, err := h.svc.Create(ctx, ownerID, req.Name, req.BirthDate)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
-	return &pb.CreateChildResponse{Child: toProto(c)}, nil
+
+	return &pb.CreateChildResponse{
+		Child: &pb.Child{
+			Id:        child.ID.Hex(),
+			OwnerId:   child.OwnerID.Hex(),
+			Name:      child.Name,
+			BirthDate: child.BirthDate,
+			CreatedAt: child.CreatedAt,
+		},
+	}, nil
 }
 
-func (h *Handler) ListChildren(ctx context.Context, _ *pb.ListChildrenRequest) (*pb.ListChildrenResponse, error) {
-	ownerID, err := interceptor.UserIDFromContext(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+func (h *Handler) ListChildren(ctx context.Context, req *pb.ListChildrenRequest) (*pb.ListChildrenResponse, error) {
+	ownerID, ok := ctx.Value("userID").(primitive.ObjectID)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
+
 	children, err := h.svc.List(ctx, ownerID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
-	var pbChildren []*pb.Child
-	for _, c := range children {
-		pbChildren = append(pbChildren, toProto(c))
+
+	pbChildren := make([]*pb.Child, len(children))
+	for i, c := range children {
+		pbChildren[i] = &pb.Child{
+			Id:        c.ID.Hex(),
+			OwnerId:   c.OwnerID.Hex(),
+			Name:      c.Name,
+			BirthDate: c.BirthDate,
+			CreatedAt: c.CreatedAt,
+		}
 	}
+
 	return &pb.ListChildrenResponse{Children: pbChildren}, nil
 }
 
 func (h *Handler) UpdateChild(ctx context.Context, req *pb.UpdateChildRequest) (*pb.UpdateChildResponse, error) {
-	ownerID, err := interceptor.UserIDFromContext(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+	ownerID, ok := ctx.Value("userID").(primitive.ObjectID)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
-	c, err := h.svc.Update(ctx, req.ChildId, ownerID, req.Name, req.BirthDate)
+
+	childID, err := primitive.ObjectIDFromHex(req.ChildId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, "invalid child ID")
 	}
-	return &pb.UpdateChildResponse{Child: toProto(c)}, nil
+
+	child, err := h.svc.Update(ctx, childID, ownerID, req.Name, req.BirthDate)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.UpdateChildResponse{
+		Child: &pb.Child{
+			Id:        child.ID.Hex(),
+			OwnerId:   child.OwnerID.Hex(),
+			Name:      child.Name,
+			BirthDate: child.BirthDate,
+			CreatedAt: child.CreatedAt,
+		},
+	}, nil
 }
 
 func (h *Handler) DeleteChild(ctx context.Context, req *pb.DeleteChildRequest) (*pb.DeleteChildResponse, error) {
-	ownerID, err := interceptor.UserIDFromContext(ctx)
+	ownerID, ok := ctx.Value("userID").(primitive.ObjectID)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
+	}
+
+	childID, err := primitive.ObjectIDFromHex(req.ChildId)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		return nil, status.Error(codes.InvalidArgument, "invalid child ID")
 	}
-	if err := h.svc.Delete(ctx, req.ChildId, ownerID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+
+	if err := h.svc.Delete(ctx, childID, ownerID); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	return &pb.DeleteChildResponse{}, nil
 }

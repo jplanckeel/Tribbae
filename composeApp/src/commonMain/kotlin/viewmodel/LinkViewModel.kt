@@ -201,17 +201,36 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
 
     fun addChild(name: String, birthDate: Long) {
-        repository.addChild(data.Child(
+        val child = data.Child(
             id = kotlin.random.Random.nextLong().toString(),
             name = name, birthDate = birthDate
-        ))
+        )
+        repository.addChild(child)
+        
+        // Sauvegarder sur le backend si authentifié
+        if (authenticatedClient != null) {
+            saveChildToBackend(child)
+        }
     }
 
-    fun updateChild(child: data.Child) { repository.updateChild(child) }
+    fun updateChild(child: data.Child) {
+        repository.updateChild(child)
+        
+        // Mettre à jour sur le backend si authentifié
+        if (authenticatedClient != null) {
+            updateChildOnBackend(child)
+        }
+    }
+    
     fun deleteChild(id: String) {
         if (_selectedChildId.value == id) _selectedChildId.value = null
         repository.deleteChild(id)
         updateFilteredLinks()
+        
+        // Supprimer du backend si authentifié
+        if (authenticatedClient != null) {
+            deleteChildFromBackend(id)
+        }
     }
 
     // ── IA ────────────────────────────────────────────────────────────────────
@@ -245,7 +264,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     e.message?.contains("timeout") == true || e.message?.contains("timed out") == true ->
                         "Timeout : la génération prend trop de temps. Vérifiez que le backend et Ollama sont lancés."
                     e.message?.contains("Connection refused") == true ->
-                        "Impossible de se connecter au backend. Vérifiez qu'il est lancé sur http://10.0.2.2:8080"
+                        "Impossible de se connecter au backend. Vérifiez votre connexion internet."
                     e.message?.contains("401") == true || e.message?.contains("403") == true ->
                         "Session expirée. Reconnectez-vous dans Profil."
                     else -> e.message ?: "Erreur inconnue"
@@ -370,14 +389,39 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                         ingredients = apiLink.ingredients,
                         favorite = false // Le backend ne gère pas encore les favoris
                     )
-                    // Ajouter seulement si pas déjà présent
-                    if (repository.links.value.none { it.id == link.id }) {
+                    // Ajouter seulement si pas déjà présent (vérifier par ID ou par titre+URL)
+                    val exists = repository.links.value.any { 
+                        it.id == link.id || (it.title == link.title && it.url == link.url)
+                    }
+                    if (!exists) {
                         repository.addLink(link)
+                    } else {
+                        // Mettre à jour l'ID local si le lien existe avec un ID différent
+                        val existingLink = repository.links.value.find { 
+                            it.title == link.title && it.url == link.url && it.id != link.id
+                        }
+                        if (existingLink != null) {
+                            repository.updateLink(existingLink.copy(id = link.id))
+                        }
                     }
                 }
                 
                 _syncStatus.value = "Synchronisé"
                 updateFilteredLinks()
+                
+                // Charger les enfants
+                val childrenResponse = client.listChildren()
+                childrenResponse.children.forEach { apiChild ->
+                    val child = data.Child(
+                        id = apiChild.id,
+                        name = apiChild.name,
+                        birthDate = apiChild.birthDate
+                    )
+                    // Ajouter seulement si pas déjà présent
+                    if (repository.children.value.none { it.id == child.id }) {
+                        repository.addChild(child)
+                    }
+                }
             } catch (e: Exception) {
                 _syncStatus.value = "Erreur: ${e.message}"
             }
@@ -405,8 +449,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     ingredients = link.ingredients
                 )
                 val savedLink = client.createLink(req)
-                // Mettre à jour l'ID local avec l'ID du backend
-                repository.updateLink(link.copy(id = savedLink.id))
+                // Supprimer l'ancien lien local et ajouter le nouveau avec l'ID du backend
+                repository.deleteLink(link.id)
+                repository.addLink(link.copy(id = savedLink.id))
                 updateFilteredLinks()
             } catch (e: Exception) {
                 _syncStatus.value = "Erreur sauvegarde: ${e.message}"
@@ -455,6 +500,48 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 client.deleteFolder(folderId)
             } catch (e: Exception) {
                 _syncStatus.value = "Erreur suppression dossier: ${e.message}"
+            }
+        }
+    }
+    
+    // ── Children Backend Sync ─────────────────────────────────────────────────
+    
+    private fun saveChildToBackend(child: data.Child) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                val savedChild = client.createChild(child.name, child.birthDate)
+                // Mettre à jour l'ID local avec l'ID du backend
+                repository.deleteChild(child.id)
+                repository.addChild(data.Child(
+                    id = savedChild.id,
+                    name = savedChild.name,
+                    birthDate = savedChild.birthDate
+                ))
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur sauvegarde enfant: ${e.message}"
+            }
+        }
+    }
+    
+    private fun updateChildOnBackend(child: data.Child) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                client.updateChild(child.id, child.name, child.birthDate)
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur mise à jour enfant: ${e.message}"
+            }
+        }
+    }
+    
+    private fun deleteChildFromBackend(childId: String) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                client.deleteChild(childId)
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur suppression enfant: ${e.message}"
             }
         }
     }

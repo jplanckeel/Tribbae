@@ -54,7 +54,7 @@ data class SharedFolderResponse(
     val links: List<ApiLink> = emptyList()
 )
 
-class ApiClient(private val baseUrl: String = "http://10.0.2.2:8080") {
+class ApiClient(private val baseUrl: String = "https://tribbae.bananaops.cloud") {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     private suspend fun get(path: String): String = withContext(Dispatchers.IO) {

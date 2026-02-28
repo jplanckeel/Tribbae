@@ -9,6 +9,7 @@ import SharedFolder from "./pages/SharedFolder";
 import Children from "./pages/Children";
 import Category from "./pages/Category";
 import Admin from "./pages/Admin";
+import AllFolders from "./pages/AllFolders";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("token");
@@ -40,6 +41,12 @@ export default function App() {
           path="/category/:category"
           element={
             <AppLayout><Category /></AppLayout>
+          }
+        />
+        <Route
+          path="/discover"
+          element={
+            <AppLayout><AllFolders /></AppLayout>
           }
         />
         <Route

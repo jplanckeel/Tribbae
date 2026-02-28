@@ -28,6 +28,7 @@ type Link struct {
 	ReminderEnabled bool               `bson:"reminder_enabled" json:"reminder_enabled"`
 	Rating          int32              `bson:"rating"           json:"rating"`
 	Ingredients     []string           `bson:"ingredients"      json:"ingredients"`
+	Favorite        bool               `bson:"favorite"         json:"favorite"`
 	CreatedAt       time.Time          `bson:"created_at"       json:"created_at"`
 	UpdatedAt       time.Time          `bson:"updated_at"       json:"updated_at"`
 }
@@ -313,6 +314,34 @@ func (s *Service) IsLikedByUser(ctx context.Context, linkID, userID string) (boo
 		return false, err
 	}
 	return count > 0, nil
+}
+
+// ToggleFavorite bascule le statut favori d'un lien
+func (s *Service) ToggleFavorite(ctx context.Context, linkID, ownerID string) (bool, error) {
+	id, err := primitive.ObjectIDFromHex(linkID)
+	if err != nil {
+		return false, err
+	}
+
+	// Récupérer le lien actuel
+	var link Link
+	err = s.col.FindOne(ctx, bson.M{"_id": id, "owner_id": ownerID}).Decode(&link)
+	if err != nil {
+		return false, err
+	}
+
+	// Inverser le statut favori
+	newFavorite := !link.Favorite
+	_, err = s.col.UpdateOne(
+		ctx,
+		bson.M{"_id": id, "owner_id": ownerID},
+		bson.M{"$set": bson.M{"favorite": newFavorite, "updated_at": time.Now()}},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	return newFavorite, nil
 }
 
 // publicFolderIDs retourne les IDs des dossiers publics

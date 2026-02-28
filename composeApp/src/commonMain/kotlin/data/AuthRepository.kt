@@ -30,7 +30,7 @@ data class AuthResponse(
     val displayName: String = ""
 )
 
-class AuthRepository(private val baseUrl: String = "http://10.0.2.2:8080") {
+class AuthRepository(private val baseUrl: String = "https://tribbae.bananaops.cloud") {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     suspend fun login(email: String, password: String): AuthResponse =

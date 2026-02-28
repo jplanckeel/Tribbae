@@ -37,6 +37,7 @@ message Link {
   google.protobuf.Timestamp updated_at = 18;
   int32 like_count = 19;
   bool liked_by_me = 20;
+  bool favorite = 21;
 }
 
 message CreateLinkRequest {
@@ -54,6 +55,7 @@ message CreateLinkRequest {
   bool reminder_enabled = 12;
   int32 rating = 13;
   repeated string ingredients = 14;
+  bool favorite = 15;
 }
 
 message CreateLinkResponse {
@@ -92,6 +94,7 @@ message UpdateLinkRequest {
   bool reminder_enabled = 13;
   int32 rating = 14;
   repeated string ingredients = 15;
+  bool favorite = 16;
 }
 
 message UpdateLinkResponse {
@@ -118,6 +121,14 @@ message UnlikeLinkRequest {
 
 message UnlikeLinkResponse {
   int32 like_count = 1;
+}
+
+message ToggleFavoriteLinkRequest {
+  string link_id = 1;
+}
+
+message ToggleFavoriteLinkResponse {
+  bool favorite = 1;
 }
 
 message ListCommunityLinksRequest {
@@ -174,6 +185,12 @@ service LinkService {
   rpc UnlikeLink(UnlikeLinkRequest) returns (UnlikeLinkResponse) {
     option (google.api.http) = {
       delete: "/v1/links/{link_id}/like"
+    };
+  }
+  rpc ToggleFavoriteLink(ToggleFavoriteLinkRequest) returns (ToggleFavoriteLinkResponse) {
+    option (google.api.http) = {
+      post: "/v1/links/{link_id}/favorite"
+      body: "*"
     };
   }
   rpc ListCommunityLinks(ListCommunityLinksRequest) returns (ListCommunityLinksResponse) {
