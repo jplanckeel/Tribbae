@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import data.Collaborator
 import data.Folder
 import data.FolderColor
 import data.FolderIcon
@@ -57,6 +58,12 @@ fun EditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () -> Uni
     var shareUrl by remember { mutableStateOf("") }
     var isSharing by remember { mutableStateOf(false) }
     var showCopied by remember { mutableStateOf(false) }
+    // Collaborator state
+    var collabEmail by remember { mutableStateOf("") }
+    var collabRole by remember { mutableStateOf("COLLABORATOR_ROLE_EDITOR") }
+    var collabError by remember { mutableStateOf("") }
+    var isAddingCollab by remember { mutableStateOf(false) }
+    var currentCollaborators by remember { mutableStateOf(folder.collaborators) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -210,6 +217,171 @@ fun EditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () -> Uni
                                 Text("Générer un lien de partage", fontSize = 13.sp)
                             }
                         }
+                    }
+                }
+            }
+
+            // Collaborateurs
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = CardColor)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Group, contentDescription = null, tint = Orange,
+                            modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Collaborateurs", fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp, color = TextPrimary)
+                    }
+
+                    // Liste des collaborateurs existants
+                    if (currentCollaborators.isNotEmpty()) {
+                        currentCollaborators.forEach { collab ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(OrangeLight.copy(alpha = 0.15f))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    if (collab.role == "COLLABORATOR_ROLE_EDITOR") Icons.Default.Edit
+                                    else Icons.Default.Visibility,
+                                    contentDescription = null,
+                                    tint = if (collab.role == "COLLABORATOR_ROLE_EDITOR") Orange else BlueSky,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        collab.displayName.ifBlank { collab.email },
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = TextPrimary
+                                    )
+                                    if (collab.displayName.isNotBlank() && collab.email.isNotBlank()) {
+                                        Text(collab.email, fontSize = 11.sp, color = TextSecondary)
+                                    }
+                                }
+                                Text(
+                                    if (collab.role == "COLLABORATOR_ROLE_EDITOR") "Éditeur" else "Lecteur",
+                                    fontSize = 11.sp, color = TextSecondary
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            val updated = viewModel.removeCollaborator(folder.id, collab.userId)
+                                            if (updated != null) {
+                                                currentCollaborators = updated.collaborators
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = "Retirer",
+                                        tint = Color.Red.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+                    } else {
+                        Text("Aucun collaborateur", fontSize = 12.sp, color = TextSecondary)
+                    }
+
+                    // Ajout d'un collaborateur
+                    OutlinedTextField(
+                        value = collabEmail,
+                        onValueChange = { collabEmail = it; collabError = "" },
+                        label = { Text("Email de l'utilisateur") },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Orange,
+                            focusedContainerColor = SurfaceColor,
+                            unfocusedContainerColor = SurfaceColor
+                        )
+                    )
+
+                    // Sélection du rôle
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = collabRole == "COLLABORATOR_ROLE_EDITOR",
+                            onClick = { collabRole = "COLLABORATOR_ROLE_EDITOR" },
+                            label = { Text("Éditeur", fontSize = 13.sp) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Edit, contentDescription = null,
+                                    modifier = Modifier.size(16.dp))
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Orange,
+                                selectedLabelColor = Color.White,
+                                selectedLeadingIconColor = Color.White
+                            )
+                        )
+                        FilterChip(
+                            selected = collabRole == "COLLABORATOR_ROLE_VIEWER",
+                            onClick = { collabRole = "COLLABORATOR_ROLE_VIEWER" },
+                            label = { Text("Lecteur", fontSize = 13.sp) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Visibility, contentDescription = null,
+                                    modifier = Modifier.size(16.dp))
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = BlueSky,
+                                selectedLabelColor = Color.White,
+                                selectedLeadingIconColor = Color.White
+                            )
+                        )
+                    }
+
+                    if (collabError.isNotEmpty()) {
+                        Text(collabError, fontSize = 12.sp, color = Color.Red)
+                    }
+
+                    Button(
+                        onClick = {
+                            if (collabEmail.isBlank()) {
+                                collabError = "Veuillez saisir un email"
+                                return@Button
+                            }
+                            isAddingCollab = true
+                            scope.launch {
+                                val updated = viewModel.addCollaborator(
+                                    folder.id, collabEmail.trim(), collabRole
+                                )
+                                if (updated != null) {
+                                    currentCollaborators = updated.collaborators
+                                    collabEmail = ""
+                                    collabError = ""
+                                } else {
+                                    collabError = "Erreur lors de l'ajout"
+                                }
+                                isAddingCollab = false
+                            }
+                        },
+                        enabled = !isAddingCollab,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Orange)
+                    ) {
+                        if (isAddingCollab) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = Color.White, strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Default.PersonAdd, null, modifier = Modifier.size(16.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text("Inviter", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
                 }
             }

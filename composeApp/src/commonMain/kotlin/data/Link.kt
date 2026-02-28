@@ -3,6 +3,14 @@ package data
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class Collaborator(
+    val userId: String = "",
+    val email: String = "",
+    val displayName: String = "",
+    val role: String = "COLLABORATOR_ROLE_VIEWER"
+)
+
+@Serializable
 data class Folder(
     val id: String,
     val name: String,
@@ -15,7 +23,8 @@ data class Folder(
     val linkCount: Int = 0,
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
-    val aiGenerated: Boolean = false
+    val aiGenerated: Boolean = false,
+    val collaborators: List<Collaborator> = emptyList()
 )
 
 @Serializable

@@ -17,6 +17,14 @@ data class ApiFolderListResponse(
 )
 
 @Serializable
+data class ApiCollaborator(
+    val userId: String = "",
+    val email: String = "",
+    val displayName: String = "",
+    val role: String = "COLLABORATOR_ROLE_VIEWER"
+)
+
+@Serializable
 data class ApiAuthFolder(
     val id: String = "",
     val ownerId: String = "",
@@ -29,7 +37,8 @@ data class ApiAuthFolder(
     val linkCount: Int = 0,
     val bannerUrl: String = "",
     val tags: List<String> = emptyList(),
-    val likeCount: Int = 0
+    val likeCount: Int = 0,
+    val collaborators: List<ApiCollaborator> = emptyList()
 )
 
 @Serializable
@@ -84,6 +93,17 @@ data class UpdateFolderRequest(
 data class ShareFolderResponse(
     val shareToken: String = "",
     val shareUrl: String = ""
+)
+
+@Serializable
+data class AddCollaboratorRequest(
+    val email: String,
+    val role: String = "COLLABORATOR_ROLE_EDITOR"
+)
+
+@Serializable
+data class AddCollaboratorResponse(
+    val folder: ApiAuthFolder = ApiAuthFolder()
 )
 
 @Serializable
@@ -194,6 +214,23 @@ class AuthenticatedApiClient(
 
     suspend fun shareFolder(folderId: String): ShareFolderResponse {
         return request("/v1/folders/$folderId/share", "POST", "{}") { response ->
+            json.decodeFromString(response)
+        }
+    }
+
+    // Collaborators
+    suspend fun addCollaborator(folderId: String, email: String, role: String): AddCollaboratorResponse {
+        val body = json.encodeToString(
+            AddCollaboratorRequest.serializer(),
+            AddCollaboratorRequest(email = email, role = role)
+        )
+        return request("/v1/folders/$folderId/collaborators", "POST", body) { response ->
+            json.decodeFromString(response)
+        }
+    }
+
+    suspend fun removeCollaborator(folderId: String, userId: String): AddCollaboratorResponse {
+        return request("/v1/folders/$folderId/collaborators/$userId", "DELETE", null) { response ->
             json.decodeFromString(response)
         }
     }

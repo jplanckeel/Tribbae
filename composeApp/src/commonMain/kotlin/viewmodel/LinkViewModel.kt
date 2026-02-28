@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import data.AiRepository
 import data.AiSuggestedLink
+import data.Collaborator
 import data.Folder
 import data.FolderColor
 import data.FolderIcon
@@ -411,14 +412,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         // Charger les dossiers
         val foldersResponse = client.listFolders()
         foldersResponse.folders.forEach { apiFolder ->
-            val folder = Folder(
-                id = apiFolder.id,
-                name = apiFolder.name,
-                icon = try { FolderIcon.valueOf(apiFolder.icon) } catch (_: Exception) { FolderIcon.FOLDER },
-                color = try { FolderColor.valueOf(apiFolder.color) } catch (_: Exception) { FolderColor.ORANGE },
-                bannerUrl = apiFolder.bannerUrl,
-                tags = apiFolder.tags
-            )
+            val folder = apiFolderToFolder(apiFolder)
             if (repository.folders.value.none { it.id == folder.id }) {
                 repository.addFolder(folder)
             }
@@ -574,6 +568,57 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             _syncStatus.value = "Erreur partage: ${e.message}"
             null
         }
+    }
+
+    suspend fun addCollaborator(folderId: String, email: String, role: String): Folder? {
+        val client = authenticatedClient ?: return null
+        return try {
+            val resp = client.addCollaborator(folderId, email, role)
+            val apiFolder = resp.folder
+            val updatedFolder = apiFolderToFolder(apiFolder)
+            repository.updateFolder(updatedFolder)
+            updatedFolder
+        } catch (e: Exception) {
+            _syncStatus.value = "Erreur ajout collaborateur: ${e.message}"
+            null
+        }
+    }
+
+    suspend fun removeCollaborator(folderId: String, userId: String): Folder? {
+        val client = authenticatedClient ?: return null
+        return try {
+            val resp = client.removeCollaborator(folderId, userId)
+            val apiFolder = resp.folder
+            val updatedFolder = apiFolderToFolder(apiFolder)
+            repository.updateFolder(updatedFolder)
+            updatedFolder
+        } catch (e: Exception) {
+            _syncStatus.value = "Erreur suppression collaborateur: ${e.message}"
+            null
+        }
+    }
+
+    private fun apiFolderToFolder(apiFolder: data.ApiAuthFolder): Folder {
+        return Folder(
+            id = apiFolder.id,
+            name = apiFolder.name,
+            icon = try { FolderIcon.valueOf(apiFolder.icon) } catch (_: Exception) { FolderIcon.FOLDER },
+            color = try { FolderColor.valueOf(apiFolder.color) } catch (_: Exception) { FolderColor.ORANGE },
+            bannerUrl = apiFolder.bannerUrl,
+            tags = apiFolder.tags,
+            visibility = apiFolder.visibility,
+            ownerDisplayName = apiFolder.ownerDisplayName,
+            linkCount = apiFolder.linkCount,
+            likeCount = apiFolder.likeCount,
+            collaborators = apiFolder.collaborators.map { c ->
+                Collaborator(
+                    userId = c.userId,
+                    email = c.email,
+                    displayName = c.displayName,
+                    role = c.role
+                )
+            }
+        )
     }
     
     // ── Children Backend Sync ─────────────────────────────────────────────────
