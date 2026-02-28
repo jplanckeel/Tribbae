@@ -463,7 +463,7 @@ private fun AuthDialog(
                     OutlinedTextField(
                         value = displayName,
                         onValueChange = { displayName = it; errorMessage = null },
-                        label = { Text("Nom d'affichage", fontSize = 14.sp) },
+                        label = { Text("Pseudo", fontSize = 14.sp) },
                         leadingIcon = {
                             Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(20.dp))
                         },
