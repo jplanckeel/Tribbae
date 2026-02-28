@@ -89,6 +89,18 @@ class LinkRepository(private val storage: Storage? = null) {
         storage?.saveChildren(_children.value)
     }
 
+    /** Vide toutes les données locales (pour forcer un refresh complet) */
+    fun clearAll() {
+        _links.value = emptyList()
+        _folders.value = emptyList()
+        _children.value = emptyList()
+        _tags.value = emptyList()
+        storage?.saveLinks(emptyList())
+        storage?.saveFolders(emptyList())
+        storage?.saveChildren(emptyList())
+        storage?.saveTags(emptyList())
+    }
+
     fun searchLinks(
         query: String = "",
         category: LinkCategory? = null,

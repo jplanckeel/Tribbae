@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,11 +42,20 @@ fun HomeScreen(
     val selectedFolderId by viewModel.selectedFolderId.collectAsState()
     val children by viewModel.children.collectAsState()
     val selectedChildId by viewModel.selectedChildId.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     var showFilterSheet by remember { mutableStateOf(false) }
     val activeFilters = viewModel.activeFilterCount()
 
+    val pullRefreshState = rememberPullToRefreshState()
+
     Box(modifier = modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.forceSync() },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize()
+        ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Search bar
             OutlinedTextField(
@@ -210,6 +221,7 @@ fun HomeScreen(
                 }
             }
         }
+        } // PullToRefreshBox
 
         // FABs
         Column(
