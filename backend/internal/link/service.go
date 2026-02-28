@@ -88,14 +88,17 @@ func (s *Service) canAccessLink(ctx context.Context, l *Link, userID string) boo
 	if l.FolderID == "" {
 		return false
 	}
-	// Vérifier si l'utilisateur est collaborateur du dossier
 	fid, err := primitive.ObjectIDFromHex(l.FolderID)
 	if err != nil {
 		return false
 	}
+	// Vérifier si le dossier est public ou si l'utilisateur est collaborateur
 	count, _ := s.folderCol.CountDocuments(ctx, bson.M{
-		"_id":                    fid,
-		"collaborators.user_id": userID,
+		"_id": fid,
+		"$or": bson.A{
+			bson.M{"visibility": "public"},
+			bson.M{"collaborators.user_id": userID},
+		},
 	})
 	return count > 0
 }
