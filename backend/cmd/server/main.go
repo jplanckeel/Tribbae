@@ -36,6 +36,11 @@ func main() {
 	}
 	log.Println("connected to MongoDB")
 
+	// Ensure MongoDB indexes exist
+	if err := db.EnsureIndexes(context.Background(), database.DB()); err != nil {
+		log.Fatalf("ensure indexes: %v", err)
+	}
+
 	// Services
 	authSvc := auth.NewService(database.Col("users"), cfg.JWTSecret)
 	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)
