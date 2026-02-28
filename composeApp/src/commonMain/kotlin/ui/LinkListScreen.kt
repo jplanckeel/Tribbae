@@ -111,7 +111,7 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(140.dp)
+                        .height(120.dp)
                         .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                 ) {
                     NetworkImage(
@@ -163,18 +163,18 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(100.dp)
+                        .height(70.dp)
                         .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                         .background(catColor.copy(alpha = 0.10f))
                 ) {
                     val icon = categoryIcon(link.category)
-                    val iconSize = 20.dp
-                    val spacing = 12.dp
+                    val iconSize = 18.dp
+                    val spacing = 10.dp
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        for (row in 0..4) {
+                        for (row in 0..2) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -227,24 +227,25 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
 
             // Contenu texte
             Row(
-                modifier = Modifier.padding(14.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        link.title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+                        link.title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
                         maxLines = 1, color = TextPrimary
                     )
                     if (link.description.isNotEmpty()) {
                         Text(
                             link.description, color = TextSecondary,
-                            fontSize = 13.sp, maxLines = 2,
-                            modifier = Modifier.padding(top = 4.dp)
+                            fontSize = 12.sp, maxLines = 2,
+                            lineHeight = 16.sp,
+                            modifier = Modifier.padding(top = 2.dp)
                         )
                     }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier.padding(top = 6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 4.dp)
                     ) {
                         if (link.eventDate != null) MiniChip(Icons.Default.CalendarMonth, formatDate(link.eventDate), catColor)
                         if (link.price.isNotEmpty()) MiniChip(Icons.Default.Euro, link.price, catColor)
@@ -254,7 +255,7 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                     if (link.tags.isNotEmpty()) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.padding(top = 5.dp)
+                            modifier = Modifier.padding(top = 4.dp)
                         ) {
                             link.tags.take(3).forEach { tag ->
                                 Surface(
@@ -262,7 +263,7 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                                     color = catColor.copy(alpha = 0.1f)
                                 ) {
                                     Text(
-                                        "#$tag", fontSize = 11.sp, color = catColor,
+                                        "#$tag", fontSize = 10.sp, color = catColor,
                                         fontWeight = FontWeight.Medium,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
@@ -271,8 +272,8 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                         }
                     }
                     if (link.rating > 0) {
-                        Box(modifier = Modifier.padding(top = 4.dp)) {
-                            StarRating(rating = link.rating, starSize = 16)
+                        Box(modifier = Modifier.padding(top = 3.dp)) {
+                            StarRating(rating = link.rating, starSize = 14)
                         }
                     }
                 }

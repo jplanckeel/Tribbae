@@ -5,9 +5,9 @@ import { CATEGORIES, CATEGORY_COLORS, normalizeCategory } from "../types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowLeft, faExternalLinkAlt, faMapMarkerAlt, faStar,
-  faTag, faCalendar, faTrash, faPen, faHeart, faFolderOpen, faTimes,
+  faTag, faCalendar, faTrash, faPen, faHeart, faFolderOpen, faTimes, faCheck,
 } from "@fortawesome/free-solid-svg-icons";
-import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import { faHeart as faHeartRegular, faBookmark as faBookmarkRegular } from "@fortawesome/free-regular-svg-icons";
 
 function catLabel(v: string) { return CATEGORIES.find((c) => c.value === v)?.label ?? "Idée"; }
 function catIcon(v: string) { return CATEGORIES.find((c) => c.value === v)?.icon ?? "💡"; }
@@ -21,6 +21,10 @@ export default function LinkDetail() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<any>({});
   const [folderList, setFolderList] = useState<any[]>([]);
+  const [showSaveToList, setShowSaveToList] = useState(false);
+  const [saveToFolderId, setSaveToFolderId] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -67,6 +71,33 @@ export default function LinkDetail() {
 
   const openMaps = () => {
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(link.location)}`, "_blank");
+  };
+
+  const isLoggedIn = !!localStorage.getItem("token");
+  const currentUserId = localStorage.getItem("userId");
+  const isOwnLink = currentUserId && link.ownerId === currentUserId;
+
+  const handleSaveToMyList = async () => {
+    setSaving(true);
+    try {
+      await linksApi.create({
+        title: link.title,
+        url: link.url || "",
+        description: link.description || "",
+        category: link.category,
+        tags: link.tags || [],
+        location: link.location || "",
+        price: link.price || "",
+        ageRange: link.ageRange || "",
+        rating: link.rating || 0,
+        ingredients: link.ingredients || [],
+        folderId: saveToFolderId || "",
+        imageUrl: link.imageUrl || "",
+      });
+      setSaved(true);
+      setShowSaveToList(false);
+    } catch { /* silencieux */ }
+    setSaving(false);
   };
 
   // --- Vue édition ---
@@ -205,20 +236,35 @@ export default function LinkDetail() {
           <div className="flex items-start justify-between gap-2">
             <h1 className="text-xl font-bold text-gray-800 flex-1">{link.title}</h1>
             <div className="flex gap-2 flex-shrink-0">
-              <button onClick={toggleLike} className="flex items-center gap-1">
-                <FontAwesomeIcon icon={link.likedByMe ? faHeart : faHeartRegular} className={`w-5 h-5 ${link.likedByMe ? "text-red-500" : "text-gray-300 hover:text-red-400"}`} />
-                {(link.likeCount || 0) > 0 && (
-                  <span className={`text-xs ${link.likedByMe ? "text-red-500 font-medium" : "text-gray-400"}`}>
-                    {link.likeCount}
-                  </span>
-                )}
-              </button>
-              <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-orange-500">
-                <FontAwesomeIcon icon={faPen} className="w-4 h-4" />
-              </button>
-              <button onClick={handleDelete} className="text-gray-400 hover:text-red-500">
-                <FontAwesomeIcon icon={faTrash} className="w-4 h-4" />
-              </button>
+              {isLoggedIn && (
+                <button onClick={toggleLike} className="flex items-center gap-1">
+                  <FontAwesomeIcon icon={link.likedByMe ? faHeart : faHeartRegular} className={`w-5 h-5 ${link.likedByMe ? "text-red-500" : "text-gray-300 hover:text-red-400"}`} />
+                  {(link.likeCount || 0) > 0 && (
+                    <span className={`text-xs ${link.likedByMe ? "text-red-500 font-medium" : "text-gray-400"}`}>
+                      {link.likeCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              {isLoggedIn && !isOwnLink && (
+                <button
+                  onClick={() => { if (saved) return; setShowSaveToList(!showSaveToList); }}
+                  className={saved ? "text-green-500" : "text-gray-300 hover:text-orange-500"}
+                  title={saved ? "Ajouté à mes idées" : "Ajouter à mes listes"}
+                >
+                  <FontAwesomeIcon icon={saved ? faCheck : faBookmarkRegular} className="w-5 h-5" />
+                </button>
+              )}
+              {isOwnLink && (
+                <>
+                  <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-orange-500">
+                    <FontAwesomeIcon icon={faPen} className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleDelete} className="text-gray-400 hover:text-red-500">
+                    <FontAwesomeIcon icon={faTrash} className="w-4 h-4" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -227,6 +273,43 @@ export default function LinkDetail() {
             <span className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-orange-50 text-orange-600">
               <FontAwesomeIcon icon={faFolderOpen} className="w-3 h-3" /> {folderName}
             </span>
+          )}
+
+          {/* Sauvegarder dans mes listes */}
+          {showSaveToList && (
+            <div className="bg-orange-50 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-medium text-gray-700">📥 Ajouter à mes listes</p>
+              <select
+                value={saveToFolderId}
+                onChange={(e) => setSaveToFolderId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-orange-200 focus:border-orange-400 focus:outline-none text-sm bg-white"
+              >
+                <option value="">Sans liste (mes idées)</option>
+                {folderList.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveToMyList}
+                  disabled={saving}
+                  className="flex-1 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                >
+                  {saving ? "Ajout..." : "Ajouter"}
+                </button>
+                <button
+                  onClick={() => setShowSaveToList(false)}
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+
+          {saved && !showSaveToList && (
+            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-lg px-3 py-2">
+              <FontAwesomeIcon icon={faCheck} className="w-3.5 h-3.5" />
+              Idée ajoutée à vos listes
+            </div>
           )}
 
           {link.description && <p className="text-gray-600 text-sm">{link.description}</p>}

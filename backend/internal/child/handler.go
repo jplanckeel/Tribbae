@@ -4,6 +4,7 @@ import (
 	"context"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
+	"github.com/tribbae/backend/internal/interceptor"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,9 +20,9 @@ func NewHandler(svc *Service) *Handler {
 }
 
 func (h *Handler) CreateChild(ctx context.Context, req *pb.CreateChildRequest) (*pb.CreateChildResponse, error) {
-	ownerID, ok := ctx.Value("userID").(primitive.ObjectID)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
+	ownerID, err := ownerIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	child, err := h.svc.Create(ctx, ownerID, req.Name, req.BirthDate)
@@ -41,9 +42,9 @@ func (h *Handler) CreateChild(ctx context.Context, req *pb.CreateChildRequest) (
 }
 
 func (h *Handler) ListChildren(ctx context.Context, req *pb.ListChildrenRequest) (*pb.ListChildrenResponse, error) {
-	ownerID, ok := ctx.Value("userID").(primitive.ObjectID)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
+	ownerID, err := ownerIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	children, err := h.svc.List(ctx, ownerID)
@@ -66,9 +67,9 @@ func (h *Handler) ListChildren(ctx context.Context, req *pb.ListChildrenRequest)
 }
 
 func (h *Handler) UpdateChild(ctx context.Context, req *pb.UpdateChildRequest) (*pb.UpdateChildResponse, error) {
-	ownerID, ok := ctx.Value("userID").(primitive.ObjectID)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
+	ownerID, err := ownerIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	childID, err := primitive.ObjectIDFromHex(req.ChildId)
@@ -93,9 +94,9 @@ func (h *Handler) UpdateChild(ctx context.Context, req *pb.UpdateChildRequest) (
 }
 
 func (h *Handler) DeleteChild(ctx context.Context, req *pb.DeleteChildRequest) (*pb.DeleteChildResponse, error) {
-	ownerID, ok := ctx.Value("userID").(primitive.ObjectID)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "user not authenticated")
+	ownerID, err := ownerIDFromContext(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	childID, err := primitive.ObjectIDFromHex(req.ChildId)
@@ -108,4 +109,17 @@ func (h *Handler) DeleteChild(ctx context.Context, req *pb.DeleteChildRequest) (
 	}
 
 	return &pb.DeleteChildResponse{}, nil
+}
+
+// ownerIDFromContext extrait le userID du contexte et le convertit en ObjectID.
+func ownerIDFromContext(ctx context.Context) (primitive.ObjectID, error) {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return primitive.NilObjectID, status.Error(codes.Unauthenticated, "user not authenticated")
+	}
+	oid, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return primitive.NilObjectID, status.Error(codes.Internal, "invalid user ID format")
+	}
+	return oid, nil
 }

@@ -17,11 +17,13 @@ export default function Login() {
       if (isRegister) {
         const res = await auth.register(email, password, displayName);
         localStorage.setItem("token", res.token);
+        localStorage.setItem("userId", res.userId);
         localStorage.setItem("displayName", displayName);
         localStorage.setItem("isAdmin", String(res.isAdmin));
       } else {
         const res = await auth.login(email, password);
         localStorage.setItem("token", res.token);
+        localStorage.setItem("userId", res.userId);
         localStorage.setItem("displayName", res.displayName || "");
         localStorage.setItem("isAdmin", String(res.isAdmin));
       }
