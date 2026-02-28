@@ -10,7 +10,6 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -28,8 +27,8 @@ type Child struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	OwnerId       string                 `protobuf:"bytes,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	BirthDate     int64                  `protobuf:"varint,4,opt,name=birth_date,json=birthDate,proto3" json:"birth_date,omitempty"` // timestamp ms
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	BirthDate     int64                  `protobuf:"varint,4,opt,name=birth_date,json=birthDate,proto3" json:"birth_date,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -92,11 +91,11 @@ func (x *Child) GetBirthDate() int64 {
 	return 0
 }
 
-func (x *Child) GetCreatedAt() *timestamppb.Timestamp {
+func (x *Child) GetCreatedAt() int64 {
 	if x != nil {
 		return x.CreatedAt
 	}
-	return nil
+	return 0
 }
 
 type CreateChildRequest struct {
@@ -464,15 +463,15 @@ var File_tribbae_v1_child_proto protoreflect.FileDescriptor
 const file_tribbae_v1_child_proto_rawDesc = "" +
 	"\n" +
 	"\x16tribbae/v1/child.proto\x12\n" +
-	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa0\x01\n" +
+	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\"\x84\x01\n" +
 	"\x05Child\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
-	"birth_date\x18\x04 \x01(\x03R\tbirthDate\x129\n" +
+	"birth_date\x18\x04 \x01(\x03R\tbirthDate\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"G\n" +
+	"created_at\x18\x05 \x01(\x03R\tcreatedAt\"G\n" +
 	"\x12CreateChildRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
@@ -512,35 +511,33 @@ func file_tribbae_v1_child_proto_rawDescGZIP() []byte {
 
 var file_tribbae_v1_child_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_tribbae_v1_child_proto_goTypes = []any{
-	(*Child)(nil),                 // 0: tribbae.v1.Child
-	(*CreateChildRequest)(nil),    // 1: tribbae.v1.CreateChildRequest
-	(*CreateChildResponse)(nil),   // 2: tribbae.v1.CreateChildResponse
-	(*ListChildrenRequest)(nil),   // 3: tribbae.v1.ListChildrenRequest
-	(*ListChildrenResponse)(nil),  // 4: tribbae.v1.ListChildrenResponse
-	(*UpdateChildRequest)(nil),    // 5: tribbae.v1.UpdateChildRequest
-	(*UpdateChildResponse)(nil),   // 6: tribbae.v1.UpdateChildResponse
-	(*DeleteChildRequest)(nil),    // 7: tribbae.v1.DeleteChildRequest
-	(*DeleteChildResponse)(nil),   // 8: tribbae.v1.DeleteChildResponse
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(*Child)(nil),                // 0: tribbae.v1.Child
+	(*CreateChildRequest)(nil),   // 1: tribbae.v1.CreateChildRequest
+	(*CreateChildResponse)(nil),  // 2: tribbae.v1.CreateChildResponse
+	(*ListChildrenRequest)(nil),  // 3: tribbae.v1.ListChildrenRequest
+	(*ListChildrenResponse)(nil), // 4: tribbae.v1.ListChildrenResponse
+	(*UpdateChildRequest)(nil),   // 5: tribbae.v1.UpdateChildRequest
+	(*UpdateChildResponse)(nil),  // 6: tribbae.v1.UpdateChildResponse
+	(*DeleteChildRequest)(nil),   // 7: tribbae.v1.DeleteChildRequest
+	(*DeleteChildResponse)(nil),  // 8: tribbae.v1.DeleteChildResponse
 }
 var file_tribbae_v1_child_proto_depIdxs = []int32{
-	9, // 0: tribbae.v1.Child.created_at:type_name -> google.protobuf.Timestamp
-	0, // 1: tribbae.v1.CreateChildResponse.child:type_name -> tribbae.v1.Child
-	0, // 2: tribbae.v1.ListChildrenResponse.children:type_name -> tribbae.v1.Child
-	0, // 3: tribbae.v1.UpdateChildResponse.child:type_name -> tribbae.v1.Child
-	1, // 4: tribbae.v1.ChildService.CreateChild:input_type -> tribbae.v1.CreateChildRequest
-	3, // 5: tribbae.v1.ChildService.ListChildren:input_type -> tribbae.v1.ListChildrenRequest
-	5, // 6: tribbae.v1.ChildService.UpdateChild:input_type -> tribbae.v1.UpdateChildRequest
-	7, // 7: tribbae.v1.ChildService.DeleteChild:input_type -> tribbae.v1.DeleteChildRequest
-	2, // 8: tribbae.v1.ChildService.CreateChild:output_type -> tribbae.v1.CreateChildResponse
-	4, // 9: tribbae.v1.ChildService.ListChildren:output_type -> tribbae.v1.ListChildrenResponse
-	6, // 10: tribbae.v1.ChildService.UpdateChild:output_type -> tribbae.v1.UpdateChildResponse
-	8, // 11: tribbae.v1.ChildService.DeleteChild:output_type -> tribbae.v1.DeleteChildResponse
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	0, // 0: tribbae.v1.CreateChildResponse.child:type_name -> tribbae.v1.Child
+	0, // 1: tribbae.v1.ListChildrenResponse.children:type_name -> tribbae.v1.Child
+	0, // 2: tribbae.v1.UpdateChildResponse.child:type_name -> tribbae.v1.Child
+	1, // 3: tribbae.v1.ChildService.CreateChild:input_type -> tribbae.v1.CreateChildRequest
+	3, // 4: tribbae.v1.ChildService.ListChildren:input_type -> tribbae.v1.ListChildrenRequest
+	5, // 5: tribbae.v1.ChildService.UpdateChild:input_type -> tribbae.v1.UpdateChildRequest
+	7, // 6: tribbae.v1.ChildService.DeleteChild:input_type -> tribbae.v1.DeleteChildRequest
+	2, // 7: tribbae.v1.ChildService.CreateChild:output_type -> tribbae.v1.CreateChildResponse
+	4, // 8: tribbae.v1.ChildService.ListChildren:output_type -> tribbae.v1.ListChildrenResponse
+	6, // 9: tribbae.v1.ChildService.UpdateChild:output_type -> tribbae.v1.UpdateChildResponse
+	8, // 10: tribbae.v1.ChildService.DeleteChild:output_type -> tribbae.v1.DeleteChildResponse
+	7, // [7:11] is the sub-list for method output_type
+	3, // [3:7] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_tribbae_v1_child_proto_init() }

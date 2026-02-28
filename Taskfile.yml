@@ -262,6 +262,34 @@ tasks:
       - docker push jplanckeel/tribbae:{{.TAG}}
       - echo "jplanckeel/tribbae:{{.TAG}} pushed"
 
+  docker:build:searxng:
+    desc: "Build l'image Docker SearXNG custom"
+    vars:
+      TAG: '{{.TAG | default "latest"}}'
+    cmds:
+      - docker build -t jplanckeel/tribbae-searxng:{{.TAG}} -f searxng/Dockerfile ./searxng
+      - echo "jplanckeel/tribbae-searxng:{{.TAG}} built"
+
+  docker:push:searxng:
+    desc: "Build et push l'image Docker SearXNG custom"
+    vars:
+      TAG: '{{.TAG | default "latest"}}'
+    cmds:
+      - docker build -t jplanckeel/tribbae-searxng:{{.TAG}} -f searxng/Dockerfile ./searxng
+      - docker push jplanckeel/tribbae-searxng:{{.TAG}}
+      - echo "jplanckeel/tribbae-searxng:{{.TAG}} pushed"
+
+  docker:push:all:
+    desc: "Build et push toutes les images Docker (Tribbae + SearXNG)"
+    vars:
+      TAG: '{{.TAG | default "latest"}}'
+    cmds:
+      - task: docker:push
+        vars: {TAG: "{{.TAG}}"}
+      - task: docker:push:searxng
+        vars: {TAG: "{{.TAG}}"}
+      - echo "Toutes les images ont été poussées avec le tag {{.TAG}}"
+
   # ── Seed data ────────────────────────────────────────────
   seed:
     desc: "Générer des données de test avec k6"

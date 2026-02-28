@@ -13,15 +13,31 @@ server:
   limiter: false
   public_instance: false
   image_proxy: false
+  method: "POST"
 
 outgoing:
   request_timeout: 10.0
+  max_request_timeout: 15.0
 
 ui:
   static_use_hash: true
 
 general:
   instance_name: "Tribbae Search"
+  enable_metrics: false
+
+# Configuration du limiteur (désactivé mais configuré pour être permissif)
+limiter:
+  enabled: false
+
+# Désactiver la détection de bots
+botdetection:
+  ip_limit:
+    enabled: false
+  ip_lists:
+    pass_ip:
+      - "0.0.0.0/0"
+      - "::/0"
 
 engines:
   # Désactiver les moteurs problématiques

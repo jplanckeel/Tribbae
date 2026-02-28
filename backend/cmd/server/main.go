@@ -40,7 +40,7 @@ func main() {
 	authSvc := auth.NewService(database.Col("users"), cfg.JWTSecret)
 	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)
 	linkSvc := link.NewService(database.Col("links"), database.Col("folders"))
-	childSvc := child.NewService(database.Col("children"))
+	childSvc := child.NewService(database.DB())
 	aiSvc := ai.NewService(cfg.OllamaURL, cfg.OllamaModel, cfg.SearxURL, cfg.GeminiAPIKey)
 
 	// Handlers (gRPC servers)

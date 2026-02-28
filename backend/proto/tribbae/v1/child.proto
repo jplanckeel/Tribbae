@@ -3,7 +3,6 @@ syntax = "proto3";
 package tribbae.v1;
 
 import "google/api/annotations.proto";
-import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
 
@@ -11,40 +10,65 @@ message Child {
   string id = 1;
   string owner_id = 2;
   string name = 3;
-  int64 birth_date = 4; // timestamp ms
-  google.protobuf.Timestamp created_at = 5;
+  int64 birth_date = 4;
+  int64 created_at = 5;
 }
 
 message CreateChildRequest {
   string name = 1;
   int64 birth_date = 2;
 }
-message CreateChildResponse { Child child = 1; }
+
+message CreateChildResponse {
+  Child child = 1;
+}
 
 message ListChildrenRequest {}
-message ListChildrenResponse { repeated Child children = 1; }
+
+message ListChildrenResponse {
+  repeated Child children = 1;
+}
 
 message UpdateChildRequest {
   string child_id = 1;
   string name = 2;
   int64 birth_date = 3;
 }
-message UpdateChildResponse { Child child = 1; }
 
-message DeleteChildRequest { string child_id = 1; }
+message UpdateChildResponse {
+  Child child = 1;
+}
+
+message DeleteChildRequest {
+  string child_id = 1;
+}
+
 message DeleteChildResponse {}
 
 service ChildService {
   rpc CreateChild(CreateChildRequest) returns (CreateChildResponse) {
-    option (google.api.http) = { post: "/v1/children" body: "*" };
+    option (google.api.http) = {
+      post: "/v1/children"
+      body: "*"
+    };
   }
+
   rpc ListChildren(ListChildrenRequest) returns (ListChildrenResponse) {
-    option (google.api.http) = { get: "/v1/children" };
+    option (google.api.http) = {
+      get: "/v1/children"
+    };
   }
+
   rpc UpdateChild(UpdateChildRequest) returns (UpdateChildResponse) {
-    option (google.api.http) = { put: "/v1/children/{child_id}" body: "*" };
+    option (google.api.http) = {
+      put: "/v1/children/{child_id}"
+      body: "*"
+    };
   }
+
   rpc DeleteChild(DeleteChildRequest) returns (DeleteChildResponse) {
-    option (google.api.http) = { delete: "/v1/children/{child_id}" };
+    option (google.api.http) = {
+      delete: "/v1/children/{child_id}"
+    };
   }
 }

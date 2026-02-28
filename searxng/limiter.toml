@@ -1,5 +1,14 @@
+# Configuration du limiteur de débit pour SearXNG
+# Désactive complètement toutes les restrictions
+
 [botdetection.ip_limit]
+# Désactiver la limite par IP
 link_token = false
 
 [botdetection.ip_lists]
-pass_ip = ["0.0.0.0/0"]
+# Autoriser toutes les IPs
+pass_ip = [
+    "0.0.0.0/0",      # Toutes les IPv4
+    "::/0"            # Toutes les IPv6
+]
+pass_searxng_org = true

@@ -2,7 +2,6 @@ package child
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,59 +11,68 @@ import (
 
 type Child struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	OwnerID   string             `bson:"owner_id"`
+	OwnerID   primitive.ObjectID `bson:"ownerId"`
 	Name      string             `bson:"name"`
-	BirthDate int64              `bson:"birth_date"` // ms
-	CreatedAt time.Time          `bson:"created_at"`
+	BirthDate int64              `bson:"birthDate"`
+	CreatedAt int64              `bson:"createdAt"`
 }
 
-type Service struct{ col *mongo.Collection }
+type Service struct {
+	coll *mongo.Collection
+}
 
-func NewService(col *mongo.Collection) *Service { return &Service{col: col} }
+func NewService(db *mongo.Database) *Service {
+	return &Service{coll: db.Collection("children")}
+}
 
-func (s *Service) Create(ctx context.Context, ownerID, name string, birthDate int64) (*Child, error) {
-	c := &Child{
-		ID: primitive.NewObjectID(), OwnerID: ownerID,
-		Name: name, BirthDate: birthDate, CreatedAt: time.Now(),
+func (s *Service) Create(ctx context.Context, ownerID primitive.ObjectID, name string, birthDate int64) (*Child, error) {
+	child := &Child{
+		ID:        primitive.NewObjectID(),
+		OwnerID:   ownerID,
+		Name:      name,
+		BirthDate: birthDate,
+		CreatedAt: time.Now().Unix(),
 	}
-	if _, err := s.col.InsertOne(ctx, c); err != nil {
+	_, err := s.coll.InsertOne(ctx, child)
+	if err != nil {
 		return nil, err
 	}
-	return c, nil
+	return child, nil
 }
 
-func (s *Service) List(ctx context.Context, ownerID string) ([]*Child, error) {
-	cursor, err := s.col.Find(ctx, bson.M{"owner_id": ownerID})
+func (s *Service) List(ctx context.Context, ownerID primitive.ObjectID) ([]*Child, error) {
+	cursor, err := s.coll.Find(ctx, bson.M{"ownerId": ownerID})
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(ctx)
+
 	var children []*Child
-	return children, cursor.All(ctx, &children)
+	if err := cursor.All(ctx, &children); err != nil {
+		return nil, err
+	}
+	return children, nil
 }
 
-func (s *Service) Update(ctx context.Context, childID, ownerID, name string, birthDate int64) (*Child, error) {
-	id, err := primitive.ObjectIDFromHex(childID)
-	if err != nil {
-		return nil, errors.New("invalid child id")
-	}
-	_, err = s.col.UpdateOne(ctx,
-		bson.M{"_id": id, "owner_id": ownerID},
-		bson.M{"$set": bson.M{"name": name, "birth_date": birthDate}},
-	)
+func (s *Service) Update(ctx context.Context, childID, ownerID primitive.ObjectID, name string, birthDate int64) (*Child, error) {
+	filter := bson.M{"_id": childID, "ownerId": ownerID}
+	update := bson.M{"$set": bson.M{"name": name, "birthDate": birthDate}}
+	
+	var child Child
+	err := s.coll.FindOneAndUpdate(ctx, filter, update).Decode(&child)
 	if err != nil {
 		return nil, err
 	}
-	var c Child
-	s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&c)
-	return &c, nil
+	
+	// Récupérer le document mis à jour
+	err = s.coll.FindOne(ctx, filter).Decode(&child)
+	if err != nil {
+		return nil, err
+	}
+	return &child, nil
 }
 
-func (s *Service) Delete(ctx context.Context, childID, ownerID string) error {
-	id, err := primitive.ObjectIDFromHex(childID)
-	if err != nil {
-		return errors.New("invalid child id")
-	}
-	_, err = s.col.DeleteOne(ctx, bson.M{"_id": id, "owner_id": ownerID})
+func (s *Service) Delete(ctx context.Context, childID, ownerID primitive.ObjectID) error {
+	_, err := s.coll.DeleteOne(ctx, bson.M{"_id": childID, "ownerId": ownerID})
 	return err
 }

@@ -436,7 +436,14 @@ export default function Home() {
 
           {/* Toutes les listes publiques */}
           <div>
-            <h2 className="text-lg font-bold text-gray-800 mb-3">🌍 Toutes les listes publiques</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-gray-800">🌍 Toutes les listes publiques</h2>
+              {communityFolders.length > 6 && (
+                <Link to="/discover" className="text-sm text-orange-500 hover:text-orange-600 font-medium">
+                  Voir tout →
+                </Link>
+              )}
+            </div>
             {communityFolders.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
                 <FontAwesomeIcon icon={faGlobe} className="mx-auto mb-3 text-gray-300 w-10 h-10" />
@@ -444,7 +451,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {communityFolders.map((f) => (
+                {communityFolders.slice(0, 6).map((f) => (
                   <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
                 ))}
               </div>

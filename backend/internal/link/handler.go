@@ -44,6 +44,7 @@ func (h *Handler) toProto(ctx context.Context, l *Link, userID string) *pb.Link 
 		UpdatedAt:       timestamppb.New(l.UpdatedAt),
 		LikeCount:       likeCount,
 		LikedByMe:       likedByMe,
+		Favorite:        l.Favorite,
 	}
 }
 
@@ -178,6 +179,18 @@ func (h *Handler) UnlikeLink(ctx context.Context, req *pb.UnlikeLinkRequest) (*p
 		return nil, status.Errorf(codes.Internal, "failed to unlike link: %v", err)
 	}
 	return &pb.UnlikeLinkResponse{LikeCount: count}, nil
+}
+
+func (h *Handler) ToggleFavoriteLink(ctx context.Context, req *pb.ToggleFavoriteLinkRequest) (*pb.ToggleFavoriteLinkResponse, error) {
+	ownerID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+	}
+	favorite, err := h.svc.ToggleFavorite(ctx, req.LinkId, ownerID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to toggle favorite: %v", err)
+	}
+	return &pb.ToggleFavoriteLinkResponse{Favorite: favorite}, nil
 }
 
 func (h *Handler) ListCommunityLinks(ctx context.Context, req *pb.ListCommunityLinksRequest) (*pb.ListCommunityLinksResponse, error) {

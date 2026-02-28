@@ -36,7 +36,7 @@ data class UpdateUserPremiumResponse(
 )
 
 class AdminRepository(
-    private val baseUrl: String = "http://10.0.2.2:8080",
+    private val baseUrl: String = "https://tribbae.bananaops.cloud",
     private val tokenProvider: () -> String?
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }

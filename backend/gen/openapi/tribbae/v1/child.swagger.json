@@ -190,12 +190,11 @@
         },
         "birthDate": {
           "type": "string",
-          "format": "int64",
-          "title": "timestamp ms"
+          "format": "int64"
         },
         "createdAt": {
           "type": "string",
-          "format": "date-time"
+          "format": "int64"
         }
       }
     },
