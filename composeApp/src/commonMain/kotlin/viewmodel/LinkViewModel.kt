@@ -28,6 +28,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     
     private val _syncStatus = MutableStateFlow<String?>(null)
     val syncStatus: StateFlow<String?> = _syncStatus.asStateFlow()
+    
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     /** Fonction pour récupérer l'image OG — injectée côté Android */
     var ogImageFetcher: (suspend (String) -> String?)? = null
@@ -346,84 +349,94 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         viewModelScope.launch {
             try {
                 _syncStatus.value = "Synchronisation..."
-                
-                // Charger les dossiers
-                val foldersResponse = client.listFolders()
-                foldersResponse.folders.forEach { apiFolder ->
-                    val folder = Folder(
-                        id = apiFolder.id,
-                        name = apiFolder.name,
-                        icon = try { FolderIcon.valueOf(apiFolder.icon) } catch (_: Exception) { FolderIcon.FOLDER },
-                        color = try { FolderColor.valueOf(apiFolder.color) } catch (_: Exception) { FolderColor.ORANGE },
-                        bannerUrl = apiFolder.bannerUrl,
-                        tags = apiFolder.tags
-                    )
-                    // Ajouter seulement si pas déjà présent
-                    if (repository.folders.value.none { it.id == folder.id }) {
-                        repository.addFolder(folder)
-                    }
-                }
-                
-                // Charger les liens
-                val linksResponse = client.listLinks()
-                linksResponse.links.forEach { apiLink ->
-                    val category = try {
-                        LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
-                    } catch (_: Exception) { LinkCategory.IDEE }
-                    
-                    val link = Link(
-                        id = apiLink.id,
-                        title = apiLink.title,
-                        url = apiLink.url,
-                        description = apiLink.description,
-                        category = category,
-                        folderId = apiLink.folderId.ifBlank { null },
-                        tags = apiLink.tags,
-                        ageRange = apiLink.ageRange,
-                        location = apiLink.location,
-                        price = apiLink.price,
-                        imageUrl = apiLink.imageUrl,
-                        eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
-                        reminderEnabled = apiLink.reminderEnabled,
-                        rating = apiLink.rating,
-                        ingredients = apiLink.ingredients,
-                        favorite = false // Le backend ne gère pas encore les favoris
-                    )
-                    // Ajouter seulement si pas déjà présent (vérifier par ID ou par titre+URL)
-                    val exists = repository.links.value.any { 
-                        it.id == link.id || (it.title == link.title && it.url == link.url)
-                    }
-                    if (!exists) {
-                        repository.addLink(link)
-                    } else {
-                        // Mettre à jour l'ID local si le lien existe avec un ID différent
-                        val existingLink = repository.links.value.find { 
-                            it.title == link.title && it.url == link.url && it.id != link.id
-                        }
-                        if (existingLink != null) {
-                            repository.updateLink(existingLink.copy(id = link.id))
-                        }
-                    }
-                }
-                
+                performSync(client)
                 _syncStatus.value = "Synchronisé"
-                updateFilteredLinks()
-                
-                // Charger les enfants
-                val childrenResponse = client.listChildren()
-                childrenResponse.children.forEach { apiChild ->
-                    val child = data.Child(
-                        id = apiChild.id,
-                        name = apiChild.name,
-                        birthDate = apiChild.birthDate
-                    )
-                    // Ajouter seulement si pas déjà présent
-                    if (repository.children.value.none { it.id == child.id }) {
-                        repository.addChild(child)
-                    }
-                }
             } catch (e: Exception) {
                 _syncStatus.value = "Erreur: ${e.message}"
+            }
+        }
+    }
+    
+    /** Force la synchronisation (pull-to-refresh) — remplace les données locales par celles du backend */
+    fun forceSync() {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                _syncStatus.value = "Synchronisation..."
+                
+                // Vider les données locales avant de recharger
+                repository.clearAll()
+                
+                performSync(client)
+                _syncStatus.value = "Synchronisé"
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur: ${e.message}"
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+    
+    private suspend fun performSync(client: data.AuthenticatedApiClient) {
+        // Charger les dossiers
+        val foldersResponse = client.listFolders()
+        foldersResponse.folders.forEach { apiFolder ->
+            val folder = Folder(
+                id = apiFolder.id,
+                name = apiFolder.name,
+                icon = try { FolderIcon.valueOf(apiFolder.icon) } catch (_: Exception) { FolderIcon.FOLDER },
+                color = try { FolderColor.valueOf(apiFolder.color) } catch (_: Exception) { FolderColor.ORANGE },
+                bannerUrl = apiFolder.bannerUrl,
+                tags = apiFolder.tags
+            )
+            if (repository.folders.value.none { it.id == folder.id }) {
+                repository.addFolder(folder)
+            }
+        }
+        
+        // Charger les liens
+        val linksResponse = client.listLinks()
+        linksResponse.links.forEach { apiLink ->
+            val category = try {
+                LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
+            } catch (_: Exception) { LinkCategory.IDEE }
+            
+            val link = Link(
+                id = apiLink.id,
+                title = apiLink.title,
+                url = apiLink.url,
+                description = apiLink.description,
+                category = category,
+                folderId = apiLink.folderId.ifBlank { null },
+                tags = apiLink.tags,
+                ageRange = apiLink.ageRange,
+                location = apiLink.location,
+                price = apiLink.price,
+                imageUrl = apiLink.imageUrl,
+                eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
+                reminderEnabled = apiLink.reminderEnabled,
+                rating = apiLink.rating,
+                ingredients = apiLink.ingredients,
+                favorite = false
+            )
+            if (repository.links.value.none { it.id == link.id }) {
+                repository.addLink(link)
+            }
+        }
+        
+        updateFilteredLinks()
+        
+        // Charger les enfants
+        val childrenResponse = client.listChildren()
+        childrenResponse.children.forEach { apiChild ->
+            val child = data.Child(
+                id = apiChild.id,
+                name = apiChild.name,
+                birthDate = apiChild.birthDate
+            )
+            if (repository.children.value.none { it.id == child.id }) {
+                repository.addChild(child)
             }
         }
     }
