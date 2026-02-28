@@ -3,9 +3,9 @@ import { children as childrenApi } from "../api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faPen, faTrash, faTimes, faCheck, faBaby } from "@fortawesome/free-solid-svg-icons";
 
-function calcAge(birthDateMs: number): string {
+function calcAge(birthDateMs: number | string): string {
   const now = Date.now();
-  const diffMs = now - birthDateMs;
+  const diffMs = now - Number(birthDateMs);
   const months = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44));
   if (months < 24) return `${months} mois`;
   const years = Math.floor(months / 12);
@@ -13,8 +13,8 @@ function calcAge(birthDateMs: number): string {
   return rem > 0 ? `${years} ans ${rem} mois` : `${years} ans`;
 }
 
-function formatDate(ms: number): string {
-  return new Date(ms).toLocaleDateString("fr-FR");
+function formatDate(ms: number | string): string {
+  return new Date(Number(ms)).toLocaleDateString("fr-FR");
 }
 
 const AVATAR_COLORS = [
@@ -63,7 +63,7 @@ export default function Children() {
   const startEdit = (child: any) => {
     setEditingId(child.id);
     setName(child.name);
-    setBirthDate(new Date(child.birthDate).toISOString().split("T")[0]);
+    setBirthDate(new Date(Number(child.birthDate)).toISOString().split("T")[0]);
     setError("");
   };
 

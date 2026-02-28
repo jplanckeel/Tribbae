@@ -184,7 +184,7 @@ export default function Home() {
     ? (() => {
       const child = childList.find((c) => c.id === selectedChildId);
       if (!child) return null;
-      return Math.floor((Date.now() - child.birthDate) / (1000 * 60 * 60 * 24 * 30.44));
+      return Math.floor((Date.now() - Number(child.birthDate)) / (1000 * 60 * 60 * 24 * 30.44));
     })()
     : null;
 

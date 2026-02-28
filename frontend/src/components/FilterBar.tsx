@@ -19,8 +19,8 @@ interface Props {
   onChildChange?: (id: string | null) => void;
 }
 
-function calcAgeShort(birthDateMs: number): string {
-  const months = Math.floor((Date.now() - birthDateMs) / (1000 * 60 * 60 * 24 * 30.44));
+function calcAgeShort(birthDateMs: number | string): string {
+  const months = Math.floor((Date.now() - Number(birthDateMs)) / (1000 * 60 * 60 * 24 * 30.44));
   if (months < 24) return `${months}m`;
   return `${Math.floor(months / 12)}a`;
 }
@@ -71,16 +71,14 @@ export default function FilterBar({
             );
           })}
           <button onClick={onFavoritesToggle}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-              favoritesOnly ? "bg-yellow-400 text-black" : "bg-yellow-50 text-yellow-600"
-            }`}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${favoritesOnly ? "bg-yellow-400 text-black" : "bg-yellow-50 text-yellow-600"
+              }`}
           >
             <FontAwesomeIcon icon={faStar} className="w-3 h-3" /> Favoris
           </button>
           <button onClick={() => setShowSheet(true)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-              activeCount > 0 ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-500"
-            }`}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${activeCount > 0 ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-500"
+              }`}
           >
             <FontAwesomeIcon icon={faSlidersH} className="w-3 h-3" />
             {activeCount > 0 ? `Filtres (${activeCount})` : "+ Filtres"}
