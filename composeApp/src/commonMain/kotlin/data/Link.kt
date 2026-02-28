@@ -37,7 +37,8 @@ data class Link(
     val ingredients: List<String> = emptyList(),  // pour les recettes
     val favorite: Boolean = false,
     val likeCount: Int = 0,
-    val likedByMe: Boolean = false
+    val likedByMe: Boolean = false,
+    val ownerDisplayName: String = ""
 )
 
 @Serializable

@@ -82,30 +82,31 @@ func (LinkCategory) EnumDescriptor() ([]byte, []int) {
 }
 
 type Link struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	OwnerId         string                 `protobuf:"bytes,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
-	FolderId        string                 `protobuf:"bytes,3,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
-	Title           string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Url             string                 `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
-	Description     string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
-	Category        LinkCategory           `protobuf:"varint,7,opt,name=category,proto3,enum=tribbae.v1.LinkCategory" json:"category,omitempty"`
-	Tags            []string               `protobuf:"bytes,8,rep,name=tags,proto3" json:"tags,omitempty"`
-	AgeRange        string                 `protobuf:"bytes,9,opt,name=age_range,json=ageRange,proto3" json:"age_range,omitempty"`
-	Location        string                 `protobuf:"bytes,10,opt,name=location,proto3" json:"location,omitempty"`
-	Price           string                 `protobuf:"bytes,11,opt,name=price,proto3" json:"price,omitempty"`
-	ImageUrl        string                 `protobuf:"bytes,12,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
-	EventDate       int64                  `protobuf:"varint,13,opt,name=event_date,json=eventDate,proto3" json:"event_date,omitempty"`
-	ReminderEnabled bool                   `protobuf:"varint,14,opt,name=reminder_enabled,json=reminderEnabled,proto3" json:"reminder_enabled,omitempty"`
-	Rating          int32                  `protobuf:"varint,15,opt,name=rating,proto3" json:"rating,omitempty"`
-	Ingredients     []string               `protobuf:"bytes,16,rep,name=ingredients,proto3" json:"ingredients,omitempty"`
-	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt       *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	LikeCount       int32                  `protobuf:"varint,19,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
-	LikedByMe       bool                   `protobuf:"varint,20,opt,name=liked_by_me,json=likedByMe,proto3" json:"liked_by_me,omitempty"`
-	Favorite        bool                   `protobuf:"varint,21,opt,name=favorite,proto3" json:"favorite,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	OwnerId          string                 `protobuf:"bytes,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	FolderId         string                 `protobuf:"bytes,3,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
+	Title            string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Url              string                 `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
+	Description      string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
+	Category         LinkCategory           `protobuf:"varint,7,opt,name=category,proto3,enum=tribbae.v1.LinkCategory" json:"category,omitempty"`
+	Tags             []string               `protobuf:"bytes,8,rep,name=tags,proto3" json:"tags,omitempty"`
+	AgeRange         string                 `protobuf:"bytes,9,opt,name=age_range,json=ageRange,proto3" json:"age_range,omitempty"`
+	Location         string                 `protobuf:"bytes,10,opt,name=location,proto3" json:"location,omitempty"`
+	Price            string                 `protobuf:"bytes,11,opt,name=price,proto3" json:"price,omitempty"`
+	ImageUrl         string                 `protobuf:"bytes,12,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	EventDate        int64                  `protobuf:"varint,13,opt,name=event_date,json=eventDate,proto3" json:"event_date,omitempty"`
+	ReminderEnabled  bool                   `protobuf:"varint,14,opt,name=reminder_enabled,json=reminderEnabled,proto3" json:"reminder_enabled,omitempty"`
+	Rating           int32                  `protobuf:"varint,15,opt,name=rating,proto3" json:"rating,omitempty"`
+	Ingredients      []string               `protobuf:"bytes,16,rep,name=ingredients,proto3" json:"ingredients,omitempty"`
+	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,17,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt        *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	LikeCount        int32                  `protobuf:"varint,19,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
+	LikedByMe        bool                   `protobuf:"varint,20,opt,name=liked_by_me,json=likedByMe,proto3" json:"liked_by_me,omitempty"`
+	Favorite         bool                   `protobuf:"varint,21,opt,name=favorite,proto3" json:"favorite,omitempty"`
+	OwnerDisplayName string                 `protobuf:"bytes,22,opt,name=owner_display_name,json=ownerDisplayName,proto3" json:"owner_display_name,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Link) Reset() {
@@ -283,6 +284,13 @@ func (x *Link) GetFavorite() bool {
 		return x.Favorite
 	}
 	return false
+}
+
+func (x *Link) GetOwnerDisplayName() string {
+	if x != nil {
+		return x.OwnerDisplayName
+	}
+	return ""
 }
 
 type CreateLinkRequest struct {
@@ -1402,7 +1410,7 @@ var File_tribbae_v1_link_proto protoreflect.FileDescriptor
 const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\n" +
 	"\x15tribbae/v1/link.proto\x12\n" +
-	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa3\x05\n" +
+	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd1\x05\n" +
 	"\x04Link\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1b\n" +
@@ -1429,7 +1437,8 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\n" +
 	"like_count\x18\x13 \x01(\x05R\tlikeCount\x12\x1e\n" +
 	"\vliked_by_me\x18\x14 \x01(\bR\tlikedByMe\x12\x1a\n" +
-	"\bfavorite\x18\x15 \x01(\bR\bfavorite\"\xd0\x03\n" +
+	"\bfavorite\x18\x15 \x01(\bR\bfavorite\x12,\n" +
+	"\x12owner_display_name\x18\x16 \x01(\tR\x10ownerDisplayName\"\xd0\x03\n" +
 	"\x11CreateLinkRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +

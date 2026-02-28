@@ -38,6 +38,7 @@ message Link {
   int32 like_count = 19;
   bool liked_by_me = 20;
   bool favorite = 21;
+  string owner_display_name = 22;
 }
 
 message CreateLinkRequest {

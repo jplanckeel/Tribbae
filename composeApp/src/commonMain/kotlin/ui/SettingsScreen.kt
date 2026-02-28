@@ -35,7 +35,7 @@ fun SettingsScreen(
     viewModel: LinkViewModel, 
     modifier: Modifier = Modifier, 
     onShoppingClick: () -> Unit = {},
-    onCalendarClick: () -> Unit = {},
+    onTagsClick: () -> Unit = {},
     sessionManager: data.SessionManager,
     authRepository: data.AuthRepository,
     onLoginSuccess: () -> Unit = {}
@@ -261,9 +261,9 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Bouton Agenda
+        // Bouton Tags
         Card(
-            onClick = onCalendarClick,
+            onClick = onTagsClick,
             shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(containerColor = CardColor),
             elevation = CardDefaults.cardElevation(2.dp)
@@ -272,11 +272,11 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth().padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(imageVector = Icons.Default.CalendarMonth, contentDescription = null, tint = Color(0xFF4FC3F7), modifier = Modifier.size(28.dp))
+                Icon(imageVector = Icons.Default.Tag, contentDescription = null, tint = Color(0xFF4FC3F7), modifier = Modifier.size(28.dp))
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Agenda", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                    Text("Mes événements à venir", fontSize = 12.sp, color = TextSecondary)
+                    Text("Tags", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                    Text("Parcourir par tags", fontSize = 12.sp, color = TextSecondary)
                 }
                 Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
             }
