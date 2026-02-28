@@ -177,11 +177,28 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     fun toggleFavorites() { _favoritesOnly.value = !_favoritesOnly.value; updateFilteredLinks() }
 
-    /** Toggle le favori d'un lien (cœur) */
+    /** Toggle le favori d'un lien (cœur) — appelle l'API like/unlike du backend */
     fun toggleFavorite(linkId: String) {
         val link = repository.links.value.find { it.id == linkId } ?: return
-        repository.updateLink(link.copy(favorite = !link.favorite))
+        val newFavorite = !link.favorite
+        repository.updateLink(link.copy(favorite = newFavorite))
         updateFilteredLinks()
+        
+        // Synchroniser avec le backend via like/unlike
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                if (newFavorite) {
+                    client.likeLink(linkId)
+                } else {
+                    client.unlikeLink(linkId)
+                }
+            } catch (e: Exception) {
+                // Rollback en cas d'erreur
+                repository.updateLink(link.copy(favorite = !newFavorite))
+                updateFilteredLinks()
+            }
+        }
     }
 
     fun clearAllFilters() {
@@ -418,7 +435,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 reminderEnabled = apiLink.reminderEnabled,
                 rating = apiLink.rating,
                 ingredients = apiLink.ingredients,
-                favorite = false
+                favorite = apiLink.likedByMe
             )
             if (repository.links.value.none { it.id == link.id }) {
                 repository.addLink(link)

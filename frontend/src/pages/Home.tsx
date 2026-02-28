@@ -13,13 +13,13 @@ function FolderCard({ folder, onOpen, onLike, liking }: any) {
   return (
     <div
       onClick={() => onOpen(folder)}
-      className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+      className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 cursor-pointer hover:border-orange-400 hover:shadow-md transition-all duration-300 overflow-hidden group"
     >
-      <div className="h-32 bg-gradient-to-br from-green-100 to-teal-50 relative">
+      <div className="h-32 bg-gradient-to-br from-green-100 to-teal-50 relative overflow-hidden">
         {folder.bannerUrl ? (
-          <img src={folder.bannerUrl} alt="" className="w-full h-full object-cover" />
+          <img src={folder.bannerUrl} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">
+          <div className="w-full h-full flex items-center justify-center text-4xl opacity-50 transition-transform duration-300 group-hover:scale-110">
             {folder.aiGenerated ? "✨" : "🌍"}
           </div>
         )}
@@ -352,7 +352,7 @@ export default function Home() {
                 <Link
                   key={path}
                   to={`/category/${path}`}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow text-center group"
+                  className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 p-4 hover:border-orange-400 hover:shadow-md transition-all duration-300 text-center group"
                 >
                   <div className="text-3xl mb-1.5 group-hover:scale-110 transition-transform">{emoji}</div>
                   <p className="font-semibold text-gray-800 text-sm">{label}</p>
@@ -398,13 +398,13 @@ export default function Home() {
                   <div
                     key={f.id}
                     onClick={() => openCommunityFolder(f)}
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                    className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 cursor-pointer hover:border-orange-400 hover:shadow-md transition-all duration-300 overflow-hidden group"
                   >
-                    <div className="h-28 bg-gradient-to-br from-orange-200 to-amber-100 relative">
+                    <div className="h-28 bg-gradient-to-br from-orange-200 to-amber-100 relative overflow-hidden">
                       {f.bannerUrl ? (
-                        <img src={f.bannerUrl} alt="" className="w-full h-full object-cover" />
+                        <img src={f.bannerUrl} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl opacity-60">
+                        <div className="w-full h-full flex items-center justify-center text-4xl opacity-60 transition-transform duration-300 group-hover:scale-110">
                           {f.aiGenerated ? "✨" : "📋"}
                         </div>
                       )}

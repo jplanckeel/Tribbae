@@ -36,7 +36,7 @@ export default function TopFolders({ folders, onRefresh }: Props) {
         {folders.map((f) => (
           <div
             key={f.id}
-            className="flex-shrink-0 w-52 bg-white rounded-2xl p-3 shadow-sm border border-gray-100"
+            className="flex-shrink-0 w-52 bg-white rounded-2xl p-3 shadow-sm border-2 border-gray-100 hover:border-orange-400 hover:shadow-md transition-all duration-300 cursor-pointer group"
           >
             <div className="flex items-start justify-between mb-1">
               <span className="text-sm font-medium text-gray-800 line-clamp-2 flex-1">{f.name}</span>

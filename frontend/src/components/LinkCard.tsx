@@ -32,14 +32,14 @@ export default function LinkCard({ link, onClick, onLike, liking }: Props) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+      className="bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-orange-400 hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden group"
     >
       {hasImage ? (
-        <div className="relative h-36">
+        <div className="relative h-36 overflow-hidden">
           <img
             src={link.imageUrl}
             alt={link.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
           <span
@@ -66,7 +66,7 @@ export default function LinkCard({ link, onClick, onLike, liking }: Props) {
         </div>
       ) : (
         <div
-          className="h-24 flex items-center justify-center relative overflow-hidden"
+          className="h-24 flex items-center justify-center relative overflow-hidden transition-transform duration-300 group-hover:scale-[1.02]"
           style={{ backgroundColor: color + "18" }}
         >
           {/* Pattern d'icônes */}
