@@ -116,7 +116,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = displayName,
                 onValueChange = { displayName = it; errorMessage = null },
-                label = { Text("Nom d'affichage") },
+                label = { Text("Pseudo") },
                 leadingIcon = {
                     Icon(Icons.Default.Person, contentDescription = null)
                 },

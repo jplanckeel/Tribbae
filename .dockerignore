@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+README.md
+*.md
+docs/
+
+# IDE
+.idea
+.vscode
+.kiro
+*.swp
+*.swo
+
+# Build artifacts
+composeApp/build
+build
+.gradle
+.kotlin
+node_modules
+dist
+
+# Local config
+.env
+.env.local
+local.properties
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose*.yml
+Dockerfile
+.dockerignore
+
+# Task
+Taskfile.yml
+
+# Icons (not needed in backend image)
+icons/
