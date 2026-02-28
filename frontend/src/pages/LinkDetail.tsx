@@ -53,10 +53,16 @@ export default function LinkDetail() {
     setEditing(false);
   };
 
-  const toggleFavorite = async () => {
-    const updated = { ...link, favorite: !link.favorite };
-    await linksApi.update(link.id, { favorite: updated.favorite });
-    setLink(updated);
+  const toggleLike = async () => {
+    try {
+      if (link.likedByMe) {
+        const res = await linksApi.unlike(link.id);
+        setLink({ ...link, likedByMe: false, likeCount: res.likeCount });
+      } else {
+        const res = await linksApi.like(link.id);
+        setLink({ ...link, likedByMe: true, likeCount: res.likeCount });
+      }
+    } catch { /* silencieux */ }
   };
 
   const openMaps = () => {
@@ -199,8 +205,13 @@ export default function LinkDetail() {
           <div className="flex items-start justify-between gap-2">
             <h1 className="text-xl font-bold text-gray-800 flex-1">{link.title}</h1>
             <div className="flex gap-2 flex-shrink-0">
-              <button onClick={toggleFavorite} className={link.favorite ? "text-red-500" : "text-gray-300 hover:text-red-400"}>
-                <FontAwesomeIcon icon={link.favorite ? faHeart : faHeartRegular} className="w-5 h-5" />
+              <button onClick={toggleLike} className="flex items-center gap-1">
+                <FontAwesomeIcon icon={link.likedByMe ? faHeart : faHeartRegular} className={`w-5 h-5 ${link.likedByMe ? "text-red-500" : "text-gray-300 hover:text-red-400"}`} />
+                {(link.likeCount || 0) > 0 && (
+                  <span className={`text-xs ${link.likedByMe ? "text-red-500 font-medium" : "text-gray-400"}`}>
+                    {link.likeCount}
+                  </span>
+                )}
               </button>
               <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-orange-500">
                 <FontAwesomeIcon icon={faPen} className="w-4 h-4" />
