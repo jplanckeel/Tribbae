@@ -61,6 +61,11 @@ class LinkRepository(private val storage: Storage? = null) {
         storage?.saveLinks(_links.value)
     }
 
+    fun updateFolder(folder: Folder) {
+        _folders.value = _folders.value.map { if (it.id == folder.id) folder else it }
+        storage?.saveFolders(_folders.value)
+    }
+
     fun addTag(tag: String) {
         val trimmed = tag.trim().lowercase()
         if (trimmed.isNotEmpty() && !_tags.value.contains(trimmed)) {

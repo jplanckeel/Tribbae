@@ -778,6 +778,9 @@
         },
         "favorite": {
           "type": "boolean"
+        },
+        "ownerDisplayName": {
+          "type": "string"
         }
       }
     },

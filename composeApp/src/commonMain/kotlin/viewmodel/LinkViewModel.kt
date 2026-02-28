@@ -20,6 +20,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     val tags: StateFlow<List<String>> = repository.tags
     val children: StateFlow<List<data.Child>> = repository.children
 
+    /** Client API public (communauté) */
+    val apiClient = data.ApiClient()
+
     /** Token JWT — injecté depuis MainActivity */
     var authToken: String? = null
     
@@ -159,6 +162,15 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         // Supprimer du backend si authentifié
         if (authenticatedClient != null) {
             deleteFolderFromBackend(id)
+        }
+    }
+
+    fun updateFolder(folder: Folder) {
+        repository.updateFolder(folder)
+        updateFilteredLinks()
+        
+        if (authenticatedClient != null) {
+            updateFolderOnBackend(folder)
         }
     }
 
@@ -531,6 +543,36 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             } catch (e: Exception) {
                 _syncStatus.value = "Erreur suppression dossier: ${e.message}"
             }
+        }
+    }
+
+    private fun updateFolderOnBackend(folder: Folder) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                val req = data.UpdateFolderRequest(
+                    folderId = folder.id,
+                    name = folder.name,
+                    icon = folder.icon.name,
+                    color = folder.color.name,
+                    visibility = folder.visibility.ifBlank { "PRIVATE" },
+                    bannerUrl = folder.bannerUrl,
+                    tags = folder.tags
+                )
+                client.updateFolder(folder.id, req)
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur mise à jour dossier: ${e.message}"
+            }
+        }
+    }
+
+    suspend fun shareFolder(folderId: String): data.ShareFolderResponse? {
+        val client = authenticatedClient ?: return null
+        return try {
+            client.shareFolder(folderId)
+        } catch (e: Exception) {
+            _syncStatus.value = "Erreur partage: ${e.message}"
+            null
         }
     }
     

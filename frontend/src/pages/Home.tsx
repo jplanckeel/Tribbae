@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { links as linksApi, folders as foldersApi, children as childrenApi, community as communityApi } from "../api";
+import { normalizeCategory } from "../types";
 import LinkCard from "../components/LinkCard";
 import FilterBar from "../components/FilterBar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -121,14 +122,14 @@ export default function Home() {
   };
 
   useEffect(() => {
-    communityApi.top(12).then((r) => setTopFolders(r.folders || [])).catch(() => {});
-    communityApi.list(undefined, 30).then((r) => setCommunityFolders(r.folders || [])).catch(() => {});
-    communityApi.links().then((r) => setCommunityLinks(r.links || [])).catch(() => {});
-    communityApi.newLinks(12).then((r) => setNewLinks(r.links || [])).catch(() => {});
+    communityApi.top(12).then((r) => setTopFolders(r.folders || [])).catch(() => { });
+    communityApi.list(undefined, 30).then((r) => setCommunityFolders(r.folders || [])).catch(() => { });
+    communityApi.links().then((r) => setCommunityLinks(r.links || [])).catch(() => { });
+    communityApi.newLinks(12).then((r) => setNewLinks(r.links || [])).catch(() => { });
     if (isLoggedIn) {
       fetchLinks();
-      foldersApi.list().then((r) => setFolderList(r.folders || [])).catch(() => {});
-      childrenApi.list().then((r) => setChildList(r.children || [])).catch(() => {});
+      foldersApi.list().then((r) => setFolderList(r.folders || [])).catch(() => { });
+      childrenApi.list().then((r) => setChildList(r.children || [])).catch(() => { });
     }
   }, []);
 
@@ -181,14 +182,14 @@ export default function Home() {
 
   const childAgeMonths = selectedChildId
     ? (() => {
-        const child = childList.find((c) => c.id === selectedChildId);
-        if (!child) return null;
-        return Math.floor((Date.now() - child.birthDate) / (1000 * 60 * 60 * 24 * 30.44));
-      })()
+      const child = childList.find((c) => c.id === selectedChildId);
+      if (!child) return null;
+      return Math.floor((Date.now() - child.birthDate) / (1000 * 60 * 60 * 24 * 30.44));
+    })()
     : null;
 
   const filtered = allLinks.filter((l) => {
-    if (selectedCategory && l.category !== `LINK_CATEGORY_${selectedCategory.toUpperCase()}`) return false;
+    if (selectedCategory && normalizeCategory(l.category) !== selectedCategory) return false;
     if (selectedFolderId && l.folderId !== selectedFolderId) return false;
     if (favoritesOnly && !l.favorite) return false;
     if (childAgeMonths !== null && l.ageRange && parseAgeMonths(l.ageRange) < childAgeMonths) return false;
@@ -264,17 +265,15 @@ export default function Home() {
       <div className="flex gap-1 mb-6 bg-gray-100 rounded-full p-1 w-fit">
         <button
           onClick={() => setTab("discover")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            tab === "discover" ? "bg-white text-orange-500 shadow-sm" : "text-gray-500 hover:text-gray-700"
-          }`}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${tab === "discover" ? "bg-white text-orange-500 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
         >
           <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> Découvrir
         </button>
         <button
           onClick={() => setTab("my-ideas")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-            tab === "my-ideas" ? "bg-white text-orange-500 shadow-sm" : "text-gray-500 hover:text-gray-700"
-          }`}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${tab === "my-ideas" ? "bg-white text-orange-500 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
         >
           <FontAwesomeIcon icon={faLightbulb} className="w-3.5 h-3.5" /> Mes idées
         </button>
@@ -343,121 +342,121 @@ export default function Home() {
               </>
             );
           })() : (
-          <>
-          {/* Catégories */}
-          <div className="mb-8">
-            <h2 className="text-lg font-bold text-gray-800 mb-3">🎯 Explorer par catégorie</h2>
-            <div className="grid grid-cols-5 gap-3">
-              {CATEGORIES.map(({ path, emoji, label }) => (
-                <Link
-                  key={path}
-                  to={`/category/${path}`}
-                  className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 p-4 hover:border-orange-400 hover:shadow-md transition-all duration-300 text-center group"
-                >
-                  <div className="text-3xl mb-1.5 group-hover:scale-110 transition-transform">{emoji}</div>
-                  <p className="font-semibold text-gray-800 text-sm">{label}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
+            <>
+              {/* Catégories */}
+              <div className="mb-8">
+                <h2 className="text-lg font-bold text-gray-800 mb-3">🎯 Explorer par catégorie</h2>
+                <div className="grid grid-cols-5 gap-3">
+                  {CATEGORIES.map(({ path, emoji, label }) => (
+                    <Link
+                      key={path}
+                      to={`/category/${path}`}
+                      className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 p-4 hover:border-orange-400 hover:shadow-md transition-all duration-300 text-center group"
+                    >
+                      <div className="text-3xl mb-1.5 group-hover:scale-110 transition-transform">{emoji}</div>
+                      <p className="font-semibold text-gray-800 text-sm">{label}</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
 
-          {/* Nouveautés */}
-          <HorizontalLinkRow
-            title={<><FontAwesomeIcon icon={faClock} className="text-blue-400" /> Nouveautés</>}
-            items={newLinks}
-            onLike={handleLinkLike}
-            likingLink={likingLink}
-            navigate={navigate}
-          />
-
-          {/* Tops par catégorie */}
-          {CATEGORIES.map(({ key, emoji, label, path }) => {
-            const items = communityLinks
-              .filter((l) => l.category === key)
-              .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
-              .slice(0, 8);
-            return (
+              {/* Nouveautés */}
               <HorizontalLinkRow
-                key={key}
-                title={<><FontAwesomeIcon icon={faStar} className="text-yellow-400" /> {emoji} {label}</>}
-                items={items}
+                title={<><FontAwesomeIcon icon={faClock} className="text-blue-400" /> Nouveautés</>}
+                items={newLinks}
                 onLike={handleLinkLike}
                 likingLink={likingLink}
                 navigate={navigate}
-                viewAllPath={`/category/${path}`}
               />
-            );
-          })}
 
-          {/* Listes populaires */}
-          {topFolders.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-lg font-bold text-gray-800 mb-3">🔥 Listes populaires</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {topFolders.slice(0, 4).map((f) => (
-                  <div
-                    key={f.id}
-                    onClick={() => openCommunityFolder(f)}
-                    className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 cursor-pointer hover:border-orange-400 hover:shadow-md transition-all duration-300 overflow-hidden group"
-                  >
-                    <div className="h-28 bg-gradient-to-br from-orange-200 to-amber-100 relative overflow-hidden">
-                      {f.bannerUrl ? (
-                        <img src={f.bannerUrl} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl opacity-60 transition-transform duration-300 group-hover:scale-110">
-                          {f.aiGenerated ? "✨" : "📋"}
-                        </div>
-                      )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleLike(f.id, f.likedByMe); }}
-                        disabled={liking === f.id}
-                        className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs"
+              {/* Tops par catégorie */}
+              {CATEGORIES.map(({ key, emoji, label, path }) => {
+                const items = communityLinks
+                  .filter((l) => l.category === key)
+                  .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+                  .slice(0, 8);
+                return (
+                  <HorizontalLinkRow
+                    key={key}
+                    title={<><FontAwesomeIcon icon={faStar} className="text-yellow-400" /> {emoji} {label}</>}
+                    items={items}
+                    onLike={handleLinkLike}
+                    likingLink={likingLink}
+                    navigate={navigate}
+                    viewAllPath={`/category/${path}`}
+                  />
+                );
+              })}
+
+              {/* Listes populaires */}
+              {topFolders.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-lg font-bold text-gray-800 mb-3">🔥 Listes populaires</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {topFolders.slice(0, 4).map((f) => (
+                      <div
+                        key={f.id}
+                        onClick={() => openCommunityFolder(f)}
+                        className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 cursor-pointer hover:border-orange-400 hover:shadow-md transition-all duration-300 overflow-hidden group"
                       >
-                        <FontAwesomeIcon
-                          icon={f.likedByMe ? faHeartSolid : faHeartOutline}
-                          className={`w-3 h-3 ${f.likedByMe ? "text-red-500" : "text-gray-400"}`}
-                        />
-                        <span className={f.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
-                          {f.likeCount || 0}
-                        </span>
-                      </button>
-                    </div>
-                    <div className="p-3">
-                      <p className="text-sm font-semibold text-gray-800 line-clamp-1">{f.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        par {f.ownerDisplayName || "Anonyme"} · {f.linkCount || 0} idées
-                      </p>
-                    </div>
+                        <div className="h-28 bg-gradient-to-br from-orange-200 to-amber-100 relative overflow-hidden">
+                          {f.bannerUrl ? (
+                            <img src={f.bannerUrl} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-4xl opacity-60 transition-transform duration-300 group-hover:scale-110">
+                              {f.aiGenerated ? "✨" : "📋"}
+                            </div>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleLike(f.id, f.likedByMe); }}
+                            disabled={liking === f.id}
+                            className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs"
+                          >
+                            <FontAwesomeIcon
+                              icon={f.likedByMe ? faHeartSolid : faHeartOutline}
+                              className={`w-3 h-3 ${f.likedByMe ? "text-red-500" : "text-gray-400"}`}
+                            />
+                            <span className={f.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
+                              {f.likeCount || 0}
+                            </span>
+                          </button>
+                        </div>
+                        <div className="p-3">
+                          <p className="text-sm font-semibold text-gray-800 line-clamp-1">{f.name}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            par {f.ownerDisplayName || "Anonyme"} · {f.linkCount || 0} idées
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Toutes les listes publiques */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-bold text-gray-800">🌍 Toutes les listes publiques</h2>
-              {communityFolders.length > 6 && (
-                <Link to="/discover" className="text-sm text-orange-500 hover:text-orange-600 font-medium">
-                  Voir tout →
-                </Link>
+                </div>
               )}
-            </div>
-            {communityFolders.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
-                <FontAwesomeIcon icon={faGlobe} className="mx-auto mb-3 text-gray-300 w-10 h-10" />
-                <p>Aucune liste publique pour le moment</p>
+
+              {/* Toutes les listes publiques */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-bold text-gray-800">🌍 Toutes les listes publiques</h2>
+                  {communityFolders.length > 6 && (
+                    <Link to="/discover" className="text-sm text-orange-500 hover:text-orange-600 font-medium">
+                      Voir tout →
+                    </Link>
+                  )}
+                </div>
+                {communityFolders.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <FontAwesomeIcon icon={faGlobe} className="mx-auto mb-3 text-gray-300 w-10 h-10" />
+                    <p>Aucune liste publique pour le moment</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {communityFolders.slice(0, 6).map((f) => (
+                      <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {communityFolders.slice(0, 6).map((f) => (
-                  <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
-                ))}
-              </div>
-            )}
-          </div>
-          </>
+            </>
           )}
         </>
       ) : (

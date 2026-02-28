@@ -37,15 +37,23 @@ data class ApiFolder(
 @Serializable
 data class ApiLink(
     val id: String = "",
+    val ownerId: String = "",
     val title: String = "",
     val url: String = "",
     val description: String = "",
     val category: String = "",
     val tags: List<String> = emptyList(),
+    val ageRange: String = "",
     val location: String = "",
     val price: String = "",
     val imageUrl: String = "",
-    val rating: Int = 0
+    val eventDate: Long = 0,
+    val reminderEnabled: Boolean = false,
+    val rating: Int = 0,
+    val ingredients: List<String> = emptyList(),
+    val likeCount: Int = 0,
+    val likedByMe: Boolean = false,
+    val ownerDisplayName: String = ""
 )
 
 @Serializable
@@ -81,6 +89,15 @@ class ApiClient(private val baseUrl: String = "https://tribbae.bananaops.cloud")
 
     suspend fun getSharedFolder(token: String): SharedFolderResponse {
         val body = get("/v1/share/$token")
+        return json.decodeFromString(body)
+    }
+
+    suspend fun listCommunityLinks(category: String = "", limit: Int = 50): ApiLinksResponse {
+        val params = mutableListOf<String>()
+        if (category.isNotBlank()) params += "category=$category"
+        if (limit > 0) params += "limit=$limit"
+        val qs = if (params.isNotEmpty()) "?${params.joinToString("&")}" else ""
+        val body = get("/v1/community/links$qs")
         return json.decodeFromString(body)
     }
 }

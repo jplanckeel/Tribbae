@@ -1,8 +1,13 @@
 package ui
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,224 +20,262 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import data.ApiClient
-import data.ApiFolder
-import data.ApiLink
+import data.Link
+import data.LinkCategory
 import kotlinx.coroutines.launch
 
 @Composable
 fun CommunityScreen(
     modifier: Modifier = Modifier,
-    apiClient: ApiClient
+    apiClient: ApiClient,
+    onLinkClick: (Link) -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
-    var folders by remember { mutableStateOf<List<ApiFolder>>(emptyList()) }
-    var search by remember { mutableStateOf("") }
-    var nextToken by remember { mutableStateOf("") }
+    var communityLinks by remember { mutableStateOf<List<Link>>(emptyList()) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf<LinkCategory?>(null) }
     var loading by remember { mutableStateOf(false) }
-    var selectedFolder by remember { mutableStateOf<ApiFolder?>(null) }
-    var folderLinks by remember { mutableStateOf<List<ApiLink>>(emptyList()) }
+    var viewMode by remember { mutableStateOf(LinkViewMode.LIST) }
 
-    fun fetchFolders(append: Boolean = false) {
+    // Filtrage local
+    val filteredLinks = remember(communityLinks, searchQuery, selectedCategory) {
+        communityLinks.filter { link ->
+            val matchesSearch = searchQuery.isBlank() ||
+                link.title.contains(searchQuery, ignoreCase = true) ||
+                link.description.contains(searchQuery, ignoreCase = true) ||
+                link.tags.any { it.contains(searchQuery, ignoreCase = true) }
+            val matchesCategory = selectedCategory == null || link.category == selectedCategory
+            matchesSearch && matchesCategory
+        }
+    }
+
+    fun fetchLinks() {
         scope.launch {
             loading = true
             try {
-                val res = apiClient.listCommunityFolders(
-                    search = search,
-                    pageToken = if (append) nextToken else ""
-                )
-                folders = if (append) folders + res.folders else res.folders
-                nextToken = res.nextPageToken
+                val res = apiClient.listCommunityLinks(limit = 100)
+                communityLinks = res.links.map { apiLink ->
+                    val category = try {
+                        LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
+                    } catch (_: Exception) { LinkCategory.IDEE }
+                    Link(
+                        id = apiLink.id,
+                        title = apiLink.title,
+                        url = apiLink.url,
+                        description = apiLink.description,
+                        category = category,
+                        tags = apiLink.tags,
+                        ageRange = apiLink.ageRange,
+                        location = apiLink.location,
+                        price = apiLink.price,
+                        imageUrl = apiLink.imageUrl,
+                        eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
+                        rating = apiLink.rating,
+                        ingredients = apiLink.ingredients,
+                        likeCount = apiLink.likeCount,
+                        likedByMe = apiLink.likedByMe,
+                        ownerDisplayName = apiLink.ownerDisplayName
+                    )
+                }
             } catch (_: Exception) { }
             loading = false
         }
     }
 
-    LaunchedEffect(Unit) { fetchFolders() }
+    LaunchedEffect(Unit) { fetchLinks() }
 
-    // Vue détail d'un dossier communautaire
-    if (selectedFolder != null) {
-        Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { selectedFolder = null }) {
-                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Retour", tint = Orange)
-                }
-                Column {
-                    Text(selectedFolder!!.name, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = TextPrimary)
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(imageVector = Icons.Default.Public, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(14.dp))
-                        if (selectedFolder!!.ownerDisplayName.isNotBlank()) {
-                            Text("par ${selectedFolder!!.ownerDisplayName}", fontSize = 12.sp, color = TextSecondary)
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (folderLinks.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Liste vide", color = TextSecondary)
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    items(folderLinks) { link ->
-                        CommunityLinkCard(link = link)
-                    }
-                }
-            }
-        }
-        return
-    }
-
-    // Vue liste communautaire
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = Icons.Default.Public, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(28.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Explorer", fontWeight = FontWeight.Bold, fontSize = 24.sp, color = TextPrimary)
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Barre de recherche
+    Column(modifier = modifier.fillMaxSize()) {
+        // Search bar
         OutlinedTextField(
-            value = search,
-            onValueChange = { search = it },
-            placeholder = { Text("Rechercher une liste...", color = Color.Gray) },
-            leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color(0xFF4CAF50)) },
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text("Rechercher une idée publique...", color = Color.Gray) },
+            leadingIcon = {
+                Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Orange)
+            },
             trailingIcon = {
-                if (search.isNotEmpty()) {
-                    IconButton(onClick = { search = ""; fetchFolders() }) {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
                         Icon(imageVector = Icons.Default.Clear, contentDescription = null)
                     }
                 }
             },
             shape = RoundedCornerShape(28.dp),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF4CAF50),
-                unfocusedBorderColor = Color(0xFF4CAF50).copy(alpha = 0.3f),
+                focusedBorderColor = Orange,
+                unfocusedBorderColor = Orange.copy(alpha = 0.3f),
                 focusedContainerColor = SurfaceColor,
                 unfocusedContainerColor = SurfaceColor
             )
         )
 
-        // Bouton rechercher
-        if (search.isNotBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            TextButton(onClick = { fetchFolders() }) {
-                Text("Rechercher", color = Color(0xFF4CAF50), fontWeight = FontWeight.SemiBold)
-            }
+        // Category chips
+        Row(
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = selectedCategory == null,
+                onClick = { selectedCategory = null },
+                label = { Text("Tout") },
+                leadingIcon = {
+                    Icon(imageVector = Icons.Default.Public, contentDescription = null, modifier = Modifier.size(16.dp))
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Orange,
+                    selectedLabelColor = Color.White,
+                    selectedLeadingIconColor = Color.White
+                )
+            )
+            QuickExploreCategoryChip(
+                label = "Recettes", icon = Icons.Default.Restaurant,
+                color = CategoryColors["RECETTE"] ?: Orange,
+                selected = selectedCategory == LinkCategory.RECETTE,
+                onClick = { selectedCategory = if (selectedCategory == LinkCategory.RECETTE) null else LinkCategory.RECETTE }
+            )
+            QuickExploreCategoryChip(
+                label = "Activités", icon = Icons.Default.DirectionsRun,
+                color = CategoryColors["ACTIVITE"] ?: Orange,
+                selected = selectedCategory == LinkCategory.ACTIVITE,
+                onClick = { selectedCategory = if (selectedCategory == LinkCategory.ACTIVITE) null else LinkCategory.ACTIVITE }
+            )
+            QuickExploreCategoryChip(
+                label = "Cadeaux", icon = Icons.Default.CardGiftcard,
+                color = CategoryColors["CADEAU"] ?: Orange,
+                selected = selectedCategory == LinkCategory.CADEAU,
+                onClick = { selectedCategory = if (selectedCategory == LinkCategory.CADEAU) null else LinkCategory.CADEAU }
+            )
+            QuickExploreCategoryChip(
+                label = "Événements", icon = Icons.Default.Event,
+                color = CategoryColors["EVENEMENT"] ?: Orange,
+                selected = selectedCategory == LinkCategory.EVENEMENT,
+                onClick = { selectedCategory = if (selectedCategory == LinkCategory.EVENEMENT) null else LinkCategory.EVENEMENT }
+            )
+            QuickExploreCategoryChip(
+                label = "Idées", icon = Icons.Default.Lightbulb,
+                color = CategoryColors["IDEE"] ?: Orange,
+                selected = selectedCategory == LinkCategory.IDEE,
+                onClick = { selectedCategory = if (selectedCategory == LinkCategory.IDEE) null else LinkCategory.IDEE }
+            )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (folders.isEmpty() && !loading) {
+        // Loading state
+        if (loading && communityLinks.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Orange)
+            }
+        } else if (filteredLinks.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(imageVector = Icons.Default.Public, contentDescription = null,
-                        modifier = Modifier.size(64.dp), tint = Color(0xFF4CAF50).copy(alpha = 0.3f))
+                    Icon(
+                        imageVector = Icons.Default.Explore,
+                        contentDescription = null,
+                        modifier = Modifier.size(72.dp),
+                        tint = Orange.copy(alpha = 0.3f)
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("Aucune liste publique", color = TextSecondary)
+                    Text("Aucune idée publique", color = TextSecondary, fontSize = 15.sp)
                 }
             }
         } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 16.dp),
-                modifier = Modifier.weight(1f)
+            // Toggle vue liste / grille + count
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                items(folders) { folder ->
-                    Card(
-                        onClick = {
-                            selectedFolder = folder
-                            // Charger les liens via share token
-                            scope.launch {
-                                try {
-                                    if (folder.shareToken.isNotBlank()) {
-                                        val res = apiClient.getSharedFolder(folder.shareToken)
-                                        folderLinks = res.links
-                                    } else {
-                                        folderLinks = emptyList()
-                                    }
-                                } catch (_: Exception) {
-                                    folderLinks = emptyList()
-                                }
-                            }
-                        },
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = CardColor),
-                        elevation = CardDefaults.cardElevation(2.dp)
+                Text(
+                    "${filteredLinks.size} idée${if (filteredLinks.size > 1) "s" else ""} publique${if (filteredLinks.size > 1) "s" else ""}",
+                    fontSize = 13.sp,
+                    color = TextSecondary
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    IconButton(
+                        onClick = { viewMode = LinkViewMode.LIST },
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("🌍", fontSize = 28.sp)
-                            Spacer(modifier = Modifier.width(14.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(folder.name, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    if (folder.ownerDisplayName.isNotBlank()) {
-                                        Text("par ${folder.ownerDisplayName}", fontSize = 12.sp, color = TextSecondary)
-                                    }
-                                    if (folder.linkCount > 0) {
-                                        Text("${folder.linkCount} idée${if (folder.linkCount > 1) "s" else ""}",
-                                            fontSize = 12.sp, color = TextSecondary)
-                                    }
-                                }
-                            }
-                            Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
-                        }
+                        Icon(
+                            imageVector = Icons.Default.ViewList,
+                            contentDescription = "Vue liste",
+                            tint = if (viewMode == LinkViewMode.LIST) Orange else Color.LightGray,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
-                }
-
-                // Bouton "Voir plus"
-                if (nextToken.isNotBlank()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                            Button(
-                                onClick = { fetchFolders(append = true) },
-                                enabled = !loading,
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                            ) {
-                                Text(if (loading) "Chargement..." else "Voir plus")
-                            }
-                        }
+                    IconButton(
+                        onClick = { viewMode = LinkViewMode.GRID },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GridView,
+                            contentDescription = "Vue vignettes",
+                            tint = if (viewMode == LinkViewMode.GRID) Orange else Color.LightGray,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
             }
-        }
 
-        if (loading && folders.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFF4CAF50))
+            when (viewMode) {
+                LinkViewMode.LIST -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(
+                            start = 16.dp, end = 16.dp,
+                            top = 4.dp, bottom = 80.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(filteredLinks) { link ->
+                            LinkCard(link = link, onClick = { onLinkClick(link) })
+                        }
+                    }
+                }
+                LinkViewMode.GRID -> {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(
+                            start = 12.dp, end = 12.dp,
+                            top = 4.dp, bottom = 80.dp
+                        ),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(filteredLinks) { link ->
+                            LinkCardGrid(link = link, onClick = { onLinkClick(link) })
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun CommunityLinkCard(link: ApiLink) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardColor),
-        elevation = CardDefaults.cardElevation(2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Text(link.title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = TextPrimary)
-            if (link.description.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(link.description, fontSize = 13.sp, color = TextSecondary, maxLines = 2)
-            }
-            if (link.url.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(link.url, fontSize = 11.sp, color = Orange, maxLines = 1)
-            }
-        }
-    }
+private fun QuickExploreCategoryChip(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = {
+            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp))
+        },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = color,
+            selectedLabelColor = Color.White,
+            selectedLeadingIconColor = Color.White
+        )
+    )
 }

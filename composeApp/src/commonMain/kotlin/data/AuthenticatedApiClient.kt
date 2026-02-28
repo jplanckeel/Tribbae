@@ -70,6 +70,23 @@ data class CreateFolderRequest(
 )
 
 @Serializable
+data class UpdateFolderRequest(
+    val folderId: String,
+    val name: String,
+    val icon: String = "FOLDER",
+    val color: String = "ORANGE",
+    val visibility: String = "PRIVATE",
+    val bannerUrl: String = "",
+    val tags: List<String> = emptyList()
+)
+
+@Serializable
+data class ShareFolderResponse(
+    val shareToken: String = "",
+    val shareUrl: String = ""
+)
+
+@Serializable
 data class CreateLinkRequest(
     val folderId: String = "",
     val title: String,
@@ -164,6 +181,21 @@ class AuthenticatedApiClient(
 
     suspend fun deleteFolder(folderId: String) {
         request("/v1/folders/$folderId", "DELETE", null) { _ -> Unit }
+    }
+
+    suspend fun updateFolder(folderId: String, req: UpdateFolderRequest): ApiAuthFolder {
+        val body = json.encodeToString(UpdateFolderRequest.serializer(), req)
+        return request("/v1/folders/$folderId", "PUT", body) { response ->
+            @Serializable
+            data class FolderResponse(val folder: ApiAuthFolder)
+            json.decodeFromString<FolderResponse>(response).folder
+        }
+    }
+
+    suspend fun shareFolder(folderId: String): ShareFolderResponse {
+        return request("/v1/folders/$folderId/share", "POST", "{}") { response ->
+            json.decodeFromString(response)
+        }
     }
 
     // Links

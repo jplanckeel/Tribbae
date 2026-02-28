@@ -11,6 +11,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,8 +33,19 @@ import data.LinkCategory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LinkDetailScreen(link: Link, onBack: () -> Unit, onDelete: () -> Unit, onEdit: () -> Unit = {}, onOpenUrl: ((String) -> Unit)? = null) {
+fun LinkDetailScreen(
+    link: Link,
+    onBack: () -> Unit,
+    onDelete: () -> Unit,
+    onEdit: () -> Unit = {},
+    onOpenUrl: ((String) -> Unit)? = null,
+    readOnly: Boolean = false,
+    onSaveToMyList: ((Link, String?) -> Unit)? = null,
+    folders: List<data.Folder> = emptyList()
+) {
     val catColor = CategoryColors[link.category.name] ?: Orange
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = SurfaceColor,
@@ -41,11 +58,24 @@ fun LinkDetailScreen(link: Link, onBack: () -> Unit, onDelete: () -> Unit, onEdi
                     }
                 },
                 actions = {
-                    IconButton(onClick = onEdit) {
-                        Icon(imageVector = Icons.Default.Edit, contentDescription = "Modifier", tint = Color.White)
-                    }
-                    IconButton(onClick = onDelete) {
-                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Supprimer", tint = Color.White)
+                    if (!readOnly) {
+                        IconButton(onClick = onEdit) {
+                            Icon(imageVector = Icons.Default.Edit, contentDescription = "Modifier", tint = Color.White)
+                        }
+                        IconButton(onClick = onDelete) {
+                            Icon(imageVector = Icons.Default.Delete, contentDescription = "Supprimer", tint = Color.White)
+                        }
+                    } else if (onSaveToMyList != null && !saved) {
+                        IconButton(onClick = { showSaveDialog = true }) {
+                            Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = "Ajouter à mes listes", tint = Color.White)
+                        }
+                    } else if (saved) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Ajouté",
+                            tint = Color.White,
+                            modifier = Modifier.padding(end = 12.dp)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -106,6 +136,13 @@ fun LinkDetailScreen(link: Link, onBack: () -> Unit, onDelete: () -> Unit, onEdi
                 Spacer(Modifier.width(16.dp))
                 Column {
                     Text(link.title, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+                    if (link.ownerDisplayName.isNotBlank()) {
+                        Text(
+                            "par ${link.ownerDisplayName}",
+                            fontSize = 12.sp,
+                            color = TextSecondary
+                        )
+                    }
                     Surface(shape = RoundedCornerShape(8.dp), color = catColor.copy(alpha = 0.2f)) {
                         Text(link.category.label, fontSize = 12.sp, color = catColor,
                             fontWeight = FontWeight.Medium,
@@ -278,7 +315,90 @@ fun LinkDetailScreen(link: Link, onBack: () -> Unit, onDelete: () -> Unit, onEdi
                     }
                 }
             }
+
+            // Bouton "Ajouter à mes listes" en bas pour les liens publics
+            if (readOnly && onSaveToMyList != null && !saved) {
+                Button(
+                    onClick = { showSaveDialog = true },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Orange)
+                ) {
+                    Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Ajouter à mes listes", fontWeight = FontWeight.SemiBold)
+                }
+            }
+            if (saved) {
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(18.dp))
+                        Text("Idée ajoutée à vos listes", color = Color(0xFF4CAF50), fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                    }
+                }
+            }
         }
+    }
+
+    // Dialog de sélection de dossier
+    if (showSaveDialog && onSaveToMyList != null) {
+        var selectedFolderId by remember { mutableStateOf<String?>(null) }
+        AlertDialog(
+            onDismissRequest = { showSaveDialog = false },
+            icon = { Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = null, tint = Orange) },
+            title = { Text("Ajouter à mes listes", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Choisissez une liste (optionnel)", fontSize = 14.sp, color = TextSecondary)
+                    // Option "Sans liste"
+                    FilterChip(
+                        selected = selectedFolderId == null,
+                        onClick = { selectedFolderId = null },
+                        label = { Text("Mes idées (sans liste)") },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Lightbulb, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Orange,
+                            selectedLabelColor = Color.White,
+                            selectedLeadingIconColor = Color.White
+                        )
+                    )
+                    folders.forEach { folder ->
+                        FilterChip(
+                            selected = selectedFolderId == folder.id,
+                            onClick = { selectedFolderId = folder.id },
+                            label = { Text(folder.name) },
+                            leadingIcon = { Icon(imageVector = folderIconVector(folder), contentDescription = null, modifier = Modifier.size(16.dp)) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Orange,
+                                selectedLabelColor = Color.White,
+                                selectedLeadingIconColor = Color.White
+                            )
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onSaveToMyList(link, selectedFolderId)
+                    showSaveDialog = false
+                    saved = true
+                }) {
+                    Text("Ajouter", color = Orange, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveDialog = false }) {
+                    Text("Annuler")
+                }
+            }
+        )
     }
 }
 

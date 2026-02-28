@@ -2,16 +2,18 @@ package com.linkkeeper.app
 
 import android.content.Context
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import data.*
@@ -21,7 +23,8 @@ import viewmodel.LinkViewModel
 enum class Tab(val label: String, val icon: ImageVector) {
     HOME("Accueil", Icons.Default.Cabin),
     FOLDERS("Listes", Icons.Default.Folder),
-    TAGS("Tags", Icons.Default.Tag),
+    EXPLORE("Explorer", Icons.Default.Explore),
+    CALENDAR("Agenda", Icons.Default.CalendarMonth),
     SETTINGS("Plus", Icons.Default.MoreHoriz)
 }
 
@@ -55,6 +58,7 @@ private fun MainApp(
         if (sharedUrl != null) SubScreen.AddLink else null
     ) }
     var selectedLink by remember { mutableStateOf<Link?>(null) }
+    var selectedFolder by remember { mutableStateOf<Folder?>(null) }
     val initialUrl = remember { sharedUrl }
 
     // Intercepte le geste/bouton retour système quand un sous-écran est actif
@@ -62,9 +66,6 @@ private fun MainApp(
         when (subScreen) {
             is SubScreen.Edit -> {
                 subScreen = SubScreen.Detail
-            }
-            is SubScreen.Shopping, is SubScreen.Calendar -> {
-                subScreen = null
             }
             else -> subScreen = null
         }
@@ -94,6 +95,37 @@ private fun MainApp(
             }
             return
         }
+        is SubScreen.PublicDetail -> {
+            selectedLink?.let { link ->
+                val folderList by vm.folders.collectAsState()
+                LinkDetailScreen(
+                    link = link,
+                    onBack = { subScreen = null },
+                    onDelete = { },
+                    onOpenUrl = vm.urlOpener,
+                    readOnly = true,
+                    onSaveToMyList = { linkToSave, folderId ->
+                        vm.addLink(
+                            title = linkToSave.title,
+                            url = linkToSave.url,
+                            description = linkToSave.description,
+                            category = linkToSave.category,
+                            folderId = folderId,
+                            tags = linkToSave.tags,
+                            ageRange = linkToSave.ageRange,
+                            location = linkToSave.location,
+                            price = linkToSave.price,
+                            imageUrl = linkToSave.imageUrl,
+                            eventDate = linkToSave.eventDate,
+                            rating = linkToSave.rating,
+                            ingredients = linkToSave.ingredients
+                        )
+                    },
+                    folders = folderList
+                )
+            }
+            return
+        }
         is SubScreen.Edit -> {
             selectedLink?.let { link ->
                 val freshLink = vm.repository.links.value.find { it.id == link.id } ?: link
@@ -117,12 +149,34 @@ private fun MainApp(
             ShoppingListScreen(viewModel = vm, modifier = Modifier)
             return
         }
-        is SubScreen.Calendar -> {
-            CalendarScreen(
-                viewModel = vm,
-                modifier = Modifier,
-                onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
-            )
+        is SubScreen.EditFolder -> {
+            selectedFolder?.let { folder ->
+                val freshFolder = vm.repository.folders.value.find { it.id == folder.id } ?: folder
+                EditFolderScreen(
+                    folder = freshFolder,
+                    viewModel = vm,
+                    onBack = { subScreen = null }
+                )
+            }
+            return
+        }
+        is SubScreen.Tags -> {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { subScreen = null }) {
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Retour", tint = Orange)
+                    }
+                    Text("Tags", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = TextPrimary)
+                }
+                TagsTabScreen(
+                    viewModel = vm,
+                    modifier = Modifier,
+                    onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
+                )
+            }
             return
         }
         null -> {} // continue to tabs
@@ -163,9 +217,15 @@ private fun MainApp(
                 viewModel = vm,
                 modifier = Modifier.padding(padding),
                 onAddFolderClick = { subScreen = SubScreen.AddFolder },
+                onEditFolderClick = { folder -> selectedFolder = folder; subScreen = SubScreen.EditFolder },
                 onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
             )
-            Tab.TAGS -> TagsTabScreen(
+            Tab.EXPLORE -> CommunityScreen(
+                modifier = Modifier.padding(padding),
+                apiClient = vm.apiClient,
+                onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.PublicDetail }
+            )
+            Tab.CALENDAR -> CalendarScreen(
                 viewModel = vm,
                 modifier = Modifier.padding(padding),
                 onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
@@ -174,7 +234,7 @@ private fun MainApp(
                 viewModel = vm,
                 modifier = Modifier.padding(padding),
                 onShoppingClick = { subScreen = SubScreen.Shopping },
-                onCalendarClick = { subScreen = SubScreen.Calendar },
+                onTagsClick = { subScreen = SubScreen.Tags },
                 sessionManager = sessionManager,
                 authRepository = authRepository,
                 onLoginSuccess = {
@@ -189,8 +249,10 @@ sealed class SubScreen {
     object AddLink : SubScreen()
     object AddFolder : SubScreen()
     object Detail : SubScreen()
+    object PublicDetail : SubScreen()
     object Edit : SubScreen()
+    object EditFolder : SubScreen()
     object AiGenerate : SubScreen()
     object Shopping : SubScreen()
-    object Calendar : SubScreen()
+    object Tags : SubScreen()
 }

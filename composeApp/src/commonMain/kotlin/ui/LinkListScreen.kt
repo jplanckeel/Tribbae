@@ -177,6 +177,12 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (link.ownerDisplayName.isNotBlank()) {
+                        Text(
+                            "par ${link.ownerDisplayName}", fontSize = 9.sp, color = TextSecondary,
+                            maxLines = 1
+                        )
+                    }
                     if (link.tags.isNotEmpty()) {
                         link.tags.take(2).forEach { tag ->
                             Surface(
@@ -320,13 +326,21 @@ fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)
                     link.title, fontWeight = FontWeight.SemiBold, fontSize = 12.sp,
                     maxLines = 2, color = TextPrimary, lineHeight = 15.sp
                 )
-                if (link.tags.isNotEmpty()) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        link.tags.take(2).forEach { tag ->
-                            Text(
-                                "#$tag", fontSize = 9.sp, color = catColor,
-                                fontWeight = FontWeight.Medium
-                            )
+                Column {
+                    if (link.ownerDisplayName.isNotBlank()) {
+                        Text(
+                            "par ${link.ownerDisplayName}", fontSize = 9.sp, color = TextSecondary,
+                            maxLines = 1
+                        )
+                    }
+                    if (link.tags.isNotEmpty()) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            link.tags.take(2).forEach { tag ->
+                                Text(
+                                    "#$tag", fontSize = 9.sp, color = catColor,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }

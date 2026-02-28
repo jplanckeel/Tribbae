@@ -75,7 +75,7 @@ export default function LinkDetail() {
 
   const isLoggedIn = !!localStorage.getItem("token");
   const currentUserId = localStorage.getItem("userId");
-  const isOwnLink = currentUserId && link.ownerId === currentUserId;
+  const isOwnLink = currentUserId && link.ownerId && link.ownerId === currentUserId;
 
   const handleSaveToMyList = async () => {
     setSaving(true);
