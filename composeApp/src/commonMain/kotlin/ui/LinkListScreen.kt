@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -92,6 +91,9 @@ fun NetworkImage(
     )
 }
 
+/** Mode d'affichage des liens */
+enum class LinkViewMode { LIST, GRID }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = null) {
@@ -100,20 +102,151 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+    ) {
+        Row(modifier = Modifier.height(100.dp)) {
+            // Image ou pattern à gauche
+            Box(
+                modifier = Modifier
+                    .width(100.dp)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+            ) {
+                if (hasImage) {
+                    NetworkImage(
+                        url = link.imageUrl,
+                        contentDescription = link.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(catColor.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = categoryIcon(link.category),
+                            contentDescription = null,
+                            tint = catColor.copy(alpha = 0.4f),
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                }
+                // Badge catégorie
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = catColor,
+                    modifier = Modifier.padding(6.dp).align(Alignment.TopStart)
+                ) {
+                    Icon(
+                        imageVector = categoryIcon(link.category),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.padding(3.dp).size(12.dp)
+                    )
+                }
+            }
+
+            // Contenu texte
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        link.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
+                        maxLines = 1, color = TextPrimary
+                    )
+                    if (link.description.isNotEmpty()) {
+                        Text(
+                            link.description, color = TextSecondary,
+                            fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (link.tags.isNotEmpty()) {
+                        link.tags.take(2).forEach { tag ->
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = catColor.copy(alpha = 0.1f)
+                            ) {
+                                Text(
+                                    "#$tag", fontSize = 9.sp, color = catColor,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+                    }
+                    if (link.rating > 0) {
+                        StarRating(rating = link.rating, starSize = 10)
+                    }
+                }
+            }
+
+            // Actions à droite
+            Column(
+                modifier = Modifier.fillMaxHeight().padding(end = 4.dp, top = 4.dp, bottom = 4.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (onFavoriteToggle != null) {
+                    IconButton(onClick = onFavoriteToggle, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            imageVector = if (link.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = if (link.favorite) "Retirer des favoris" else "Ajouter aux favoris",
+                            tint = if (link.favorite) Color(0xFFE91E63) else Color.LightGray,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+/** Carte vignette compacte pour le mode grille */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = null) {
+    val catColor = CategoryColors[link.category.name] ?: Color(0xFFE0E0E0)
+    val hasImage = link.imageUrl.isNotBlank()
+
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = CardColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column {
-            if (hasImage) {
-                // Image d'aperçu OG
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                ) {
+        Column(modifier = Modifier.height(180.dp)) {
+            // Image ou pattern en haut
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
+            ) {
+                if (hasImage) {
                     NetworkImage(
                         url = link.imageUrl,
                         contentDescription = link.title,
@@ -123,169 +256,78 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp)
+                            .height(30.dp)
                             .align(Alignment.BottomCenter)
                             .background(
                                 Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))
+                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f))
                                 )
                             )
                     )
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = catColor,
+                } else {
+                    Box(
                         modifier = Modifier
-                            .padding(10.dp)
-                            .align(Alignment.TopEnd)
+                            .fillMaxSize()
+                            .background(catColor.copy(alpha = 0.10f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = categoryIcon(link.category),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                link.category.label,
-                                fontSize = 11.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        Icon(
+                            imageVector = categoryIcon(link.category),
+                            contentDescription = null,
+                            tint = catColor.copy(alpha = 0.3f),
+                            modifier = Modifier.size(40.dp)
+                        )
                     }
                 }
-            } else {
-                // Pattern de fond avec icône catégorie en répétition
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(70.dp)
-                        .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                        .background(catColor.copy(alpha = 0.10f))
+                // Badge catégorie
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = catColor,
+                    modifier = Modifier.padding(6.dp).align(Alignment.TopEnd)
                 ) {
-                    val icon = categoryIcon(link.category)
-                    val iconSize = 18.dp
-                    val spacing = 10.dp
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.SpaceEvenly
+                    Icon(
+                        imageVector = categoryIcon(link.category),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.padding(4.dp).size(12.dp)
+                    )
+                }
+                // Favori
+                if (onFavoriteToggle != null) {
+                    IconButton(
+                        onClick = onFavoriteToggle,
+                        modifier = Modifier.size(28.dp).align(Alignment.TopStart).padding(4.dp)
                     ) {
-                        for (row in 0..2) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .offset(x = if (row % 2 == 1) 16.dp else 0.dp),
-                                horizontalArrangement = Arrangement.spacedBy(
-                                    spacing,
-                                    Alignment.Start
-                                )
-                            ) {
-                                for (col in 0..10) {
-                                    Icon(
-                                        imageVector = icon,
-                                        contentDescription = null,
-                                        tint = catColor.copy(alpha = 0.18f),
-                                        modifier = Modifier.size(iconSize).graphicsLayer { rotationZ = 45f }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    // Badge catégorie en overlay
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = catColor,
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .align(Alignment.TopEnd)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                link.category.label,
-                                fontSize = 11.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        Icon(
+                            imageVector = if (link.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = null,
+                            tint = if (link.favorite) Color(0xFFE91E63) else Color.White.copy(alpha = 0.8f),
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
                 }
             }
 
-            // Contenu texte
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Texte en bas
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        link.title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
-                        maxLines = 1, color = TextPrimary
-                    )
-                    if (link.description.isNotEmpty()) {
-                        Text(
-                            link.description, color = TextSecondary,
-                            fontSize = 12.sp, maxLines = 2,
-                            lineHeight = 16.sp,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(top = 4.dp)
-                    ) {
-                        if (link.eventDate != null) MiniChip(Icons.Default.CalendarMonth, formatDate(link.eventDate), catColor)
-                        if (link.price.isNotEmpty()) MiniChip(Icons.Default.Euro, link.price, catColor)
-                        if (link.location.isNotEmpty()) MiniChip(Icons.Default.LocationOn, extractCityName(link.location), catColor)
-                        if (link.ageRange.isNotEmpty()) MiniChip(Icons.Default.Person, link.ageRange, catColor)
-                    }
-                    if (link.tags.isNotEmpty()) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.padding(top = 4.dp)
-                        ) {
-                            link.tags.take(3).forEach { tag ->
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = catColor.copy(alpha = 0.1f)
-                                ) {
-                                    Text(
-                                        "#$tag", fontSize = 10.sp, color = catColor,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
+                Text(
+                    link.title, fontWeight = FontWeight.SemiBold, fontSize = 12.sp,
+                    maxLines = 2, color = TextPrimary, lineHeight = 15.sp
+                )
+                if (link.tags.isNotEmpty()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        link.tags.take(2).forEach { tag ->
+                            Text(
+                                "#$tag", fontSize = 9.sp, color = catColor,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
-                    }
-                    if (link.rating > 0) {
-                        Box(modifier = Modifier.padding(top = 3.dp)) {
-                            StarRating(rating = link.rating, starSize = 14)
-                        }
-                    }
-                }
-                Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = Color.LightGray)
-                if (onFavoriteToggle != null) {
-                    IconButton(onClick = onFavoriteToggle) {
-                        Icon(
-                            imageVector = if (link.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (link.favorite) "Retirer des favoris" else "Ajouter aux favoris",
-                            tint = if (link.favorite) Color(0xFFE91E63) else Color.LightGray,
-                            modifier = Modifier.size(22.dp)
-                        )
                     }
                 }
             }

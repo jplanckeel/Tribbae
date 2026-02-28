@@ -4,6 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -46,6 +49,7 @@ fun HomeScreen(
 
     var showFilterSheet by remember { mutableStateOf(false) }
     val activeFilters = viewModel.activeFilterCount()
+    var viewMode by remember { mutableStateOf(LinkViewMode.LIST) }
 
     val pullRefreshState = rememberPullToRefreshState()
 
@@ -204,19 +208,81 @@ fun HomeScreen(
                     }
                 }
             } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(
-                        start = 16.dp, end = 16.dp,
-                        top = 4.dp, bottom = 80.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                // Toggle vue liste / grille
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    items(filteredLinks) { link ->
-                        LinkCard(
-                            link = link,
-                            onClick = { onLinkClick(link) },
-                            onFavoriteToggle = { viewModel.toggleFavorite(link.id) }
-                        )
+                    Text(
+                        "${filteredLinks.size} idée${if (filteredLinks.size > 1) "s" else ""}",
+                        fontSize = 13.sp,
+                        color = TextSecondary
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        IconButton(
+                            onClick = { viewMode = LinkViewMode.LIST },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ViewList,
+                                contentDescription = "Vue liste",
+                                tint = if (viewMode == LinkViewMode.LIST) Orange else Color.LightGray,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = { viewMode = LinkViewMode.GRID },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.GridView,
+                                contentDescription = "Vue vignettes",
+                                tint = if (viewMode == LinkViewMode.GRID) Orange else Color.LightGray,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                }
+
+                when (viewMode) {
+                    LinkViewMode.LIST -> {
+                        LazyColumn(
+                            contentPadding = PaddingValues(
+                                start = 16.dp, end = 16.dp,
+                                top = 4.dp, bottom = 80.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(filteredLinks) { link ->
+                                LinkCard(
+                                    link = link,
+                                    onClick = { onLinkClick(link) },
+                                    onFavoriteToggle = { viewModel.toggleFavorite(link.id) }
+                                )
+                            }
+                        }
+                    }
+                    LinkViewMode.GRID -> {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            contentPadding = PaddingValues(
+                                start = 12.dp, end = 12.dp,
+                                top = 4.dp, bottom = 80.dp
+                            ),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(filteredLinks) { link ->
+                                LinkCardGrid(
+                                    link = link,
+                                    onClick = { onLinkClick(link) },
+                                    onFavoriteToggle = { viewModel.toggleFavorite(link.id) }
+                                )
+                            }
+                        }
                     }
                 }
             }
