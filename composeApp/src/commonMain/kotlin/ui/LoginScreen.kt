@@ -1,5 +1,6 @@
 package ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -55,11 +56,10 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(32.dp))
         
         // Logo
-        Icon(
-            imageVector = Icons.Default.Lightbulb,
+        Image(
+            painter = androidx.compose.ui.res.painterResource(com.linkkeeper.app.R.mipmap.ic_launcher_round),
             contentDescription = "Tribbae",
-            modifier = Modifier.size(80.dp),
-            tint = Orange
+            modifier = Modifier.size(80.dp)
         )
         
         Spacer(modifier = Modifier.height(16.dp))

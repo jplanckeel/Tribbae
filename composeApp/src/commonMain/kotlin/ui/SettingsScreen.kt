@@ -1,5 +1,6 @@
 package ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -402,11 +403,10 @@ private fun AuthDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Logo
-                Icon(
-                    imageVector = Icons.Default.Lightbulb,
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(com.linkkeeper.app.R.mipmap.ic_launcher_round),
                     contentDescription = "Tribbae",
-                    modifier = Modifier.size(64.dp),
-                    tint = Orange
+                    modifier = Modifier.size(64.dp)
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
