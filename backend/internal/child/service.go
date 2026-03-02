@@ -15,6 +15,7 @@ type Child struct {
 	Name      string             `bson:"name"`
 	BirthDate int64              `bson:"birthDate"`
 	CreatedAt int64              `bson:"createdAt"`
+	UpdatedAt int64              `bson:"updatedAt"`
 }
 
 type Service struct {
@@ -32,6 +33,7 @@ func (s *Service) Create(ctx context.Context, ownerID primitive.ObjectID, name s
 		Name:      name,
 		BirthDate: birthDate,
 		CreatedAt: time.Now().Unix(),
+		UpdatedAt: time.Now().Unix(),
 	}
 	_, err := s.coll.InsertOne(ctx, child)
 	if err != nil {
@@ -56,7 +58,11 @@ func (s *Service) List(ctx context.Context, ownerID primitive.ObjectID) ([]*Chil
 
 func (s *Service) Update(ctx context.Context, childID, ownerID primitive.ObjectID, name string, birthDate int64) (*Child, error) {
 	filter := bson.M{"_id": childID, "ownerId": ownerID}
-	update := bson.M{"$set": bson.M{"name": name, "birthDate": birthDate}}
+	update := bson.M{"$set": bson.M{
+		"name":      name,
+		"birthDate": birthDate,
+		"updatedAt": time.Now().Unix(),
+	}}
 	
 	var child Child
 	err := s.coll.FindOneAndUpdate(ctx, filter, update).Decode(&child)

@@ -20,16 +20,17 @@ type SearchResult struct {
 	ImageURL string `json:"img_src,omitempty"`
 }
 
-// buildSearchQueries génère des requêtes de recherche ciblées (max 2 pour la perf)
+// buildSearchQueries génère des requêtes de recherche ciblées (le but est d'exclure Reddit comme demandé)
 func buildSearchQueries(prompt string) []string {
 	p := strings.TrimSpace(prompt)
-	queries := []string{p}
+	exclude := " -site:reddit.com"
+	queries := []string{p + exclude}
 
 	lower := strings.ToLower(p)
 	if !strings.Contains(lower, "recette") {
-		queries = append(queries, p+" avis recommandation")
+		queries = append(queries, p+" avis recommandation"+exclude)
 	} else {
-		queries = append(queries, p+" recette facile")
+		queries = append(queries, p+" recette facile"+exclude)
 	}
 
 	return queries

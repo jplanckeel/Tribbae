@@ -8,6 +8,7 @@ import {
   faTag, faCalendar, faTrash, faPen, faHeart, faFolderOpen, faTimes, faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular, faBookmark as faBookmarkRegular } from "@fortawesome/free-regular-svg-icons";
+import AdminBadge from "../components/AdminBadge";
 
 function catLabel(v: string) { return CATEGORIES.find((c) => c.value === v)?.label ?? "Idée"; }
 function catIcon(v: string) { return CATEGORIES.find((c) => c.value === v)?.icon ?? "💡"; }
@@ -234,7 +235,10 @@ export default function LinkDetail() {
 
         <div className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-2">
-            <h1 className="text-xl font-bold text-gray-800 flex-1">{link.title}</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-gray-800 break-words">{link.title}</h1>
+              {link.ownerIsAdmin && <div className="mt-1"><AdminBadge /></div>}
+            </div>
             <div className="flex gap-2 flex-shrink-0">
               {isLoggedIn && (
                 <button onClick={toggleLike} className="flex items-center gap-1">

@@ -37,6 +37,7 @@ func (h *Handler) CreateChild(ctx context.Context, req *pb.CreateChildRequest) (
 			Name:      child.Name,
 			BirthDate: child.BirthDate,
 			CreatedAt: child.CreatedAt,
+			UpdatedAt: child.UpdatedAt,
 		},
 	}, nil
 }
@@ -60,6 +61,7 @@ func (h *Handler) ListChildren(ctx context.Context, req *pb.ListChildrenRequest)
 			Name:      c.Name,
 			BirthDate: c.BirthDate,
 			CreatedAt: c.CreatedAt,
+			UpdatedAt: c.UpdatedAt,
 		}
 	}
 
@@ -89,6 +91,7 @@ func (h *Handler) UpdateChild(ctx context.Context, req *pb.UpdateChildRequest) (
 			Name:      child.Name,
 			BirthDate: child.BirthDate,
 			CreatedAt: child.CreatedAt,
+			UpdatedAt: child.UpdatedAt,
 		},
 	}, nil
 }

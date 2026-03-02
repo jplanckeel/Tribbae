@@ -23,6 +23,7 @@ func (h *Handler) toProto(ctx context.Context, l *Link, userID string) *pb.Link 
 	likeCount, _ := h.svc.GetLikeCount(ctx, l.ID.Hex())
 	likedByMe, _ := h.svc.IsLikedByUser(ctx, l.ID.Hex(), userID)
 
+	ownerDisplayName, ownerIsAdmin := h.svc.GetOwnerInfo(ctx, l.OwnerID)
 	return &pb.Link{
 		Id:               l.ID.Hex(),
 		OwnerId:          l.OwnerID,
@@ -45,7 +46,8 @@ func (h *Handler) toProto(ctx context.Context, l *Link, userID string) *pb.Link 
 		LikeCount:        likeCount,
 		LikedByMe:        likedByMe,
 		Favorite:         l.Favorite,
-		OwnerDisplayName: h.svc.GetOwnerDisplayName(ctx, l.OwnerID),
+		OwnerDisplayName: ownerDisplayName,
+		OwnerIsAdmin:     ownerIsAdmin,
 	}
 }
 

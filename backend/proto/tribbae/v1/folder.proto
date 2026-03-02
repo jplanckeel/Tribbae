@@ -47,6 +47,7 @@ message Folder {
   bool ai_generated = 15;
   string banner_url = 16;
   repeated string tags = 17;
+  bool owner_is_admin = 18;
 }
 
 message CreateFolderRequest {

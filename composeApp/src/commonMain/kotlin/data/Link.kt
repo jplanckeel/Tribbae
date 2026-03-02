@@ -24,7 +24,8 @@ data class Folder(
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
     val aiGenerated: Boolean = false,
-    val collaborators: List<Collaborator> = emptyList()
+    val collaborators: List<Collaborator> = emptyList(),
+    val updatedAt: Long = 0
 )
 
 @Serializable
@@ -47,7 +48,8 @@ data class Link(
     val favorite: Boolean = false,
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
-    val ownerDisplayName: String = ""
+    val ownerDisplayName: String = "",
+    val updatedAt: Long = 0
 )
 
 @Serializable
@@ -81,5 +83,6 @@ enum class FolderColor { BLUE, GREEN, ORANGE, PURPLE, RED, TEAL, PINK, YELLOW }
 data class Child(
     val id: String,
     val name: String,
-    val birthDate: Long  // timestamp en ms de la date de naissance
+    val birthDate: Long, // timestamp en ms de la date de naissance
+    val updatedAt: Long = 0
 )

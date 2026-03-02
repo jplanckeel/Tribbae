@@ -195,6 +195,10 @@
         "createdAt": {
           "type": "string",
           "format": "int64"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

@@ -38,7 +38,8 @@ data class ApiAuthFolder(
     val bannerUrl: String = "",
     val tags: List<String> = emptyList(),
     val likeCount: Int = 0,
-    val collaborators: List<ApiCollaborator> = emptyList()
+    val collaborators: List<ApiCollaborator> = emptyList(),
+    val updatedAt: Long = 0
 )
 
 @Serializable
@@ -65,7 +66,8 @@ data class ApiAuthLink(
     val rating: Int = 0,
     val ingredients: List<String> = emptyList(),
     val likeCount: Int = 0,
-    val likedByMe: Boolean = false
+    val likedByMe: Boolean = false,
+    val updatedAt: Long = 0
 )
 
 @Serializable
@@ -86,7 +88,8 @@ data class UpdateFolderRequest(
     val color: String = "ORANGE",
     val visibility: String = "PRIVATE",
     val bannerUrl: String = "",
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val updatedAt: Long = 0
 )
 
 @Serializable
@@ -121,7 +124,8 @@ data class CreateLinkRequest(
     val eventDate: Long = 0,
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
-    val ingredients: List<String> = emptyList()
+    val ingredients: List<String> = emptyList(),
+    val updatedAt: Long = 0
 )
 
 @Serializable
@@ -140,7 +144,8 @@ data class UpdateLinkRequest(
     val eventDate: Long = 0,
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
-    val ingredients: List<String> = emptyList()
+    val ingredients: List<String> = emptyList(),
+    val updatedAt: Long = 0
 )
 
 class AuthenticatedApiClient(
@@ -302,8 +307,8 @@ class AuthenticatedApiClient(
 
     suspend fun updateChild(childId: String, name: String, birthDate: Long): ApiChild {
         @Serializable
-        data class UpdateChildRequest(val childId: String, val name: String, val birthDate: Long)
-        val body = json.encodeToString(UpdateChildRequest.serializer(), UpdateChildRequest(childId, name, birthDate))
+        data class UpdateChildRequest(val childId: String, val name: String, val birthDate: Long, val updatedAt: Long = 0)
+        val body = json.encodeToString(UpdateChildRequest.serializer(), UpdateChildRequest(childId, name, birthDate, System.currentTimeMillis()))
         return request("/v1/children/$childId", "PUT", body) { response ->
             @Serializable
             data class ChildResponse(val child: ApiChild)
@@ -327,5 +332,6 @@ data class ApiChild(
     val ownerId: String = "",
     val name: String = "",
     val birthDate: Long = 0,
-    val createdAt: Long = 0
+    val createdAt: Long = 0,
+    val updatedAt: Long = 0
 )

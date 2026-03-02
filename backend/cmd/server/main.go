@@ -41,6 +41,11 @@ func main() {
 		log.Fatalf("ensure indexes: %v", err)
 	}
 
+	// Ensure admin account exists
+	if err := auth.EnsureAdminAccount(context.Background(), database.Col("users"), cfg.AdminPassword); err != nil {
+		log.Fatalf("ensure admin account: %v", err)
+	}
+
 	// Services
 	authSvc := auth.NewService(database.Col("users"), cfg.JWTSecret)
 	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)

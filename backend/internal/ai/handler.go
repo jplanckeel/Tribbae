@@ -71,7 +71,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp := generateResponseWithFolder{Ideas: result.Ideas}
 
-	// Créer automatiquement un dossier communautaire avec les idées
+	// NOTE: Automatic creation disabled to avoid duplicates as frontend now handles explicit saving.
+	/*
 	if h.tokenParser != nil && h.folderCreator != nil && h.linkCreator != nil && len(result.Ideas) > 0 {
 		if userID, err := h.tokenParser(r); err == nil && userID != "" {
 			folderName := buildFolderName(req.Prompt)
@@ -83,6 +84,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	*/
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)

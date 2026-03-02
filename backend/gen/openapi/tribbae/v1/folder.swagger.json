@@ -656,6 +656,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "ownerIsAdmin": {
+          "type": "boolean"
         }
       }
     },
@@ -781,6 +784,9 @@
         },
         "ownerDisplayName": {
           "type": "string"
+        },
+        "ownerIsAdmin": {
+          "type": "boolean"
         }
       }
     },

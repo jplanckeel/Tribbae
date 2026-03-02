@@ -431,17 +431,18 @@ func (s *Service) ListNew(ctx context.Context, limit int32) ([]*Link, error) {
 	return links, nil
 }
 
-// GetOwnerDisplayName retourne le display_name d'un user par son ID
-func (s *Service) GetOwnerDisplayName(ctx context.Context, ownerID string) string {
+// GetOwnerInfo retourne le display_name et le statut admin d'un user par son ID
+func (s *Service) GetOwnerInfo(ctx context.Context, ownerID string) (string, bool) {
 	oid, err := primitive.ObjectIDFromHex(ownerID)
 	if err != nil {
-		return ""
+		return "", false
 	}
 	var user struct {
 		DisplayName string `bson:"display_name"`
+		IsAdmin     bool   `bson:"is_admin"`
 	}
 	if err := s.userCol.FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
-		return ""
+		return "", false
 	}
-	return user.DisplayName
+	return user.DisplayName, user.IsAdmin
 }

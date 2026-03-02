@@ -6,6 +6,7 @@ import {
   faTimes, faEye, faPen, faGlobe, faLock,
 } from "@fortawesome/free-solid-svg-icons";
 import LinkCard from "../components/LinkCard";
+import AdminBadge from "../components/AdminBadge";
 import { useNavigate } from "react-router-dom";
 
 export default function Folders() {
@@ -150,6 +151,7 @@ export default function Folders() {
               {selectedFolder.ownerDisplayName && (
                 <span className="ml-2">par {selectedFolder.ownerDisplayName}</span>
               )}
+              {selectedFolder.ownerIsAdmin && <AdminBadge />}
             </div>
           </div>
           <button onClick={() => setShowCollabModal(true)} className="text-gray-400 hover:text-blue-500" title="Collaborateurs">
@@ -212,19 +214,17 @@ export default function Folders() {
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => setCollabRole("COLLABORATOR_ROLE_EDITOR")}
-                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium ${
-                    collabRole === "COLLABORATOR_ROLE_EDITOR"
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium ${collabRole === "COLLABORATOR_ROLE_EDITOR"
                       ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
-                  }`}
+                    }`}
                 >
                   <FontAwesomeIcon icon={faPen} className="w-3.5 h-3.5" /> Éditeur
                 </button>
                 <button
                   onClick={() => setCollabRole("COLLABORATOR_ROLE_VIEWER")}
-                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium ${
-                    collabRole === "COLLABORATOR_ROLE_VIEWER"
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium ${collabRole === "COLLABORATOR_ROLE_VIEWER"
                       ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
-                  }`}
+                    }`}
                 >
                   <FontAwesomeIcon icon={faEye} className="w-3.5 h-3.5" /> Lecteur
                 </button>
@@ -279,10 +279,9 @@ export default function Folders() {
                     <button
                       key={opt.val}
                       onClick={() => setEditVisibility(opt.val)}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${
-                        editVisibility === opt.val
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${editVisibility === opt.val
                           ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
-                      }`}
+                        }`}
                     >
                       {opt.icon} {opt.label}
                     </button>
@@ -347,10 +346,9 @@ export default function Folders() {
               <button
                 key={opt.val}
                 onClick={() => setNewVisibility(opt.val)}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${
-                  newVisibility === opt.val
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${newVisibility === opt.val
                     ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
-                }`}
+                  }`}
               >
                 {opt.icon} {opt.label}
               </button>

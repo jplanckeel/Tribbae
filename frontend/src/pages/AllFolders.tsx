@@ -4,6 +4,7 @@ import { community as communityApi, links as linksApi } from "../api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faGlobe, faSearch, faXmark, faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
+import AdminBadge from "../components/AdminBadge";
 
 function FolderCard({ folder, onOpen, onLike, liking }: any) {
   return (
@@ -37,6 +38,7 @@ function FolderCard({ folder, onOpen, onLike, liking }: any) {
         <p className="font-semibold text-gray-800 line-clamp-1">{folder.name}</p>
         <p className="text-xs text-gray-400 mt-0.5">
           {folder.ownerDisplayName && <span>par {folder.ownerDisplayName}</span>}
+          {folder.ownerIsAdmin && <AdminBadge />}
           {folder.linkCount > 0 && <span> · {folder.linkCount} idée{folder.linkCount > 1 ? "s" : ""}</span>}
         </p>
         {folder.tags && folder.tags.length > 0 && (
@@ -62,7 +64,7 @@ export default function AllFolders() {
   const [sortBy, setSortBy] = useState<"recent" | "popular">("popular");
 
   useEffect(() => {
-    communityApi.list(undefined, 100).then((r) => setFolders(r.folders || [])).catch(() => {});
+    communityApi.list(undefined, 100).then((r) => setFolders(r.folders || [])).catch(() => { });
   }, []);
 
   const handleLike = async (folderId: string, isLiked: boolean) => {
@@ -129,6 +131,7 @@ export default function AllFolders() {
             {selectedFolder.ownerDisplayName && (
               <span>par {selectedFolder.ownerDisplayName}</span>
             )}
+            {selectedFolder.ownerIsAdmin && <AdminBadge />}
             {selectedFolder.linkCount > 0 && (
               <span>· {selectedFolder.linkCount} idée{selectedFolder.linkCount > 1 ? "s" : ""}</span>
             )}
