@@ -15,6 +15,8 @@ export interface Link {
   reminderEnabled: boolean;
   rating: number;
   ingredients: string[];
+  ownerDisplayName?: string;
+  ownerIsAdmin?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -29,6 +31,7 @@ export interface Folder {
   shareToken: string;
   collaborators: Collaborator[];
   ownerDisplayName: string;
+  ownerIsAdmin?: boolean;
   linkCount: number;
   createdAt?: string;
   updatedAt?: string;

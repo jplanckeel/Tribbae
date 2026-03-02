@@ -105,6 +105,7 @@ type Link struct {
 	LikedByMe        bool                   `protobuf:"varint,20,opt,name=liked_by_me,json=likedByMe,proto3" json:"liked_by_me,omitempty"`
 	Favorite         bool                   `protobuf:"varint,21,opt,name=favorite,proto3" json:"favorite,omitempty"`
 	OwnerDisplayName string                 `protobuf:"bytes,22,opt,name=owner_display_name,json=ownerDisplayName,proto3" json:"owner_display_name,omitempty"`
+	OwnerIsAdmin     bool                   `protobuf:"varint,23,opt,name=owner_is_admin,json=ownerIsAdmin,proto3" json:"owner_is_admin,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -291,6 +292,13 @@ func (x *Link) GetOwnerDisplayName() string {
 		return x.OwnerDisplayName
 	}
 	return ""
+}
+
+func (x *Link) GetOwnerIsAdmin() bool {
+	if x != nil {
+		return x.OwnerIsAdmin
+	}
+	return false
 }
 
 type CreateLinkRequest struct {
@@ -1410,7 +1418,7 @@ var File_tribbae_v1_link_proto protoreflect.FileDescriptor
 const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\n" +
 	"\x15tribbae/v1/link.proto\x12\n" +
-	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd1\x05\n" +
+	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf7\x05\n" +
 	"\x04Link\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1b\n" +
@@ -1438,7 +1446,8 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"like_count\x18\x13 \x01(\x05R\tlikeCount\x12\x1e\n" +
 	"\vliked_by_me\x18\x14 \x01(\bR\tlikedByMe\x12\x1a\n" +
 	"\bfavorite\x18\x15 \x01(\bR\bfavorite\x12,\n" +
-	"\x12owner_display_name\x18\x16 \x01(\tR\x10ownerDisplayName\"\xd0\x03\n" +
+	"\x12owner_display_name\x18\x16 \x01(\tR\x10ownerDisplayName\x12$\n" +
+	"\x0eowner_is_admin\x18\x17 \x01(\bR\fownerIsAdmin\"\xd0\x03\n" +
 	"\x11CreateLinkRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +

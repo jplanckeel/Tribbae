@@ -79,13 +79,15 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         eventDate: Long? = null, reminderEnabled: Boolean = false, rating: Int = 0,
         imageUrl: String = "", ingredients: List<String> = emptyList()
     ) {
+        val now = System.currentTimeMillis()
         val link = Link(
             id = kotlin.random.Random.nextLong().toString(),
             title = title, url = url, description = description,
             category = category, folderId = folderId,
             tags = tags, ageRange = ageRange, location = location, price = price,
             eventDate = eventDate, reminderEnabled = reminderEnabled, rating = rating,
-            imageUrl = imageUrl, ingredients = ingredients
+            imageUrl = imageUrl, ingredients = ingredients,
+            updatedAt = now
         )
         repository.addLink(link)
         updateFilteredLinks()
@@ -124,13 +126,19 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
 
     fun updateLink(link: Link) {
-        repository.updateLink(link)
+        val updatedLink = link.copy(updatedAt = System.currentTimeMillis())
+        repository.updateLink(updatedLink)
         updateFilteredLinks()
         // Met à jour le rappel si nécessaire
-        if (link.reminderEnabled && link.eventDate != null) {
-            reminderScheduler?.invoke(link)
+        if (updatedLink.reminderEnabled && updatedLink.eventDate != null) {
+            reminderScheduler?.invoke(updatedLink)
         } else {
-            reminderCanceller?.invoke(link.id)
+            reminderCanceller?.invoke(updatedLink.id)
+        }
+
+        // Mettre à jour sur le backend si authentifié
+        if (authenticatedClient != null) {
+            updateLinkOnBackend(updatedLink)
         }
     }
 
@@ -167,11 +175,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
 
     fun updateFolder(folder: Folder) {
-        repository.updateFolder(folder)
+        val updatedFolder = folder.copy(updatedAt = System.currentTimeMillis())
+        repository.updateFolder(updatedFolder)
         updateFilteredLinks()
         
         if (authenticatedClient != null) {
-            updateFolderOnBackend(folder)
+            updateFolderOnBackend(updatedFolder)
         }
     }
 
@@ -234,9 +243,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
 
     fun addChild(name: String, birthDate: Long) {
+        val now = System.currentTimeMillis()
         val child = data.Child(
             id = kotlin.random.Random.nextLong().toString(),
-            name = name, birthDate = birthDate
+            name = name, birthDate = birthDate,
+            updatedAt = now
         )
         repository.addChild(child)
         
@@ -247,11 +258,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
 
     fun updateChild(child: data.Child) {
-        repository.updateChild(child)
+        val updatedChild = child.copy(updatedAt = System.currentTimeMillis())
+        repository.updateChild(updatedChild)
         
         // Mettre à jour sur le backend si authentifié
         if (authenticatedClient != null) {
-            updateChildOnBackend(child)
+            updateChildOnBackend(updatedChild)
         }
     }
     
@@ -387,17 +399,13 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
     
-    /** Force la synchronisation (pull-to-refresh) — remplace les données locales par celles du backend */
+    /** Force la synchronisation (pull-to-refresh) — fusionne intelligemment */
     fun forceSync() {
         val client = authenticatedClient ?: return
         viewModelScope.launch {
             _isRefreshing.value = true
             try {
                 _syncStatus.value = "Synchronisation..."
-                
-                // Vider les données locales avant de recharger
-                repository.clearAll()
-                
                 performSync(client)
                 _syncStatus.value = "Synchronisé"
             } catch (e: Exception) {
@@ -412,9 +420,16 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         // Charger les dossiers
         val foldersResponse = client.listFolders()
         foldersResponse.folders.forEach { apiFolder ->
-            val folder = apiFolderToFolder(apiFolder)
-            if (repository.folders.value.none { it.id == folder.id }) {
-                repository.addFolder(folder)
+            val apiUpdatedAt = apiFolder.updatedAt
+            val localFolder = repository.folders.value.find { it.id == apiFolder.id }
+            
+            if (localFolder == null || apiUpdatedAt > localFolder.updatedAt) {
+                val folder = apiFolderToFolder(apiFolder)
+                if (localFolder == null) {
+                    repository.addFolder(folder)
+                } else {
+                    repository.updateFolder(folder)
+                }
             }
         }
         
@@ -425,26 +440,35 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
             } catch (_: Exception) { LinkCategory.IDEE }
             
-            val link = Link(
-                id = apiLink.id,
-                title = apiLink.title,
-                url = apiLink.url,
-                description = apiLink.description,
-                category = category,
-                folderId = apiLink.folderId.ifBlank { null },
-                tags = apiLink.tags,
-                ageRange = apiLink.ageRange,
-                location = apiLink.location,
-                price = apiLink.price,
-                imageUrl = apiLink.imageUrl,
-                eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
-                reminderEnabled = apiLink.reminderEnabled,
-                rating = apiLink.rating,
-                ingredients = apiLink.ingredients,
-                favorite = apiLink.likedByMe
-            )
-            if (repository.links.value.none { it.id == link.id }) {
-                repository.addLink(link)
+            val apiUpdatedAt = apiLink.updatedAt
+            val localLink = repository.links.value.find { it.id == apiLink.id }
+            
+            // On ne met à jour que si c'est nouveau ou si le backend est plus récent que le local
+            if (localLink == null || apiUpdatedAt > localLink.updatedAt) {
+                val link = Link(
+                    id = apiLink.id,
+                    title = apiLink.title,
+                    url = apiLink.url,
+                    description = apiLink.description,
+                    category = category,
+                    folderId = apiLink.folderId.ifBlank { null },
+                    tags = apiLink.tags,
+                    ageRange = apiLink.ageRange,
+                    location = apiLink.location,
+                    price = apiLink.price,
+                    imageUrl = apiLink.imageUrl,
+                    eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
+                    reminderEnabled = apiLink.reminderEnabled,
+                    rating = apiLink.rating,
+                    ingredients = apiLink.ingredients,
+                    favorite = apiLink.likedByMe,
+                    updatedAt = apiUpdatedAt
+                )
+                if (localLink == null) {
+                    repository.addLink(link)
+                } else {
+                    repository.updateLink(link)
+                }
             }
         }
         
@@ -453,13 +477,21 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         // Charger les enfants
         val childrenResponse = client.listChildren()
         childrenResponse.children.forEach { apiChild ->
-            val child = data.Child(
-                id = apiChild.id,
-                name = apiChild.name,
-                birthDate = apiChild.birthDate
-            )
-            if (repository.children.value.none { it.id == child.id }) {
-                repository.addChild(child)
+            val apiUpdatedAt = apiChild.updatedAt
+            val localChild = repository.children.value.find { it.id == apiChild.id }
+            
+            if (localChild == null || apiUpdatedAt > localChild.updatedAt) {
+                val child = data.Child(
+                    id = apiChild.id,
+                    name = apiChild.name,
+                    birthDate = apiChild.birthDate,
+                    updatedAt = apiUpdatedAt
+                )
+                if (localChild == null) {
+                    repository.addChild(child)
+                } else {
+                    repository.updateChild(child)
+                }
             }
         }
     }
@@ -482,7 +514,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     eventDate = link.eventDate ?: 0,
                     reminderEnabled = link.reminderEnabled,
                     rating = link.rating,
-                    ingredients = link.ingredients
+                    ingredients = link.ingredients,
+                    updatedAt = link.updatedAt
                 )
                 val savedLink = client.createLink(req)
                 // Supprimer l'ancien lien local et ajouter le nouveau avec l'ID du backend
@@ -528,6 +561,35 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             }
         }
     }
+
+    private fun updateLinkOnBackend(link: Link) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                val req = data.UpdateLinkRequest(
+                    linkId = link.id,
+                    folderId = link.folderId ?: "",
+                    title = link.title,
+                    url = link.url,
+                    description = link.description,
+                    category = "LINK_CATEGORY_${link.category.name}",
+                    tags = link.tags,
+                    ageRange = link.ageRange,
+                    location = link.location,
+                    price = link.price,
+                    imageUrl = link.imageUrl,
+                    eventDate = link.eventDate ?: 0,
+                    reminderEnabled = link.reminderEnabled,
+                    rating = link.rating,
+                    ingredients = link.ingredients,
+                    updatedAt = link.updatedAt
+                )
+                client.updateLink(req)
+            } catch (e: Exception) {
+                _syncStatus.value = "Erreur mise à jour: ${e.message}"
+            }
+        }
+    }
     
     fun deleteFolderFromBackend(folderId: String) {
         val client = authenticatedClient ?: return
@@ -551,7 +613,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     color = folder.color.name,
                     visibility = folder.visibility.ifBlank { "PRIVATE" },
                     bannerUrl = folder.bannerUrl,
-                    tags = folder.tags
+                    tags = folder.tags,
+                    updatedAt = folder.updatedAt
                 )
                 client.updateFolder(folder.id, req)
             } catch (e: Exception) {
@@ -617,7 +680,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     displayName = c.displayName,
                     role = c.role
                 )
-            }
+            },
+            updatedAt = apiFolder.updatedAt
         )
     }
     

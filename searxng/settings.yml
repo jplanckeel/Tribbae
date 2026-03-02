@@ -61,3 +61,5 @@ engines:
   - name: startpage
     disabled: false
     shortcut: sp
+  - name: reddit
+    disabled: true

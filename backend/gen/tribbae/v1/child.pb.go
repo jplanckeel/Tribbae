@@ -29,6 +29,7 @@ type Child struct {
 	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	BirthDate     int64                  `protobuf:"varint,4,opt,name=birth_date,json=birthDate,proto3" json:"birth_date,omitempty"`
 	CreatedAt     int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     int64                  `protobuf:"varint,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -94,6 +95,13 @@ func (x *Child) GetBirthDate() int64 {
 func (x *Child) GetCreatedAt() int64 {
 	if x != nil {
 		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *Child) GetUpdatedAt() int64 {
+	if x != nil {
+		return x.UpdatedAt
 	}
 	return 0
 }
@@ -463,7 +471,7 @@ var File_tribbae_v1_child_proto protoreflect.FileDescriptor
 const file_tribbae_v1_child_proto_rawDesc = "" +
 	"\n" +
 	"\x16tribbae/v1/child.proto\x12\n" +
-	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\"\x84\x01\n" +
+	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\"\xa3\x01\n" +
 	"\x05Child\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x12\n" +
@@ -471,7 +479,9 @@ const file_tribbae_v1_child_proto_rawDesc = "" +
 	"\n" +
 	"birth_date\x18\x04 \x01(\x03R\tbirthDate\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x05 \x01(\x03R\tcreatedAt\"G\n" +
+	"created_at\x18\x05 \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\x06 \x01(\x03R\tupdatedAt\"G\n" +
 	"\x12CreateChildRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +

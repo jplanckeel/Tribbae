@@ -60,6 +60,8 @@ func (h *Handler) toProto(ctx context.Context, f *Folder) *pb.Folder {
 		likedByMe = h.svc.IsLikedBy(ctx, f.ID.Hex(), userID)
 	}
 
+	ownerDisplayName, ownerIsAdmin := h.svc.GetOwnerInfo(ctx, f.OwnerID)
+
 	return &pb.Folder{
 		Id:               f.ID.Hex(),
 		OwnerId:          f.OwnerID,
@@ -73,11 +75,12 @@ func (h *Handler) toProto(ctx context.Context, f *Folder) *pb.Folder {
 		CreatedAt:        timestamppb.New(f.CreatedAt),
 		UpdatedAt:        timestamppb.New(f.UpdatedAt),
 		Collaborators:    collabs,
-		OwnerDisplayName: h.svc.GetOwnerDisplayName(ctx, f.OwnerID),
+		OwnerDisplayName: ownerDisplayName,
 		LinkCount:        h.svc.CountLinks(ctx, f.ID.Hex()),
 		LikeCount:        f.LikeCount,
 		LikedByMe:        likedByMe,
 		AiGenerated:      f.AiGenerated,
+		OwnerIsAdmin:     ownerIsAdmin,
 	}
 }
 

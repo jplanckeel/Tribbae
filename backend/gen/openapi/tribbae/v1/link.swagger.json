@@ -604,6 +604,9 @@
         },
         "ownerDisplayName": {
           "type": "string"
+        },
+        "ownerIsAdmin": {
+          "type": "boolean"
         }
       }
     },

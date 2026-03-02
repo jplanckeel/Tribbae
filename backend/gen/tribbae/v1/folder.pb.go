@@ -219,6 +219,7 @@ type Folder struct {
 	AiGenerated      bool                   `protobuf:"varint,15,opt,name=ai_generated,json=aiGenerated,proto3" json:"ai_generated,omitempty"`
 	BannerUrl        string                 `protobuf:"bytes,16,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
 	Tags             []string               `protobuf:"bytes,17,rep,name=tags,proto3" json:"tags,omitempty"`
+	OwnerIsAdmin     bool                   `protobuf:"varint,18,opt,name=owner_is_admin,json=ownerIsAdmin,proto3" json:"owner_is_admin,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -370,6 +371,13 @@ func (x *Folder) GetTags() []string {
 		return x.Tags
 	}
 	return nil
+}
+
+func (x *Folder) GetOwnerIsAdmin() bool {
+	if x != nil {
+		return x.OwnerIsAdmin
+	}
+	return false
 }
 
 type CreateFolderRequest struct {
@@ -1663,7 +1671,7 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x120\n" +
 	"\x04role\x18\x04 \x01(\x0e2\x1c.tribbae.v1.CollaboratorRoleR\x04role\x125\n" +
-	"\badded_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\aaddedAt\"\xe2\x04\n" +
+	"\badded_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\aaddedAt\"\x88\x05\n" +
 	"\x06Folder\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x12\n" +
@@ -1690,7 +1698,8 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\fai_generated\x18\x0f \x01(\bR\vaiGenerated\x12\x1d\n" +
 	"\n" +
 	"banner_url\x18\x10 \x01(\tR\tbannerUrl\x12\x12\n" +
-	"\x04tags\x18\x11 \x03(\tR\x04tags\"\xbe\x01\n" +
+	"\x04tags\x18\x11 \x03(\tR\x04tags\x12$\n" +
+	"\x0eowner_is_admin\x18\x12 \x01(\bR\fownerIsAdmin\"\xbe\x01\n" +
 	"\x13CreateFolderRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04icon\x18\x02 \x01(\tR\x04icon\x12\x14\n" +

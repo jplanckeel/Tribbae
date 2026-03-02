@@ -60,7 +60,7 @@ export default function Login() {
           {isRegister && (
             <input
               type="text"
-              placeholder="Prénom"
+              placeholder="Pseudo"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"

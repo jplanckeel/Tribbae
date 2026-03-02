@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHeart as faHeartSolid, faStar } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
 import { community as communityApi } from "../api";
+import AdminBadge from "./AdminBadge";
 
 interface Props {
   folders: any[];
@@ -43,7 +44,7 @@ export default function TopFolders({ folders, onRefresh }: Props) {
               {f.aiGenerated && <span className="text-xs ml-1 flex-shrink-0">✨</span>}
             </div>
             <p className="text-xs text-gray-400 mb-2">
-              par {f.ownerDisplayName || "Anonyme"} · {f.linkCount || 0} idées
+              par {f.ownerDisplayName || "Anonyme"} {f.ownerIsAdmin && <AdminBadge />} · {f.linkCount || 0} idées
             </p>
             <div className="flex items-center justify-between">
               <button

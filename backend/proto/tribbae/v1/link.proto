@@ -39,6 +39,7 @@ message Link {
   bool liked_by_me = 20;
   bool favorite = 21;
   string owner_display_name = 22;
+  bool owner_is_admin = 23;
 }
 
 message CreateLinkRequest {

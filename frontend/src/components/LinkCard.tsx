@@ -2,6 +2,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMapMarkerAlt, faStar, faExternalLinkAlt, faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
 import { CATEGORIES, CATEGORY_COLORS, normalizeCategory } from "../types";
+import AdminBadge from "./AdminBadge";
 
 interface Props {
   link: any;
@@ -110,7 +111,10 @@ export default function LinkCard({ link, onClick, onLike, liking }: Props) {
       )}
 
       <div className="p-4">
-        <h3 className="font-semibold text-gray-800 truncate">{link.title}</h3>
+        <div className="flex items-center gap-2 mb-0.5 min-w-0">
+          <h3 className="font-semibold text-gray-800 truncate flex-1">{link.title}</h3>
+          {link.ownerIsAdmin && <div className="flex-shrink-0"><AdminBadge /></div>}
+        </div>
         {link.description && (
           <p className="text-gray-500 text-sm mt-1 line-clamp-2">
             {link.description}

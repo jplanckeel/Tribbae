@@ -4,6 +4,7 @@ import { links as linksApi, folders as foldersApi, children as childrenApi, comm
 import { normalizeCategory } from "../types";
 import LinkCard from "../components/LinkCard";
 import FilterBar from "../components/FilterBar";
+import AdminBadge from "../components/AdminBadge";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faWandMagicSparkles, faGlobe, faLightbulb, faHeart as faHeartSolid, faArrowLeft, faStar, faClock, faSearch, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
@@ -42,6 +43,7 @@ function FolderCard({ folder, onOpen, onLike, liking }: any) {
         <p className="font-semibold text-gray-800 line-clamp-1">{folder.name}</p>
         <p className="text-xs text-gray-400 mt-0.5">
           {folder.ownerDisplayName && <span>par {folder.ownerDisplayName}</span>}
+          {folder.ownerIsAdmin && <AdminBadge />}
           {folder.linkCount > 0 && <span> · {folder.linkCount} idée{folder.linkCount > 1 ? "s" : ""}</span>}
         </p>
         {folder.tags && folder.tags.length > 0 && (
@@ -235,6 +237,7 @@ export default function Home() {
             {selectedCommunityFolder.ownerDisplayName && (
               <span>par {selectedCommunityFolder.ownerDisplayName}</span>
             )}
+            {selectedCommunityFolder.ownerIsAdmin && <AdminBadge />}
             {selectedCommunityFolder.linkCount > 0 && (
               <span>· {selectedCommunityFolder.linkCount} idée{selectedCommunityFolder.linkCount > 1 ? "s" : ""}</span>
             )}
@@ -424,7 +427,7 @@ export default function Home() {
                         <div className="p-3">
                           <p className="text-sm font-semibold text-gray-800 line-clamp-1">{f.name}</p>
                           <p className="text-xs text-gray-400 mt-0.5">
-                            par {f.ownerDisplayName || "Anonyme"} · {f.linkCount || 0} idées
+                            par {f.ownerDisplayName || "Anonyme"} {f.ownerIsAdmin && <AdminBadge />} · {f.linkCount || 0} idées
                           </p>
                         </div>
                       </div>
