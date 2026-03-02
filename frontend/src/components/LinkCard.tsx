@@ -121,6 +121,11 @@ export default function LinkCard({ link, onClick, onLike, liking }: Props) {
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-400">
+          {link.ownerDisplayName && (
+            <span className="flex items-center gap-1">
+              👤 par {link.ownerDisplayName}
+            </span>
+          )}
           {link.location && (
             <span className="flex items-center gap-1">
               <FontAwesomeIcon icon={faMapMarkerAlt} className="w-3 h-3" /> {extractCity(link.location)}

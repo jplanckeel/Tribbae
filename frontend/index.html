@@ -2,14 +2,108 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Tribbae — Gérez vos idées en famille" />
+
+    <!-- SEO — Meta de base -->
+    <title>Tribbae — Organisez vos idées en famille : recettes, activités, cadeaux, événements</title>
+    <meta name="description" content="Tribbae est l'application familiale pour organiser et partager vos idées : recettes, activités, cadeaux, événements. Créez des listes collaboratives, générez des idées avec l'IA et partagez avec votre communauté." />
+    <meta name="keywords" content="idées famille, recettes famille, activités enfants, cadeaux, organisation familiale, liste collaborative, idées anniversaire, activités enfants, recettes faciles, événements famille" />
+    <meta name="author" content="Tribbae" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://tribbae.bananaops.cloud/" />
+
+    <!-- Favicon multi-format -->
+    <link rel="icon" type="image/jpeg" href="/favicon.jpg" />
+    <link rel="apple-touch-icon" href="/tribbae.jpg" />
+
+    <!-- Theme & PWA -->
     <meta name="theme-color" content="#FF8C00" />
-    <meta property="og:title" content="Tribbae" />
-    <meta property="og:description" content="Gérez vos idées en famille" />
-    <meta property="og:image" content="/tribbae.jpg" />
-    <title>Tribbae</title>
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Tribbae" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Open Graph (Facebook, LinkedIn, etc.) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tribbae" />
+    <meta property="og:title" content="Tribbae — Organisez vos idées en famille" />
+    <meta property="og:description" content="Recettes, activités, cadeaux, événements : partagez et organisez toutes vos idées en famille avec Tribbae." />
+    <meta property="og:image" content="https://tribbae.bananaops.cloud/tribbae.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Tribbae — Application familiale d'idées" />
+    <meta property="og:url" content="https://tribbae.bananaops.cloud/" />
+    <meta property="og:locale" content="fr_FR" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tribbae — Organisez vos idées en famille" />
+    <meta name="twitter:description" content="Recettes, activités, cadeaux, événements : partagez et organisez toutes vos idées en famille." />
+    <meta name="twitter:image" content="https://tribbae.bananaops.cloud/tribbae.jpg" />
+    <meta name="twitter:image:alt" content="Tribbae — Application familiale d'idées" />
+
+    <!-- Performance hints -->
+    <link rel="dns-prefetch" href="https://api.tribbae.bananaops.cloud" />
+    <link rel="preconnect" href="https://api.tribbae.bananaops.cloud" crossorigin />
+
+    <!-- Données structurées JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://tribbae.bananaops.cloud/#website",
+          "url": "https://tribbae.bananaops.cloud/",
+          "name": "Tribbae",
+          "description": "Application familiale pour organiser et partager vos idées : recettes, activités, cadeaux, événements",
+          "inLanguage": "fr-FR",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://tribbae.bananaops.cloud/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://tribbae.bananaops.cloud/#app",
+          "name": "Tribbae",
+          "url": "https://tribbae.bananaops.cloud/",
+          "applicationCategory": "LifestyleApplication",
+          "operatingSystem": "Web, Android",
+          "description": "Organisez et partagez vos idées en famille : recettes, activités, cadeaux, événements. Générez des idées avec l'IA.",
+          "inLanguage": "fr-FR",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR"
+          },
+          "featureList": [
+            "Gestion d'idées par catégories",
+            "Organisation en listes collaboratives",
+            "Génération d'idées par IA",
+            "Profils enfants avec filtrage par âge",
+            "Partage communautaire",
+            "Application mobile Android"
+          ]
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://tribbae.bananaops.cloud/#organization",
+          "name": "Tribbae",
+          "url": "https://tribbae.bananaops.cloud/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://tribbae.bananaops.cloud/tribbae.jpg"
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

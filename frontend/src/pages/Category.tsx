@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { links as linksApi, community as communityApi } from "../api";
 import LinkCard from "../components/LinkCard";
+import SEOHead from "../components/SEOHead";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faUtensils, faGift, faRunning, faCalendar, faLightbulb } from "@fortawesome/free-solid-svg-icons";
 
-const CATEGORY_INFO: Record<string, { name: string; icon: any; color: string; emoji: string }> = {
-  RECETTE: { name: "Recettes", icon: faUtensils, color: "bg-green-500", emoji: "🍳" },
-  CADEAU: { name: "Cadeaux", icon: faGift, color: "bg-orange-500", emoji: "🎁" },
-  ACTIVITE: { name: "Activités", icon: faRunning, color: "bg-blue-500", emoji: "🏃" },
-  EVENEMENT: { name: "Événements", icon: faCalendar, color: "bg-red-500", emoji: "📅" },
-  IDEE: { name: "Idées", icon: faLightbulb, color: "bg-yellow-500", emoji: "💡" },
+const CATEGORY_INFO: Record<string, { name: string; icon: any; color: string; emoji: string; seoDesc: string }> = {
+  RECETTE: { name: "Recettes", icon: faUtensils, color: "bg-green-500", emoji: "🍳", seoDesc: "Découvrez les meilleures recettes de famille partagées par la communauté Tribbae. Recettes faciles, rapides et gourmandes pour toute la famille." },
+  CADEAU: { name: "Cadeaux", icon: faGift, color: "bg-orange-500", emoji: "🎁", seoDesc: "Trouvez l'inspiration pour vos cadeaux en famille. Idées cadeaux pour enfants, anniversaires, Noël et toutes les occasions." },
+  ACTIVITE: { name: "Activités", icon: faRunning, color: "bg-blue-500", emoji: "🏃", seoDesc: "Idées d'activités en famille : sorties, loisirs créatifs, jeux, sport. Des idées pour tous les âges partagées par la communauté." },
+  EVENEMENT: { name: "Événements", icon: faCalendar, color: "bg-red-500", emoji: "📅", seoDesc: "Organisez vos événements familiaux : anniversaires, sorties, fêtes. Trouvez l'inspiration et planifiez en famille." },
+  IDEE: { name: "Idées", icon: faLightbulb, color: "bg-yellow-500", emoji: "💡", seoDesc: "Explorez des idées originales partagées par les familles. Inspiration pour le quotidien et les moments spéciaux." },
 };
 
 export default function Category() {
@@ -55,13 +56,13 @@ export default function Category() {
     if (likingLink) return;
     setLikingLink(linkId);
     try {
-      const result = isLiked 
+      const result = isLiked
         ? await linksApi.unlike(linkId)
         : await linksApi.like(linkId);
-      
+
       // Mettre à jour l'état local
-      setAllLinks(prev => prev.map(l => 
-        l.id === linkId 
+      setAllLinks(prev => prev.map(l =>
+        l.id === linkId
           ? { ...l, likedByMe: !isLiked, likeCount: result.likeCount }
           : l
       ));
@@ -72,7 +73,22 @@ export default function Category() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <main className="max-w-5xl mx-auto px-4 py-6">
+      <SEOHead
+        title={`${categoryInfo.emoji} ${categoryInfo.name} en famille — Idées et inspiration`}
+        description={categoryInfo.seoDesc}
+      />
+      {/* BreadcrumbList JSON-LD */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://tribbae.bananaops.cloud/" },
+            { "@type": "ListItem", "position": 2, "name": categoryInfo.name, "item": `https://tribbae.bananaops.cloud/category/${category}` }
+          ]
+        })
+      }} />
       {/* Header */}
       <div className="mb-6">
         <Link to="/" className="inline-flex items-center gap-2 text-orange-500 hover:text-orange-600 mb-4 text-sm font-medium">
@@ -109,9 +125,9 @@ export default function Category() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">🔥 Top {categoryInfo.name}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {topLinks.slice(0, 6).map((link) => (
-                  <LinkCard 
-                    key={link.id} 
-                    link={link} 
+                  <LinkCard
+                    key={link.id}
+                    link={link}
                     onClick={() => navigate(`/links/${link.id}`)}
                     onLike={handleLinkLike}
                     liking={likingLink}
@@ -127,9 +143,9 @@ export default function Category() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">✨ Nouveautés</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {newLinks.map((link) => (
-                  <LinkCard 
-                    key={link.id} 
-                    link={link} 
+                  <LinkCard
+                    key={link.id}
+                    link={link}
                     onClick={() => navigate(`/links/${link.id}`)}
                     onLike={handleLinkLike}
                     liking={likingLink}
@@ -145,9 +161,9 @@ export default function Category() {
               <h2 className="text-xl font-bold text-gray-800 mb-4">📋 Toutes les idées</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredLinks.map((link) => (
-                  <LinkCard 
-                    key={link.id} 
-                    link={link} 
+                  <LinkCard
+                    key={link.id}
+                    link={link}
                     onClick={() => navigate(`/links/${link.id}`)}
                     onLike={handleLinkLike}
                     liking={likingLink}
@@ -158,6 +174,6 @@ export default function Category() {
           )}
         </>
       )}
-    </div>
+    </main>
   );
 }
