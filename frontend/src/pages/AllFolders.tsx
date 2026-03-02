@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faGlobe, faSearch, faXmark, faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
 import AdminBadge from "../components/AdminBadge";
+import SEOHead from "../components/SEOHead";
 
 function FolderCard({ folder, onOpen, onLike, liking }: any) {
   return (
@@ -160,7 +161,11 @@ export default function AllFolders() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <main className="max-w-5xl mx-auto px-4 py-6">
+      <SEOHead
+        title="Toutes les listes publiques — Découvrir la communauté"
+        description="Explorez toutes les listes d'idées partagées par la communauté Tribbae. Recettes, activités, cadeaux, événements : trouvez l'inspiration auprès d'autres familles."
+      />
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -215,7 +220,7 @@ export default function AllFolders() {
           ))}
         </div>
       )}
-    </div>
+    </main>
   );
 }
 

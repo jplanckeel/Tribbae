@@ -31,6 +31,7 @@ data class ApiFolder(
     val visibility: String = "",
     val shareToken: String = "",
     val ownerDisplayName: String = "",
+    val ownerIsAdmin: Boolean = false,
     val linkCount: Int = 0
 )
 
@@ -53,7 +54,8 @@ data class ApiLink(
     val ingredients: List<String> = emptyList(),
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
-    val ownerDisplayName: String = ""
+    val ownerDisplayName: String = "",
+    val ownerIsAdmin: Boolean = false
 )
 
 @Serializable

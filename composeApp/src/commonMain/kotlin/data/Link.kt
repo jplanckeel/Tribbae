@@ -20,12 +20,13 @@ data class Folder(
     val tags: List<String> = emptyList(),
     val visibility: String = "",
     val ownerDisplayName: String = "",
+    val ownerIsAdmin: Boolean = false,
     val linkCount: Int = 0,
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
     val aiGenerated: Boolean = false,
     val collaborators: List<Collaborator> = emptyList(),
-    val updatedAt: Long = 0
+    val updatedAt: String = ""
 )
 
 @Serializable
@@ -49,7 +50,8 @@ data class Link(
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
     val ownerDisplayName: String = "",
-    val updatedAt: Long = 0
+    val ownerIsAdmin: Boolean = false,
+    val updatedAt: String = ""
 )
 
 @Serializable
@@ -84,5 +86,5 @@ data class Child(
     val id: String,
     val name: String,
     val birthDate: Long, // timestamp en ms de la date de naissance
-    val updatedAt: Long = 0
+    val updatedAt: String = ""
 )

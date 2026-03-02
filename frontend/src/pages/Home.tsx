@@ -5,6 +5,7 @@ import { normalizeCategory } from "../types";
 import LinkCard from "../components/LinkCard";
 import FilterBar from "../components/FilterBar";
 import AdminBadge from "../components/AdminBadge";
+import SEOHead from "../components/SEOHead";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faWandMagicSparkles, faGlobe, faLightbulb, faHeart as faHeartSolid, faArrowLeft, faStar, faClock, faSearch, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
@@ -263,9 +264,16 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <main className="max-w-5xl mx-auto px-4 py-6">
+      <SEOHead
+        title={tab === "discover" ? "Découvrir des idées en famille — Recettes, activités, cadeaux" : "Mes idées — Gérer mes listes et favoris"}
+        description={tab === "discover"
+          ? "Explorez des idées partagées par la communauté Tribbae : recettes faciles, activités enfants, idées cadeaux, événements familiaux. Trouvez l'inspiration !"
+          : "Gérez vos idées personnelles, listes et favoris sur Tribbae. Organisez vos recettes, activités et cadeaux en famille."
+        }
+      />
       {/* Onglets */}
-      <div className="flex gap-1 mb-6 bg-gray-100 rounded-full p-1 w-fit">
+      <nav aria-label="Navigation principale" className="flex gap-1 mb-6 bg-gray-100 rounded-full p-1 w-fit">
         <button
           onClick={() => setTab("discover")}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${tab === "discover" ? "bg-white text-orange-500 shadow-sm" : "text-gray-500 hover:text-gray-700"
@@ -280,7 +288,7 @@ export default function Home() {
         >
           <FontAwesomeIcon icon={faLightbulb} className="w-3.5 h-3.5" /> Mes idées
         </button>
-      </div>
+      </nav>
 
       {tab === "discover" ? (
         <>
@@ -534,6 +542,6 @@ export default function Home() {
       {showAi && (
         <AiGenerateModal onClose={() => setShowAi(false)} onCreated={() => { setShowAi(false); fetchLinks(); }} />
       )}
-    </div>
+    </main>
   );
 }

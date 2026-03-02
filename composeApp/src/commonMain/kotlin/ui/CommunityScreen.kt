@@ -74,7 +74,8 @@ fun CommunityScreen(
                         ingredients = apiLink.ingredients,
                         likeCount = apiLink.likeCount,
                         likedByMe = apiLink.likedByMe,
-                        ownerDisplayName = apiLink.ownerDisplayName
+                        ownerDisplayName = apiLink.ownerDisplayName,
+                        ownerIsAdmin = apiLink.ownerIsAdmin
                     )
                 }
             } catch (_: Exception) { }

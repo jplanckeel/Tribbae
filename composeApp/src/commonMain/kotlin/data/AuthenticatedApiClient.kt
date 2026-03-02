@@ -34,12 +34,13 @@ data class ApiAuthFolder(
     val visibility: String = "",
     val shareToken: String = "",
     val ownerDisplayName: String = "",
+    val ownerIsAdmin: Boolean = false,
     val linkCount: Int = 0,
     val bannerUrl: String = "",
     val tags: List<String> = emptyList(),
     val likeCount: Int = 0,
     val collaborators: List<ApiCollaborator> = emptyList(),
-    val updatedAt: Long = 0
+    val updatedAt: String = ""
 )
 
 @Serializable
@@ -67,7 +68,9 @@ data class ApiAuthLink(
     val ingredients: List<String> = emptyList(),
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
-    val updatedAt: Long = 0
+    val updatedAt: String = "",
+    val ownerDisplayName: String = "",
+    val ownerIsAdmin: Boolean = false
 )
 
 @Serializable
@@ -88,8 +91,7 @@ data class UpdateFolderRequest(
     val color: String = "ORANGE",
     val visibility: String = "PRIVATE",
     val bannerUrl: String = "",
-    val tags: List<String> = emptyList(),
-    val updatedAt: Long = 0
+    val tags: List<String> = emptyList()
 )
 
 @Serializable
@@ -124,8 +126,7 @@ data class CreateLinkRequest(
     val eventDate: Long = 0,
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
-    val ingredients: List<String> = emptyList(),
-    val updatedAt: Long = 0
+    val ingredients: List<String> = emptyList()
 )
 
 @Serializable
@@ -144,8 +145,7 @@ data class UpdateLinkRequest(
     val eventDate: Long = 0,
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
-    val ingredients: List<String> = emptyList(),
-    val updatedAt: Long = 0
+    val ingredients: List<String> = emptyList()
 )
 
 class AuthenticatedApiClient(
@@ -332,6 +332,6 @@ data class ApiChild(
     val ownerId: String = "",
     val name: String = "",
     val birthDate: Long = 0,
-    val createdAt: Long = 0,
-    val updatedAt: Long = 0
+    val createdAt: String = "",
+    val updatedAt: String = ""
 )

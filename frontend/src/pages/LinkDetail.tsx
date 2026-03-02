@@ -237,6 +237,9 @@ export default function LinkDetail() {
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold text-gray-800 break-words">{link.title}</h1>
+              {link.ownerDisplayName && (
+                <p className="text-sm text-gray-500 mt-1">👤 par {link.ownerDisplayName}</p>
+              )}
               {link.ownerIsAdmin && <div className="mt-1"><AdminBadge /></div>}
             </div>
             <div className="flex gap-2 flex-shrink-0">
