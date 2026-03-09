@@ -2,9 +2,11 @@ package ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,22 +41,22 @@ fun ExploreScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<LinkCategory?>(null) }
-    var sortOption by remember { mutableStateOf(SortOption.POPULAR) }
+    var sortOption by remember { mutableStateOf(SortOption.RECENT) }
     var showFilters by remember { mutableStateOf(false) }
 
     val filteredLinks = remember(links, searchQuery, selectedCategory, sortOption) {
-        links.filter { link ->
+        val filtered = links.filter { link ->
             val matchesSearch = searchQuery.isEmpty() || 
                 link.title.contains(searchQuery, ignoreCase = true) ||
                 link.tags.any { it.contains(searchQuery, ignoreCase = true) }
             val matchesCategory = selectedCategory == null || link.category == selectedCategory
             matchesSearch && matchesCategory
-        }.sortedByDescending { link: Link ->
-            when (sortOption) {
-                SortOption.POPULAR -> 0
-                SortOption.RECENT -> link.eventDate ?: 0L
-                SortOption.RATED -> link.rating.toLong()
-            }
+        }
+        
+        when (sortOption) {
+            SortOption.POPULAR -> filtered.sortedByDescending { it.likeCount }
+            SortOption.RECENT -> filtered.sortedByDescending { it.updatedAt }
+            SortOption.RATED -> filtered.sortedWith(compareByDescending<Link> { it.rating }.thenByDescending { it.updatedAt })
         }
     }
 
@@ -63,7 +65,9 @@ fun ExploreScreen(
         LinkCategory.CADEAU to "Cadeaux",
         LinkCategory.RECETTE to "Recettes",
         LinkCategory.EVENEMENT to "Événements",
-        LinkCategory.IDEE to "Idées"
+        LinkCategory.IDEE to "Idées",
+        LinkCategory.LIVRE to "Livres",
+        LinkCategory.DECORATION to "Décorations"
     )
 
     Column(
@@ -80,7 +84,7 @@ fun ExploreScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .padding(horizontal = 20.dp, vertical = 20.dp)
             ) {
                 // Title and filter button
                 Row(
@@ -90,27 +94,16 @@ fun ExploreScreen(
                 ) {
                     Column {
                         Text(
+                            text = "Idées partagées",
+                            fontSize = 13.sp,
+                            color = Color(0xFF6B7280)
+                        )
+                        Text(
                             text = "Explorer",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF111827)
                         )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.People,
-                                contentDescription = null,
-                                tint = Color(0xFF6B7280),
-                                modifier = Modifier.size(11.dp)
-                            )
-                            Text(
-                                text = "Idées partagées par la communauté",
-                                fontSize = 12.sp,
-                                color = Color(0xFF6B7280)
-                            )
-                        }
                     }
 
                     Box(
@@ -140,7 +133,7 @@ fun ExploreScreen(
                     }
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(16.dp))
 
                 // Search bar
                 Surface(
@@ -149,9 +142,7 @@ fun ExploreScreen(
                     color = Color(0xFFF3F4F6)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -159,7 +150,7 @@ fun ExploreScreen(
                             imageVector = Icons.Filled.Search,
                             contentDescription = null,
                             tint = Color(0xFF9CA3AF),
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                         TextField(
                             value = searchQuery,
@@ -241,7 +232,9 @@ fun ExploreScreen(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             CategoryFilterChip(

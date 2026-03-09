@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -55,12 +56,20 @@ fun IdeaCard(
                     .fillMaxWidth()
                     .height(if (compact) 144.dp else 192.dp)
             ) {
-                AsyncImage(
-                    model = link.imageUrl.ifEmpty { "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400" },
-                    contentDescription = link.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                if (link.imageUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = link.imageUrl,
+                        contentDescription = link.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Motif avec icône de catégorie répétée
+                    CategoryPatternBackground(
+                        category = link.category,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
                 
                 // Gradient overlay
                 Box(
@@ -182,6 +191,28 @@ fun IdeaCard(
                     )
                 }
 
+                // Localisation
+                if (link.location.isNotEmpty()) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.LocationOn,
+                            contentDescription = null,
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = link.location,
+                            fontSize = 12.sp,
+                            color = Color(0xFF6B7280),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -241,7 +272,8 @@ fun getCategoryColor(category: LinkCategory): Color {
         LinkCategory.RECETTE -> Color(0xFF81C784)
         LinkCategory.EVENEMENT -> Color(0xFFFF7043)
         LinkCategory.IDEE -> Color(0xFFFFD700)
-        LinkCategory.LIVRE -> Color(0xFF6366F1)
+        LinkCategory.LIVRE -> Color(0xFF9C27B0)
+        LinkCategory.DECORATION -> Color(0xFFE91E63)
     }
 }
 
@@ -253,6 +285,7 @@ fun getCategoryEmoji(category: LinkCategory): String {
         LinkCategory.EVENEMENT -> "📅"
         LinkCategory.IDEE -> "💡"
         LinkCategory.LIVRE -> "📚"
+        LinkCategory.DECORATION -> "🎨"
     }
 }
 
@@ -264,5 +297,52 @@ fun getCategoryLabel(category: LinkCategory): String {
         LinkCategory.EVENEMENT -> "Événement"
         LinkCategory.IDEE -> "Idée"
         LinkCategory.LIVRE -> "Livre"
+        LinkCategory.DECORATION -> "Décoration"
+    }
+}
+
+@Composable
+fun CategoryPatternBackground(
+    category: LinkCategory,
+    modifier: Modifier = Modifier
+) {
+    val categoryColor = getCategoryColor(category)
+    val emoji = getCategoryEmoji(category)
+    
+    Box(
+        modifier = modifier
+            .background(categoryColor.copy(alpha = 0.15f))
+            .clip(RoundedCornerShape(0.dp))
+    ) {
+        // Motif répété en diagonale
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .rotate(45f)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(32.dp)
+            ) {
+                repeat(6) { rowIndex ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(32.dp)
+                    ) {
+                        repeat(6) { colIndex ->
+                            Text(
+                                text = emoji,
+                                fontSize = 32.sp,
+                                color = categoryColor.copy(alpha = 0.2f),
+                                modifier = Modifier.offset(
+                                    x = (colIndex * 16).dp,
+                                    y = (rowIndex * 16).dp
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

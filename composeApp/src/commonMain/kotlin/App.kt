@@ -59,6 +59,7 @@ private fun MainApp(
     ) }
     var selectedLink by remember { mutableStateOf<Link?>(null) }
     var selectedFolder by remember { mutableStateOf<Folder?>(null) }
+    var selectedCategory by remember { mutableStateOf<LinkCategory?>(null) }
     val initialUrl = remember { sharedUrl }
 
     // Intercepte le geste/bouton retour système quand un sous-écran est actif
@@ -74,11 +75,11 @@ private fun MainApp(
     // Sub-screens (pushed on top)
     when (subScreen) {
         is SubScreen.AddLink -> {
-            AddLinkScreen(viewModel = vm, onBack = { subScreen = null }, initialUrl = initialUrl)
+            ModernAddLinkScreen(viewModel = vm, onBack = { subScreen = null }, initialUrl = initialUrl)
             return
         }
         is SubScreen.AddFolder -> {
-            AddFolderScreen(viewModel = vm, onBack = { subScreen = null })
+            ModernAddFolderScreen(viewModel = vm, onBack = { subScreen = null })
             return
         }
         is SubScreen.Detail -> {
@@ -129,7 +130,7 @@ private fun MainApp(
         is SubScreen.Edit -> {
             selectedLink?.let { link ->
                 val freshLink = vm.repository.links.value.find { it.id == link.id } ?: link
-                EditLinkScreen(
+                ModernEditLinkScreen(
                     link = freshLink,
                     viewModel = vm,
                     onBack = {
@@ -152,7 +153,7 @@ private fun MainApp(
         is SubScreen.EditFolder -> {
             selectedFolder?.let { folder ->
                 val freshFolder = vm.repository.folders.value.find { it.id == folder.id } ?: folder
-                EditFolderScreen(
+                ModernEditFolderScreen(
                     folder = freshFolder,
                     viewModel = vm,
                     onBack = { subScreen = null }
@@ -214,12 +215,20 @@ private fun MainApp(
         }
     ) { padding ->
         when (currentTab) {
-            Tab.HOME -> HomeScreen(
-                viewModel = vm,
-                modifier = Modifier.padding(padding),
-                onAddClick = { subScreen = SubScreen.AddLink },
-                onAiClick = { subScreen = SubScreen.AiGenerate },
-                onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
+            Tab.HOME -> NewHomeScreen(
+                links = vm.repository.links.collectAsState().value,
+                onNavigateToExplore = { currentTab = Tab.EXPLORE },
+                onNavigateToCategory = { category ->
+                    selectedCategory = category
+                    subScreen = SubScreen.Category
+                },
+                onNavigateToDetail = { linkId ->
+                    selectedLink = vm.repository.links.value.find { link: data.Link -> link.id == linkId }
+                    subScreen = SubScreen.Detail
+                },
+                onSaveLink = { link: data.Link -> vm.toggleFavorite(link.id) },
+                sessionManager = null,
+                modifier = Modifier.padding(padding)
             )
             Tab.FOLDERS -> FoldersTabScreen(
                 viewModel = vm,

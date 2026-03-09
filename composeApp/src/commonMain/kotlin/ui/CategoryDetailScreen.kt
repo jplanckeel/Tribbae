@@ -28,6 +28,8 @@ fun CategoryDetailScreen(
     onSaveLink: (Link) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val sortedLinks = links.sortedByDescending { it.updatedAt }
+    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -69,14 +71,14 @@ fun CategoryDetailScreen(
         ) {
             item {
                 Text(
-                    text = "${links.size} idée${if (links.size > 1) "s" else ""}",
+                    text = "${sortedLinks.size} idée${if (sortedLinks.size > 1) "s" else ""}",
                     fontSize = 14.sp,
                     color = Color(0xFF6B7280),
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
 
-            items(links) { link ->
+            items(sortedLinks) { link ->
                 IdeaCard(
                     link = link,
                     onClick = { onLinkClick(link) },
@@ -84,7 +86,7 @@ fun CategoryDetailScreen(
                 )
             }
 
-            if (links.isEmpty()) {
+            if (sortedLinks.isEmpty()) {
                 item {
                     Column(
                         modifier = Modifier

@@ -762,3 +762,10 @@ private fun ChildDialog(
         }
     }
 }
+
+
+private fun formatDate(timestamp: Long): String {
+    val date = java.util.Date(timestamp)
+    val format = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+    return format.format(date)
+}

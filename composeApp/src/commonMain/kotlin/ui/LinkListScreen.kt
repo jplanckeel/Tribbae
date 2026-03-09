@@ -170,6 +170,7 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                                 LinkCategory.EVENEMENT -> "📅"
                                 LinkCategory.RECETTE -> "🍳"
                                 LinkCategory.LIVRE -> "📚"
+                                LinkCategory.DECORATION -> "🎨"
                             },
                             fontSize = 11.sp
                         )
@@ -381,6 +382,7 @@ fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)
                             LinkCategory.EVENEMENT -> "📅"
                             LinkCategory.RECETTE -> "🍳"
                             LinkCategory.LIVRE -> "📚"
+                            LinkCategory.DECORATION -> "🎨"
                         },
                         fontSize = 11.sp,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
@@ -497,6 +499,7 @@ fun categoryIcon(category: LinkCategory): ImageVector = when (category) {
     LinkCategory.EVENEMENT -> Icons.Default.Event
     LinkCategory.RECETTE -> Icons.Default.Restaurant
     LinkCategory.LIVRE -> Icons.Default.MenuBook
+    LinkCategory.DECORATION -> Icons.Default.Palette
 }
 
 fun folderIconVector(folder: data.Folder): ImageVector = when (folder.icon) {

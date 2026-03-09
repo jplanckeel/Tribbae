@@ -32,7 +32,8 @@ import viewmodel.LinkViewModel
 fun ModernAddLinkScreen(
     viewModel: LinkViewModel,
     onBack: () -> Unit,
-    initialUrl: String? = null
+    initialUrl: String? = null,
+    onNavigateToAI: () -> Unit = {}
 ) {
     var title by remember { mutableStateOf("") }
     var url by remember { mutableStateOf(initialUrl ?: "") }
@@ -40,6 +41,11 @@ fun ModernAddLinkScreen(
     var selectedCategory by remember { mutableStateOf<LinkCategory?>(null) }
     var tags by remember { mutableStateOf("") }
     var isPublic by remember { mutableStateOf(false) }
+    var price by remember { mutableStateOf("") }
+    var ageRange by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
+    var rating by remember { mutableStateOf(0) }
+    var selectedFolderId by remember { mutableStateOf<String?>(null) }
     var submitted by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -48,7 +54,9 @@ fun ModernAddLinkScreen(
         LinkCategory.CADEAU to "Cadeaux",
         LinkCategory.RECETTE to "Recettes",
         LinkCategory.EVENEMENT to "Événements",
-        LinkCategory.IDEE to "Idées"
+        LinkCategory.IDEE to "Idées",
+        LinkCategory.LIVRE to "Livres",
+        LinkCategory.DECORATION to "Décorations"
     )
 
     // Écran de confirmation
@@ -116,29 +124,60 @@ fun ModernAddLinkScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFF3F4F6))
-                            .clickable(onClick = onBack),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Retour",
-                            tint = Color(0xFF6B7280),
-                            modifier = Modifier.size(18.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF3F4F6))
+                                .clickable(onClick = onBack),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ArrowBack,
+                                contentDescription = "Retour",
+                                tint = Color(0xFF6B7280),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Text(
+                            text = "Nouvelle idée",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF111827)
                         )
                     }
-                    Text(
-                        text = "Nouvelle idée",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
-                    )
+                    
+                    // Bouton IA
+                    Surface(
+                        onClick = onNavigateToAI,
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF8B5CF6)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.AutoAwesome,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "IA",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
 
@@ -349,6 +388,111 @@ fun ModernAddLinkScreen(
                     )
                 }
 
+                // Informations complémentaires
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Informations complémentaires",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF374151)
+                        )
+                        
+                        // Prix
+                        OutlinedTextField(
+                            value = price,
+                            onValueChange = { price = it },
+                            label = { Text("Prix", fontSize = 14.sp) },
+                            placeholder = { Text("Ex: 25€, Gratuit…", fontSize = 14.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.Euro,
+                                    contentDescription = null,
+                                    tint = Color(0xFF9CA3AF),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF9FAFB),
+                                unfocusedContainerColor = Color(0xFFF9FAFB),
+                                focusedBorderColor = Color(0xFFF97316),
+                                unfocusedBorderColor = Color(0xFFE5E7EB)
+                            )
+                        )
+                        
+                        // Âge
+                        OutlinedTextField(
+                            value = ageRange,
+                            onValueChange = { ageRange = it },
+                            label = { Text("Tranche d'âge", fontSize = 14.sp) },
+                            placeholder = { Text("Ex: 3-6 ans, Adultes…", fontSize = 14.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Filled.ChildCare,
+                                    contentDescription = null,
+                                    tint = Color(0xFF9CA3AF),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF9FAFB),
+                                unfocusedContainerColor = Color(0xFFF9FAFB),
+                                focusedBorderColor = Color(0xFFF97316),
+                                unfocusedBorderColor = Color(0xFFE5E7EB)
+                            )
+                        )
+                        
+                        // Lieu
+                        LocationSearchField(
+                            value = location,
+                            onValueChange = { location = it },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        // Note (étoiles)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "Note",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF6B7280)
+                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                (1..5).forEach { star ->
+                                    Icon(
+                                        imageVector = if (star <= rating) Icons.Filled.Star else Icons.Filled.StarBorder,
+                                        contentDescription = "Note $star étoiles",
+                                        tint = if (star <= rating) Color(0xFFFBBF24) else Color(0xFFD1D5DB),
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clickable { rating = star }
+                                    )
+                                }
+                                if (rating > 0) {
+                                    TextButton(onClick = { rating = 0 }) {
+                                        Text("Effacer", fontSize = 12.sp, color = Color(0xFF9CA3AF))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Visibilité
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -465,11 +609,12 @@ fun ModernAddLinkScreen(
                                 url = url,
                                 description = description,
                                 category = selectedCategory!!,
-                                folderId = null,
+                                folderId = selectedFolderId,
                                 tags = tagsList,
-                                ageRange = "",
-                                location = "",
-                                price = ""
+                                ageRange = ageRange,
+                                location = location,
+                                price = price,
+                                rating = rating
                             )
                             submitted = true
                             scope.launch {

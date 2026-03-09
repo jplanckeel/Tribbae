@@ -95,14 +95,13 @@ fun ImagePickerSection(
                     .clip(RoundedCornerShape(16.dp))
                     .background(CardColor)
                     .border(1.dp, OrangeLight.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                    .clickable { showMenu = true }
-                    .padding(12.dp),
+                    .clickable { showMenu = true },
                 contentAlignment = Alignment.Center
             ) {
                 Column(
+                    modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxSize()
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.AddPhotoAlternate,
@@ -118,7 +117,7 @@ fun ImagePickerSection(
         }
     }
 
-    // Menu de choix galerie / caméra
+    // Menu de choix galerie / caméra / lien
     if (showMenu) {
         AlertDialog(
             onDismissRequest = { showMenu = false },
@@ -179,6 +178,79 @@ fun ImagePickerSection(
                                 Text("Prendre une nouvelle photo", fontSize = 12.sp, color = TextSecondary)
                             }
                         }
+                    }
+                    // Lien URL
+                    var showUrlDialog by remember { mutableStateOf(false) }
+                    Card(
+                        onClick = {
+                            showMenu = false
+                            showUrlDialog = true
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardColor)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF8B5CF6)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(imageVector = Icons.Default.Link, contentDescription = null,
+                                    tint = Color.White, modifier = Modifier.size(22.dp))
+                            }
+                            Column {
+                                Text("Lien URL", fontWeight = FontWeight.SemiBold)
+                                Text("Entrer l'URL d'une image", fontSize = 12.sp, color = TextSecondary)
+                            }
+                        }
+                    }
+                    
+                    // Dialog pour saisir l'URL
+                    if (showUrlDialog) {
+                        var urlInput by remember { mutableStateOf("") }
+                        AlertDialog(
+                            onDismissRequest = { showUrlDialog = false },
+                            title = { Text("URL de l'image", fontWeight = FontWeight.Bold) },
+                            icon = { Icon(imageVector = Icons.Default.Link, contentDescription = null, tint = Color(0xFF8B5CF6)) },
+                            text = {
+                                OutlinedTextField(
+                                    value = urlInput,
+                                    onValueChange = { urlInput = it },
+                                    placeholder = { Text("https://exemple.com/image.jpg", fontSize = 13.sp) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Link,
+                                            contentDescription = null,
+                                            tint = Color(0xFF9CA3AF),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                )
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        if (urlInput.isNotBlank()) {
+                                            onImageSelected(urlInput)
+                                            showUrlDialog = false
+                                        }
+                                    },
+                                    enabled = urlInput.isNotBlank()
+                                ) {
+                                    Text("Valider", fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showUrlDialog = false }) {
+                                    Text("Annuler")
+                                }
+                            }
+                        )
                     }
                 }
             },

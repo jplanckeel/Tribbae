@@ -32,6 +32,8 @@ const (
 	LinkCategory_LINK_CATEGORY_ACTIVITE    LinkCategory = 3
 	LinkCategory_LINK_CATEGORY_EVENEMENT   LinkCategory = 4
 	LinkCategory_LINK_CATEGORY_RECETTE     LinkCategory = 5
+	LinkCategory_LINK_CATEGORY_LIVRE       LinkCategory = 6
+	LinkCategory_LINK_CATEGORY_DECORATION  LinkCategory = 7
 )
 
 // Enum value maps for LinkCategory.
@@ -43,6 +45,8 @@ var (
 		3: "LINK_CATEGORY_ACTIVITE",
 		4: "LINK_CATEGORY_EVENEMENT",
 		5: "LINK_CATEGORY_RECETTE",
+		6: "LINK_CATEGORY_LIVRE",
+		7: "LINK_CATEGORY_DECORATION",
 	}
 	LinkCategory_value = map[string]int32{
 		"LINK_CATEGORY_UNSPECIFIED": 0,
@@ -51,6 +55,8 @@ var (
 		"LINK_CATEGORY_ACTIVITE":    3,
 		"LINK_CATEGORY_EVENEMENT":   4,
 		"LINK_CATEGORY_RECETTE":     5,
+		"LINK_CATEGORY_LIVRE":       6,
+		"LINK_CATEGORY_DECORATION":  7,
 	}
 )
 
@@ -1522,14 +1528,16 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\x13ListNewLinksRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\">\n" +
 	"\x14ListNewLinksResponse\x12&\n" +
-	"\x05links\x18\x01 \x03(\v2\x10.tribbae.v1.LinkR\x05links*\xb3\x01\n" +
+	"\x05links\x18\x01 \x03(\v2\x10.tribbae.v1.LinkR\x05links*\xea\x01\n" +
 	"\fLinkCategory\x12\x1d\n" +
 	"\x19LINK_CATEGORY_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12LINK_CATEGORY_IDEE\x10\x01\x12\x18\n" +
 	"\x14LINK_CATEGORY_CADEAU\x10\x02\x12\x1a\n" +
 	"\x16LINK_CATEGORY_ACTIVITE\x10\x03\x12\x1b\n" +
 	"\x17LINK_CATEGORY_EVENEMENT\x10\x04\x12\x19\n" +
-	"\x15LINK_CATEGORY_RECETTE\x10\x052\xe0\b\n" +
+	"\x15LINK_CATEGORY_RECETTE\x10\x05\x12\x17\n" +
+	"\x13LINK_CATEGORY_LIVRE\x10\x06\x12\x1c\n" +
+	"\x18LINK_CATEGORY_DECORATION\x10\a2\xe0\b\n" +
 	"\vLinkService\x12a\n" +
 	"\n" +
 	"CreateLink\x12\x1d.tribbae.v1.CreateLinkRequest\x1a\x1e.tribbae.v1.CreateLinkResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/links\x12_\n" +
