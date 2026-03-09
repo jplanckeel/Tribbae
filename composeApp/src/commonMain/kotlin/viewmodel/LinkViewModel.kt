@@ -27,6 +27,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     /** Token JWT — injecté depuis MainActivity */
     var authToken: String? = null
     
+    /** SessionManager pour accéder au displayName */
+    private var sessionManager: data.SessionManager? = null
+    
     /** Client API authentifié */
     private var authenticatedClient: data.AuthenticatedApiClient? = null
     
@@ -79,6 +82,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         eventDate: Long? = null, reminderEnabled: Boolean = false, rating: Int = 0,
         imageUrl: String = "", ingredients: List<String> = emptyList()
     ) {
+        val ownerDisplayName = sessionManager?.getDisplayName() ?: ""
         val link = Link(
             id = kotlin.random.Random.nextLong().toString(),
             title = title, url = url, description = description,
@@ -86,6 +90,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             tags = tags, ageRange = ageRange, location = location, price = price,
             eventDate = eventDate, reminderEnabled = reminderEnabled, rating = rating,
             imageUrl = imageUrl, ingredients = ingredients,
+            ownerDisplayName = ownerDisplayName,
             updatedAt = ""
         )
         repository.addLink(link)
@@ -150,10 +155,10 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     fun getLinksWithDate(): List<Link> =
         repository.links.value.filter { it.eventDate != null }.sortedBy { it.eventDate }
 
-    fun addFolder(name: String, icon: FolderIcon, color: FolderColor) {
+    fun addFolder(name: String, icon: FolderIcon, color: FolderColor, visibility: String = "PRIVATE") {
         val folder = Folder(
             id = kotlin.random.Random.nextLong().toString(),
-            name = name, icon = icon, color = color
+            name = name, icon = icon, color = color, visibility = visibility
         )
         repository.addFolder(folder)
         
@@ -380,8 +385,27 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     // ── Backend Sync ──────────────────────────────────────────────────────────
     
     fun initAuthenticatedClient(sessionManager: data.SessionManager) {
+        this.sessionManager = sessionManager
         authenticatedClient = data.AuthenticatedApiClient(sessionManager = sessionManager)
         authToken = sessionManager.getToken()
+        
+        // Mettre à jour les liens existants avec le displayName si vide
+        updateExistingLinksOwner()
+    }
+    
+    private fun updateExistingLinksOwner() {
+        val displayName = sessionManager?.getDisplayName() ?: return
+        if (displayName.isBlank()) return
+        
+        viewModelScope.launch {
+            val links = repository.links.value
+            links.forEach { link ->
+                if (link.ownerDisplayName.isBlank()) {
+                    repository.updateLink(link.copy(ownerDisplayName = displayName))
+                }
+            }
+            updateFilteredLinks()
+        }
     }
     
     fun syncWithBackend(sessionManager: data.SessionManager) {
@@ -575,7 +599,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 )
                 client.updateLink(req)
             } catch (e: Exception) {
-                _syncStatus.value = "Erreur mise à jour: ${e.message}"
+                // Si le lien n'existe pas sur le backend (créé localement), le créer
+                if (e.message?.contains("404") == true || e.message?.contains("not found") == true) {
+                    saveToBackend(link)
+                } else {
+                    _syncStatus.value = "Erreur mise à jour: ${e.message}"
+                }
             }
         }
     }
@@ -606,7 +635,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 )
                 client.updateFolder(folder.id, req)
             } catch (e: Exception) {
-                _syncStatus.value = "Erreur mise à jour dossier: ${e.message}"
+                // Si le dossier n'existe pas sur le backend (créé localement), le créer
+                if (e.message?.contains("404") == true || e.message?.contains("not found") == true) {
+                    saveFolderToBackend(folder)
+                } else {
+                    _syncStatus.value = "Erreur mise à jour dossier: ${e.message}"
+                }
             }
         }
     }

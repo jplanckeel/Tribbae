@@ -1,6 +1,7 @@
 package ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,9 +20,11 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import data.Link
@@ -38,6 +41,7 @@ fun HomeScreen(
     onLinkClick: (Link) -> Unit
 ) {
     val filteredLinks by viewModel.filteredLinks.collectAsState()
+    val allLinks by viewModel.repository.links.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val favoritesOnly by viewModel.favoritesOnly.collectAsState()
@@ -49,7 +53,6 @@ fun HomeScreen(
 
     var showFilterSheet by remember { mutableStateOf(false) }
     val activeFilters = viewModel.activeFilterCount()
-    var viewMode by remember { mutableStateOf(LinkViewMode.LIST) }
 
     val pullRefreshState = rememberPullToRefreshState()
 
@@ -60,203 +63,278 @@ fun HomeScreen(
             state = pullRefreshState,
             modifier = Modifier.fillMaxSize()
         ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Search bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.updateSearchQuery(it) },
-                placeholder = { Text("Rechercher une idée...", color = Color.Gray) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = Orange
-                    )
-                },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = null
-                            )
-                        }
-                    }
-                },
-                shape = RoundedCornerShape(28.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Orange,
-                    unfocusedBorderColor = Orange.copy(alpha = 0.3f),
-                    focusedContainerColor = SurfaceColor,
-                    unfocusedContainerColor = SurfaceColor
-                )
-            )
-
-            // Chips rapides : Recettes, Activités, Cadeaux, Favoris, + Filtres
-            Row(
-                modifier = Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Catégories principales
-                QuickCategoryChip(
-                    label = "Recettes",
-                    icon = Icons.Default.Restaurant,
-                    color = CategoryColors["RECETTE"] ?: Orange,
-                    selected = selectedCategory == LinkCategory.RECETTE,
-                    onClick = {
-                        viewModel.selectCategory(
-                            if (selectedCategory == LinkCategory.RECETTE) null
-                            else LinkCategory.RECETTE
-                        )
-                    }
-                )
-                QuickCategoryChip(
-                    label = "Activités",
-                    icon = Icons.Default.DirectionsRun,
-                    color = CategoryColors["ACTIVITE"] ?: Orange,
-                    selected = selectedCategory == LinkCategory.ACTIVITE,
-                    onClick = {
-                        viewModel.selectCategory(
-                            if (selectedCategory == LinkCategory.ACTIVITE) null
-                            else LinkCategory.ACTIVITE
-                        )
-                    }
-                )
-                QuickCategoryChip(
-                    label = "Cadeaux",
-                    icon = Icons.Default.CardGiftcard,
-                    color = CategoryColors["CADEAU"] ?: Orange,
-                    selected = selectedCategory == LinkCategory.CADEAU,
-                    onClick = {
-                        viewModel.selectCategory(
-                            if (selectedCategory == LinkCategory.CADEAU) null
-                            else LinkCategory.CADEAU
-                        )
-                    }
-                )
-
-                // Favoris (rating >= 4)
-                FilterChip(
-                    selected = favoritesOnly,
-                    onClick = { viewModel.toggleFavorites() },
-                    label = { Text("Favoris") },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = if (favoritesOnly) Icons.Default.Star
-                            else Icons.Default.StarOutline,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Yellow,
-                        selectedLabelColor = Color.Black,
-                        selectedLeadingIconColor = Color.Black
-                    )
-                )
-
-                // + Filtres
-                FilterChip(
-                    selected = activeFilters > 0,
-                    onClick = { showFilterSheet = true },
-                    label = {
-                        Text(
-                            if (activeFilters > 1) "+ Filtres ($activeFilters)"
-                            else "+ Filtres"
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Orange.copy(alpha = 0.15f),
-                        selectedLabelColor = Orange,
-                        selectedLeadingIconColor = Orange
-                    )
-                )
-            }
-
-            // Résultats
-            if (filteredLinks.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.Lightbulb,
-                            contentDescription = null,
-                            modifier = Modifier.size(72.dp),
-                            tint = Yellow.copy(alpha = 0.5f)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            "Ajoutez votre première idée",
-                            color = TextSecondary,
-                            fontSize = 15.sp
-                        )
-                    }
-                }
-            } else {
-                // Toggle vue liste / grille
-                Row(
+            // Si aucune catégorie sélectionnée : afficher la page d'accueil
+            if (selectedCategory == null) {
+                LazyColumn(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .fillMaxSize()
+                        .background(Color(0xFFF9FAFB)),
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    Text(
-                        "${filteredLinks.size} idée${if (filteredLinks.size > 1) "s" else ""}",
-                        fontSize = 13.sp,
-                        color = TextSecondary
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        IconButton(
-                            onClick = { viewMode = LinkViewMode.LIST },
-                            modifier = Modifier.size(32.dp)
+                    // Header avec dégradé
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            Color(0xFFFF6B35),
+                                            Color(0xFFF97316),
+                                            Color(0xFFFBBF24)
+                                        ),
+                                        start = Offset(0f, 0f),
+                                        end = Offset(1000f, 1000f)
+                                    )
+                                )
+                                .padding(top = 48.dp, bottom = 24.dp, start = 20.dp, end = 20.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ViewList,
-                                contentDescription = "Vue liste",
-                                tint = if (viewMode == LinkViewMode.LIST) Orange else Color.LightGray,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        IconButton(
-                            onClick = { viewMode = LinkViewMode.GRID },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.GridView,
-                                contentDescription = "Vue vignettes",
-                                tint = if (viewMode == LinkViewMode.GRID) Orange else Color.LightGray,
-                                modifier = Modifier.size(22.dp)
-                            )
+                            Column {
+                                // Top bar
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            "Bonjour 👋",
+                                            color = Color.White.copy(alpha = 0.8f),
+                                            fontSize = 13.sp
+                                        )
+                                        Text(
+                                            "Ma famille",
+                                            color = Color.White,
+                                            fontSize = 22.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                // Search bar
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { /* TODO: ouvrir recherche */ },
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = Color.White,
+                                    shadowElevation = 8.dp
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Search,
+                                            contentDescription = null,
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            "Chercher une idée, une activité…",
+                                            color = Color.Gray,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                // Stats
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    StatCard(
+                                        label = "Idées sauvegardées",
+                                        value = allLinks.size.toString(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    StatCard(
+                                        label = "Favoris",
+                                        value = allLinks.count { it.favorite }.toString(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    StatCard(
+                                        label = "Listes",
+                                        value = folders.size.toString(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
                         }
                     }
-                }
 
-                when (viewMode) {
-                    LinkViewMode.LIST -> {
-                        LazyColumn(
-                            contentPadding = PaddingValues(
-                                start = 16.dp, end = 16.dp,
-                                top = 4.dp, bottom = 80.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(filteredLinks) { link ->
+                    // Catégories
+                    item {
+                        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Catégories",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF111827)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Grille 3 colonnes
+                            val categories = LinkCategory.entries.toList()
+                            val rows = categories.chunked(3)
+                            
+                            rows.forEach { rowCategories ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    rowCategories.forEach { category ->
+                                        CategoryCard(
+                                            category = category,
+                                            linkCount = allLinks.count { it.category == category },
+                                            onClick = { viewModel.selectCategory(category) },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    // Remplir les espaces vides
+                                    repeat(3 - rowCategories.size) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
+                                if (rowCategories != rows.last()) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+                            }
+                        }
+                    }
+
+                    // Tendances (carousel horizontal)
+                    val trendingLinks = allLinks.sortedByDescending { it.likeCount }.take(10)
+                    if (trendingLinks.isNotEmpty()) {
+                        item {
+                            Column(modifier = Modifier.padding(top = 24.dp)) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 20.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Whatshot,
+                                            contentDescription = null,
+                                            tint = Color(0xFFF97316),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "Tendances",
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF111827)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                // Carousel horizontal
+                                Row(
+                                    modifier = Modifier
+                                        .horizontalScroll(rememberScrollState())
+                                        .padding(horizontal = 20.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    trendingLinks.forEach { link ->
+                                        Box(modifier = Modifier.width(240.dp)) {
+                                            LinkCard(
+                                                link = link,
+                                                onClick = { onLinkClick(link) },
+                                                onFavoriteToggle = { viewModel.toggleFavorite(link.id) }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Favoris
+                    val favoriteLinks = allLinks.filter { it.favorite }.take(4)
+                    if (favoriteLinks.isNotEmpty()) {
+                        item {
+                            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Star,
+                                            contentDescription = null,
+                                            tint = Color(0xFFF59E0B),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "Mes favoris",
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF111827)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+
+                        items(favoriteLinks) { link ->
+                            Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                                LinkCard(
+                                    link = link,
+                                    onClick = { onLinkClick(link) },
+                                    onFavoriteToggle = { viewModel.toggleFavorite(link.id) }
+                                )
+                            }
+                        }
+
+                        item { Spacer(modifier = Modifier.height(16.dp)) }
+                    }
+
+                    // Récemment ajoutées
+                    val recentLinks = allLinks.sortedByDescending { it.updatedAt }.take(3)
+                    if (recentLinks.isNotEmpty()) {
+                        item {
+                            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        tint = Color(0xFF6B7280),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Récemment ajoutées",
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF111827)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+
+                        items(recentLinks) { link ->
+                            Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
                                 LinkCard(
                                     link = link,
                                     onClick = { onLinkClick(link) },
@@ -265,18 +343,159 @@ fun HomeScreen(
                             }
                         }
                     }
-                    LinkViewMode.GRID -> {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            contentPadding = PaddingValues(
-                                start = 12.dp, end = 12.dp,
-                                top = 4.dp, bottom = 80.dp
-                            ),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                }
+            } else {
+                // Une catégorie est sélectionnée : afficher les filtres et la liste
+                val currentCategory = selectedCategory ?: return@PullToRefreshBox
+                
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFF9FAFB)),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    // Header avec couleur de catégorie
+                    item {
+                        val categoryColor = CategoryColors[currentCategory.name] ?: Orange
+                        val bgColor = categoryColor.copy(alpha = 0.1f)
+                        
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(bgColor)
+                                .padding(top = 48.dp, bottom = 24.dp, start = 20.dp, end = 20.dp)
                         ) {
-                            items(filteredLinks) { link ->
-                                LinkCardGrid(
+                            Column {
+                                // Bouton retour
+                                Surface(
+                                    onClick = { viewModel.selectCategory(null) },
+                                    shape = CircleShape,
+                                    color = Color.White,
+                                    shadowElevation = 4.dp,
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowBack,
+                                            contentDescription = "Retour",
+                                            tint = Color(0xFF374151),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                // Titre et icône
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(64.dp)
+                                            .background(
+                                                color = categoryColor.copy(alpha = 0.2f),
+                                                shape = RoundedCornerShape(16.dp)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = categoryIcon(currentCategory),
+                                            contentDescription = null,
+                                            tint = categoryColor,
+                                            modifier = Modifier.size(36.dp)
+                                        )
+                                    }
+
+                                    Column {
+                                        Text(
+                                            currentCategory.label,
+                                            fontSize = 24.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF111827)
+                                        )
+                                        Text(
+                                            "${filteredLinks.size} idée${if (filteredLinks.size > 1) "s" else ""} disponible${if (filteredLinks.size > 1) "s" else ""}",
+                                            fontSize = 13.sp,
+                                            color = Color(0xFF6B7280)
+                                        )
+                                    }
+                                }
+
+                                // Tags de filtrage
+                                val allTags = filteredLinks.flatMap { it.tags }.distinct().sorted()
+                                if (allTags.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Row(
+                                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        allTags.take(10).forEach { tag ->
+                                            Surface(
+                                                onClick = {
+                                                    viewModel.updateSearchQuery(
+                                                        if (searchQuery == tag) "" else tag
+                                                    )
+                                                },
+                                                shape = RoundedCornerShape(20.dp),
+                                                color = if (searchQuery == tag) categoryColor else Color.White,
+                                                modifier = Modifier.height(28.dp)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        tag,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = if (searchQuery == tag) Color.White else categoryColor
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item { Spacer(modifier = Modifier.height(20.dp)) }
+
+                    // Liste des idées
+                    if (filteredLinks.isEmpty()) {
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 64.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = categoryIcon(currentCategory),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(72.dp),
+                                    tint = (CategoryColors[currentCategory.name] ?: Orange).copy(alpha = 0.3f)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    "Aucune ${currentCategory.label.lowercase()} trouvée",
+                                    color = Color(0xFF6B7280),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    "Soyez le premier à en ajouter !",
+                                    color = Color(0xFF9CA3AF),
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    } else {
+                        items(filteredLinks) { link ->
+                            Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
+                                LinkCard(
                                     link = link,
                                     onClick = { onLinkClick(link) },
                                     onFavoriteToggle = { viewModel.toggleFavorite(link.id) }
@@ -286,7 +505,6 @@ fun HomeScreen(
                     }
                 }
             }
-        }
         } // PullToRefreshBox
 
         // FABs
@@ -341,6 +559,254 @@ fun HomeScreen(
     }
 }
 
+// Composants helpers
+@Composable
+private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White.copy(alpha = 0.2f)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                value,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Text(
+                label,
+                fontSize = 10.sp,
+                color = Color.White.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategoryCard(
+    category: LinkCategory,
+    linkCount: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val categoryColor = CategoryColors[category.name] ?: Orange
+    val bgColor = categoryColor.copy(alpha = 0.1f)
+    
+    Card(
+        onClick = onClick,
+        modifier = modifier.aspectRatio(1f),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = categoryIcon(category),
+                contentDescription = null,
+                tint = categoryColor,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                category.label,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF111827),
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = categoryColor.copy(alpha = 0.2f)
+            ) {
+                Text(
+                    "$linkCount idée${if (linkCount > 1) "s" else ""}",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = categoryColor,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CategoryTile(
+    category: LinkCategory,
+    linkCount: Int,
+    onClick: () -> Unit
+) {
+    val categoryColor = CategoryColors[category.name] ?: Orange
+    
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 6.dp
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            categoryColor.copy(alpha = 0.08f),
+                            categoryColor.copy(alpha = 0.15f)
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Icône en haut
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            color = categoryColor.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(14.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = categoryIcon(category),
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = categoryColor
+                    )
+                }
+                
+                // Texte en bas
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        category.label,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        "$linkCount idée${if (linkCount > 1) "s" else ""}",
+                        fontSize = 13.sp,
+                        color = TextSecondary
+                    )
+                }
+            }
+            
+            // Badge de compteur en haut à droite
+            if (linkCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                        .background(
+                            color = categoryColor,
+                            shape = CircleShape
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        linkCount.toString(),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryBlock(
+    category: LinkCategory,
+    linkCount: Int,
+    onClick: () -> Unit
+) {
+    val categoryColor = CategoryColors[category.name] ?: Orange
+    
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = categoryColor.copy(alpha = 0.1f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            categoryColor.copy(alpha = 0.15f),
+                            categoryColor.copy(alpha = 0.05f)
+                        )
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        category.label,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = categoryColor
+                    )
+                    Text(
+                        "$linkCount élément${if (linkCount > 1) "s" else ""}",
+                        fontSize = 14.sp,
+                        color = TextSecondary
+                    )
+                }
+                
+                Icon(
+                    imageVector = categoryIcon(category),
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp),
+                    tint = categoryColor.copy(alpha = 0.6f)
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun QuickCategoryChip(

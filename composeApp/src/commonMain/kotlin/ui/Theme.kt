@@ -23,7 +23,8 @@ val CategoryColors = mapOf(
     "CADEAU"    to Color(0xFFFF8C00), // Orange — cadeau
     "ACTIVITE"  to Color(0xFF4FC3F7), // Bleu ciel — sport
     "EVENEMENT" to Color(0xFF81C784), // Vert doux — calendrier
-    "RECETTE"   to Color(0xFFFF7043)  // Corail — cuisine
+    "RECETTE"   to Color(0xFFFF7043), // Corail — cuisine
+    "LIVRE"     to Color(0xFF6366F1)  // Indigo — livre
 )
 
 // Couleurs de dossiers
