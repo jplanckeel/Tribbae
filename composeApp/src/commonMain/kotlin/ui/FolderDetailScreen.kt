@@ -36,6 +36,7 @@ fun FolderDetailScreen(
 ) {
     val folderLinks = links.filter { it.folderId == folder.id }.sortedByDescending { it.updatedAt }
     val folderColor = Color(0xFFF97316) // Orange par défaut
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -98,7 +99,7 @@ fun FolderDetailScreen(
                                 .size(36.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFFEF4444).copy(alpha = 0.9f))
-                                .clickable(onClick = onDelete),
+                                .clickable { showDeleteDialog = true },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -192,6 +193,53 @@ fun FolderDetailScreen(
                 }
             }
         }
+    }
+    
+    // Dialog de confirmation de suppression
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = { 
+                Icon(
+                    imageVector = Icons.Default.Warning, 
+                    contentDescription = null, 
+                    tint = Color(0xFFEF4444)
+                ) 
+            },
+            title = { 
+                Text(
+                    "Supprimer ce dossier ?", 
+                    fontWeight = FontWeight.Bold
+                ) 
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Cette action est irréversible. Le dossier \"${folder.name}\" et toutes ses idées (${folderLinks.size}) seront définitivement supprimés.",
+                        fontSize = 14.sp,
+                        color = Color(0xFF6B7280)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFEF4444)
+                    )
+                ) {
+                    Text("Supprimer", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Annuler")
+                }
+            }
+        )
     }
 }
 

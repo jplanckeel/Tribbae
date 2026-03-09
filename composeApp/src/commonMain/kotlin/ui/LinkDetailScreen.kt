@@ -45,6 +45,7 @@ fun LinkDetailScreen(
 ) {
     val categoryColor = getCategoryColor(link.category)
     var showSaveDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(link.favorite) }
     var liked by remember { mutableStateOf(false) }
 
@@ -153,7 +154,7 @@ fun LinkDetailScreen(
                                 .size(40.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFFEF4444).copy(alpha = 0.9f))
-                                .clickable(onClick = onDelete),
+                                .clickable { showDeleteDialog = true },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -725,6 +726,53 @@ fun LinkDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showSaveDialog = false }) {
+                    Text("Annuler")
+                }
+            }
+        )
+    }
+    
+    // Dialog de confirmation de suppression
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = { 
+                Icon(
+                    imageVector = Icons.Default.Warning, 
+                    contentDescription = null, 
+                    tint = Color(0xFFEF4444)
+                ) 
+            },
+            title = { 
+                Text(
+                    "Supprimer cette idée ?", 
+                    fontWeight = FontWeight.Bold
+                ) 
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Cette action est irréversible. L'idée \"${link.title}\" sera définitivement supprimée.",
+                        fontSize = 14.sp,
+                        color = Color(0xFF6B7280)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFEF4444)
+                    )
+                ) {
+                    Text("Supprimer", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Annuler")
                 }
             }
