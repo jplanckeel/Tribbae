@@ -43,6 +43,7 @@ fun NewHomeScreen(
     onNavigateToDetail: (String) -> Unit,
     onSaveLink: (Link) -> Unit,
     sessionManager: data.SessionManager? = null,
+    onNavigateToAI: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val displayName by sessionManager?.displayName?.collectAsState() ?: remember { mutableStateOf(null) }
@@ -87,17 +88,37 @@ fun NewHomeScreen(
                 Color(0xFFFFD700),
                 Color(0xFFFFFBEB),
                 links.count { it.category == LinkCategory.IDEE }
+            ),
+            CategoryInfo(
+                LinkCategory.LIVRE,
+                "Livres",
+                "📚",
+                Color(0xFF9C27B0),
+                Color(0xFFF3E5F5),
+                links.count { it.category == LinkCategory.LIVRE }
+            ),
+            CategoryInfo(
+                LinkCategory.DECORATION,
+                "Décorations",
+                "🎨",
+                Color(0xFFE91E63),
+                Color(0xFFFCE4EC),
+                links.count { it.category == LinkCategory.DECORATION }
             )
         )
     }
 
-    val trendingLinks = remember(links) { links.take(5) }
-    val recentLinks = remember(links) { links.take(3) }
+    val trendingLinks = remember(links) { links.sortedByDescending { it.updatedAt }.take(5) }
+    val recentLinks = remember(links) { links.sortedByDescending { it.updatedAt }.take(3) }
     val savedCount = remember(links) { links.count { it.favorite } }
+    val sharedCount = remember(links) { links.count { it.likedByMe } }
+    // Note: tribeCount nécessiterait une liste de membres de la famille passée en paramètre
+    val tribeCount = 0
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize()
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
         // Header avec gradient
         item {
             Box(
@@ -201,12 +222,12 @@ fun NewHomeScreen(
                         )
                         StatCard(
                             label = "Partagées",
-                            value = "12",
+                            value = sharedCount.toString(),
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             label = "Ma tribu",
-                            value = "4",
+                            value = tribeCount.toString(),
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -359,6 +380,34 @@ fun NewHomeScreen(
         item {
             Spacer(modifier = Modifier.height(80.dp))
         }
+    }
+    
+    // Bouton flottant IA
+    FloatingActionButton(
+        onClick = onNavigateToAI,
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(bottom = 100.dp, end = 20.dp),
+        containerColor = Color(0xFF8B5CF6),
+        contentColor = Color.White
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Filled.AutoAwesome,
+                contentDescription = "Générer avec l'IA",
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = "IA",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
     }
 }
 

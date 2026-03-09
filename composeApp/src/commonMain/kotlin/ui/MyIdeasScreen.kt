@@ -42,12 +42,12 @@ fun MyIdeasScreen(
     onNavigateToCategory: (LinkCategory) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(1) }
     val tabs = listOf("Favoris", "Mes idées", "Dossiers", "Partagées")
 
-    val savedLinks = links.filter { it.favorite }
-    val myLinks = links // Toutes mes idées
-    val sharedLinks = links.filter { it.likedByMe } // Idées partagées
+    val savedLinks = links.filter { it.favorite }.sortedByDescending { it.updatedAt }
+    val myLinks = links.sortedByDescending { it.updatedAt } // Toutes mes idées
+    val sharedLinks = links.filter { it.likedByMe }.sortedByDescending { it.updatedAt } // Idées partagées
 
     val currentList = when (selectedTab) {
         0 -> savedLinks
@@ -60,7 +60,10 @@ fun MyIdeasScreen(
         LinkCategory.ACTIVITE to "Activités",
         LinkCategory.CADEAU to "Cadeaux",
         LinkCategory.RECETTE to "Recettes",
-        LinkCategory.EVENEMENT to "Événements"
+        LinkCategory.EVENEMENT to "Événements",
+        LinkCategory.IDEE to "Idées",
+        LinkCategory.LIVRE to "Livres",
+        LinkCategory.DECORATION to "Décorations"
     )
 
     Column(
@@ -316,7 +319,7 @@ fun MyIdeasScreen(
                 if (selectedTab == 1) {
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            // Grille de catégories
+                            // Grille de catégories - Ligne 1
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -331,6 +334,7 @@ fun MyIdeasScreen(
                                     )
                                 }
                             }
+                            // Ligne 2
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -344,6 +348,38 @@ fun MyIdeasScreen(
                                         modifier = Modifier.weight(1f)
                                     )
                                 }
+                            }
+                            // Ligne 3
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                categories.drop(4).take(2).forEach { (category, label) ->
+                                    CategoryCollectionCard(
+                                        category = category,
+                                        label = label,
+                                        count = myLinks.count { it.category == category },
+                                        onClick = { onNavigateToCategory(category) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                            // Ligne 4 (dernière catégorie)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                categories.drop(6).take(1).forEach { (category, label) ->
+                                    CategoryCollectionCard(
+                                        category = category,
+                                        label = label,
+                                        count = myLinks.count { it.category == category },
+                                        onClick = { onNavigateToCategory(category) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                // Espace vide pour équilibrer
+                                Spacer(modifier = Modifier.weight(1f))
                             }
 
                             Text(

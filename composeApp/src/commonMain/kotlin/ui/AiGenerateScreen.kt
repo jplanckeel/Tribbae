@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -200,194 +201,392 @@ fun AiGenerateScreen(
     }
 
     Scaffold(
-        containerColor = SurfaceColor,
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Générer avec l'IA ✨", fontWeight = FontWeight.Bold)
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Orange.copy(alpha = 0.15f)
-                        ) {
-                            Text(
-                                "Expérimental",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Orange,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { handleBack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = SurfaceColor)
-            )
-        }
+        containerColor = Color(0xFFF9FAFB)
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
         ) {
-            // Champ prompt
-            OutlinedTextField(
-                value = prompt,
-                onValueChange = { prompt = it },
-                placeholder = { Text("Ex: anniversaire pirate pour un enfant de 2 ans", color = Color.Gray, fontSize = 13.sp) },
+            // Header moderne
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                minLines = 2,
-                maxLines = 3,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Purple,
-                    unfocusedBorderColor = Purple.copy(alpha = 0.3f),
-                    focusedContainerColor = CardColor,
-                    unfocusedContainerColor = CardColor
-                )
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Exemples rapides (seulement si pas encore de résultats)
-            if (ideas.isEmpty() && !loading) {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    examplePrompts.forEach { ex ->
-                        SuggestionChip(
-                            onClick = { prompt = ex },
-                            label = { Text(ex, fontSize = 11.sp) },
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-            }
-
-            // Bouton générer
-            Button(
-                onClick = { viewModel.generateAiIdeas(prompt) },
-                enabled = prompt.isNotBlank() && !loading,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Purple)
+                color = Color.White,
+                shadowElevation = 4.dp
             ) {
-                if (loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Génération en cours...", fontWeight = FontWeight.SemiBold)
-                } else {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Générer des idées", fontWeight = FontWeight.SemiBold)
-                }
-            }
-
-            // Erreur
-            error?.let { err ->
-                Spacer(modifier = Modifier.height(8.dp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = if (err.contains("unreachable")) "Ollama inaccessible — lance `ollama serve`"
-                               else err,
-                        color = Color(0xFFB71C1C),
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(12.dp)
-                    )
-                }
-            }
-
-            // Résultats
-            if (ideas.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        "${ideas.size} idées · ${selectedIndices.size} sélectionnées",
-                        fontSize = 13.sp,
-                        color = TextSecondary
-                    )
-                    TextButton(onClick = {
-                        selectedIndices = if (selectedIndices.size == ideas.size) emptySet()
-                        else ideas.indices.toSet()
-                    }) {
-                        Text(
-                            if (selectedIndices.size == ideas.size) "Tout désélectionner" else "Tout sélectionner",
-                            color = Purple,
-                            fontSize = 12.sp
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF3F4F6))
+                            .clickable(onClick = { handleBack() }),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Retour",
+                            tint = Color(0xFF6B7280),
+                            modifier = Modifier.size(18.dp)
                         )
                     }
-                }
-
-                // Sélecteur de liste
-                if (folders.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .horizontalScroll(rememberScrollState())
-                            .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterChip(
-                            selected = selectedFolderId == null,
-                            onClick = { selectedFolderId = null },
-                            label = { Text("Aucune liste", fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Purple.copy(alpha = 0.15f),
-                                selectedLabelColor = Purple
-                            )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Générer avec l'IA",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF111827)
                         )
-                        folders.forEach { folder ->
-                            FilterChip(
-                                selected = selectedFolderId == folder.id,
-                                onClick = { selectedFolderId = folder.id },
-                                label = { Text(folder.name, fontSize = 12.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Purple.copy(alpha = 0.15f),
-                                    selectedLabelColor = Purple
-                                )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.AutoAwesome,
+                                contentDescription = null,
+                                tint = Color(0xFF8B5CF6),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                text = "Propulsé par l'IA",
+                                fontSize = 12.sp,
+                                color = Color(0xFF6B7280)
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+
+            // Contenu scrollable
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Champ prompt
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Décrivez ce que vous cherchez",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF374151)
+                        )
+                        OutlinedTextField(
+                            value = prompt,
+                            onValueChange = { prompt = it },
+                            placeholder = { 
+                                Text(
+                                    "Ex: anniversaire pirate pour un enfant de 2 ans",
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF9CA3AF)
+                                ) 
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            minLines = 3,
+                            maxLines = 5,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF9FAFB),
+                                unfocusedContainerColor = Color(0xFFF9FAFB),
+                                focusedBorderColor = Color(0xFF8B5CF6),
+                                unfocusedBorderColor = Color(0xFFE5E7EB)
+                            )
+                        )
+                    }
                 }
 
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 100.dp)
-                ) {
-                    itemsIndexed(ideas) { index, idea ->
-                        AiIdeaCard(
-                            idea = idea,
-                            selected = index in selectedIndices,
-                            editedCategory = editedCategories[index],
-                            onToggle = {
-                                selectedIndices = if (index in selectedIndices)
-                                    selectedIndices - index
-                                else
-                                    selectedIndices + index
-                            },
-                            onCategoryChange = { newCategory ->
-                                editedCategories = editedCategories + (index to newCategory)
+                // Exemples rapides
+                if (ideas.isEmpty() && !loading) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        shadowElevation = 2.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Lightbulb,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFBBF24),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = "Suggestions",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF374151)
+                                )
                             }
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                examplePrompts.forEach { ex ->
+                                    Surface(
+                                        onClick = { prompt = ex },
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Color(0xFF8B5CF6).copy(alpha = 0.1f)
+                                    ) {
+                                        Text(
+                                            text = ex,
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF8B5CF6),
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Bouton générer
+                Button(
+                    onClick = { viewModel.generateAiIdeas(prompt) },
+                    enabled = prompt.isNotBlank() && !loading,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF8B5CF6),
+                        disabledContainerColor = Color(0xFFD1D5DB)
+                    )
+                ) {
+                    if (loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Génération en cours...", fontWeight = FontWeight.SemiBold)
+                    } else {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Générer des idées ✨", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                    }
+                }
+
+                // Erreur
+                error?.let { err ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFFFEBEE)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Error,
+                                contentDescription = null,
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = if (err.contains("unreachable")) "Ollama inaccessible — lance `ollama serve`"
+                                       else err,
+                                color = Color(0xFFB71C1C),
+                                fontSize = 13.sp
+                            )
+                        }
+                    }
+                }
+
+                // Résultats
+                if (ideas.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        shadowElevation = 2.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        "${ideas.size} idées générées",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF111827)
+                                    )
+                                    Text(
+                                        "${selectedIndices.size} sélectionnée${if (selectedIndices.size > 1) "s" else ""}",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF6B7280)
+                                    )
+                                }
+                                TextButton(onClick = {
+                                    selectedIndices = if (selectedIndices.size == ideas.size) emptySet()
+                                    else ideas.indices.toSet()
+                                }) {
+                                    Text(
+                                        if (selectedIndices.size == ideas.size) "Tout désélectionner" else "Tout sélectionner",
+                                        color = Color(0xFF8B5CF6),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+
+                            // Sélecteur de liste
+                            if (folders.isNotEmpty()) {
+                                Divider(color = Color(0xFFF3F4F6), thickness = 1.dp)
+                                Text(
+                                    text = "Ajouter à une liste",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF6B7280)
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .horizontalScroll(rememberScrollState())
+                                        .fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    FilterChip(
+                                        selected = selectedFolderId == null,
+                                        onClick = { selectedFolderId = null },
+                                        label = { Text("Aucune liste", fontSize = 12.sp) },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Filled.Lightbulb,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color(0xFF8B5CF6).copy(alpha = 0.15f),
+                                            selectedLabelColor = Color(0xFF8B5CF6)
+                                        )
+                                    )
+                                    folders.forEach { folder ->
+                                        FilterChip(
+                                            selected = selectedFolderId == folder.id,
+                                            onClick = { selectedFolderId = folder.id },
+                                            label = { Text(folder.name, fontSize = 12.sp) },
+                                            leadingIcon = {
+                                                Icon(
+                                                    imageVector = folderIconVector(folder),
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = Color(0xFF8B5CF6).copy(alpha = 0.15f),
+                                                selectedLabelColor = Color(0xFF8B5CF6)
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            Divider(color = Color(0xFFF3F4F6), thickness = 1.dp)
+
+                            // Liste des idées
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                ideas.forEachIndexed { index, idea ->
+                                    AiIdeaCard(
+                                        idea = idea,
+                                        selected = index in selectedIndices,
+                                        editedCategory = editedCategories[index],
+                                        onToggle = {
+                                            selectedIndices = if (index in selectedIndices)
+                                                selectedIndices - index
+                                            else
+                                                selectedIndices + index
+                                        },
+                                        onCategoryChange = { newCategory ->
+                                            editedCategories = editedCategories + (index to newCategory)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(80.dp))
+            }
+
+            // Bouton sauvegarder fixe en bas
+            if (ideas.isNotEmpty() && selectedIndices.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color.White,
+                    shadowElevation = 12.dp
+                ) {
+                    Button(
+                        onClick = {
+                            if (!saved) {
+                                val toSave = selectedIndices.sorted().map { idx ->
+                                    val idea = ideas[idx]
+                                    if (editedCategories.containsKey(idx)) {
+                                        idea.copy(category = editedCategories[idx]!!)
+                                    } else {
+                                        idea
+                                    }
+                                }
+                                viewModel.saveAiIdeas(toSave, selectedFolderId)
+                                saved = true
+                                viewModel.clearAiIdeas()
+                                onBack()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (saved) Color(0xFF10B981) else Color(0xFF8B5CF6)
+                        )
+                    ) {
+                        Icon(
+                            imageVector = if (saved) Icons.Filled.Check else Icons.Filled.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            if (saved) "Ajouté !"
+                            else "Ajouter ${selectedIndices.size} idée${if (selectedIndices.size > 1) "s" else ""}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
                         )
                     }
                 }
@@ -402,7 +601,7 @@ fun AiGenerateScreen(
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
-                        tint = Orange
+                        tint = Color(0xFFF97316)
                     )
                 },
                 title = { Text("Quitter sans sauvegarder ?", fontWeight = FontWeight.Bold) },
@@ -415,7 +614,7 @@ fun AiGenerateScreen(
                             onBack()
                         }
                     ) {
-                        Text("Quitter", color = Orange, fontWeight = FontWeight.Bold)
+                        Text("Quitter", color = Color(0xFFF97316), fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
@@ -424,49 +623,6 @@ fun AiGenerateScreen(
                     }
                 }
             )
-        }
-
-        // FAB Sauvegarder
-        if (ideas.isNotEmpty() && selectedIndices.isNotEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        if (!saved) {
-                            val toSave = selectedIndices.sorted().map { idx ->
-                                val idea = ideas[idx]
-                                // Appliquer la catégorie éditée si elle existe
-                                if (editedCategories.containsKey(idx)) {
-                                    idea.copy(category = editedCategories[idx]!!)
-                                } else {
-                                    idea
-                                }
-                            }
-                            viewModel.saveAiIdeas(toSave, selectedFolderId)
-                            saved = true
-                            viewModel.clearAiIdeas()
-                            onBack()
-                        }
-                    },
-                    containerColor = if (saved) Color(0xFF4CAF50) else Purple,
-                    contentColor = Color.White,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(20.dp),
-                    icon = {
-                        Icon(
-                            if (saved) Icons.Default.Check else Icons.Default.Add,
-                            contentDescription = null
-                        )
-                    },
-                    text = {
-                        Text(
-                            if (saved) "Ajouté !"
-                            else "Ajouter ${selectedIndices.size} idée${if (selectedIndices.size > 1) "s" else ""}",
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                )
-            }
         }
     }
 }
@@ -486,75 +642,78 @@ private fun AiIdeaCard(
 
     var showCategoryMenu by remember { mutableStateOf(false) }
 
-    val catColor = CategoryColors[category.name] ?: Orange
-    val borderColor = if (selected) Purple else Color.Transparent
-    val bgColor = if (selected) Purple.copy(alpha = 0.04f) else CardColor
+    val catColor = ui.components.getCategoryColor(category)
+    val borderColor = if (selected) Color(0xFF8B5CF6) else Color.Transparent
+    val bgColor = if (selected) Color(0xFF8B5CF6).copy(alpha = 0.05f) else Color(0xFFF9FAFB)
 
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .border(2.dp, borderColor, RoundedCornerShape(16.dp))
             .clickable { onToggle() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (selected) 2.dp else 0.dp)
+        shape = RoundedCornerShape(12.dp),
+        color = bgColor,
+        border = androidx.compose.foundation.BorderStroke(2.dp, borderColor)
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Image ou icône catégorie
-            if (idea.imageUrl.isNotBlank()) {
-                NetworkImage(
-                    url = idea.imageUrl,
-                    contentDescription = idea.title,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(catColor.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
+            // Checkbox
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(if (selected) Color(0xFF8B5CF6) else Color(0xFFE5E7EB)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selected) {
                     Icon(
-                        imageVector = categoryIcon(category),
+                        Icons.Default.Check,
                         contentDescription = null,
-                        tint = catColor,
-                        modifier = Modifier.size(20.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Titre et catégorie
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         idea.title,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
-                        color = TextPrimary,
+                        color = Color(0xFF111827),
                         modifier = Modifier.weight(1f)
                     )
+                    
                     // Badge catégorie cliquable
                     Box {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(catColor.copy(alpha = 0.15f))
-                                .clickable(onClick = { showCategoryMenu = true })
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        Surface(
+                            onClick = { showCategoryMenu = true },
+                            shape = RoundedCornerShape(20.dp),
+                            color = catColor.copy(alpha = 0.15f)
                         ) {
                             Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Text(category.label, fontSize = 10.sp, color = catColor, fontWeight = FontWeight.Medium)
+                                Text(
+                                    ui.components.getCategoryEmoji(category),
+                                    fontSize = 10.sp
+                                )
+                                Text(
+                                    category.label,
+                                    fontSize = 11.sp,
+                                    color = catColor,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                                 Icon(
                                     imageVector = Icons.Default.ArrowDropDown,
                                     contentDescription = "Modifier",
@@ -575,11 +734,9 @@ private fun AiIdeaCard(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
-                                            Icon(
-                                                imageVector = categoryIcon(cat),
-                                                contentDescription = null,
-                                                tint = CategoryColors[cat.name] ?: Orange,
-                                                modifier = Modifier.size(18.dp)
+                                            Text(
+                                                ui.components.getCategoryEmoji(cat),
+                                                fontSize = 14.sp
                                             )
                                             Text(cat.label, fontSize = 13.sp)
                                         }
@@ -594,63 +751,59 @@ private fun AiIdeaCard(
                     }
                 }
 
+                // Description
                 if (idea.description.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(idea.description, fontSize = 12.sp, color = TextSecondary, maxLines = 2)
+                    Text(
+                        idea.description,
+                        fontSize = 13.sp,
+                        color = Color(0xFF6B7280),
+                        maxLines = 2,
+                        lineHeight = 18.2.sp
+                    )
                 }
 
                 // Métadonnées
                 val meta = buildList {
-                    if (idea.url.isNotBlank()) add("🔗 source")
                     if (idea.ageRange.isNotBlank()) add("👶 ${idea.ageRange}")
                     if (idea.price.isNotBlank()) add("💰 ${idea.price}")
                     if (idea.location.isNotBlank()) add("📍 ${idea.location}")
                 }
                 if (meta.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        meta.forEach { Text(it, fontSize = 11.sp, color = TextSecondary) }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.horizontalScroll(rememberScrollState())
+                    ) {
+                        meta.forEach { 
+                            Text(
+                                it,
+                                fontSize = 12.sp,
+                                color = Color(0xFF6B7280)
+                            ) 
+                        }
                     }
                 }
 
                 // Tags
                 if (idea.tags.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         idea.tags.take(4).forEach { tag ->
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFFF0F0F0))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = catColor.copy(alpha = 0.1f)
                             ) {
-                                Text("#$tag", fontSize = 10.sp, color = TextSecondary)
+                                Text(
+                                    "#$tag",
+                                    fontSize = 11.sp,
+                                    color = catColor,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
                             }
                         }
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Checkbox
-            Box(
-                modifier = Modifier
-                    .size(22.dp)
-                    .clip(CircleShape)
-                    .background(if (selected) Purple else Color(0xFFE0E0E0)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (selected) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(14.dp)
-                    )
                 }
             }
         }

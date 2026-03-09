@@ -71,7 +71,12 @@ private fun ModernMainApp(
     // Gestion des sous-écrans
     when (subScreen) {
         is SubScreen.AddLink -> {
-            ModernAddLinkScreen(viewModel = vm, onBack = { subScreen = null }, initialUrl = initialUrl)
+            ModernAddLinkScreen(
+                viewModel = vm, 
+                onBack = { subScreen = null }, 
+                initialUrl = initialUrl,
+                onNavigateToAI = { subScreen = SubScreen.AiGenerate }
+            )
             return
         }
         is SubScreen.AddFolder -> {
@@ -221,7 +226,8 @@ private fun ModernMainApp(
                         subScreen = SubScreen.Detail
                     },
                     onSaveLink = { link -> vm.toggleFavorite(link.id) },
-                    sessionManager = sessionManager
+                    sessionManager = sessionManager,
+                    onNavigateToAI = { subScreen = SubScreen.AiGenerate }
                 )
             }
             NavDestination.EXPLORE -> {

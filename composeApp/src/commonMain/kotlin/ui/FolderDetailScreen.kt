@@ -29,11 +29,12 @@ fun FolderDetailScreen(
     links: List<Link>,
     onBack: () -> Unit,
     onEdit: () -> Unit,
+    onDelete: () -> Unit = {},
     onLinkClick: (String) -> Unit,
     onSaveLink: (Link) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val folderLinks = links.filter { it.folderId == folder.id }
+    val folderLinks = links.filter { it.folderId == folder.id }.sortedByDescending { it.updatedAt }
     val folderColor = Color(0xFFF97316) // Orange par défaut
 
     Column(
@@ -74,20 +75,39 @@ fun FolderDetailScreen(
                         )
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f))
-                            .clickable(onClick = onEdit),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.Edit,
-                            contentDescription = "Modifier",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f))
+                                .clickable(onClick = onEdit),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = "Modifier",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEF4444).copy(alpha = 0.9f))
+                                .clickable(onClick = onDelete),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Supprimer",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
 

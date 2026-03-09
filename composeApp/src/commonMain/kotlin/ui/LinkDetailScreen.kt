@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import data.Link
+import ui.components.CategoryPatternBackground
 import ui.components.getCategoryColor
 import ui.components.getCategoryEmoji
 import ui.components.getCategoryLabel
@@ -61,12 +62,20 @@ fun LinkDetailScreen(
                     .fillMaxWidth()
                     .height(288.dp)
             ) {
-                AsyncImage(
-                    model = link.imageUrl.ifEmpty { "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400" },
-                    contentDescription = link.title,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                if (link.imageUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = link.imageUrl,
+                        contentDescription = link.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Motif avec icône de catégorie répétée
+                    CategoryPatternBackground(
+                        category = link.category,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
                 
                 // Gradient overlay
                 Box(
@@ -135,6 +144,21 @@ fun LinkDetailScreen(
                             Icon(
                                 imageVector = Icons.Filled.Edit,
                                 contentDescription = "Modifier",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEF4444).copy(alpha = 0.9f))
+                                .clickable(onClick = onDelete),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Supprimer",
                                 tint = Color.White,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -331,6 +355,241 @@ fun LinkDetailScreen(
                                         color = categoryColor,
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                                     )
+                                }
+                            }
+                        }
+                    }
+
+                    // Informations complémentaires
+                    if (link.url.isNotEmpty() || link.price.isNotEmpty() || link.ageRange.isNotEmpty() || link.location.isNotEmpty() || link.rating > 0) {
+                        Divider(color = Color(0xFFF3F4F6), thickness = 1.dp)
+                        
+                        Column(
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "Informations",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF111827)
+                            )
+                            
+                            // Lien URL
+                            if (link.url.isNotEmpty()) {
+                                Surface(
+                                    onClick = { onOpenUrl?.invoke(link.url) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color(0xFF3B82F6).copy(alpha = 0.1f)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(Color(0xFF3B82F6).copy(alpha = 0.2f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Link,
+                                                contentDescription = null,
+                                                tint = Color(0xFF3B82F6),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Lien",
+                                                fontSize = 12.sp,
+                                                color = Color(0xFF6B7280)
+                                            )
+                                            Text(
+                                                text = link.url.take(50) + if (link.url.length > 50) "..." else "",
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color(0xFF3B82F6),
+                                                maxLines = 1
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Filled.OpenInNew,
+                                            contentDescription = "Ouvrir",
+                                            tint = Color(0xFF3B82F6),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Prix
+                            if (link.price.isNotEmpty()) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(Color(0xFF10B981).copy(alpha = 0.1f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Euro,
+                                            contentDescription = null,
+                                            tint = Color(0xFF10B981),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Prix",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF9CA3AF)
+                                        )
+                                        Text(
+                                            text = link.price,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFF111827)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Âge
+                            if (link.ageRange.isNotEmpty()) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(Color(0xFF8B5CF6).copy(alpha = 0.1f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.ChildCare,
+                                            contentDescription = null,
+                                            tint = Color(0xFF8B5CF6),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Tranche d'âge",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF9CA3AF)
+                                        )
+                                        Text(
+                                            text = link.ageRange,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFF111827)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Lieu (cliquable pour ouvrir dans Maps)
+                            if (link.location.isNotEmpty()) {
+                                Surface(
+                                    onClick = { 
+                                        // Ouvrir dans Google Maps ou l'app de cartes par défaut
+                                        onOpenUrl?.invoke("geo:0,0?q=${link.location}")
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color(0xFFEF4444).copy(alpha = 0.1f)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(Color(0xFFEF4444).copy(alpha = 0.2f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.LocationOn,
+                                                contentDescription = null,
+                                                tint = Color(0xFFEF4444),
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "Lieu",
+                                                fontSize = 12.sp,
+                                                color = Color(0xFF6B7280)
+                                            )
+                                            Text(
+                                                text = link.location,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color(0xFFEF4444)
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Filled.Map,
+                                            contentDescription = "Ouvrir dans Maps",
+                                            tint = Color(0xFFEF4444),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Note
+                            if (link.rating > 0) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(Color(0xFFFBBF24).copy(alpha = 0.1f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Star,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFBBF24),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Note",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF9CA3AF)
+                                        )
+                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            repeat(link.rating) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.Star,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFFBBF24),
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
