@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             MaterialTheme {
-                App(vm = viewModel, sharedUrl = sharedUrl)
+                AppModern(vm = viewModel, sharedUrl = sharedUrl)
             }
         }
     }

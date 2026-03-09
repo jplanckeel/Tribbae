@@ -102,18 +102,18 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(modifier = Modifier.height(100.dp)) {
-            // Image ou pattern à gauche
+        Column {
+            // Image avec overlay
             Box(
                 modifier = Modifier
-                    .width(100.dp)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
             ) {
                 if (hasImage) {
                     NetworkImage(
@@ -122,109 +122,192 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
+                    // Gradient overlay
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.4f)
+                                    )
+                                )
+                            )
+                    )
                 } else {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(catColor.copy(alpha = 0.12f)),
+                            .background(catColor.copy(alpha = 0.08f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = categoryIcon(link.category),
                             contentDescription = null,
-                            tint = catColor.copy(alpha = 0.4f),
-                            modifier = Modifier.size(36.dp)
+                            tint = catColor.copy(alpha = 0.3f),
+                            modifier = Modifier.size(64.dp)
                         )
                     }
                 }
-                // Badge catégorie
+                
+                // Badge catégorie en haut à gauche
                 Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = catColor,
-                    modifier = Modifier.padding(6.dp).align(Alignment.TopStart)
+                    shape = RoundedCornerShape(12.dp),
+                    color = catColor.copy(alpha = 0.95f),
+                    modifier = Modifier.padding(12.dp).align(Alignment.TopStart)
                 ) {
-                    Icon(
-                        imageVector = categoryIcon(link.category),
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.padding(3.dp).size(12.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            when (link.category) {
+                                LinkCategory.IDEE -> "💡"
+                                LinkCategory.CADEAU -> "🎁"
+                                LinkCategory.ACTIVITE -> "🏃"
+                                LinkCategory.EVENEMENT -> "📅"
+                                LinkCategory.RECETTE -> "🍳"
+                                LinkCategory.LIVRE -> "📚"
+                            },
+                            fontSize = 11.sp
+                        )
+                        Text(
+                            link.category.label,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                
+                // Bouton favori en haut à droite
+                if (onFavoriteToggle != null) {
+                    Surface(
+                        onClick = onFavoriteToggle,
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.padding(12.dp).align(Alignment.TopEnd).size(32.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (link.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (link.favorite) Color(0xFFEF4444) else Color(0xFF6B7280),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+                
+                // Rating en bas à gauche
+                if (link.rating > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.padding(12.dp).align(Alignment.BottomStart)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFF59E0B),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                link.rating.toString(),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF1F2937)
+                            )
+                        }
+                    }
                 }
             }
 
             // Contenu texte
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column {
+                Text(
+                    link.title,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    maxLines = 2,
+                    color = Color(0xFF111827),
+                    lineHeight = 18.sp
+                )
+                
+                if (link.description.isNotEmpty()) {
                     Text(
-                        link.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
-                        maxLines = 1, color = TextPrimary
+                        link.description,
+                        color = Color(0xFF6B7280),
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        lineHeight = 16.sp
                     )
-                    if (link.description.isNotEmpty()) {
-                        Text(
-                            link.description, color = TextSecondary,
-                            fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
                 }
+                
+                // Footer avec auteur et tags
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Auteur
                     if (link.ownerDisplayName.isNotBlank()) {
-                        Text(
-                            "par ${link.ownerDisplayName}", fontSize = 9.sp, color = TextSecondary,
-                            maxLines = 1
-                        )
-                    }
-                    if (link.tags.isNotEmpty()) {
-                        link.tags.take(2).forEach { tag ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = catColor.copy(alpha = 0.1f)
+                                shape = RoundedCornerShape(12.dp),
+                                color = catColor,
+                                modifier = Modifier.size(24.dp)
                             ) {
-                                Text(
-                                    "#$tag", fontSize = 9.sp, color = catColor,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                                )
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        link.ownerDisplayName.take(1).uppercase(),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
+                            Text(
+                                link.ownerDisplayName,
+                                fontSize = 12.sp,
+                                color = Color(0xFF6B7280)
+                            )
                         }
                     }
-                    if (link.rating > 0) {
-                        StarRating(rating = link.rating, starSize = 10)
+                    
+                    // Likes (si disponible)
+                    if (link.likeCount > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (link.likedByMe) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (link.likedByMe) Color(0xFFEF4444) else Color(0xFF9CA3AF),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                link.likeCount.toString(),
+                                fontSize = 12.sp,
+                                color = Color(0xFF9CA3AF)
+                            )
+                        }
                     }
                 }
-            }
-
-            // Actions à droite
-            Column(
-                modifier = Modifier.fillMaxHeight().padding(end = 4.dp, top = 4.dp, bottom = 4.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (onFavoriteToggle != null) {
-                    IconButton(onClick = onFavoriteToggle, modifier = Modifier.size(28.dp)) {
-                        Icon(
-                            imageVector = if (link.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = if (link.favorite) "Retirer des favoris" else "Ajouter aux favoris",
-                            tint = if (link.favorite) Color(0xFFE91E63) else Color.LightGray,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = Color.LightGray,
-                    modifier = Modifier.size(18.dp)
-                )
             }
         }
     }
@@ -239,18 +322,18 @@ fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = CardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.height(180.dp)) {
-            // Image ou pattern en haut
+        Column {
+            // Image avec overlay
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
-                    .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
+                    .height(140.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             ) {
                 if (hasImage) {
                     NetworkImage(
@@ -261,12 +344,10 @@ fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)
                     )
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(30.dp)
-                            .align(Alignment.BottomCenter)
+                            .fillMaxSize()
                             .background(
                                 Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f))
+                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.3f))
                                 )
                             )
                     )
@@ -274,74 +355,125 @@ fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(catColor.copy(alpha = 0.10f)),
+                            .background(catColor.copy(alpha = 0.08f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = categoryIcon(link.category),
                             contentDescription = null,
                             tint = catColor.copy(alpha = 0.3f),
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(48.dp)
                         )
                     }
                 }
+                
                 // Badge catégorie
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = catColor,
-                    modifier = Modifier.padding(6.dp).align(Alignment.TopEnd)
+                    shape = RoundedCornerShape(10.dp),
+                    color = catColor.copy(alpha = 0.95f),
+                    modifier = Modifier.padding(8.dp).align(Alignment.TopStart)
                 ) {
-                    Icon(
-                        imageVector = categoryIcon(link.category),
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.padding(4.dp).size(12.dp)
+                    Text(
+                        when (link.category) {
+                            LinkCategory.IDEE -> "💡"
+                            LinkCategory.CADEAU -> "🎁"
+                            LinkCategory.ACTIVITE -> "🏃"
+                            LinkCategory.EVENEMENT -> "📅"
+                            LinkCategory.RECETTE -> "🍳"
+                            LinkCategory.LIVRE -> "📚"
+                        },
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                     )
                 }
+                
                 // Favori
                 if (onFavoriteToggle != null) {
-                    IconButton(
+                    Surface(
                         onClick = onFavoriteToggle,
-                        modifier = Modifier.size(28.dp).align(Alignment.TopStart).padding(4.dp)
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.padding(8.dp).align(Alignment.TopEnd).size(28.dp)
                     ) {
-                        Icon(
-                            imageVector = if (link.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = null,
-                            tint = if (link.favorite) Color(0xFFE91E63) else Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(16.dp)
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = if (link.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (link.favorite) Color(0xFFEF4444) else Color(0xFF6B7280),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    }
+                }
+                
+                // Rating
+                if (link.rating > 0) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.padding(8.dp).align(Alignment.BottomStart)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = Color(0xFFF59E0B),
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Text(
+                                link.rating.toString(),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF1F2937)
+                            )
+                        }
                     }
                 }
             }
 
             // Texte en bas
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    link.title, fontWeight = FontWeight.SemiBold, fontSize = 12.sp,
-                    maxLines = 2, color = TextPrimary, lineHeight = 15.sp
+                    link.title,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                    maxLines = 2,
+                    color = Color(0xFF111827),
+                    lineHeight = 15.sp
                 )
-                Column {
-                    if (link.ownerDisplayName.isNotBlank()) {
-                        Text(
-                            "par ${link.ownerDisplayName}", fontSize = 9.sp, color = TextSecondary,
-                            maxLines = 1
-                        )
-                    }
-                    if (link.tags.isNotEmpty()) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                            link.tags.take(2).forEach { tag ->
+                
+                if (link.ownerDisplayName.isNotBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = catColor,
+                            modifier = Modifier.size(18.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
                                 Text(
-                                    "#$tag", fontSize = 9.sp, color = catColor,
-                                    fontWeight = FontWeight.Medium
+                                    link.ownerDisplayName.take(1).uppercase(),
+                                    color = Color.White,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
+                        Text(
+                            link.ownerDisplayName,
+                            fontSize = 10.sp,
+                            color = Color(0xFF6B7280),
+                            maxLines = 1
+                        )
                     }
                 }
             }
@@ -364,6 +496,7 @@ fun categoryIcon(category: LinkCategory): ImageVector = when (category) {
     LinkCategory.ACTIVITE -> Icons.Default.DirectionsRun
     LinkCategory.EVENEMENT -> Icons.Default.Event
     LinkCategory.RECETTE -> Icons.Default.Restaurant
+    LinkCategory.LIVRE -> Icons.Default.MenuBook
 }
 
 fun folderIconVector(folder: data.Folder): ImageVector = when (folder.icon) {

@@ -49,7 +49,12 @@ fun SettingsScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showAuthDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier.fillMaxSize().padding(20.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 100.dp)
+    ) {
         // Header avec info utilisateur ou bouton de connexion
         if (isLoggedIn) {
             // Utilisateur connecté

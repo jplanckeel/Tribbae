@@ -9,16 +9,18 @@ Application familiale de gestion d'idées — liens, recettes, activités, cadea
 | App mobile Android | Kotlin Multiplatform + Jetpack Compose | `composeApp/` |
 | Frontend web | React + TypeScript + Tailwind CSS + Vite | `frontend/` |
 | Backend API | Go + gRPC + grpc-gateway REST + MongoDB | `backend/` |
-| IA | Ollama (LLM local) | `backend/internal/ai/` |
+| IA | Google Gemini API (génération) + SearXNG (recherche) | `backend/internal/ai/` |
+| Recherche | SearXNG (métamoteur) | `searxng/` |
 
 ## Prérequis
 
 - [Go 1.23+](https://go.dev/dl/)
 - [Node.js 20+](https://nodejs.org/)
-- [Docker](https://www.docker.com/) (pour Ollama)
+- [Docker](https://www.docker.com/) (pour SearXNG)
 - [Android Studio](https://developer.android.com/studio) + SDK Android (pour le mobile)
 - [Task](https://taskfile.dev/) — `brew install go-task` ou `go install github.com/go-task/task/v3/cmd/task@latest`
 - [MongoDB](https://www.mongodb.com/) en local ou Atlas
+- [Google Gemini API Key](https://ai.google.dev/) (pour la génération IA)
 
 ## Démarrage rapide
 
@@ -28,15 +30,19 @@ task frontend:install
 
 # Copier et adapter les variables d'environnement
 cp backend/.env.example backend/.env
+# Ajouter votre clé API Gemini dans GEMINI_API_KEY
 
-# Démarrer tout l'environnement de dev (Ollama + backend + frontend)
+# Démarrer SearXNG (recherche web pour l'IA)
+task searxng
+
+# Démarrer le backend + frontend
 task dev
 ```
 
 Accès :
 - Frontend → http://localhost:5173
 - Backend API → http://localhost:8080
-- Ollama → http://localhost:11434
+- SearXNG → http://localhost:8888
 
 ## Commandes
 
@@ -44,8 +50,10 @@ Accès :
 
 | Commande | Description |
 |----------|-------------|
-| `task dev` | Démarre Ollama + backend + frontend en parallèle |
+| `task dev` | Démarre backend + frontend en parallèle |
 | `task dev:stop` | Arrête backend et frontend |
+| `task searxng` | Démarre SearXNG (recherche web) en Docker |
+| `task searxng:stop` | Arrête SearXNG |
 
 ### Backend
 
@@ -63,23 +71,6 @@ Accès :
 | `task frontend:build` | Build de production |
 | `task frontend:install` | Installe les dépendances npm |
 
-### Ollama (IA)
-
-| Commande | Description |
-|----------|-------------|
-| `task ollama` | Démarre Ollama en Docker et pull le modèle |
-| `task ollama:stop` | Arrête le conteneur |
-| `task ollama:logs` | Affiche les logs |
-| `task ollama:models` | Liste les modèles disponibles |
-
-Le modèle par défaut est `qwen2.5:3b` (optimisé CPU, ~2 Go RAM, excellent en français). Pour en changer :
-
-```bash
-task ollama OLLAMA_MODEL=mistral
-```
-
-> Pourquoi `qwen2.5:3b` ? Tourne confortablement sur 2 CPU / 8 Go RAM (VPS ou machine modeste), multilingue français natif, très bon pour générer du JSON structuré.
-
 ### Mobile Android
 
 | Commande | Description |
@@ -91,15 +82,49 @@ task ollama OLLAMA_MODEL=mistral
 
 ## Fonctionnalités
 
-- Gestion d'idées par catégories : 💡 Idée · 🎁 Cadeau · 🏃 Activité · 📅 Événement · 🍳 Recette
-- Organisation en listes (dossiers) avec partage et collaboration
-- Filtres par catégorie, liste, enfant, favoris
-- Génération d'idées par IA (Ollama) — ex: "anniversaire pirate pour un enfant de 2 ans"
-- Profils enfants avec filtrage par âge
-- Agenda des événements
-- Liste de courses (ingrédients)
-- Communauté — listes publiques partagées
-- App mobile Android + web responsive
+### Gestion d'idées
+- 5 catégories : 💡 Idée · 🎁 Cadeau · 🏃 Activité · 📅 Événement · 🍳 Recette
+- Organisation en listes (dossiers) avec icônes et couleurs personnalisables
+- Filtres avancés : catégorie, liste, enfant, favoris, recherche
+- Vue liste ou grille
+- Métadonnées : tags, âge, lieu, prix, note (étoiles), ingrédients
+- Extraction automatique d'images (Open Graph)
+
+### Collaboration et partage
+- Listes privées, partagées ou publiques
+- Système de collaborateurs avec rôles (viewer/editor)
+- Partage par lien (token)
+- Communauté : explorer les listes publiques d'autres utilisateurs
+- Affichage du nom du propriétaire et badge admin
+
+### Synchronisation
+- Synchronisation automatique entre mobile et web
+- Pull-to-refresh sur toutes les pages (Accueil, Explorer, Listes)
+- Mode hors ligne : création locale puis sync à la connexion
+- Gestion intelligente des conflits (backend = source de vérité)
+
+### Profils enfants
+- Création de profils avec date de naissance
+- Filtrage automatique des idées par âge
+- Calcul dynamique de l'âge en mois
+
+### Génération IA (Tribbae+)
+- Génération d'idées par IA locale (Ollama)
+- Modèle optimisé : `qwen2.5:1.5b` (rapide, léger, excellent en français)
+- Prompts suggérés : anniversaire, activités, recettes, cadeaux
+- Recherche web intégrée (SearXNG) pour enrichir les suggestions
+- Génération structurée avec métadonnées complètes
+- Badge "Expérimental" sur la fonctionnalité
+
+### Autres fonctionnalités
+- Agenda des événements avec rappels
+- Liste de courses (extraction des ingrédients)
+- Système de likes sur les idées et listes publiques
+- Favoris (cœur) pour marquer ses idées préférées
+- Sauvegarde d'idées publiques dans ses propres listes
+- App mobile Android native + web responsive
+- Authentification JWT avec gestion de session
+- Interface Material Design 3 (mobile) et Tailwind CSS (web)
 
 ## Variables d'environnement
 
@@ -112,9 +137,22 @@ JWT_SECRET=change-me-in-production
 PORT=8080
 GRPC_PORT=9090
 BASE_URL=http://localhost:8080
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:3b
+
+# IA - Google Gemini
+GEMINI_API_KEY=your-api-key-here
+GEMINI_MODEL=gemini-2.0-flash-exp
+
+# Recherche web (SearXNG)
+SEARXNG_URL=http://localhost:8888
 ```
+
+### Obtenir une clé API Gemini
+
+1. Aller sur [Google AI Studio](https://ai.google.dev/)
+2. Créer un projet et générer une clé API
+3. Ajouter la clé dans `backend/.env`
+
+Le modèle `gemini-2.0-flash-exp` est gratuit et performant pour la génération d'idées.
 
 ## Structure du projet
 
@@ -122,7 +160,7 @@ OLLAMA_MODEL=qwen2.5:3b
 tribbae/
 ├── backend/          # API Go (gRPC + REST gateway)
 │   ├── cmd/server/   # Point d'entrée
-│   ├── internal/     # Logique métier (auth, link, folder, ai...)
+│   ├── internal/     # Logique métier (auth, link, folder, ai, admin...)
 │   ├── proto/        # Définitions protobuf
 │   └── gen/          # Code généré (buf)
 ├── frontend/         # App web React + Vite
@@ -135,5 +173,29 @@ tribbae/
 │       ├── data/     # Modèles, repositories, ApiClient
 │       ├── ui/       # Écrans Compose
 │       └── viewmodel/
+├── searxng/          # Configuration SearXNG (recherche web)
+│   ├── settings.yml
+│   └── Dockerfile
 └── Taskfile.yml
 ```
+
+## Déploiement
+
+Le projet inclut des workflows GitHub Actions pour le CI/CD :
+
+- `.github/workflows/test.yml` : Tests et validation
+- `.github/workflows/release.yml` : Build et déploiement automatique
+
+Les images Docker sont publiées sur Docker Hub :
+- `jplanckeel/tribbae` : Backend + Frontend
+- `jplanckeel/tribbae-searxng` : SearXNG configuré
+
+Déploiement avec Docker Compose :
+
+```bash
+docker-compose up -d
+```
+
+## Licence
+
+MIT

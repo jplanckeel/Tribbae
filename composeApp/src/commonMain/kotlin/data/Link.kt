@@ -60,7 +60,8 @@ enum class LinkCategory(val label: String, val iconName: String) {
     CADEAU("Cadeau", "CardGiftcard"),
     ACTIVITE("Activité", "DirectionsRun"),
     EVENEMENT("Événement", "Event"),
-    RECETTE("Recette", "Restaurant")
+    RECETTE("Recette", "Restaurant"),
+    LIVRE("Livre", "MenuBook")
 }
 
 @Serializable

@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import data.Link
 import viewmodel.LinkViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FoldersTabScreen(
     viewModel: LinkViewModel,
@@ -32,8 +35,11 @@ fun FoldersTabScreen(
     onLinkClick: (Link) -> Unit = {}
 ) {
     val folders by viewModel.folders.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
     var selectedFolderId by remember { mutableStateOf<String?>(null) }
     var viewMode by remember { mutableStateOf(LinkViewMode.LIST) }
+
+    val pullRefreshState = rememberPullToRefreshState()
 
     // Si un dossier est sélectionné, afficher ses liens
     val selectedFolder = folders.find { it.id == selectedFolderId }
@@ -41,7 +47,14 @@ fun FoldersTabScreen(
         val folderLinks = viewModel.getLinksForFolder(selectedFolder.id)
         val folderColor = FolderColors[selectedFolder.color.name] ?: Orange
 
-        Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+        Box(modifier = modifier.fillMaxSize()) {
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { viewModel.forceSync() },
+                state = pullRefreshState,
+                modifier = Modifier.fillMaxSize()
+            ) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { selectedFolderId = null }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Retour", tint = Orange)
@@ -90,11 +103,20 @@ fun FoldersTabScreen(
                 }
             }
         }
+            }
+        }
         return
     }
 
     // Vue liste des dossiers
-    Column(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.forceSync() },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize()
+        ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -176,6 +198,8 @@ fun FoldersTabScreen(
                     }
                 }
             }
+        }
+    }
         }
     }
 }

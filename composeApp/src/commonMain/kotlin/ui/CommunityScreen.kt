@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +26,7 @@ import data.Link
 import data.LinkCategory
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommunityScreen(
     modifier: Modifier = Modifier,
@@ -35,6 +38,7 @@ fun CommunityScreen(
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<LinkCategory?>(null) }
     var loading by remember { mutableStateOf(false) }
+    var refreshing by remember { mutableStateOf(false) }
     var viewMode by remember { mutableStateOf(LinkViewMode.LIST) }
 
     // Filtrage local
@@ -49,9 +53,9 @@ fun CommunityScreen(
         }
     }
 
-    fun fetchLinks() {
+    fun fetchLinks(isRefresh: Boolean = false) {
         scope.launch {
-            loading = true
+            if (isRefresh) refreshing = true else loading = true
             try {
                 val res = apiClient.listCommunityLinks(limit = 100)
                 communityLinks = res.links.map { apiLink ->
@@ -79,13 +83,22 @@ fun CommunityScreen(
                     )
                 }
             } catch (_: Exception) { }
-            loading = false
+            if (isRefresh) refreshing = false else loading = false
         }
     }
 
     LaunchedEffect(Unit) { fetchLinks() }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    val pullRefreshState = rememberPullToRefreshState()
+
+    Box(modifier = modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = refreshing,
+            onRefresh = { fetchLinks(isRefresh = true) },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize()
+        ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         // Search bar
         OutlinedTextField(
             value = searchQuery,
@@ -254,6 +267,8 @@ fun CommunityScreen(
                     }
                 }
             }
+        }
+    }
         }
     }
 }

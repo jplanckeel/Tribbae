@@ -21,11 +21,11 @@ import ui.*
 import viewmodel.LinkViewModel
 
 enum class Tab(val label: String, val icon: ImageVector) {
-    HOME("Accueil", Icons.Default.Cabin),
-    FOLDERS("Listes", Icons.Default.Folder),
-    EXPLORE("Explorer", Icons.Default.Explore),
-    CALENDAR("Agenda", Icons.Default.CalendarMonth),
-    SETTINGS("Plus", Icons.Default.MoreHoriz)
+    HOME("Accueil", Icons.Default.Home),
+    FOLDERS("Listes", Icons.Default.FolderOpen),
+    EXPLORE("Explorer", Icons.Default.Public),
+    CALENDAR("Agenda", Icons.Default.CalendarToday),
+    SETTINGS("Profil", Icons.Default.Person)
 }
 
 @Composable
@@ -160,6 +160,10 @@ private fun MainApp(
             }
             return
         }
+        is SubScreen.FolderDetail -> {
+            // Écran de détail de dossier - pas utilisé dans l'ancienne version App.kt
+            return
+        }
         is SubScreen.Tags -> {
             Column(modifier = Modifier.fillMaxSize()) {
                 Row(
@@ -177,6 +181,10 @@ private fun MainApp(
                     onLinkClick = { link -> selectedLink = link; subScreen = SubScreen.Detail }
                 )
             }
+            return
+        }
+        is SubScreen.Category -> {
+            // Écran de catégorie - pas utilisé dans l'ancienne version
             return
         }
         null -> {} // continue to tabs
@@ -252,7 +260,9 @@ sealed class SubScreen {
     object PublicDetail : SubScreen()
     object Edit : SubScreen()
     object EditFolder : SubScreen()
+    object FolderDetail : SubScreen()
     object AiGenerate : SubScreen()
     object Shopping : SubScreen()
     object Tags : SubScreen()
+    object Category : SubScreen()
 }

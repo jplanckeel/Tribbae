@@ -95,17 +95,22 @@ fun ImagePickerSection(
                     .clip(RoundedCornerShape(16.dp))
                     .background(CardColor)
                     .border(1.dp, OrangeLight.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                    .clickable { showMenu = true },
+                    .clickable { showMenu = true }
+                    .padding(12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     Icon(
                         imageVector = Icons.Default.AddPhotoAlternate,
                         contentDescription = null,
                         tint = Orange,
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(32.dp)
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text("Ajouter une photo", color = Orange, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     Text("Galerie ou appareil photo", color = TextSecondary, fontSize = 11.sp)
                 }
