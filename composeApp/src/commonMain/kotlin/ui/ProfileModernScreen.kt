@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import viewmodel.LinkViewModel
 
@@ -39,6 +40,7 @@ fun ProfileModernScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showAuthDialog by remember { mutableStateOf(false) }
     var showFamilyDialog by remember { mutableStateOf(false) }
+    var showInviteDialog by remember { mutableStateOf(false) }
 
     val savedCount = links.count { it.favorite }
     val familyCount = children.size + 1
@@ -156,7 +158,7 @@ fun ProfileModernScreen(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Ma famille section
+                // Ma tribu section
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -164,29 +166,53 @@ fun ProfileModernScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Ma famille",
+                            text = "Ma tribu",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF111827)
                         )
                         
-                        if (children.isNotEmpty()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Bouton Inviter
                             TextButton(
-                                onClick = { showFamilyDialog = true },
+                                onClick = { showInviteDialog = true },
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                             ) {
-                                Text(
-                                    text = "Gérer",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFF97316)
-                                )
                                 Icon(
-                                    imageVector = Icons.Filled.ChevronRight,
+                                    imageVector = Icons.Filled.PersonAdd,
                                     contentDescription = null,
-                                    tint = Color(0xFFF97316),
+                                    tint = Color(0xFF3B82F6),
                                     modifier = Modifier.size(16.dp)
                                 )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = "Inviter",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF3B82F6)
+                                )
+                            }
+                            
+                            if (children.isNotEmpty()) {
+                                TextButton(
+                                    onClick = { showFamilyDialog = true },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "Gérer",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFFF97316)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Filled.ChevronRight,
+                                        contentDescription = null,
+                                        tint = Color(0xFFF97316),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -241,7 +267,7 @@ fun ProfileModernScreen(
                                     fontSize = 32.sp
                                 )
                                 Text(
-                                    text = "Ajoutez les membres de votre famille",
+                                    text = "Ajoutez les membres de votre tribu",
                                     fontSize = 13.sp,
                                     color = Color(0xFF6B7280),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -415,6 +441,16 @@ fun ProfileModernScreen(
         FamilyManagementDialog(
             viewModel = viewModel,
             onDismiss = { showFamilyDialog = false }
+        )
+    }
+    
+    if (showInviteDialog) {
+        InviteTribeDialog(
+            onDismiss = { showInviteDialog = false },
+            onInvite = { email ->
+                // TODO: Implémenter l'invitation via l'API
+                showInviteDialog = false
+            }
         )
     }
 }
@@ -856,3 +892,254 @@ private fun ChildDialog(
     }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun InviteTribeDialog(
+    onDismiss: () -> Unit,
+    onInvite: (String) -> Unit
+) {
+    var inviteLink by remember { mutableStateOf("") }
+    var isGenerating by remember { mutableStateOf(false) }
+    var linkGenerated by remember { mutableStateOf(false) }
+    var showCopiedMessage by remember { mutableStateOf(false) }
+    
+    // Générer le lien automatiquement au chargement
+    LaunchedEffect(Unit) {
+        isGenerating = true
+        delay(500) // Simuler la génération
+        // TODO: Appeler l'API pour générer un vrai lien d'invitation
+        inviteLink = "https://tribbae.app/invite/${java.util.UUID.randomUUID().toString().take(8)}"
+        isGenerating = false
+        linkGenerated = true
+    }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss
+    ) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Inviter à ma tribu",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF111827)
+                        )
+                        Text(
+                            text = "Partagez tous vos dossiers et idées",
+                            fontSize = 13.sp,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Fermer",
+                            tint = Color(0xFF9CA3AF)
+                        )
+                    }
+                }
+                
+                Divider(color = Color(0xFFF3F4F6))
+                
+                // Icône
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF3B82F6).copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Link,
+                            contentDescription = null,
+                            tint = Color(0xFF3B82F6),
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+                }
+                
+                // Lien d'invitation
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Lien d'invitation",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF374151)
+                    )
+                    
+                    if (isGenerating) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFF9FAFB)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = Color(0xFF3B82F6),
+                                    strokeWidth = 2.dp
+                                )
+                                Text(
+                                    text = "Génération du lien...",
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF6B7280)
+                                )
+                            }
+                        }
+                    } else {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFF9FAFB),
+                            border = androidx.compose.foundation.BorderStroke(
+                                width = 1.dp,
+                                color = Color(0xFFE5E7EB)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = inviteLink,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF3B82F6),
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                                IconButton(
+                                    onClick = {
+                                        // TODO: Copier dans le presse-papier
+                                        showCopiedMessage = true
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (showCopiedMessage) Icons.Filled.Check else Icons.Filled.ContentCopy,
+                                        contentDescription = "Copier",
+                                        tint = if (showCopiedMessage) Color(0xFF10B981) else Color(0xFF6B7280),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (showCopiedMessage) {
+                        LaunchedEffect(Unit) {
+                            delay(2000)
+                            showCopiedMessage = false
+                        }
+                        Text(
+                            text = "✓ Lien copié !",
+                            fontSize = 12.sp,
+                            color = Color(0xFF10B981),
+                            fontWeight = FontWeight.Medium
+                        )
+                    } else {
+                        Text(
+                            text = "Partagez ce lien avec la personne que vous souhaitez inviter",
+                            fontSize = 12.sp,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
+                }
+                
+                // Informations
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFFF7ED)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Info,
+                            contentDescription = null,
+                            tint = Color(0xFFF97316),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "Cette personne aura accès à :",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF92400E)
+                            )
+                            Text(
+                                text = "• Tous vos dossiers\n• Toutes vos idées\n• Possibilité de créer et modifier",
+                                fontSize = 11.sp,
+                                color = Color(0xFF92400E),
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                }
+                
+                // Boutons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Fermer", fontSize = 14.sp)
+                    }
+                    Button(
+                        onClick = {
+                            // TODO: Partager le lien via le système de partage natif
+                            onInvite(inviteLink)
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF3B82F6)
+                        ),
+                        enabled = linkGenerated
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Share,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text("Partager", fontSize = 14.sp)
+                    }
+                }
+            }
+        }
+    }
+}

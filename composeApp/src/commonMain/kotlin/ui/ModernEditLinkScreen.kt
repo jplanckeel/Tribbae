@@ -39,11 +39,15 @@ fun ModernEditLinkScreen(
     var description by remember { mutableStateOf(link.description) }
     var selectedCategory by remember { mutableStateOf(link.category) }
     var tags by remember { mutableStateOf(link.tags.joinToString(", ")) }
+    var tagInput by remember { mutableStateOf("") }
+    var tagsList by remember { mutableStateOf(link.tags) }
+    var expandedFolder by remember { mutableStateOf(false) }
     var price by remember { mutableStateOf(link.price) }
     var ageRange by remember { mutableStateOf(link.ageRange) }
     var location by remember { mutableStateOf(link.location) }
     var rating by remember { mutableStateOf(link.rating) }
     var selectedFolderId by remember { mutableStateOf(link.folderId) }
+    var isPublic by remember { mutableStateOf(link.likedByMe) }
     var submitted by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -296,119 +300,232 @@ fun ModernEditLinkScreen(
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF374151)
                     )
-                    OutlinedTextField(
-                        value = tags,
-                        onValueChange = { tags = it },
-                        placeholder = { Text("famille, enfants, nature…", fontSize = 14.sp) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFFF97316),
-                            unfocusedBorderColor = Color(0xFFF3F4F6)
-                        )
-                    )
-                    Text(
-                        text = "Séparez les tags par des virgules",
-                        fontSize = 11.sp,
-                        color = Color(0xFF9CA3AF)
-                    )
-                }
-
-                // Sélecteur de dossier
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 2.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = "Dossier",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF374151)
-                        )
-                        
-                        val folders by viewModel.folders.collectAsState()
-                        
-                        if (folders.isEmpty()) {
-                            Text(
-                                text = "Aucun dossier disponible",
-                                fontSize = 13.sp,
-                                color = Color(0xFF9CA3AF)
-                            )
-                        } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                // Option "Aucun dossier"
+                    
+                    // Tags actuels (chips)
+                    if (tagsList.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            tagsList.forEach { tag ->
                                 Surface(
-                                    onClick = { selectedFolderId = null },
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = if (selectedFolderId == null) Color(0xFFFFF7ED) else Color(0xFFF9FAFB),
-                                    border = androidx.compose.foundation.BorderStroke(
-                                        width = 2.dp,
-                                        color = if (selectedFolderId == null) Color(0xFFF97316) else Color(0xFFE5E7EB)
-                                    )
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = Color(0xFFFFF7ED)
                                 ) {
                                     Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp),
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = tag,
+                                            fontSize = 13.sp,
+                                            color = Color(0xFFF97316),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            contentDescription = "Supprimer",
+                                            tint = Color(0xFFF97316),
+                                            modifier = Modifier
+                                                .size(14.dp)
+                                                .clickable {
+                                                    tagsList = tagsList.filter { it != tag }
+                                                    tags = tagsList.joinToString(", ")
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Champ de saisie avec bouton Ajouter
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = tagInput,
+                            onValueChange = { tagInput = it },
+                            placeholder = { Text("Ajouter un tag", fontSize = 14.sp) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = Color(0xFFF97316),
+                                unfocusedBorderColor = Color(0xFFF3F4F6)
+                            ),
+                            singleLine = true
+                        )
+                        Button(
+                            onClick = {
+                                if (tagInput.isNotBlank() && !tagsList.contains(tagInput.trim())) {
+                                    tagsList = tagsList + tagInput.trim()
+                                    tags = tagsList.joinToString(", ")
+                                    tagInput = ""
+                                }
+                            },
+                            enabled = tagInput.isNotBlank(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFF97316)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    
+                    // Suggestions de tags
+                    val suggestedTags = listOf("famille", "enfants", "nature", "vacances", "weekend", "anniversaire")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        suggestedTags.take(4).forEach { suggestion ->
+                            if (!tagsList.contains(suggestion)) {
+                                Surface(
+                                    onClick = {
+                                        tagsList = tagsList + suggestion
+                                        tags = tagsList.joinToString(", ")
+                                    },
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = Color(0xFFF3F4F6)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Add,
+                                            contentDescription = null,
+                                            tint = Color(0xFF6B7280),
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                        Text(
+                                            text = suggestion,
+                                            fontSize = 11.sp,
+                                            color = Color(0xFF6B7280)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Dossier (menu déroulant)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Dossier",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF374151)
+                    )
+                    
+                    val folders by viewModel.folders.collectAsState()
+                    val selectedFolder = folders.find { it.id == selectedFolderId }
+                    
+                    Surface(
+                        onClick = { expandedFolder = true },
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = 1.dp,
+                            color = Color(0xFFF3F4F6)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (selectedFolder != null) Icons.Filled.Folder else Icons.Filled.FolderOpen,
+                                    contentDescription = null,
+                                    tint = if (selectedFolder != null) Color(0xFFF97316) else Color(0xFF9CA3AF),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = selectedFolder?.name ?: "Mes idées (sans dossier)",
+                                    fontSize = 14.sp,
+                                    color = if (selectedFolder != null) Color(0xFF111827) else Color(0xFF9CA3AF)
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Filled.ArrowDropDown,
+                                contentDescription = null,
+                                tint = Color(0xFF9CA3AF)
+                            )
+                        }
+                        
+                        DropdownMenu(
+                            expanded = expandedFolder,
+                            onDismissRequest = { expandedFolder = false }
+                        ) {
+                            // Option "Sans dossier"
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Filled.Lightbulb,
+                                            imageVector = Icons.Filled.FolderOpen,
                                             contentDescription = null,
-                                            tint = if (selectedFolderId == null) Color(0xFFF97316) else Color(0xFF9CA3AF),
+                                            tint = Color(0xFF9CA3AF),
                                             modifier = Modifier.size(20.dp)
                                         )
-                                        Text(
-                                            text = "Mes idées (sans dossier)",
-                                            fontSize = 14.sp,
-                                            fontWeight = if (selectedFolderId == null) FontWeight.SemiBold else FontWeight.Normal,
-                                            color = if (selectedFolderId == null) Color(0xFFF97316) else Color(0xFF6B7280)
-                                        )
+                                        Text("Mes idées (sans dossier)", fontSize = 14.sp)
                                     }
+                                },
+                                onClick = {
+                                    selectedFolderId = null
+                                    expandedFolder = false
                                 }
-                                
-                                // Liste des dossiers
-                                folders.forEach { folder ->
-                                    Surface(
-                                        onClick = { selectedFolderId = folder.id },
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = if (selectedFolderId == folder.id) Color(0xFFFFF7ED) else Color(0xFFF9FAFB),
-                                        border = androidx.compose.foundation.BorderStroke(
-                                            width = 2.dp,
-                                            color = if (selectedFolderId == folder.id) Color(0xFFF97316) else Color(0xFFE5E7EB)
-                                        )
-                                    ) {
+                            )
+                            
+                            if (folders.isNotEmpty()) {
+                                HorizontalDivider()
+                            }
+                            
+                            // Liste des dossiers
+                            folders.forEach { folder ->
+                                DropdownMenuItem(
+                                    text = {
                                         Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(12.dp),
                                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Icon(
-                                                imageVector = folderIconVector(folder),
+                                                imageVector = Icons.Filled.Folder,
                                                 contentDescription = null,
-                                                tint = if (selectedFolderId == folder.id) Color(0xFFF97316) else Color(0xFF9CA3AF),
+                                                tint = Color(0xFFF97316),
                                                 modifier = Modifier.size(20.dp)
                                             )
-                                            Text(
-                                                text = folder.name,
-                                                fontSize = 14.sp,
-                                                fontWeight = if (selectedFolderId == folder.id) FontWeight.SemiBold else FontWeight.Normal,
-                                                color = if (selectedFolderId == folder.id) Color(0xFFF97316) else Color(0xFF6B7280)
-                                            )
+                                            Text(folder.name, fontSize = 14.sp)
                                         }
+                                    },
+                                    onClick = {
+                                        selectedFolderId = folder.id
+                                        expandedFolder = false
                                     }
-                                }
+                                )
                             }
                         }
                     }
@@ -519,6 +636,104 @@ fun ModernEditLinkScreen(
                     }
                 }
 
+                // Visibilité
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Visibilité",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF374151)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Privé
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { isPublic = false },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (!isPublic) Color(0xFFFFF7ED) else Color(0xFFF9FAFB),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = 2.dp,
+                                    color = if (!isPublic) Color(0xFFF97316) else Color(0xFFF3F4F6)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Lock,
+                                        contentDescription = null,
+                                        tint = if (!isPublic) Color(0xFFF97316) else Color(0xFF9CA3AF),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = "Privé",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (!isPublic) Color(0xFFF97316) else Color(0xFF6B7280)
+                                    )
+                                    Text(
+                                        text = "Ma tribu uniquement",
+                                        fontSize = 10.sp,
+                                        color = Color(0xFF9CA3AF)
+                                    )
+                                }
+                            }
+
+                            // Public
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { isPublic = true },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isPublic) Color(0xFFFFF7ED) else Color(0xFFF9FAFB),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    width = 2.dp,
+                                    color = if (isPublic) Color(0xFFF97316) else Color(0xFFF3F4F6)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Public,
+                                        contentDescription = null,
+                                        tint = if (isPublic) Color(0xFFF97316) else Color(0xFF9CA3AF),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = "Public",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isPublic) Color(0xFFF97316) else Color(0xFF6B7280)
+                                    )
+                                    Text(
+                                        text = "Toute la communauté",
+                                        fontSize = 10.sp,
+                                        color = Color(0xFF9CA3AF)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(80.dp))
             }
 
@@ -542,7 +757,8 @@ fun ModernEditLinkScreen(
                                 ageRange = ageRange,
                                 location = location,
                                 rating = rating,
-                                folderId = selectedFolderId
+                                folderId = selectedFolderId,
+                                likedByMe = isPublic
                             )
                             viewModel.updateLink(updatedLink)
                             submitted = true
