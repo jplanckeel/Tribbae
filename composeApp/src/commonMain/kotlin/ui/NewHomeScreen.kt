@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +37,7 @@ data class CategoryInfo(
     val count: Int
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewHomeScreen(
     links: List<Link>,
@@ -44,9 +47,12 @@ fun NewHomeScreen(
     onSaveLink: (Link) -> Unit,
     sessionManager: data.SessionManager? = null,
     onNavigateToAI: () -> Unit = {},
+    viewModel: viewmodel.LinkViewModel,
     modifier: Modifier = Modifier
 ) {
     val displayName by sessionManager?.displayName?.collectAsState() ?: remember { mutableStateOf(null) }
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val pullRefreshState = rememberPullToRefreshState()
     val categories = remember(links) {
         listOf(
             CategoryInfo(
@@ -116,6 +122,12 @@ fun NewHomeScreen(
     val tribeCount = 0
 
     Box(modifier = modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.forceSync() },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize()
+        ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -381,6 +393,7 @@ fun NewHomeScreen(
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
+        }
     
     // Bouton flottant IA
     FloatingActionButton(

@@ -17,17 +17,28 @@ class SessionManager(context: Context) {
     
     private val _displayName = MutableStateFlow(getDisplayName())
     val displayName: StateFlow<String?> = _displayName.asStateFlow()
+    
+    init {
+        println("DEBUG SessionManager.init: displayName=${getDisplayName()}, userId=${getUserId()}, hasToken=${hasToken()}")
+    }
 
     fun saveSession(userId: String, token: String, displayName: String) {
+        println("DEBUG SessionManager.saveSession: userId=$userId, token=${token.take(10)}..., displayName='$displayName'")
         prefs.edit().apply {
             putString("user_id", userId)
             putString("token", token)
             putString("display_name", displayName)
             apply()
         }
+        
+        // Vérifier que c'est bien sauvegardé
+        val savedDisplayName = prefs.getString("display_name", null)
+        println("DEBUG SessionManager.saveSession: Vérifié dans prefs - displayName='$savedDisplayName'")
+        
         _isLoggedIn.value = true
         _userId.value = userId
         _displayName.value = displayName
+        println("DEBUG SessionManager.saveSession: StateFlow mis à jour - _displayName.value='${_displayName.value}'")
     }
 
     fun getToken(): String? {

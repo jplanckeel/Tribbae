@@ -34,6 +34,7 @@ fun ImagePickerSection(
     onImageSelected: (String) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showUrlDialog by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Image", fontWeight = FontWeight.SemiBold, color = TextSecondary)
@@ -180,7 +181,6 @@ fun ImagePickerSection(
                         }
                     }
                     // Lien URL
-                    var showUrlDialog by remember { mutableStateOf(false) }
                     Card(
                         onClick = {
                             showMenu = false
@@ -207,56 +207,56 @@ fun ImagePickerSection(
                             }
                         }
                     }
-                    
-                    // Dialog pour saisir l'URL
-                    if (showUrlDialog) {
-                        var urlInput by remember { mutableStateOf("") }
-                        AlertDialog(
-                            onDismissRequest = { showUrlDialog = false },
-                            title = { Text("URL de l'image", fontWeight = FontWeight.Bold) },
-                            icon = { Icon(imageVector = Icons.Default.Link, contentDescription = null, tint = Color(0xFF8B5CF6)) },
-                            text = {
-                                OutlinedTextField(
-                                    value = urlInput,
-                                    onValueChange = { urlInput = it },
-                                    placeholder = { Text("https://exemple.com/image.jpg", fontSize = 13.sp) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Link,
-                                            contentDescription = null,
-                                            tint = Color(0xFF9CA3AF),
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                )
-                            },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = {
-                                        if (urlInput.isNotBlank()) {
-                                            onImageSelected(urlInput)
-                                            showUrlDialog = false
-                                        }
-                                    },
-                                    enabled = urlInput.isNotBlank()
-                                ) {
-                                    Text("Valider", fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showUrlDialog = false }) {
-                                    Text("Annuler")
-                                }
-                            }
-                        )
-                    }
                 }
             },
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showMenu = false }) { Text("Annuler") }
+            }
+        )
+    }
+    
+    // Dialog pour saisir l'URL (séparé du menu principal)
+    if (showUrlDialog) {
+        var urlInput by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showUrlDialog = false },
+            title = { Text("URL de l'image", fontWeight = FontWeight.Bold) },
+            icon = { Icon(imageVector = Icons.Default.Link, contentDescription = null, tint = Color(0xFF8B5CF6)) },
+            text = {
+                OutlinedTextField(
+                    value = urlInput,
+                    onValueChange = { urlInput = it },
+                    placeholder = { Text("https://exemple.com/image.jpg", fontSize = 13.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Link,
+                            contentDescription = null,
+                            tint = Color(0xFF9CA3AF),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (urlInput.isNotBlank()) {
+                            onImageSelected(urlInput)
+                            showUrlDialog = false
+                        }
+                    },
+                    enabled = urlInput.isNotBlank()
+                ) {
+                    Text("Valider", fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUrlDialog = false }) {
+                    Text("Annuler")
+                }
             }
         )
     }
