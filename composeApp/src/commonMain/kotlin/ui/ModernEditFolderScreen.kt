@@ -35,15 +35,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
     var name by remember { mutableStateOf(folder.name) }
     var selectedIcon by remember { mutableStateOf(folder.icon) }
     var selectedColor by remember { mutableStateOf(folder.color) }
-    var selectedVisibility by remember { 
-        mutableStateOf(
-            when (folder.visibility.uppercase()) {
-                "PUBLIC", "VISIBILITY_PUBLIC" -> "PUBLIC"
-                "SHARED", "VISIBILITY_SHARED" -> "SHARED"
-                else -> "PRIVATE"
-            }
-        )
-    }
+    var selectedVisibility by remember { mutableStateOf(folder.visibility) }
     var submitted by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -198,7 +190,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = folderIconVector(Folder("", "", icon)),
+                                    imageVector = folderIconVector(data.Folder("", "", icon)),
                                     contentDescription = null,
                                     tint = if (isSelected) Color.White 
                                            else Color(0xFF6B7280),
@@ -361,7 +353,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                     )
                 ) {
                     Text(
-                        text = "Enregistrer ✨",
+                        text = "Enregistrer les modifications",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -370,4 +362,3 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
         }
     }
 }
-
