@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,10 +42,13 @@ fun MyIdeasScreen(
     onFolderClick: (Folder) -> Unit,
     onNavigateToAdd: () -> Unit = {},
     onNavigateToCategory: (LinkCategory) -> Unit = {},
+    viewModel: viewmodel.LinkViewModel,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(1) }
     val tabs = listOf("Favoris", "Mes idées", "Dossiers", "Partagées")
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val pullRefreshState = rememberPullToRefreshState()
 
     val savedLinks = links.filter { it.favorite }.sortedByDescending { it.updatedAt }
     val myLinks = links.sortedByDescending { it.updatedAt } // Toutes mes idées
@@ -160,6 +165,12 @@ fun MyIdeasScreen(
         }
 
         // Contenu
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.forceSync() },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize()
+        ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -438,6 +449,7 @@ fun MyIdeasScreen(
             item {
                 Spacer(modifier = Modifier.height(80.dp))
             }
+        }
         }
     }
 }

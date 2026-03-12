@@ -309,29 +309,48 @@ private suspend fun handleAuth(
     onError: (String) -> Unit,
     onSuccess: () -> Unit
 ) {
+    println("DEBUG handleAuth: Début - isLoginMode=$isLoginMode, email=$email")
     onLoading(true)
     try {
+        println("DEBUG handleAuth: Appel authRepository.${if (isLoginMode) "login" else "register"}")
         val response = if (isLoginMode) {
             authRepository.login(email, password)
         } else {
             authRepository.register(email, password, displayName)
         }
         
+        println("DEBUG handleAuth: Réponse reçue - userId=${response.userId}, token=${response.token}, displayName=${response.displayName}")
+        
+        // Vérifier que la réponse contient bien les données nécessaires
+        if (response.token.isBlank()) {
+            println("DEBUG handleAuth: Token vide!")
+            onError("Erreur: Token vide reçu du serveur")
+            return
+        }
+        
+        println("DEBUG handleAuth: Sauvegarde de la session")
         sessionManager.saveSession(response.userId, response.token, response.displayName)
+        println("DEBUG handleAuth: Succès!")
         onSuccess()
     } catch (e: Exception) {
+        val errorMsg = e.message ?: "Erreur inconnue"
+        println("DEBUG handleAuth: Exception - $errorMsg")
+        e.printStackTrace()
         onError(
             when {
-                e.message?.contains("401") == true || e.message?.contains("Invalid") == true ->
+                errorMsg.contains("401") || errorMsg.contains("Invalid") || errorMsg.contains("invalid credentials") ->
                     "Email ou mot de passe incorrect"
-                e.message?.contains("409") == true || e.message?.contains("already exists") == true ->
+                errorMsg.contains("409") || errorMsg.contains("already exists") ->
                     "Cet email est déjà utilisé"
-                e.message?.contains("Connection") == true ->
+                errorMsg.contains("Connection") || errorMsg.contains("timeout") || errorMsg.contains("Unable to resolve host") ->
                     "Impossible de se connecter au serveur"
-                else -> "Une erreur est survenue: ${e.message}"
+                errorMsg.contains("SSL") || errorMsg.contains("certificate") ->
+                    "Erreur de certificat SSL"
+                else -> "Erreur: $errorMsg"
             }
         )
     } finally {
+        println("DEBUG handleAuth: Fin - loading=false")
         onLoading(false)
     }
 }

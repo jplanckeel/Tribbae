@@ -228,6 +228,7 @@ private fun MainApp(
                 },
                 onSaveLink = { link: data.Link -> vm.toggleFavorite(link.id) },
                 sessionManager = null,
+                viewModel = vm,
                 modifier = Modifier.padding(padding)
             )
             Tab.FOLDERS -> FoldersTabScreen(

@@ -227,7 +227,8 @@ private fun ModernMainApp(
                     },
                     onSaveLink = { link -> vm.toggleFavorite(link.id) },
                     sessionManager = sessionManager,
-                    onNavigateToAI = { subScreen = SubScreen.AiGenerate }
+                    onNavigateToAI = { subScreen = SubScreen.AiGenerate },
+                    viewModel = vm
                 )
             }
             NavDestination.EXPLORE -> {
@@ -238,7 +239,8 @@ private fun ModernMainApp(
                         selectedLink = links.find { link: Link -> link.id == linkId }
                         subScreen = SubScreen.Detail
                     },
-                    onSaveLink = { link -> vm.toggleFavorite(link.id) }
+                    onSaveLink = { link -> vm.toggleFavorite(link.id) },
+                    viewModel = vm
                 )
             }
             NavDestination.ADD -> {
@@ -262,7 +264,8 @@ private fun ModernMainApp(
                     onNavigateToCategory = { category ->
                         selectedCategory = category
                         subScreen = SubScreen.Category
-                    }
+                    },
+                    viewModel = vm
                 )
             }
             NavDestination.PROFILE -> {

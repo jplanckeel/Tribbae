@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,20 +39,25 @@ fun ExploreScreen(
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onSaveLink: (Link) -> Unit,
+    viewModel: viewmodel.LinkViewModel,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf<LinkCategory?>(null) }
     var sortOption by remember { mutableStateOf(SortOption.RECENT) }
     var showFilters by remember { mutableStateOf(false) }
+    var showPublicOnly by remember { mutableStateOf(false) }
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val pullRefreshState = rememberPullToRefreshState()
 
-    val filteredLinks = remember(links, searchQuery, selectedCategory, sortOption) {
+    val filteredLinks = remember(links, searchQuery, selectedCategory, sortOption, showPublicOnly) {
         val filtered = links.filter { link ->
             val matchesSearch = searchQuery.isEmpty() || 
                 link.title.contains(searchQuery, ignoreCase = true) ||
                 link.tags.any { it.contains(searchQuery, ignoreCase = true) }
             val matchesCategory = selectedCategory == null || link.category == selectedCategory
-            matchesSearch && matchesCategory
+            val matchesPublic = !showPublicOnly || link.likedByMe
+            matchesSearch && matchesCategory && matchesPublic
         }
         
         when (sortOption) {
@@ -120,7 +127,7 @@ fun ExploreScreen(
                             tint = if (showFilters) Color(0xFFF97316) else Color(0xFF6B7280),
                             modifier = Modifier.size(18.dp)
                         )
-                        if (selectedCategory != null) {
+                        if (selectedCategory != null || showPublicOnly) {
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
@@ -256,12 +263,65 @@ fun ExploreScreen(
                                 )
                             }
                         }
+                        
+                        Spacer(Modifier.height(12.dp))
+                        
+                        // Toggle idées publiques
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showPublicOnly = !showPublicOnly }
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Public,
+                                    contentDescription = null,
+                                    tint = if (showPublicOnly) Color(0xFFF97316) else Color(0xFF6B7280),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Column {
+                                    Text(
+                                        text = "Idées publiques uniquement",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF1F2937)
+                                    )
+                                    Text(
+                                        text = "Afficher les idées partagées par d'autres",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF6B7280)
+                                    )
+                                }
+                            }
+                            Switch(
+                                checked = showPublicOnly,
+                                onCheckedChange = { showPublicOnly = it },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = Color(0xFFF97316),
+                                    uncheckedThumbColor = Color.White,
+                                    uncheckedTrackColor = Color(0xFFE5E7EB)
+                                )
+                            )
+                        }
                     }
                 }
             }
         }
 
         // Content
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.forceSync() },
+            state = pullRefreshState,
+            modifier = Modifier.fillMaxSize()
+        ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -358,6 +418,7 @@ fun ExploreScreen(
                     )
                 }
             }
+        }
         }
     }
 }

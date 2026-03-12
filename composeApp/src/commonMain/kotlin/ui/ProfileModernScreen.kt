@@ -37,6 +37,10 @@ fun ProfileModernScreen(
     val isLoggedIn by sessionManager.isLoggedIn.collectAsState()
     val displayName by sessionManager.displayName.collectAsState()
     
+    LaunchedEffect(displayName) {
+        println("DEBUG ProfileModernScreen: displayName changé = '$displayName'")
+    }
+    
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showAuthDialog by remember { mutableStateOf(false) }
     var showFamilyDialog by remember { mutableStateOf(false) }
