@@ -214,6 +214,12 @@ type Folder struct {
 	Collaborators    []*Collaborator        `protobuf:"bytes,10,rep,name=collaborators,proto3" json:"collaborators,omitempty"`
 	OwnerDisplayName string                 `protobuf:"bytes,11,opt,name=owner_display_name,json=ownerDisplayName,proto3" json:"owner_display_name,omitempty"`
 	LinkCount        int32                  `protobuf:"varint,12,opt,name=link_count,json=linkCount,proto3" json:"link_count,omitempty"`
+	LikeCount        int32                  `protobuf:"varint,13,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
+	LikedByMe        bool                   `protobuf:"varint,14,opt,name=liked_by_me,json=likedByMe,proto3" json:"liked_by_me,omitempty"`
+	AiGenerated      bool                   `protobuf:"varint,15,opt,name=ai_generated,json=aiGenerated,proto3" json:"ai_generated,omitempty"`
+	BannerUrl        string                 `protobuf:"bytes,16,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
+	Tags             []string               `protobuf:"bytes,17,rep,name=tags,proto3" json:"tags,omitempty"`
+	OwnerIsAdmin     bool                   `protobuf:"varint,18,opt,name=owner_is_admin,json=ownerIsAdmin,proto3" json:"owner_is_admin,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -332,12 +338,56 @@ func (x *Folder) GetLinkCount() int32 {
 	return 0
 }
 
+func (x *Folder) GetLikeCount() int32 {
+	if x != nil {
+		return x.LikeCount
+	}
+	return 0
+}
+
+func (x *Folder) GetLikedByMe() bool {
+	if x != nil {
+		return x.LikedByMe
+	}
+	return false
+}
+
+func (x *Folder) GetAiGenerated() bool {
+	if x != nil {
+		return x.AiGenerated
+	}
+	return false
+}
+
+func (x *Folder) GetBannerUrl() string {
+	if x != nil {
+		return x.BannerUrl
+	}
+	return ""
+}
+
+func (x *Folder) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *Folder) GetOwnerIsAdmin() bool {
+	if x != nil {
+		return x.OwnerIsAdmin
+	}
+	return false
+}
+
 type CreateFolderRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Icon          string                 `protobuf:"bytes,2,opt,name=icon,proto3" json:"icon,omitempty"`
 	Color         string                 `protobuf:"bytes,3,opt,name=color,proto3" json:"color,omitempty"`
 	Visibility    Visibility             `protobuf:"varint,4,opt,name=visibility,proto3,enum=tribbae.v1.Visibility" json:"visibility,omitempty"`
+	BannerUrl     string                 `protobuf:"bytes,5,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
+	Tags          []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -398,6 +448,20 @@ func (x *CreateFolderRequest) GetVisibility() Visibility {
 		return x.Visibility
 	}
 	return Visibility_VISIBILITY_UNSPECIFIED
+}
+
+func (x *CreateFolderRequest) GetBannerUrl() string {
+	if x != nil {
+		return x.BannerUrl
+	}
+	return ""
+}
+
+func (x *CreateFolderRequest) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
 }
 
 type CreateFolderResponse struct {
@@ -619,6 +683,8 @@ type UpdateFolderRequest struct {
 	Icon          string                 `protobuf:"bytes,3,opt,name=icon,proto3" json:"icon,omitempty"`
 	Color         string                 `protobuf:"bytes,4,opt,name=color,proto3" json:"color,omitempty"`
 	Visibility    Visibility             `protobuf:"varint,5,opt,name=visibility,proto3,enum=tribbae.v1.Visibility" json:"visibility,omitempty"`
+	BannerUrl     string                 `protobuf:"bytes,6,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
+	Tags          []string               `protobuf:"bytes,7,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -686,6 +752,20 @@ func (x *UpdateFolderRequest) GetVisibility() Visibility {
 		return x.Visibility
 	}
 	return Visibility_VISIBILITY_UNSPECIFIED
+}
+
+func (x *UpdateFolderRequest) GetBannerUrl() string {
+	if x != nil {
+		return x.BannerUrl
+	}
+	return ""
+}
+
+func (x *UpdateFolderRequest) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
 }
 
 type UpdateFolderResponse struct {
@@ -1316,6 +1396,270 @@ func (x *ListCommunityFoldersResponse) GetNextPageToken() string {
 	return ""
 }
 
+type LikeFolderRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FolderId      string                 `protobuf:"bytes,1,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LikeFolderRequest) Reset() {
+	*x = LikeFolderRequest{}
+	mi := &file_tribbae_v1_folder_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LikeFolderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LikeFolderRequest) ProtoMessage() {}
+
+func (x *LikeFolderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_folder_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LikeFolderRequest.ProtoReflect.Descriptor instead.
+func (*LikeFolderRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *LikeFolderRequest) GetFolderId() string {
+	if x != nil {
+		return x.FolderId
+	}
+	return ""
+}
+
+type LikeFolderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LikeCount     int32                  `protobuf:"varint,1,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LikeFolderResponse) Reset() {
+	*x = LikeFolderResponse{}
+	mi := &file_tribbae_v1_folder_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LikeFolderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LikeFolderResponse) ProtoMessage() {}
+
+func (x *LikeFolderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_folder_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LikeFolderResponse.ProtoReflect.Descriptor instead.
+func (*LikeFolderResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *LikeFolderResponse) GetLikeCount() int32 {
+	if x != nil {
+		return x.LikeCount
+	}
+	return 0
+}
+
+type UnlikeFolderRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FolderId      string                 `protobuf:"bytes,1,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnlikeFolderRequest) Reset() {
+	*x = UnlikeFolderRequest{}
+	mi := &file_tribbae_v1_folder_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnlikeFolderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnlikeFolderRequest) ProtoMessage() {}
+
+func (x *UnlikeFolderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_folder_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnlikeFolderRequest.ProtoReflect.Descriptor instead.
+func (*UnlikeFolderRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *UnlikeFolderRequest) GetFolderId() string {
+	if x != nil {
+		return x.FolderId
+	}
+	return ""
+}
+
+type UnlikeFolderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LikeCount     int32                  `protobuf:"varint,1,opt,name=like_count,json=likeCount,proto3" json:"like_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnlikeFolderResponse) Reset() {
+	*x = UnlikeFolderResponse{}
+	mi := &file_tribbae_v1_folder_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnlikeFolderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnlikeFolderResponse) ProtoMessage() {}
+
+func (x *UnlikeFolderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_folder_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnlikeFolderResponse.ProtoReflect.Descriptor instead.
+func (*UnlikeFolderResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *UnlikeFolderResponse) GetLikeCount() int32 {
+	if x != nil {
+		return x.LikeCount
+	}
+	return 0
+}
+
+type ListTopFoldersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Limit         int32                  `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTopFoldersRequest) Reset() {
+	*x = ListTopFoldersRequest{}
+	mi := &file_tribbae_v1_folder_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTopFoldersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTopFoldersRequest) ProtoMessage() {}
+
+func (x *ListTopFoldersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_folder_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTopFoldersRequest.ProtoReflect.Descriptor instead.
+func (*ListTopFoldersRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ListTopFoldersRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+type ListTopFoldersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Folders       []*Folder              `protobuf:"bytes,1,rep,name=folders,proto3" json:"folders,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTopFoldersResponse) Reset() {
+	*x = ListTopFoldersResponse{}
+	mi := &file_tribbae_v1_folder_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTopFoldersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTopFoldersResponse) ProtoMessage() {}
+
+func (x *ListTopFoldersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_folder_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTopFoldersResponse.ProtoReflect.Descriptor instead.
+func (*ListTopFoldersResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *ListTopFoldersResponse) GetFolders() []*Folder {
+	if x != nil {
+		return x.Folders
+	}
+	return nil
+}
+
 var File_tribbae_v1_folder_proto protoreflect.FileDescriptor
 
 const file_tribbae_v1_folder_proto_rawDesc = "" +
@@ -1327,7 +1671,7 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x120\n" +
 	"\x04role\x18\x04 \x01(\x0e2\x1c.tribbae.v1.CollaboratorRoleR\x04role\x125\n" +
-	"\badded_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\aaddedAt\"\xcd\x03\n" +
+	"\badded_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\aaddedAt\"\x88\x05\n" +
 	"\x06Folder\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x12\n" +
@@ -1347,14 +1691,25 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	" \x03(\v2\x18.tribbae.v1.CollaboratorR\rcollaborators\x12,\n" +
 	"\x12owner_display_name\x18\v \x01(\tR\x10ownerDisplayName\x12\x1d\n" +
 	"\n" +
-	"link_count\x18\f \x01(\x05R\tlinkCount\"\x8b\x01\n" +
+	"link_count\x18\f \x01(\x05R\tlinkCount\x12\x1d\n" +
+	"\n" +
+	"like_count\x18\r \x01(\x05R\tlikeCount\x12\x1e\n" +
+	"\vliked_by_me\x18\x0e \x01(\bR\tlikedByMe\x12!\n" +
+	"\fai_generated\x18\x0f \x01(\bR\vaiGenerated\x12\x1d\n" +
+	"\n" +
+	"banner_url\x18\x10 \x01(\tR\tbannerUrl\x12\x12\n" +
+	"\x04tags\x18\x11 \x03(\tR\x04tags\x12$\n" +
+	"\x0eowner_is_admin\x18\x12 \x01(\bR\fownerIsAdmin\"\xbe\x01\n" +
 	"\x13CreateFolderRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04icon\x18\x02 \x01(\tR\x04icon\x12\x14\n" +
 	"\x05color\x18\x03 \x01(\tR\x05color\x126\n" +
 	"\n" +
 	"visibility\x18\x04 \x01(\x0e2\x16.tribbae.v1.VisibilityR\n" +
-	"visibility\"B\n" +
+	"visibility\x12\x1d\n" +
+	"\n" +
+	"banner_url\x18\x05 \x01(\tR\tbannerUrl\x12\x12\n" +
+	"\x04tags\x18\x06 \x03(\tR\x04tags\"B\n" +
 	"\x14CreateFolderResponse\x12*\n" +
 	"\x06folder\x18\x01 \x01(\v2\x12.tribbae.v1.FolderR\x06folder\"/\n" +
 	"\x10GetFolderRequest\x12\x1b\n" +
@@ -1363,7 +1718,7 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x06folder\x18\x01 \x01(\v2\x12.tribbae.v1.FolderR\x06folder\"\x14\n" +
 	"\x12ListFoldersRequest\"C\n" +
 	"\x13ListFoldersResponse\x12,\n" +
-	"\afolders\x18\x01 \x03(\v2\x12.tribbae.v1.FolderR\afolders\"\xa8\x01\n" +
+	"\afolders\x18\x01 \x03(\v2\x12.tribbae.v1.FolderR\afolders\"\xdb\x01\n" +
 	"\x13UpdateFolderRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -1371,7 +1726,10 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x05color\x18\x04 \x01(\tR\x05color\x126\n" +
 	"\n" +
 	"visibility\x18\x05 \x01(\x0e2\x16.tribbae.v1.VisibilityR\n" +
-	"visibility\"B\n" +
+	"visibility\x12\x1d\n" +
+	"\n" +
+	"banner_url\x18\x06 \x01(\tR\tbannerUrl\x12\x12\n" +
+	"\x04tags\x18\a \x03(\tR\x04tags\"B\n" +
 	"\x14UpdateFolderResponse\x12*\n" +
 	"\x06folder\x18\x01 \x01(\v2\x12.tribbae.v1.FolderR\x06folder\"2\n" +
 	"\x13DeleteFolderRequest\x12\x1b\n" +
@@ -1407,7 +1765,21 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\"t\n" +
 	"\x1cListCommunityFoldersResponse\x12,\n" +
 	"\afolders\x18\x01 \x03(\v2\x12.tribbae.v1.FolderR\afolders\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken*n\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"0\n" +
+	"\x11LikeFolderRequest\x12\x1b\n" +
+	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\"3\n" +
+	"\x12LikeFolderResponse\x12\x1d\n" +
+	"\n" +
+	"like_count\x18\x01 \x01(\x05R\tlikeCount\"2\n" +
+	"\x13UnlikeFolderRequest\x12\x1b\n" +
+	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\"5\n" +
+	"\x14UnlikeFolderResponse\x12\x1d\n" +
+	"\n" +
+	"like_count\x18\x01 \x01(\x05R\tlikeCount\"-\n" +
+	"\x15ListTopFoldersRequest\x12\x14\n" +
+	"\x05limit\x18\x01 \x01(\x05R\x05limit\"F\n" +
+	"\x16ListTopFoldersResponse\x12,\n" +
+	"\afolders\x18\x01 \x03(\v2\x12.tribbae.v1.FolderR\afolders*n\n" +
 	"\n" +
 	"Visibility\x12\x1a\n" +
 	"\x16VISIBILITY_UNSPECIFIED\x10\x00\x12\x16\n" +
@@ -1417,7 +1789,7 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x10CollaboratorRole\x12!\n" +
 	"\x1dCOLLABORATOR_ROLE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18COLLABORATOR_ROLE_VIEWER\x10\x01\x12\x1c\n" +
-	"\x18COLLABORATOR_ROLE_EDITOR\x10\x022\xfb\t\n" +
+	"\x18COLLABORATOR_ROLE_EDITOR\x10\x022\xde\f\n" +
 	"\rFolderService\x12i\n" +
 	"\fCreateFolder\x12\x1f.tribbae.v1.CreateFolderRequest\x1a .tribbae.v1.CreateFolderResponse\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/folders\x12i\n" +
 	"\tGetFolder\x12\x1c.tribbae.v1.GetFolderRequest\x1a\x1d.tribbae.v1.GetFolderResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/folders/{folder_id}\x12c\n" +
@@ -1428,7 +1800,11 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x0fGetSharedFolder\x12\".tribbae.v1.GetSharedFolderRequest\x1a#.tribbae.v1.GetSharedFolderResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/share/{share_token}\x12\x8c\x01\n" +
 	"\x0fAddCollaborator\x12\".tribbae.v1.AddCollaboratorRequest\x1a#.tribbae.v1.AddCollaboratorResponse\"0\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/folders/{folder_id}/collaborators\x12\x9c\x01\n" +
 	"\x12RemoveCollaborator\x12%.tribbae.v1.RemoveCollaboratorRequest\x1a&.tribbae.v1.RemoveCollaboratorResponse\"7\x82\xd3\xe4\x93\x021*//v1/folders/{folder_id}/collaborators/{user_id}\x12\x88\x01\n" +
-	"\x14ListCommunityFolders\x12'.tribbae.v1.ListCommunityFoldersRequest\x1a(.tribbae.v1.ListCommunityFoldersResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/community/foldersB5Z3github.com/tribbae/backend/gen/tribbae/v1;tribbaev1b\x06proto3"
+	"\x14ListCommunityFolders\x12'.tribbae.v1.ListCommunityFoldersRequest\x1a(.tribbae.v1.ListCommunityFoldersResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/community/folders\x12t\n" +
+	"\n" +
+	"LikeFolder\x12\x1d.tribbae.v1.LikeFolderRequest\x1a\x1e.tribbae.v1.LikeFolderResponse\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/v1/folders/{folder_id}/like\x12w\n" +
+	"\fUnlikeFolder\x12\x1f.tribbae.v1.UnlikeFolderRequest\x1a .tribbae.v1.UnlikeFolderResponse\"$\x82\xd3\xe4\x93\x02\x1e*\x1c/v1/folders/{folder_id}/like\x12r\n" +
+	"\x0eListTopFolders\x12!.tribbae.v1.ListTopFoldersRequest\x1a\".tribbae.v1.ListTopFoldersResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/community/topB5Z3github.com/tribbae/backend/gen/tribbae/v1;tribbaev1b\x06proto3"
 
 var (
 	file_tribbae_v1_folder_proto_rawDescOnce sync.Once
@@ -1443,7 +1819,7 @@ func file_tribbae_v1_folder_proto_rawDescGZIP() []byte {
 }
 
 var file_tribbae_v1_folder_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_tribbae_v1_folder_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_tribbae_v1_folder_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_tribbae_v1_folder_proto_goTypes = []any{
 	(Visibility)(0),                      // 0: tribbae.v1.Visibility
 	(CollaboratorRole)(0),                // 1: tribbae.v1.CollaboratorRole
@@ -1469,15 +1845,21 @@ var file_tribbae_v1_folder_proto_goTypes = []any{
 	(*RemoveCollaboratorResponse)(nil),   // 21: tribbae.v1.RemoveCollaboratorResponse
 	(*ListCommunityFoldersRequest)(nil),  // 22: tribbae.v1.ListCommunityFoldersRequest
 	(*ListCommunityFoldersResponse)(nil), // 23: tribbae.v1.ListCommunityFoldersResponse
-	(*timestamppb.Timestamp)(nil),        // 24: google.protobuf.Timestamp
-	(*Link)(nil),                         // 25: tribbae.v1.Link
+	(*LikeFolderRequest)(nil),            // 24: tribbae.v1.LikeFolderRequest
+	(*LikeFolderResponse)(nil),           // 25: tribbae.v1.LikeFolderResponse
+	(*UnlikeFolderRequest)(nil),          // 26: tribbae.v1.UnlikeFolderRequest
+	(*UnlikeFolderResponse)(nil),         // 27: tribbae.v1.UnlikeFolderResponse
+	(*ListTopFoldersRequest)(nil),        // 28: tribbae.v1.ListTopFoldersRequest
+	(*ListTopFoldersResponse)(nil),       // 29: tribbae.v1.ListTopFoldersResponse
+	(*timestamppb.Timestamp)(nil),        // 30: google.protobuf.Timestamp
+	(*Link)(nil),                         // 31: tribbae.v1.Link
 }
 var file_tribbae_v1_folder_proto_depIdxs = []int32{
 	1,  // 0: tribbae.v1.Collaborator.role:type_name -> tribbae.v1.CollaboratorRole
-	24, // 1: tribbae.v1.Collaborator.added_at:type_name -> google.protobuf.Timestamp
+	30, // 1: tribbae.v1.Collaborator.added_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: tribbae.v1.Folder.visibility:type_name -> tribbae.v1.Visibility
-	24, // 3: tribbae.v1.Folder.created_at:type_name -> google.protobuf.Timestamp
-	24, // 4: tribbae.v1.Folder.updated_at:type_name -> google.protobuf.Timestamp
+	30, // 3: tribbae.v1.Folder.created_at:type_name -> google.protobuf.Timestamp
+	30, // 4: tribbae.v1.Folder.updated_at:type_name -> google.protobuf.Timestamp
 	2,  // 5: tribbae.v1.Folder.collaborators:type_name -> tribbae.v1.Collaborator
 	0,  // 6: tribbae.v1.CreateFolderRequest.visibility:type_name -> tribbae.v1.Visibility
 	3,  // 7: tribbae.v1.CreateFolderResponse.folder:type_name -> tribbae.v1.Folder
@@ -1486,36 +1868,43 @@ var file_tribbae_v1_folder_proto_depIdxs = []int32{
 	0,  // 10: tribbae.v1.UpdateFolderRequest.visibility:type_name -> tribbae.v1.Visibility
 	3,  // 11: tribbae.v1.UpdateFolderResponse.folder:type_name -> tribbae.v1.Folder
 	3,  // 12: tribbae.v1.GetSharedFolderResponse.folder:type_name -> tribbae.v1.Folder
-	25, // 13: tribbae.v1.GetSharedFolderResponse.links:type_name -> tribbae.v1.Link
+	31, // 13: tribbae.v1.GetSharedFolderResponse.links:type_name -> tribbae.v1.Link
 	1,  // 14: tribbae.v1.AddCollaboratorRequest.role:type_name -> tribbae.v1.CollaboratorRole
 	3,  // 15: tribbae.v1.AddCollaboratorResponse.folder:type_name -> tribbae.v1.Folder
 	3,  // 16: tribbae.v1.RemoveCollaboratorResponse.folder:type_name -> tribbae.v1.Folder
 	3,  // 17: tribbae.v1.ListCommunityFoldersResponse.folders:type_name -> tribbae.v1.Folder
-	4,  // 18: tribbae.v1.FolderService.CreateFolder:input_type -> tribbae.v1.CreateFolderRequest
-	6,  // 19: tribbae.v1.FolderService.GetFolder:input_type -> tribbae.v1.GetFolderRequest
-	8,  // 20: tribbae.v1.FolderService.ListFolders:input_type -> tribbae.v1.ListFoldersRequest
-	10, // 21: tribbae.v1.FolderService.UpdateFolder:input_type -> tribbae.v1.UpdateFolderRequest
-	12, // 22: tribbae.v1.FolderService.DeleteFolder:input_type -> tribbae.v1.DeleteFolderRequest
-	14, // 23: tribbae.v1.FolderService.GenerateShareToken:input_type -> tribbae.v1.GenerateShareTokenRequest
-	16, // 24: tribbae.v1.FolderService.GetSharedFolder:input_type -> tribbae.v1.GetSharedFolderRequest
-	18, // 25: tribbae.v1.FolderService.AddCollaborator:input_type -> tribbae.v1.AddCollaboratorRequest
-	20, // 26: tribbae.v1.FolderService.RemoveCollaborator:input_type -> tribbae.v1.RemoveCollaboratorRequest
-	22, // 27: tribbae.v1.FolderService.ListCommunityFolders:input_type -> tribbae.v1.ListCommunityFoldersRequest
-	5,  // 28: tribbae.v1.FolderService.CreateFolder:output_type -> tribbae.v1.CreateFolderResponse
-	7,  // 29: tribbae.v1.FolderService.GetFolder:output_type -> tribbae.v1.GetFolderResponse
-	9,  // 30: tribbae.v1.FolderService.ListFolders:output_type -> tribbae.v1.ListFoldersResponse
-	11, // 31: tribbae.v1.FolderService.UpdateFolder:output_type -> tribbae.v1.UpdateFolderResponse
-	13, // 32: tribbae.v1.FolderService.DeleteFolder:output_type -> tribbae.v1.DeleteFolderResponse
-	15, // 33: tribbae.v1.FolderService.GenerateShareToken:output_type -> tribbae.v1.GenerateShareTokenResponse
-	17, // 34: tribbae.v1.FolderService.GetSharedFolder:output_type -> tribbae.v1.GetSharedFolderResponse
-	19, // 35: tribbae.v1.FolderService.AddCollaborator:output_type -> tribbae.v1.AddCollaboratorResponse
-	21, // 36: tribbae.v1.FolderService.RemoveCollaborator:output_type -> tribbae.v1.RemoveCollaboratorResponse
-	23, // 37: tribbae.v1.FolderService.ListCommunityFolders:output_type -> tribbae.v1.ListCommunityFoldersResponse
-	28, // [28:38] is the sub-list for method output_type
-	18, // [18:28] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	3,  // 18: tribbae.v1.ListTopFoldersResponse.folders:type_name -> tribbae.v1.Folder
+	4,  // 19: tribbae.v1.FolderService.CreateFolder:input_type -> tribbae.v1.CreateFolderRequest
+	6,  // 20: tribbae.v1.FolderService.GetFolder:input_type -> tribbae.v1.GetFolderRequest
+	8,  // 21: tribbae.v1.FolderService.ListFolders:input_type -> tribbae.v1.ListFoldersRequest
+	10, // 22: tribbae.v1.FolderService.UpdateFolder:input_type -> tribbae.v1.UpdateFolderRequest
+	12, // 23: tribbae.v1.FolderService.DeleteFolder:input_type -> tribbae.v1.DeleteFolderRequest
+	14, // 24: tribbae.v1.FolderService.GenerateShareToken:input_type -> tribbae.v1.GenerateShareTokenRequest
+	16, // 25: tribbae.v1.FolderService.GetSharedFolder:input_type -> tribbae.v1.GetSharedFolderRequest
+	18, // 26: tribbae.v1.FolderService.AddCollaborator:input_type -> tribbae.v1.AddCollaboratorRequest
+	20, // 27: tribbae.v1.FolderService.RemoveCollaborator:input_type -> tribbae.v1.RemoveCollaboratorRequest
+	22, // 28: tribbae.v1.FolderService.ListCommunityFolders:input_type -> tribbae.v1.ListCommunityFoldersRequest
+	24, // 29: tribbae.v1.FolderService.LikeFolder:input_type -> tribbae.v1.LikeFolderRequest
+	26, // 30: tribbae.v1.FolderService.UnlikeFolder:input_type -> tribbae.v1.UnlikeFolderRequest
+	28, // 31: tribbae.v1.FolderService.ListTopFolders:input_type -> tribbae.v1.ListTopFoldersRequest
+	5,  // 32: tribbae.v1.FolderService.CreateFolder:output_type -> tribbae.v1.CreateFolderResponse
+	7,  // 33: tribbae.v1.FolderService.GetFolder:output_type -> tribbae.v1.GetFolderResponse
+	9,  // 34: tribbae.v1.FolderService.ListFolders:output_type -> tribbae.v1.ListFoldersResponse
+	11, // 35: tribbae.v1.FolderService.UpdateFolder:output_type -> tribbae.v1.UpdateFolderResponse
+	13, // 36: tribbae.v1.FolderService.DeleteFolder:output_type -> tribbae.v1.DeleteFolderResponse
+	15, // 37: tribbae.v1.FolderService.GenerateShareToken:output_type -> tribbae.v1.GenerateShareTokenResponse
+	17, // 38: tribbae.v1.FolderService.GetSharedFolder:output_type -> tribbae.v1.GetSharedFolderResponse
+	19, // 39: tribbae.v1.FolderService.AddCollaborator:output_type -> tribbae.v1.AddCollaboratorResponse
+	21, // 40: tribbae.v1.FolderService.RemoveCollaborator:output_type -> tribbae.v1.RemoveCollaboratorResponse
+	23, // 41: tribbae.v1.FolderService.ListCommunityFolders:output_type -> tribbae.v1.ListCommunityFoldersResponse
+	25, // 42: tribbae.v1.FolderService.LikeFolder:output_type -> tribbae.v1.LikeFolderResponse
+	27, // 43: tribbae.v1.FolderService.UnlikeFolder:output_type -> tribbae.v1.UnlikeFolderResponse
+	29, // 44: tribbae.v1.FolderService.ListTopFolders:output_type -> tribbae.v1.ListTopFoldersResponse
+	32, // [32:45] is the sub-list for method output_type
+	19, // [19:32] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_tribbae_v1_folder_proto_init() }
@@ -1530,7 +1919,7 @@ func file_tribbae_v1_folder_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tribbae_v1_folder_proto_rawDesc), len(file_tribbae_v1_folder_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   22,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

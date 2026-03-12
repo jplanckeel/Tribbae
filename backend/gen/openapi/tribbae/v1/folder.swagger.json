@@ -59,6 +59,37 @@
         ]
       }
     },
+    "/v1/community/top": {
+      "get": {
+        "operationId": "FolderService_ListTopFolders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListTopFoldersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
     "/v1/folders": {
       "get": {
         "operationId": "FolderService_ListFolders",
@@ -279,6 +310,72 @@
         ]
       }
     },
+    "/v1/folders/{folderId}/like": {
+      "delete": {
+        "operationId": "FolderService_UnlikeFolder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UnlikeFolderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      },
+      "post": {
+        "operationId": "FolderService_LikeFolder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LikeFolderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FolderServiceLikeFolderBody"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
     "/v1/folders/{folderId}/share": {
       "post": {
         "operationId": "FolderService_GenerateShareToken",
@@ -363,6 +460,9 @@
     "FolderServiceGenerateShareTokenBody": {
       "type": "object"
     },
+    "FolderServiceLikeFolderBody": {
+      "type": "object"
+    },
     "FolderServiceUpdateFolderBody": {
       "type": "object",
       "properties": {
@@ -377,6 +477,15 @@
         },
         "visibility": {
           "$ref": "#/definitions/v1Visibility"
+        },
+        "bannerUrl": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -460,6 +569,15 @@
         },
         "visibility": {
           "$ref": "#/definitions/v1Visibility"
+        },
+        "bannerUrl": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -519,6 +637,28 @@
         "linkCount": {
           "type": "integer",
           "format": "int32"
+        },
+        "likeCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "likedByMe": {
+          "type": "boolean"
+        },
+        "aiGenerated": {
+          "type": "boolean"
+        },
+        "bannerUrl": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ownerIsAdmin": {
+          "type": "boolean"
         }
       }
     },
@@ -553,6 +693,15 @@
             "type": "object",
             "$ref": "#/definitions/v1Link"
           }
+        }
+      }
+    },
+    "v1LikeFolderResponse": {
+      "type": "object",
+      "properties": {
+        "likeCount": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -622,6 +771,22 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "likeCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "likedByMe": {
+          "type": "boolean"
+        },
+        "favorite": {
+          "type": "boolean"
+        },
+        "ownerDisplayName": {
+          "type": "string"
+        },
+        "ownerIsAdmin": {
+          "type": "boolean"
         }
       }
     },
@@ -633,7 +798,9 @@
         "LINK_CATEGORY_CADEAU",
         "LINK_CATEGORY_ACTIVITE",
         "LINK_CATEGORY_EVENEMENT",
-        "LINK_CATEGORY_RECETTE"
+        "LINK_CATEGORY_RECETTE",
+        "LINK_CATEGORY_LIVRE",
+        "LINK_CATEGORY_DECORATION"
       ],
       "default": "LINK_CATEGORY_UNSPECIFIED"
     },
@@ -664,11 +831,32 @@
         }
       }
     },
+    "v1ListTopFoldersResponse": {
+      "type": "object",
+      "properties": {
+        "folders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Folder"
+          }
+        }
+      }
+    },
     "v1RemoveCollaboratorResponse": {
       "type": "object",
       "properties": {
         "folder": {
           "$ref": "#/definitions/v1Folder"
+        }
+      }
+    },
+    "v1UnlikeFolderResponse": {
+      "type": "object",
+      "properties": {
+        "likeCount": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { folders as foldersApi, links as linksApi } from "../api";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  Plus, Share2, ArrowLeft, Trash2, Users, UserPlus, X, Eye, Edit3, Globe, Lock,
-} from "lucide-react";
+  faPlus, faShareAlt, faArrowLeft, faTrash, faUsers, faUserPlus,
+  faTimes, faEye, faPen, faGlobe, faLock,
+} from "@fortawesome/free-solid-svg-icons";
 import LinkCard from "../components/LinkCard";
+import AdminBadge from "../components/AdminBadge";
 import { useNavigate } from "react-router-dom";
 
 export default function Folders() {
@@ -12,8 +15,15 @@ export default function Folders() {
   const [folderLinks, setFolderLinks] = useState<any[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newVisibility, setNewVisibility] = useState("VISIBILITY_PRIVATE");
+  const [newVisibility, setNewVisibility] = useState("VISIBILITY_PUBLIC");
+  const [newBannerUrl, setNewBannerUrl] = useState("");
+  const [newTags, setNewTags] = useState("");
   const [showCollabModal, setShowCollabModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editVisibility, setEditVisibility] = useState("");
+  const [editBannerUrl, setEditBannerUrl] = useState("");
+  const [editTags, setEditTags] = useState("");
   const [collabEmail, setCollabEmail] = useState("");
   const [collabRole, setCollabRole] = useState("COLLABORATOR_ROLE_EDITOR");
   const [collabError, setCollabError] = useState("");
@@ -32,14 +42,42 @@ export default function Folders() {
     setFolderLinks(res.links || []);
   };
 
+  const openEditModal = () => {
+    setEditName(selectedFolder.name);
+    setEditVisibility(selectedFolder.visibility);
+    setEditBannerUrl(selectedFolder.bannerUrl || "");
+    setEditTags((selectedFolder.tags || []).join(", "));
+    setShowEditModal(true);
+  };
+
+  const updateFolder = async () => {
+    if (!editName.trim() || !selectedFolder) return;
+    const tags = editTags.split(",").map(t => t.trim()).filter(t => t);
+    const res: any = await foldersApi.update(selectedFolder.id, {
+      name: editName.trim(),
+      icon: "FOLDER",
+      color: "BLUE",
+      visibility: editVisibility,
+      bannerUrl: editBannerUrl.trim() || undefined,
+      tags,
+    });
+    setSelectedFolder(res.folder || selectedFolder);
+    setShowEditModal(false);
+    fetchFolders();
+  };
+
   const createFolder = async () => {
     if (!newName.trim()) return;
+    const tags = newTags.split(",").map(t => t.trim()).filter(t => t);
     await foldersApi.create({
       name: newName.trim(), icon: "FOLDER", color: "BLUE",
-      visibility: newVisibility,
+      visibility: newVisibility, bannerUrl: newBannerUrl.trim() || undefined,
+      tags,
     });
     setNewName("");
     setNewVisibility("VISIBILITY_PRIVATE");
+    setNewBannerUrl("");
+    setNewTags("");
     setShowCreate(false);
     fetchFolders();
   };
@@ -80,13 +118,13 @@ export default function Folders() {
   };
 
   const visIcon = (v: string) => {
-    if (v === "VISIBILITY_PUBLIC") return <Globe size={14} className="text-green-500" />;
-    if (v === "VISIBILITY_SHARED") return <Users size={14} className="text-blue-500" />;
-    return <Lock size={14} className="text-gray-400" />;
+    if (v === "VISIBILITY_PUBLIC") return <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5 text-green-500" />;
+    if (v === "VISIBILITY_SHARED") return <FontAwesomeIcon icon={faUsers} className="w-3.5 h-3.5 text-blue-500" />;
+    return <FontAwesomeIcon icon={faLock} className="w-3.5 h-3.5 text-gray-400" />;
   };
 
   const visLabel = (v: string) => {
-    if (v === "VISIBILITY_PUBLIC") return "Communautaire";
+    if (v === "VISIBILITY_PUBLIC") return "Publique";
     if (v === "VISIBILITY_SHARED") return "Partagée";
     return "Privée";
   };
@@ -96,9 +134,15 @@ export default function Folders() {
     const collabs = selectedFolder.collaborators || [];
     return (
       <div className="max-w-5xl mx-auto px-4 py-6">
+        {/* Bannière */}
+        {selectedFolder.bannerUrl && (
+          <div className="h-40 rounded-2xl overflow-hidden mb-4">
+            <img src={selectedFolder.bannerUrl} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => setSelectedFolder(null)} className="text-orange-500">
-            <ArrowLeft size={22} />
+            <FontAwesomeIcon icon={faArrowLeft} className="w-5 h-5" />
           </button>
           <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-800">{selectedFolder.name}</h2>
@@ -107,16 +151,20 @@ export default function Folders() {
               {selectedFolder.ownerDisplayName && (
                 <span className="ml-2">par {selectedFolder.ownerDisplayName}</span>
               )}
+              {selectedFolder.ownerIsAdmin && <AdminBadge />}
             </div>
           </div>
           <button onClick={() => setShowCollabModal(true)} className="text-gray-400 hover:text-blue-500" title="Collaborateurs">
-            <UserPlus size={18} />
+            <FontAwesomeIcon icon={faUserPlus} className="w-4 h-4" />
           </button>
-          <button onClick={() => shareFolder(selectedFolder.id)} className="text-gray-400 hover:text-orange-500" title="Lien de partage">
-            <Share2 size={18} />
+          <button onClick={openEditModal} className="text-gray-400 hover:text-orange-500" title="Modifier">
+            <FontAwesomeIcon icon={faPen} className="w-4 h-4" />
+          </button>
+          <button onClick={() => shareFolder(selectedFolder.id)} className="text-gray-400 hover:text-green-500" title="Lien de partage">
+            <FontAwesomeIcon icon={faShareAlt} className="w-4 h-4" />
           </button>
           <button onClick={() => deleteFolder(selectedFolder.id)} className="text-gray-400 hover:text-red-500" title="Supprimer">
-            <Trash2 size={18} />
+            <FontAwesomeIcon icon={faTrash} className="w-4 h-4" />
           </button>
         </div>
 
@@ -125,10 +173,10 @@ export default function Folders() {
           <div className="flex flex-wrap gap-2 mb-4">
             {collabs.map((c: any) => (
               <span key={c.userId} className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600">
-                {c.role === "COLLABORATOR_ROLE_EDITOR" ? <Edit3 size={10} /> : <Eye size={10} />}
+                {c.role === "COLLABORATOR_ROLE_EDITOR" ? <FontAwesomeIcon icon={faPen} className="w-2.5 h-2.5" /> : <FontAwesomeIcon icon={faEye} className="w-2.5 h-2.5" />}
                 {c.displayName || c.email}
                 <button onClick={() => removeCollaborator(c.userId)} className="ml-1 hover:text-red-500">
-                  <X size={10} />
+                  <FontAwesomeIcon icon={faTimes} className="w-2.5 h-2.5" />
                 </button>
               </span>
             ))}
@@ -152,7 +200,7 @@ export default function Folders() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-800">Ajouter un collaborateur</h3>
                 <button onClick={() => { setShowCollabModal(false); setCollabError(""); }} className="text-gray-400">
-                  <X size={20} />
+                  <FontAwesomeIcon icon={faTimes} className="w-5 h-5" />
                 </button>
               </div>
               {collabError && (
@@ -166,21 +214,19 @@ export default function Folders() {
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => setCollabRole("COLLABORATOR_ROLE_EDITOR")}
-                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium ${
-                    collabRole === "COLLABORATOR_ROLE_EDITOR"
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium ${collabRole === "COLLABORATOR_ROLE_EDITOR"
                       ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
-                  }`}
+                    }`}
                 >
-                  <Edit3 size={14} /> Éditeur
+                  <FontAwesomeIcon icon={faPen} className="w-3.5 h-3.5" /> Éditeur
                 </button>
                 <button
                   onClick={() => setCollabRole("COLLABORATOR_ROLE_VIEWER")}
-                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium ${
-                    collabRole === "COLLABORATOR_ROLE_VIEWER"
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-sm font-medium ${collabRole === "COLLABORATOR_ROLE_VIEWER"
                       ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
-                  }`}
+                    }`}
                 >
-                  <Eye size={14} /> Lecteur
+                  <FontAwesomeIcon icon={faEye} className="w-3.5 h-3.5" /> Lecteur
                 </button>
               </div>
               <button
@@ -189,6 +235,65 @@ export default function Folders() {
               >
                 Inviter
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Modal édition */}
+        {showEditModal && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-gray-800">Modifier la liste</h3>
+                <button onClick={() => setShowEditModal(false)} className="text-gray-400">
+                  <FontAwesomeIcon icon={faTimes} className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="text" placeholder="Nom de la liste" value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
+                />
+                <input
+                  type="url" placeholder="URL de la bannière (optionnel)" value={editBannerUrl}
+                  onChange={(e) => setEditBannerUrl(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
+                />
+                <input
+                  type="text" placeholder="Tags (séparés par des virgules)" value={editTags}
+                  onChange={(e) => setEditTags(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
+                />
+                {editBannerUrl && (
+                  <div className="h-24 rounded-xl overflow-hidden bg-gray-100">
+                    <img src={editBannerUrl} alt="Aperçu" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  {[
+                    { val: "VISIBILITY_PRIVATE", label: "Privée", icon: <FontAwesomeIcon icon={faLock} className="w-3.5 h-3.5" /> },
+                    { val: "VISIBILITY_SHARED", label: "Partagée", icon: <FontAwesomeIcon icon={faUsers} className="w-3.5 h-3.5" /> },
+                    { val: "VISIBILITY_PUBLIC", label: "Publique", icon: <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> },
+                  ].map((opt) => (
+                    <button
+                      key={opt.val}
+                      onClick={() => setEditVisibility(opt.val)}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${editVisibility === opt.val
+                          ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
+                        }`}
+                    >
+                      {opt.icon} {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={updateFolder}
+                  className="w-full py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600"
+                >
+                  Enregistrer
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -205,7 +310,7 @@ export default function Folders() {
           onClick={() => setShowCreate(true)}
           className="flex items-center gap-1 px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600"
         >
-          <Plus size={16} /> Nouvelle
+          <FontAwesomeIcon icon={faPlus} className="w-4 h-4" /> Nouvelle
         </button>
       </div>
 
@@ -217,19 +322,33 @@ export default function Folders() {
             className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
             onKeyDown={(e) => e.key === "Enter" && createFolder()}
           />
+          <input
+            type="url" placeholder="URL de la bannière (optionnel)" value={newBannerUrl}
+            onChange={(e) => setNewBannerUrl(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
+          />
+          <input
+            type="text" placeholder="Tags (séparés par des virgules)" value={newTags}
+            onChange={(e) => setNewTags(e.target.value)}
+            className="w-full px-4 py-2 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
+          />
+          {newBannerUrl && (
+            <div className="h-24 rounded-xl overflow-hidden bg-gray-100">
+              <img src={newBannerUrl} alt="Aperçu" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = "none")} />
+            </div>
+          )}
           <div className="flex gap-2">
             {[
-              { val: "VISIBILITY_PRIVATE", label: "Privée", icon: <Lock size={14} /> },
-              { val: "VISIBILITY_SHARED", label: "Partagée", icon: <Users size={14} /> },
-              { val: "VISIBILITY_PUBLIC", label: "Communautaire", icon: <Globe size={14} /> },
+              { val: "VISIBILITY_PRIVATE", label: "Privée", icon: <FontAwesomeIcon icon={faLock} className="w-3.5 h-3.5" /> },
+              { val: "VISIBILITY_SHARED", label: "Partagée", icon: <FontAwesomeIcon icon={faUsers} className="w-3.5 h-3.5" /> },
+              { val: "VISIBILITY_PUBLIC", label: "Publique", icon: <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> },
             ].map((opt) => (
               <button
                 key={opt.val}
                 onClick={() => setNewVisibility(opt.val)}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${
-                  newVisibility === opt.val
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium ${newVisibility === opt.val
                     ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-600"
-                }`}
+                  }`}
               >
                 {opt.icon} {opt.label}
               </button>
@@ -244,22 +363,42 @@ export default function Folders() {
       {folderList.length === 0 ? (
         <p className="text-center text-gray-400 py-12">Aucune liste</p>
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {folderList.map((folder) => (
             <div
               key={folder.id}
               onClick={() => openFolder(folder)}
-              className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 shadow-sm hover:shadow cursor-pointer"
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
             >
-              <span className="text-2xl">📁</span>
-              <div className="flex-1">
-                <p className="font-medium text-gray-800">{folder.name}</p>
-                <div className="flex items-center gap-2 text-xs text-gray-400">
+              <div className="h-28 bg-gradient-to-br from-amber-100 to-orange-50 relative">
+                {folder.bannerUrl ? (
+                  <img src={folder.bannerUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">📁</div>
+                )}
+                <div className="absolute top-2 right-2">
                   {visIcon(folder.visibility)}
+                </div>
+              </div>
+              <div className="p-3">
+                <p className="font-semibold text-gray-800 line-clamp-1">{folder.name}</p>
+                {folder.tags && folder.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                    {folder.tags.slice(0, 3).map((tag: string, i: number) => (
+                      <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-600">
+                        {tag}
+                      </span>
+                    ))}
+                    {folder.tags.length > 3 && (
+                      <span className="text-xs text-gray-400">+{folder.tags.length - 3}</span>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
                   <span>{visLabel(folder.visibility)}</span>
                   {(folder.collaborators?.length > 0) && (
                     <span className="flex items-center gap-0.5">
-                      <Users size={10} /> {folder.collaborators.length}
+                      <FontAwesomeIcon icon={faUsers} className="w-2.5 h-2.5" /> {folder.collaborators.length}
                     </span>
                   )}
                   {folder.linkCount > 0 && (

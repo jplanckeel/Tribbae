@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { links as linksApi, folders as foldersApi } from "../api";
-import { CATEGORIES, CATEGORY_COLORS } from "../types";
+import { CATEGORIES, CATEGORY_COLORS, normalizeCategory } from "../types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  ArrowLeft, ExternalLink, MapPin, Star, Tag,
-  Calendar, Trash2, Edit3, Heart, FolderOpen,
-} from "lucide-react";
+  faArrowLeft, faExternalLinkAlt, faMapMarkerAlt, faStar,
+  faTag, faCalendar, faTrash, faPen, faHeart, faFolderOpen, faTimes, faCheck,
+} from "@fortawesome/free-solid-svg-icons";
+import { faHeart as faHeartRegular, faBookmark as faBookmarkRegular } from "@fortawesome/free-regular-svg-icons";
+import AdminBadge from "../components/AdminBadge";
 
 function catLabel(v: string) { return CATEGORIES.find((c) => c.value === v)?.label ?? "Idée"; }
 function catIcon(v: string) { return CATEGORIES.find((c) => c.value === v)?.icon ?? "💡"; }
@@ -19,6 +22,10 @@ export default function LinkDetail() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<any>({});
   const [folderList, setFolderList] = useState<any[]>([]);
+  const [showSaveToList, setShowSaveToList] = useState(false);
+  const [saveToFolderId, setSaveToFolderId] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -28,7 +35,8 @@ export default function LinkDetail() {
 
   if (!link) return <div className="flex items-center justify-center py-20 text-gray-400">Chargement...</div>;
 
-  const color = CATEGORY_COLORS[link.category] || "#FF8C00";
+  const category = normalizeCategory(link.category);
+  const color = CATEGORY_COLORS[category] || "#FF8C00";
   const hasImage = link.imageUrl && link.imageUrl.length > 0;
   const folderName = folderList.find((f) => f.id === link.folderId)?.name;
 
@@ -44,19 +52,53 @@ export default function LinkDetail() {
       category: form.category, tags: form.tags, location: form.location,
       price: form.price, ageRange: form.ageRange, rating: form.rating,
       ingredients: form.ingredients, folderId: form.folderId || "",
+      imageUrl: form.imageUrl || "",
     });
     setLink({ ...form });
     setEditing(false);
   };
 
-  const toggleFavorite = async () => {
-    const updated = { ...link, favorite: !link.favorite };
-    await linksApi.update(link.id, { favorite: updated.favorite });
-    setLink(updated);
+  const toggleLike = async () => {
+    try {
+      if (link.likedByMe) {
+        const res = await linksApi.unlike(link.id);
+        setLink({ ...link, likedByMe: false, likeCount: res.likeCount });
+      } else {
+        const res = await linksApi.like(link.id);
+        setLink({ ...link, likedByMe: true, likeCount: res.likeCount });
+      }
+    } catch { /* silencieux */ }
   };
 
   const openMaps = () => {
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(link.location)}`, "_blank");
+  };
+
+  const isLoggedIn = !!localStorage.getItem("token");
+  const currentUserId = localStorage.getItem("userId");
+  const isOwnLink = currentUserId && link.ownerId && link.ownerId === currentUserId;
+
+  const handleSaveToMyList = async () => {
+    setSaving(true);
+    try {
+      await linksApi.create({
+        title: link.title,
+        url: link.url || "",
+        description: link.description || "",
+        category: link.category,
+        tags: link.tags || [],
+        location: link.location || "",
+        price: link.price || "",
+        ageRange: link.ageRange || "",
+        rating: link.rating || 0,
+        ingredients: link.ingredients || [],
+        folderId: saveToFolderId || "",
+        imageUrl: link.imageUrl || "",
+      });
+      setSaved(true);
+      setShowSaveToList(false);
+    } catch { /* silencieux */ }
+    setSaving(false);
   };
 
   // --- Vue édition ---
@@ -64,17 +106,39 @@ export default function LinkDetail() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
         <button onClick={() => setEditing(false)} className="flex items-center gap-1 text-orange-500 mb-4">
-          <ArrowLeft size={18} /> Retour
+          <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Retour
         </button>
         <div className="bg-white rounded-2xl shadow-sm p-6 space-y-3">
           <input value={form.title || ""} onChange={(e) => setForm({ ...form, title: e.target.value })} className={`${inputCls} font-semibold`} placeholder="Titre" />
           <input value={form.url || ""} onChange={(e) => setForm({ ...form, url: e.target.value })} className={inputCls} placeholder="URL" />
           <textarea value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className={`${inputCls} resize-none`} placeholder="Description" />
 
+          {/* Image personnalisée */}
+          <div className="space-y-2">
+            <input
+              value={form.imageUrl || ""}
+              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+              className={inputCls}
+              placeholder="URL de l'image (bandeau)"
+            />
+            {form.imageUrl && (
+              <div className="relative rounded-xl overflow-hidden h-32">
+                <img src={form.imageUrl} alt="aperçu" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, imageUrl: "" })}
+                  className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-black/70"
+                >
+                  <FontAwesomeIcon icon={faTimes} className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Catégorie */}
           <div className="flex gap-2 flex-wrap">
             {CATEGORIES.map((cat) => {
-              const active = form.category === cat.value;
+              const active = normalizeCategory(form.category) === cat.value;
               const c = CATEGORY_COLORS[cat.value];
               return (
                 <button key={cat.value} type="button" onClick={() => setForm({ ...form, category: cat.value })}
@@ -96,7 +160,9 @@ export default function LinkDetail() {
           </select>
 
           <div className="grid grid-cols-2 gap-3">
-            <input value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} placeholder="Lieu" />
+            {form.category !== "LINK_CATEGORY_RECETTE" && (
+              <input value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} placeholder="Lieu" />
+            )}
             <input value={form.price || ""} onChange={(e) => setForm({ ...form, price: e.target.value })} className={inputCls} placeholder="Prix" />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -108,7 +174,7 @@ export default function LinkDetail() {
             />
           </div>
 
-          {form.category === "LINK_CATEGORY_RECETTE" && (
+          {normalizeCategory(form.category) === "LINK_CATEGORY_RECETTE" && (
             <textarea
               value={(form.ingredients || []).join("\n")}
               onChange={(e) => setForm({ ...form, ingredients: e.target.value.split("\n").filter(Boolean) })}
@@ -121,7 +187,7 @@ export default function LinkDetail() {
             <span className="text-sm text-gray-500">Note :</span>
             {[1, 2, 3, 4, 5].map((n) => (
               <button key={n} type="button" onClick={() => setForm({ ...form, rating: form.rating === n ? 0 : n })}>
-                <Star size={20} fill={n <= (form.rating || 0) ? "#FFD700" : "none"} stroke="#FFD700" />
+                <FontAwesomeIcon icon={faStar} className="w-5 h-5" style={{ color: n <= (form.rating || 0) ? "#FFD700" : "#e5e7eb" }} />
               </button>
             ))}
           </div>
@@ -138,7 +204,7 @@ export default function LinkDetail() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-orange-500 mb-4">
-        <ArrowLeft size={18} /> Retour
+        <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Retour
       </button>
 
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -147,7 +213,7 @@ export default function LinkDetail() {
             <img src={link.imageUrl} alt={link.title} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             <span className="absolute top-3 right-3 text-white text-sm font-medium px-3 py-1 rounded-lg" style={{ backgroundColor: color }}>
-              {catIcon(link.category)} {catLabel(link.category)}
+              {catIcon(category)} {catLabel(category)}
             </span>
           </div>
         ) : (
@@ -156,38 +222,101 @@ export default function LinkDetail() {
               {[0, 1, 2, 3].map((row) => (
                 <div key={row} className="flex justify-evenly" style={{ marginLeft: row % 2 === 1 ? 16 : 0 }}>
                   {Array.from({ length: 12 }).map((_, i) => (
-                    <span key={i} className="text-xl rotate-45">{catIcon(link.category)}</span>
+                    <span key={i} className="text-xl rotate-45">{catIcon(category)}</span>
                   ))}
                 </div>
               ))}
             </div>
             <span className="absolute top-3 right-3 text-white text-sm font-medium px-3 py-1 rounded-lg z-10" style={{ backgroundColor: color }}>
-              {catIcon(link.category)} {catLabel(link.category)}
+              {catIcon(category)} {catLabel(category)}
             </span>
           </div>
         )}
 
         <div className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-2">
-            <h1 className="text-xl font-bold text-gray-800 flex-1">{link.title}</h1>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-gray-800 break-words">{link.title}</h1>
+              {link.ownerDisplayName && (
+                <p className="text-sm text-gray-500 mt-1">👤 par {link.ownerDisplayName}</p>
+              )}
+              {link.ownerIsAdmin && <div className="mt-1"><AdminBadge /></div>}
+            </div>
             <div className="flex gap-2 flex-shrink-0">
-              <button onClick={toggleFavorite} className={link.favorite ? "text-red-500" : "text-gray-300 hover:text-red-400"}>
-                <Heart size={20} fill={link.favorite ? "currentColor" : "none"} />
-              </button>
-              <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-orange-500">
-                <Edit3 size={18} />
-              </button>
-              <button onClick={handleDelete} className="text-gray-400 hover:text-red-500">
-                <Trash2 size={18} />
-              </button>
+              {isLoggedIn && (
+                <button onClick={toggleLike} className="flex items-center gap-1">
+                  <FontAwesomeIcon icon={link.likedByMe ? faHeart : faHeartRegular} className={`w-5 h-5 ${link.likedByMe ? "text-red-500" : "text-gray-300 hover:text-red-400"}`} />
+                  {(link.likeCount || 0) > 0 && (
+                    <span className={`text-xs ${link.likedByMe ? "text-red-500 font-medium" : "text-gray-400"}`}>
+                      {link.likeCount}
+                    </span>
+                  )}
+                </button>
+              )}
+              {isLoggedIn && !isOwnLink && (
+                <button
+                  onClick={() => { if (saved) return; setShowSaveToList(!showSaveToList); }}
+                  className={saved ? "text-green-500" : "text-gray-300 hover:text-orange-500"}
+                  title={saved ? "Ajouté à mes idées" : "Ajouter à mes listes"}
+                >
+                  <FontAwesomeIcon icon={saved ? faCheck : faBookmarkRegular} className="w-5 h-5" />
+                </button>
+              )}
+              {isOwnLink && (
+                <>
+                  <button onClick={() => setEditing(true)} className="text-gray-400 hover:text-orange-500">
+                    <FontAwesomeIcon icon={faPen} className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleDelete} className="text-gray-400 hover:text-red-500">
+                    <FontAwesomeIcon icon={faTrash} className="w-4 h-4" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
           {/* Dossier */}
           {folderName && (
             <span className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-orange-50 text-orange-600">
-              <FolderOpen size={12} /> {folderName}
+              <FontAwesomeIcon icon={faFolderOpen} className="w-3 h-3" /> {folderName}
             </span>
+          )}
+
+          {/* Sauvegarder dans mes listes */}
+          {showSaveToList && (
+            <div className="bg-orange-50 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-medium text-gray-700">📥 Ajouter à mes listes</p>
+              <select
+                value={saveToFolderId}
+                onChange={(e) => setSaveToFolderId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-orange-200 focus:border-orange-400 focus:outline-none text-sm bg-white"
+              >
+                <option value="">Sans liste (mes idées)</option>
+                {folderList.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+              </select>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveToMyList}
+                  disabled={saving}
+                  className="flex-1 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                >
+                  {saving ? "Ajout..." : "Ajouter"}
+                </button>
+                <button
+                  onClick={() => setShowSaveToList(false)}
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+
+          {saved && !showSaveToList && (
+            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-lg px-3 py-2">
+              <FontAwesomeIcon icon={faCheck} className="w-3.5 h-3.5" />
+              Idée ajoutée à vos listes
+            </div>
           )}
 
           {link.description && <p className="text-gray-600 text-sm">{link.description}</p>}
@@ -196,7 +325,7 @@ export default function LinkDetail() {
             <a href={link.url} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-orange-500 hover:underline text-sm"
             >
-              <ExternalLink size={14} />
+              <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3.5 h-3.5" />
               {(() => { try { return new URL(link.url).hostname; } catch { return link.url; } })()}
             </a>
           )}
@@ -204,7 +333,7 @@ export default function LinkDetail() {
           <div className="flex flex-wrap gap-3 text-sm">
             {link.location && (
               <button onClick={openMaps} className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100">
-                <MapPin size={14} /> {link.location}
+                <FontAwesomeIcon icon={faMapMarkerAlt} className="w-3.5 h-3.5" /> {link.location}
               </button>
             )}
             {link.price && (
@@ -219,7 +348,7 @@ export default function LinkDetail() {
             )}
             {link.eventDate && (
               <span className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-orange-50 text-orange-600">
-                <Calendar size={14} /> {new Date(Number(link.eventDate) * 1000).toLocaleDateString("fr-FR")}
+                <FontAwesomeIcon icon={faCalendar} className="w-3.5 h-3.5" /> {new Date(Number(link.eventDate) * 1000).toLocaleDateString("fr-FR")}
               </span>
             )}
           </div>
@@ -227,7 +356,7 @@ export default function LinkDetail() {
           {link.rating > 0 && (
             <div className="flex items-center gap-1">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} size={18} fill={i < link.rating ? "#FFD700" : "none"} stroke="#FFD700" />
+                <FontAwesomeIcon key={i} icon={faStar} className="w-4 h-4" style={{ color: i < link.rating ? "#FFD700" : "#e5e7eb" }} />
               ))}
             </div>
           )}
@@ -238,7 +367,7 @@ export default function LinkDetail() {
                 <span key={tag} className="flex items-center gap-1 text-xs px-3 py-1 rounded-full"
                   style={{ backgroundColor: color + "20", color }}
                 >
-                  <Tag size={10} /> {tag}
+                  <FontAwesomeIcon icon={faTag} className="w-2.5 h-2.5" /> {tag}
                 </span>
               ))}
             </div>

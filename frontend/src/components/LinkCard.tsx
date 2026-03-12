@@ -1,9 +1,14 @@
-import { MapPin, Star, ExternalLink } from "lucide-react";
-import { CATEGORIES, CATEGORY_COLORS } from "../types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faMapMarkerAlt, faStar, faExternalLinkAlt, faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
+import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
+import { CATEGORIES, CATEGORY_COLORS, normalizeCategory } from "../types";
+import AdminBadge from "./AdminBadge";
 
 interface Props {
   link: any;
   onClick?: () => void;
+  onLike?: (linkId: string, isLiked: boolean) => void;
+  liking?: string | null;
 }
 
 function extractCity(location: string): string {
@@ -19,33 +24,50 @@ function catIcon(value: string) {
   return CATEGORIES.find((c) => c.value === value)?.icon ?? "💡";
 }
 
-export default function LinkCard({ link, onClick }: Props) {
-  const color = CATEGORY_COLORS[link.category] || "#FF8C00";
+export default function LinkCard({ link, onClick, onLike, liking }: Props) {
+  const category = normalizeCategory(link.category);
+  const color = CATEGORY_COLORS[category] || "#FF8C00";
   const hasImage = link.imageUrl && link.imageUrl.length > 0;
+  const isLoggedIn = !!localStorage.getItem("token");
 
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+      className="bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-orange-400 hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden group"
     >
       {hasImage ? (
-        <div className="relative h-36">
+        <div className="relative h-36 overflow-hidden">
           <img
             src={link.imageUrl}
             alt={link.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
           <span
             className="absolute top-2 right-2 text-white text-xs font-medium px-2 py-1 rounded-lg"
             style={{ backgroundColor: color }}
           >
-            {catIcon(link.category)} {catLabel(link.category)}
+            {catIcon(category)} {catLabel(category)}
           </span>
+          {isLoggedIn && onLike && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onLike(link.id, link.likedByMe); }}
+              disabled={liking === link.id}
+              className="absolute top-2 left-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs hover:bg-white transition-colors"
+            >
+              <FontAwesomeIcon
+                icon={link.likedByMe ? faHeartSolid : faHeartOutline}
+                className={`w-3 h-3 ${link.likedByMe ? "text-red-500" : "text-gray-400"}`}
+              />
+              <span className={link.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
+                {link.likeCount || 0}
+              </span>
+            </button>
+          )}
         </div>
       ) : (
         <div
-          className="h-24 flex items-center justify-center relative overflow-hidden"
+          className="h-24 flex items-center justify-center relative overflow-hidden transition-transform duration-300 group-hover:scale-[1.02]"
           style={{ backgroundColor: color + "18" }}
         >
           {/* Pattern d'icônes */}
@@ -58,7 +80,7 @@ export default function LinkCard({ link, onClick }: Props) {
               >
                 {Array.from({ length: 10 }).map((_, i) => (
                   <span key={i} className="text-lg rotate-45">
-                    {catIcon(link.category)}
+                    {catIcon(category)}
                   </span>
                 ))}
               </div>
@@ -68,29 +90,52 @@ export default function LinkCard({ link, onClick }: Props) {
             className="absolute top-2 right-2 text-white text-xs font-medium px-2 py-1 rounded-lg z-10"
             style={{ backgroundColor: color }}
           >
-            {catIcon(link.category)} {catLabel(link.category)}
+            {catIcon(category)} {catLabel(category)}
           </span>
+          {isLoggedIn && onLike && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onLike(link.id, link.likedByMe); }}
+              disabled={liking === link.id}
+              className="absolute top-2 left-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs hover:bg-white transition-colors z-10"
+            >
+              <FontAwesomeIcon
+                icon={link.likedByMe ? faHeartSolid : faHeartOutline}
+                className={`w-3 h-3 ${link.likedByMe ? "text-red-500" : "text-gray-400"}`}
+              />
+              <span className={link.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
+                {link.likeCount || 0}
+              </span>
+            </button>
+          )}
         </div>
       )}
 
       <div className="p-4">
-        <h3 className="font-semibold text-gray-800 truncate">{link.title}</h3>
+        <div className="flex items-center gap-2 mb-0.5 min-w-0">
+          <h3 className="font-semibold text-gray-800 truncate flex-1">{link.title}</h3>
+          {link.ownerIsAdmin && <div className="flex-shrink-0"><AdminBadge /></div>}
+        </div>
         {link.description && (
           <p className="text-gray-500 text-sm mt-1 line-clamp-2">
             {link.description}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-400">
+          {link.ownerDisplayName && (
+            <span className="flex items-center gap-1">
+              👤 par {link.ownerDisplayName}
+            </span>
+          )}
           {link.location && (
             <span className="flex items-center gap-1">
-              <MapPin size={12} /> {extractCity(link.location)}
+              <FontAwesomeIcon icon={faMapMarkerAlt} className="w-3 h-3" /> {extractCity(link.location)}
             </span>
           )}
           {link.price && <span>💰 {link.price}</span>}
           {link.rating > 0 && (
             <span className="flex items-center gap-0.5">
               {Array.from({ length: link.rating }).map((_, i) => (
-                <Star key={i} size={12} fill="#FFD700" stroke="#FFD700" />
+                <FontAwesomeIcon key={i} icon={faStar} className="w-3 h-3 text-yellow-400" />
               ))}
             </span>
           )}
@@ -102,7 +147,7 @@ export default function LinkCard({ link, onClick }: Props) {
               onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-1 text-orange-500 hover:underline"
             >
-              <ExternalLink size={12} /> Lien
+              <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3" /> Lien
             </a>
           )}
         </div>

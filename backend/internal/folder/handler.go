@@ -54,19 +54,33 @@ func (h *Handler) toProto(ctx context.Context, f *Folder) *pb.Folder {
 		})
 	}
 
+	// Vérifier si l'utilisateur courant a liké
+	likedByMe := false
+	if userID, err := interceptor.UserIDFromContext(ctx); err == nil {
+		likedByMe = h.svc.IsLikedBy(ctx, f.ID.Hex(), userID)
+	}
+
+	ownerDisplayName, ownerIsAdmin := h.svc.GetOwnerInfo(ctx, f.OwnerID)
+
 	return &pb.Folder{
 		Id:               f.ID.Hex(),
 		OwnerId:          f.OwnerID,
 		Name:             f.Name,
 		Icon:             f.Icon,
 		Color:            f.Color,
+		BannerUrl:        f.BannerURL,
+		Tags:             f.Tags,
 		Visibility:       vis,
 		ShareToken:       f.ShareToken,
 		CreatedAt:        timestamppb.New(f.CreatedAt),
 		UpdatedAt:        timestamppb.New(f.UpdatedAt),
 		Collaborators:    collabs,
-		OwnerDisplayName: h.svc.GetOwnerDisplayName(ctx, f.OwnerID),
+		OwnerDisplayName: ownerDisplayName,
 		LinkCount:        h.svc.CountLinks(ctx, f.ID.Hex()),
+		LikeCount:        f.LikeCount,
+		LikedByMe:        likedByMe,
+		AiGenerated:      f.AiGenerated,
+		OwnerIsAdmin:     ownerIsAdmin,
 	}
 }
 
@@ -84,11 +98,11 @@ func visibilityStr(v pb.Visibility) string {
 func (h *Handler) CreateFolder(ctx context.Context, req *pb.CreateFolderRequest) (*pb.CreateFolderResponse, error) {
 	ownerID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
-	f, err := h.svc.Create(ctx, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility))
+	f, err := h.svc.Create(ctx, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility), req.BannerUrl, req.Tags)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.CreateFolderResponse{Folder: h.toProto(ctx, f)}, nil
 }
@@ -96,11 +110,11 @@ func (h *Handler) CreateFolder(ctx context.Context, req *pb.CreateFolderRequest)
 func (h *Handler) GetFolder(ctx context.Context, req *pb.GetFolderRequest) (*pb.GetFolderResponse, error) {
 	ownerID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
 	f, err := h.svc.Get(ctx, req.FolderId, ownerID)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return &pb.GetFolderResponse{Folder: h.toProto(ctx, f)}, nil
 }
@@ -109,11 +123,11 @@ func (h *Handler) GetFolder(ctx context.Context, req *pb.GetFolderRequest) (*pb.
 func (h *Handler) ListFolders(ctx context.Context, _ *pb.ListFoldersRequest) (*pb.ListFoldersResponse, error) {
 	ownerID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
 	folders, err := h.svc.List(ctx, ownerID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	var pbFolders []*pb.Folder
 	for _, f := range folders {
@@ -125,11 +139,11 @@ func (h *Handler) ListFolders(ctx context.Context, _ *pb.ListFoldersRequest) (*p
 func (h *Handler) UpdateFolder(ctx context.Context, req *pb.UpdateFolderRequest) (*pb.UpdateFolderResponse, error) {
 	ownerID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
-	f, err := h.svc.Update(ctx, req.FolderId, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility))
+	f, err := h.svc.Update(ctx, req.FolderId, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility), req.BannerUrl, req.Tags)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.UpdateFolderResponse{Folder: h.toProto(ctx, f)}, nil
 }
@@ -137,10 +151,10 @@ func (h *Handler) UpdateFolder(ctx context.Context, req *pb.UpdateFolderRequest)
 func (h *Handler) DeleteFolder(ctx context.Context, req *pb.DeleteFolderRequest) (*pb.DeleteFolderResponse, error) {
 	ownerID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
 	if err := h.svc.Delete(ctx, req.FolderId, ownerID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.DeleteFolderResponse{}, nil
 }
@@ -148,11 +162,11 @@ func (h *Handler) DeleteFolder(ctx context.Context, req *pb.DeleteFolderRequest)
 func (h *Handler) GenerateShareToken(ctx context.Context, req *pb.GenerateShareTokenRequest) (*pb.GenerateShareTokenResponse, error) {
 	ownerID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
 	token, url, err := h.svc.GenerateShareToken(ctx, req.FolderId, ownerID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.GenerateShareTokenResponse{ShareToken: token, ShareUrl: url}, nil
 }
@@ -160,7 +174,7 @@ func (h *Handler) GenerateShareToken(ctx context.Context, req *pb.GenerateShareT
 func (h *Handler) GetSharedFolder(ctx context.Context, req *pb.GetSharedFolderRequest) (*pb.GetSharedFolderResponse, error) {
 	f, rawLinks, err := h.svc.GetByShareToken(ctx, req.ShareToken)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	var pbLinks []*pb.Link
 	for _, m := range rawLinks {
@@ -193,11 +207,11 @@ func (h *Handler) GetSharedFolder(ctx context.Context, req *pb.GetSharedFolderRe
 func (h *Handler) AddCollaborator(ctx context.Context, req *pb.AddCollaboratorRequest) (*pb.AddCollaboratorResponse, error) {
 	ownerID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
 	f, err := h.svc.AddCollaborator(ctx, req.FolderId, ownerID, req.Email, collabRoleToStr(req.Role))
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	return &pb.AddCollaboratorResponse{Folder: h.toProto(ctx, f)}, nil
 }
@@ -205,11 +219,11 @@ func (h *Handler) AddCollaborator(ctx context.Context, req *pb.AddCollaboratorRe
 func (h *Handler) RemoveCollaborator(ctx context.Context, req *pb.RemoveCollaboratorRequest) (*pb.RemoveCollaboratorResponse, error) {
 	ownerID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
 	f, err := h.svc.RemoveCollaborator(ctx, req.FolderId, ownerID, req.UserId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.RemoveCollaboratorResponse{Folder: h.toProto(ctx, f)}, nil
 }
@@ -224,6 +238,42 @@ func (h *Handler) ListCommunityFolders(ctx context.Context, req *pb.ListCommunit
 		pbFolders = append(pbFolders, h.toProto(ctx, f))
 	}
 	return &pb.ListCommunityFoldersResponse{Folders: pbFolders, NextPageToken: nextToken}, nil
+}
+
+func (h *Handler) LikeFolder(ctx context.Context, req *pb.LikeFolderRequest) (*pb.LikeFolderResponse, error) {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+	}
+	count, err := h.svc.Like(ctx, req.FolderId, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &pb.LikeFolderResponse{LikeCount: count}, nil
+}
+
+func (h *Handler) UnlikeFolder(ctx context.Context, req *pb.UnlikeFolderRequest) (*pb.UnlikeFolderResponse, error) {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+	}
+	count, err := h.svc.Unlike(ctx, req.FolderId, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return &pb.UnlikeFolderResponse{LikeCount: count}, nil
+}
+
+func (h *Handler) ListTopFolders(ctx context.Context, req *pb.ListTopFoldersRequest) (*pb.ListTopFoldersResponse, error) {
+	folders, err := h.svc.ListTop(ctx, req.Limit)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	var pbFolders []*pb.Folder
+	for _, f := range folders {
+		pbFolders = append(pbFolders, h.toProto(ctx, f))
+	}
+	return &pb.ListTopFoldersResponse{Folders: pbFolders}, nil
 }
 
 func toString(v any) string {

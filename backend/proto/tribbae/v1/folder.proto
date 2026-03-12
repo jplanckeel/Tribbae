@@ -42,6 +42,12 @@ message Folder {
   repeated Collaborator collaborators = 10;
   string owner_display_name = 11;
   int32 link_count = 12;
+  int32 like_count = 13;
+  bool liked_by_me = 14;
+  bool ai_generated = 15;
+  string banner_url = 16;
+  repeated string tags = 17;
+  bool owner_is_admin = 18;
 }
 
 message CreateFolderRequest {
@@ -49,6 +55,8 @@ message CreateFolderRequest {
   string icon = 2;
   string color = 3;
   Visibility visibility = 4;
+  string banner_url = 5;
+  repeated string tags = 6;
 }
 
 message CreateFolderResponse {
@@ -75,6 +83,8 @@ message UpdateFolderRequest {
   string icon = 3;
   string color = 4;
   Visibility visibility = 5;
+  string banner_url = 6;
+  repeated string tags = 7;
 }
 
 message UpdateFolderResponse {
@@ -139,6 +149,30 @@ message ListCommunityFoldersResponse {
   string next_page_token = 2;
 }
 
+message LikeFolderRequest {
+  string folder_id = 1;
+}
+
+message LikeFolderResponse {
+  int32 like_count = 1;
+}
+
+message UnlikeFolderRequest {
+  string folder_id = 1;
+}
+
+message UnlikeFolderResponse {
+  int32 like_count = 1;
+}
+
+message ListTopFoldersRequest {
+  int32 limit = 1;
+}
+
+message ListTopFoldersResponse {
+  repeated Folder folders = 1;
+}
+
 service FolderService {
   rpc CreateFolder(CreateFolderRequest) returns (CreateFolderResponse) {
     option (google.api.http) = {
@@ -192,6 +226,22 @@ service FolderService {
   rpc ListCommunityFolders(ListCommunityFoldersRequest) returns (ListCommunityFoldersResponse) {
     option (google.api.http) = {
       get: "/v1/community/folders"
+    };
+  }
+  rpc LikeFolder(LikeFolderRequest) returns (LikeFolderResponse) {
+    option (google.api.http) = {
+      post: "/v1/folders/{folder_id}/like"
+      body: "*"
+    };
+  }
+  rpc UnlikeFolder(UnlikeFolderRequest) returns (UnlikeFolderResponse) {
+    option (google.api.http) = {
+      delete: "/v1/folders/{folder_id}/like"
+    };
+  }
+  rpc ListTopFolders(ListTopFoldersRequest) returns (ListTopFoldersResponse) {
+    option (google.api.http) = {
+      get: "/v1/community/top"
     };
   }
 }

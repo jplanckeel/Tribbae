@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../api";
+import SEOHead from "../components/SEOHead";
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
@@ -15,13 +16,17 @@ export default function Login() {
     setError("");
     try {
       if (isRegister) {
-        const res: any = await auth.register(email, password, displayName);
+        const res = await auth.register(email, password, displayName);
         localStorage.setItem("token", res.token);
+        localStorage.setItem("userId", res.userId);
         localStorage.setItem("displayName", displayName);
+        localStorage.setItem("isAdmin", String(res.isAdmin));
       } else {
         const res = await auth.login(email, password);
         localStorage.setItem("token", res.token);
+        localStorage.setItem("userId", res.userId);
         localStorage.setItem("displayName", res.displayName || "");
+        localStorage.setItem("isAdmin", String(res.isAdmin));
       }
       navigate("/");
     } catch (err: any) {
@@ -30,8 +35,20 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-amber-50 flex items-center justify-center px-4">
+    <main className="min-h-screen bg-amber-50 flex items-center justify-center px-4">
+      <SEOHead
+        title={isRegister ? "Créer un compte" : "Connexion"}
+        description="Connectez-vous à Tribbae pour organiser et partager vos idées en famille."
+        noindex={true}
+      />
       <div className="bg-white rounded-3xl shadow-lg p-8 w-full max-w-sm">
+        <div className="flex justify-center mb-4">
+          <img
+            src="/tribbae.jpg"
+            alt="Tribbae"
+            className="w-20 h-20 rounded-2xl object-cover shadow-md"
+          />
+        </div>
         <h1 className="text-2xl font-bold text-orange-500 text-center mb-2">
           Tribbae
         </h1>
@@ -49,7 +66,7 @@ export default function Login() {
           {isRegister && (
             <input
               type="text"
-              placeholder="Prénom"
+              placeholder="Pseudo"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm"
@@ -86,6 +103,6 @@ export default function Login() {
           {isRegister ? "Déjà un compte ? Se connecter" : "Pas de compte ? S'inscrire"}
         </button>
       </div>
-    </div>
+    </main>
   );
 }

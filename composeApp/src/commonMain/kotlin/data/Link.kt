@@ -3,11 +3,30 @@ package data
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class Collaborator(
+    val userId: String = "",
+    val email: String = "",
+    val displayName: String = "",
+    val role: String = "COLLABORATOR_ROLE_VIEWER"
+)
+
+@Serializable
 data class Folder(
     val id: String,
     val name: String,
     val icon: FolderIcon = FolderIcon.FOLDER,
-    val color: FolderColor = FolderColor.BLUE
+    val color: FolderColor = FolderColor.BLUE,
+    val bannerUrl: String = "",
+    val tags: List<String> = emptyList(),
+    val visibility: String = "",
+    val ownerDisplayName: String = "",
+    val ownerIsAdmin: Boolean = false,
+    val linkCount: Int = 0,
+    val likeCount: Int = 0,
+    val likedByMe: Boolean = false,
+    val aiGenerated: Boolean = false,
+    val collaborators: List<Collaborator> = emptyList(),
+    val updatedAt: String = ""
 )
 
 @Serializable
@@ -27,7 +46,12 @@ data class Link(
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,           // 0 = pas de note, 1-5 étoiles
     val ingredients: List<String> = emptyList(),  // pour les recettes
-    val favorite: Boolean = false
+    val favorite: Boolean = false,
+    val likeCount: Int = 0,
+    val likedByMe: Boolean = false,
+    val ownerDisplayName: String = "",
+    val ownerIsAdmin: Boolean = false,
+    val updatedAt: String = ""
 )
 
 @Serializable
@@ -36,7 +60,9 @@ enum class LinkCategory(val label: String, val iconName: String) {
     CADEAU("Cadeau", "CardGiftcard"),
     ACTIVITE("Activité", "DirectionsRun"),
     EVENEMENT("Événement", "Event"),
-    RECETTE("Recette", "Restaurant")
+    RECETTE("Recette", "Restaurant"),
+    LIVRE("Livre", "MenuBook"),
+    DECORATION("Décoration", "Palette")
 }
 
 @Serializable
@@ -61,5 +87,6 @@ enum class FolderColor { BLUE, GREEN, ORANGE, PURPLE, RED, TEAL, PINK, YELLOW }
 data class Child(
     val id: String,
     val name: String,
-    val birthDate: Long  // timestamp en ms de la date de naissance
+    val birthDate: Long, // timestamp en ms de la date de naissance
+    val updatedAt: String = ""
 )

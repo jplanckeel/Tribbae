@@ -10,6 +10,7 @@ val YellowLight = Color(0xFFFFF8E1)
 val BlueSky = Color(0xFF4FC3F7)
 val BlueSkyLight = Color(0xFFE1F5FE)
 val Coral = Color(0xFFFF7043)
+val Purple = Color(0xFF9C27B0)
 
 val SurfaceColor = Color(0xFFFFFBF5)
 val CardColor = Color(0xFFFFFFFF)
@@ -22,7 +23,8 @@ val CategoryColors = mapOf(
     "CADEAU"    to Color(0xFFFF8C00), // Orange — cadeau
     "ACTIVITE"  to Color(0xFF4FC3F7), // Bleu ciel — sport
     "EVENEMENT" to Color(0xFF81C784), // Vert doux — calendrier
-    "RECETTE"   to Color(0xFFFF7043)  // Corail — cuisine
+    "RECETTE"   to Color(0xFFFF7043), // Corail — cuisine
+    "LIVRE"     to Color(0xFF6366F1)  // Indigo — livre
 )
 
 // Couleurs de dossiers

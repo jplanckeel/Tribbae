@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package tribbae.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
+
+message User {
+  string id = 1;
+  string email = 2;
+  string display_name = 3;
+  bool is_admin = 4;
+  bool is_premium = 5; // Tribbae+ (accès Perplexity)
+  int64 created_at = 6;
+}
+
+message ListUsersRequest {}
+
+message ListUsersResponse {
+  repeated User users = 1;
+}
+
+message UpdateUserPremiumRequest {
+  string user_id = 1;
+  bool is_premium = 2;
+}
+
+message UpdateUserPremiumResponse {
+  User user = 1;
+}
+
+service AdminService {
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {
+      get: "/v1/admin/users"
+    };
+  }
+  
+  rpc UpdateUserPremium(UpdateUserPremiumRequest) returns (UpdateUserPremiumResponse) {
+    option (google.api.http) = {
+      put: "/v1/admin/users/{user_id}/premium"
+      body: "*"
+    };
+  }
+}

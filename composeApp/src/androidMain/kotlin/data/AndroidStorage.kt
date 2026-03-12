@@ -46,4 +46,10 @@ class AndroidStorage(context: Context) : Storage {
         val raw = prefs.getString("children", null) ?: return emptyList()
         return try { json.decodeFromString(raw) } catch (_: Exception) { emptyList() }
     }
+
+    override fun saveToken(token: String) {
+        prefs.edit().putString("auth_token", token).apply()
+    }
+
+    override fun loadToken(): String? = prefs.getString("auth_token", null)
 }

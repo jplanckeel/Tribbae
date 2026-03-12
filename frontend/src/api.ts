@@ -4,6 +4,14 @@ function getToken(): string | null {
   return localStorage.getItem("token");
 }
 
+class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -14,7 +22,7 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { ...opts, headers });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || res.statusText);
+    throw new ApiError(body.message || res.statusText, res.status);
   }
   return res.json();
 }
@@ -22,12 +30,12 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
 // Auth
 export const auth = {
   register: (email: string, password: string, displayName: string) =>
-    request("/auth/register", {
+    request<{ userId: string; token: string; isAdmin: boolean }>("/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password, displayName }),
     }),
   login: (email: string, password: string) =>
-    request<{ userId: string; token: string; displayName: string }>(
+    request<{ userId: string; token: string; displayName: string; isAdmin: boolean }>(
       "/auth/login",
       { method: "POST", body: JSON.stringify({ email, password }) }
     ),
@@ -36,7 +44,7 @@ export const auth = {
 // Folders
 export const folders = {
   list: () => request<{ folders: any[] }>("/folders"),
-  create: (data: { name: string; icon: string; color: string; visibility: string }) =>
+  create: (data: { name: string; icon: string; color: string; visibility: string; bannerUrl?: string; tags?: string[] }) =>
     request("/folders", { method: "POST", body: JSON.stringify(data) }),
   get: (id: string) => request<{ folder: any }>(`/folders/${id}`),
   update: (id: string, data: any) =>
@@ -65,6 +73,14 @@ export const links = {
     request(`/links/${id}`, { method: "PUT", body: JSON.stringify({ linkId: id, ...data }) }),
   delete: (id: string) =>
     request(`/links/${id}`, { method: "DELETE" }),
+  preview: (url: string) =>
+    request<{ title: string; description: string; image: string }>(
+      `/links/preview?url=${encodeURIComponent(url)}`
+    ),
+  like: (linkId: string) =>
+    request<{ likeCount: number }>(`/links/${linkId}/like`, { method: "POST", body: JSON.stringify({}) }),
+  unlike: (linkId: string) =>
+    request<{ likeCount: number }>(`/links/${linkId}/like`, { method: "DELETE" }),
 };
 
 // Shared
@@ -85,6 +101,21 @@ export const community = {
       `/community/folders${qs ? `?${qs}` : ""}`
     );
   },
+  top: (limit?: number) =>
+    request<{ folders: any[] }>(`/community/top${limit ? `?limit=${limit}` : ""}`),
+  links: (category?: string, limit?: number) => {
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (limit) params.set("limit", String(limit));
+    const qs = params.toString();
+    return request<{ links: any[] }>(`/community/links${qs ? `?${qs}` : ""}`);
+  },
+  newLinks: (limit?: number) =>
+    request<{ links: any[] }>(`/community/new${limit ? `?limit=${limit}` : ""}`),
+  like: (folderId: string) =>
+    request<{ likeCount: number }>(`/folders/${folderId}/like`, { method: "POST", body: JSON.stringify({}) }),
+  unlike: (folderId: string) =>
+    request<{ likeCount: number }>(`/folders/${folderId}/like`, { method: "DELETE" }),
 };
 
 // Children
@@ -96,4 +127,42 @@ export const children = {
     request(`/children/${childId}`, { method: "PUT", body: JSON.stringify({ childId, name, birthDate }) }),
   delete: (childId: string) =>
     request(`/children/${childId}`, { method: "DELETE" }),
+};
+
+// AI
+export const ai = {
+  generate: (prompt: string, model?: string) =>
+    request<{ ideas: Array<{
+      title: string;
+      description: string;
+      url?: string;
+      imageUrl?: string;
+      category: string;
+      tags: string[];
+      ageRange?: string;
+      price?: string;
+      location?: string;
+      ingredients?: string[];
+    }> }>("/ai/generate", {
+      method: "POST",
+      body: JSON.stringify({ prompt, model }),
+    }),
+};
+
+// Admin
+export const admin = {
+  listUsers: () =>
+    request<{ users: Array<{
+      id: string;
+      email: string;
+      displayName: string;
+      isAdmin: boolean;
+      isPremium: boolean;
+      createdAt: number;
+    }> }>("/admin/users"),
+  updateUserPremium: (userId: string, isPremium: boolean) =>
+    request<{ user: any }>(`/admin/users/${userId}/premium`, {
+      method: "PUT",
+      body: JSON.stringify({ isPremium }),
+    }),
 };
