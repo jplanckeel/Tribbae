@@ -755,6 +755,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 ingredients = apiLink.ingredients,
                 favorite = apiLink.likedByMe,
                 updatedAt = apiLink.updatedAt,
+                createdAt = apiLink.createdAt,
                 ownerId = apiLink.ownerId,
                 ownerDisplayName = apiLink.ownerDisplayName,
                 ownerIsAdmin = apiLink.ownerIsAdmin
