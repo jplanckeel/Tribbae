@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -125,6 +126,7 @@ func (s *Service) Update(ctx context.Context, folderID, ownerID, name, icon, col
 			bson.M{"collaborators": bson.M{"$elemMatch": bson.M{"user_id": ownerID, "role": "editor"}}},
 		},
 	}
+	// Update includes visibility field to ensure it's persisted correctly
 	update := bson.M{"$set": bson.M{
 		"name": name, "icon": icon, "color": color,
 		"visibility": visibility, "banner_url": bannerURL, "tags": tags, "updated_at": time.Now(),
@@ -145,8 +147,27 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 		return errors.New("invalid folder id")
 	}
 	// Seul le owner peut supprimer
-	_, err = s.col.DeleteOne(ctx, bson.M{"_id": id, "owner_id": ownerID})
-	return err
+	res, err := s.col.DeleteOne(ctx, bson.M{"_id": id, "owner_id": ownerID})
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount == 0 {
+		return errors.New("folder not found or not authorized to delete")
+	}
+	
+	// Orphan associated links by setting their folder_id to empty string
+	// This preserves user data while removing the folder association
+	_, err = s.linkCol.UpdateMany(ctx,
+		bson.M{"folder_id": folderID},
+		bson.M{"$set": bson.M{"folder_id": "", "updated_at": time.Now()}},
+	)
+	if err != nil {
+		// Log the error but don't fail the deletion
+		// The folder is already deleted at this point
+		return fmt.Errorf("folder deleted but failed to orphan links: %w", err)
+	}
+	
+	return nil
 }
 
 func (s *Service) GenerateShareToken(ctx context.Context, folderID, ownerID string) (string, string, error) {

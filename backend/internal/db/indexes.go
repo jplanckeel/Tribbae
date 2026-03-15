@@ -129,6 +129,44 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				Options: options.Index().SetName("idx_children_owner_id"),
 			},
 		},
+
+		// ── follows ───────────────────────────────────────────
+		{
+			Collection: "follows",
+			Model: mongo.IndexModel{
+				Keys: bson.D{
+					{Key: "follower_id", Value: 1},
+					{Key: "following_id", Value: 1},
+				},
+				Options: options.Index().SetUnique(true).SetName("idx_follows_follower_following_unique"),
+			},
+		},
+		{
+			Collection: "follows",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "following_id", Value: 1}},
+				Options: options.Index().SetName("idx_follows_following_id"),
+			},
+		},
+
+		// ── comments ──────────────────────────────────────────
+		{
+			Collection: "comments",
+			Model: mongo.IndexModel{
+				Keys: bson.D{
+					{Key: "link_id", Value: 1},
+					{Key: "created_at", Value: -1},
+				},
+				Options: options.Index().SetName("idx_comments_link_id_created_at"),
+			},
+		},
+		{
+			Collection: "comments",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "user_id", Value: 1}},
+				Options: options.Index().SetName("idx_comments_user_id"),
+			},
+		},
 	}
 
 	for _, idx := range indexes {

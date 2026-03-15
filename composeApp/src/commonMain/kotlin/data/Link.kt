@@ -49,8 +49,11 @@ data class Link(
     val favorite: Boolean = false,
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
+    val commentCount: Int = 0,
+    val ownerId: String = "",
     val ownerDisplayName: String = "",
     val ownerIsAdmin: Boolean = false,
+    val visibility: String = "private",
     val updatedAt: String = ""
 )
 
@@ -88,5 +91,27 @@ data class Child(
     val id: String,
     val name: String,
     val birthDate: Long, // timestamp en ms de la date de naissance
+    val updatedAt: String = ""
+)
+
+@Serializable
+data class UserProfile(
+    val id: String,
+    val displayName: String,
+    val email: String,
+    val isAdmin: Boolean,
+    val followerCount: Int,
+    val followingCount: Int
+)
+
+@Serializable
+data class Comment(
+    val id: String,
+    val linkId: String,
+    val userId: String,
+    val userDisplayName: String,
+    val userIsAdmin: Boolean,
+    val text: String,
+    val createdAt: String,
     val updatedAt: String = ""
 )

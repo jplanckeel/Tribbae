@@ -787,6 +787,10 @@
         },
         "ownerIsAdmin": {
           "type": "boolean"
+        },
+        "visibility": {
+          "type": "string",
+          "title": "\"private\" | \"public\""
         }
       }
     },

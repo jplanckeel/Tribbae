@@ -112,6 +112,7 @@ type Link struct {
 	Favorite         bool                   `protobuf:"varint,21,opt,name=favorite,proto3" json:"favorite,omitempty"`
 	OwnerDisplayName string                 `protobuf:"bytes,22,opt,name=owner_display_name,json=ownerDisplayName,proto3" json:"owner_display_name,omitempty"`
 	OwnerIsAdmin     bool                   `protobuf:"varint,23,opt,name=owner_is_admin,json=ownerIsAdmin,proto3" json:"owner_is_admin,omitempty"`
+	Visibility       string                 `protobuf:"bytes,24,opt,name=visibility,proto3" json:"visibility,omitempty"` // "private" | "public"
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -307,6 +308,13 @@ func (x *Link) GetOwnerIsAdmin() bool {
 	return false
 }
 
+func (x *Link) GetVisibility() string {
+	if x != nil {
+		return x.Visibility
+	}
+	return ""
+}
+
 type CreateLinkRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	FolderId        string                 `protobuf:"bytes,1,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
@@ -324,6 +332,7 @@ type CreateLinkRequest struct {
 	Rating          int32                  `protobuf:"varint,13,opt,name=rating,proto3" json:"rating,omitempty"`
 	Ingredients     []string               `protobuf:"bytes,14,rep,name=ingredients,proto3" json:"ingredients,omitempty"`
 	Favorite        bool                   `protobuf:"varint,15,opt,name=favorite,proto3" json:"favorite,omitempty"`
+	Visibility      string                 `protobuf:"bytes,16,opt,name=visibility,proto3" json:"visibility,omitempty"` // "private" | "public"
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -461,6 +470,13 @@ func (x *CreateLinkRequest) GetFavorite() bool {
 		return x.Favorite
 	}
 	return false
+}
+
+func (x *CreateLinkRequest) GetVisibility() string {
+	if x != nil {
+		return x.Visibility
+	}
+	return ""
 }
 
 type CreateLinkResponse struct {
@@ -701,6 +717,7 @@ type UpdateLinkRequest struct {
 	Rating          int32                  `protobuf:"varint,14,opt,name=rating,proto3" json:"rating,omitempty"`
 	Ingredients     []string               `protobuf:"bytes,15,rep,name=ingredients,proto3" json:"ingredients,omitempty"`
 	Favorite        bool                   `protobuf:"varint,16,opt,name=favorite,proto3" json:"favorite,omitempty"`
+	Visibility      string                 `protobuf:"bytes,17,opt,name=visibility,proto3" json:"visibility,omitempty"` // "private" | "public"
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -845,6 +862,13 @@ func (x *UpdateLinkRequest) GetFavorite() bool {
 		return x.Favorite
 	}
 	return false
+}
+
+func (x *UpdateLinkRequest) GetVisibility() string {
+	if x != nil {
+		return x.Visibility
+	}
+	return ""
 }
 
 type UpdateLinkResponse struct {
@@ -1424,7 +1448,7 @@ var File_tribbae_v1_link_proto protoreflect.FileDescriptor
 const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\n" +
 	"\x15tribbae/v1/link.proto\x12\n" +
-	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf7\x05\n" +
+	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x97\x06\n" +
 	"\x04Link\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1b\n" +
@@ -1453,7 +1477,10 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\vliked_by_me\x18\x14 \x01(\bR\tlikedByMe\x12\x1a\n" +
 	"\bfavorite\x18\x15 \x01(\bR\bfavorite\x12,\n" +
 	"\x12owner_display_name\x18\x16 \x01(\tR\x10ownerDisplayName\x12$\n" +
-	"\x0eowner_is_admin\x18\x17 \x01(\bR\fownerIsAdmin\"\xd0\x03\n" +
+	"\x0eowner_is_admin\x18\x17 \x01(\bR\fownerIsAdmin\x12\x1e\n" +
+	"\n" +
+	"visibility\x18\x18 \x01(\tR\n" +
+	"visibility\"\xf0\x03\n" +
 	"\x11CreateLinkRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +
@@ -1471,7 +1498,10 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\x10reminder_enabled\x18\f \x01(\bR\x0freminderEnabled\x12\x16\n" +
 	"\x06rating\x18\r \x01(\x05R\x06rating\x12 \n" +
 	"\vingredients\x18\x0e \x03(\tR\vingredients\x12\x1a\n" +
-	"\bfavorite\x18\x0f \x01(\bR\bfavorite\":\n" +
+	"\bfavorite\x18\x0f \x01(\bR\bfavorite\x12\x1e\n" +
+	"\n" +
+	"visibility\x18\x10 \x01(\tR\n" +
+	"visibility\":\n" +
 	"\x12CreateLinkResponse\x12$\n" +
 	"\x04link\x18\x01 \x01(\v2\x10.tribbae.v1.LinkR\x04link\")\n" +
 	"\x0eGetLinkRequest\x12\x17\n" +
@@ -1481,7 +1511,7 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\x10ListLinksRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\";\n" +
 	"\x11ListLinksResponse\x12&\n" +
-	"\x05links\x18\x01 \x03(\v2\x10.tribbae.v1.LinkR\x05links\"\xe9\x03\n" +
+	"\x05links\x18\x01 \x03(\v2\x10.tribbae.v1.LinkR\x05links\"\x89\x04\n" +
 	"\x11UpdateLinkRequest\x12\x17\n" +
 	"\alink_id\x18\x01 \x01(\tR\x06linkId\x12\x1b\n" +
 	"\tfolder_id\x18\x02 \x01(\tR\bfolderId\x12\x14\n" +
@@ -1500,7 +1530,10 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\x10reminder_enabled\x18\r \x01(\bR\x0freminderEnabled\x12\x16\n" +
 	"\x06rating\x18\x0e \x01(\x05R\x06rating\x12 \n" +
 	"\vingredients\x18\x0f \x03(\tR\vingredients\x12\x1a\n" +
-	"\bfavorite\x18\x10 \x01(\bR\bfavorite\":\n" +
+	"\bfavorite\x18\x10 \x01(\bR\bfavorite\x12\x1e\n" +
+	"\n" +
+	"visibility\x18\x11 \x01(\tR\n" +
+	"visibility\":\n" +
 	"\x12UpdateLinkResponse\x12$\n" +
 	"\x04link\x18\x01 \x01(\v2\x10.tribbae.v1.LinkR\x04link\",\n" +
 	"\x11DeleteLinkRequest\x12\x17\n" +

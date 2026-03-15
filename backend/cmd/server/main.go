@@ -14,9 +14,11 @@ import (
 	"github.com/tribbae/backend/internal/ai"
 	"github.com/tribbae/backend/internal/auth"
 	"github.com/tribbae/backend/internal/child"
+	"github.com/tribbae/backend/internal/comment"
 	"github.com/tribbae/backend/internal/config"
 	"github.com/tribbae/backend/internal/db"
 	"github.com/tribbae/backend/internal/folder"
+	"github.com/tribbae/backend/internal/follow"
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/link"
 	"google.golang.org/grpc"
@@ -51,6 +53,8 @@ func main() {
 	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)
 	linkSvc := link.NewService(database.Col("links"), database.Col("folders"))
 	childSvc := child.NewService(database.DB())
+	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
+	commentSvc := comment.NewService(database.Col("comments"), database.Col("links"), database.Col("users"))
 	aiSvc := ai.NewService(cfg.OllamaURL, cfg.OllamaModel, cfg.SearxURL, cfg.GeminiAPIKey)
 
 	// Handlers (gRPC servers)
@@ -58,6 +62,8 @@ func main() {
 	folderH := folder.NewHandler(folderSvc)
 	linkH := link.NewHandler(linkSvc)
 	childH := child.NewHandler(childSvc)
+	followH := follow.NewHandler(followSvc)
+	commentH := comment.NewHandler(commentSvc)
 	adminH := admin.NewHandler(authSvc)
 	
 	// Adaptateur pour récupérer le statut premium d'un utilisateur
@@ -115,6 +121,8 @@ func main() {
 	pb.RegisterFolderServiceServer(grpcServer, folderH)
 	pb.RegisterLinkServiceServer(grpcServer, linkH)
 	pb.RegisterChildServiceServer(grpcServer, childH)
+	pb.RegisterFollowServiceServer(grpcServer, followH)
+	pb.RegisterCommentServiceServer(grpcServer, commentH)
 	pb.RegisterAdminServiceServer(grpcServer, adminH)
 	reflection.Register(grpcServer)
 
@@ -157,6 +165,12 @@ func main() {
 	}
 	if err := pb.RegisterChildServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
 		log.Fatalf("register child gateway: %v", err)
+	}
+	if err := pb.RegisterFollowServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
+		log.Fatalf("register follow gateway: %v", err)
+	}
+	if err := pb.RegisterCommentServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
+		log.Fatalf("register comment gateway: %v", err)
 	}
 	if err := pb.RegisterAdminServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
 		log.Fatalf("register admin gateway: %v", err)

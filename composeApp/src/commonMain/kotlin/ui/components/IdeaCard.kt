@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import data.Link
 import data.LinkCategory
+import kotlinx.coroutines.launch
 
 @Composable
 fun IdeaCard(
@@ -31,15 +32,34 @@ fun IdeaCard(
     onClick: () -> Unit,
     onSaveClick: () -> Unit,
     sessionManager: data.SessionManager? = null,
+    followRepository: data.FollowRepository? = null,
+    currentUserId: String? = null,
     modifier: Modifier = Modifier
 ) {
     var liked by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(link.favorite) }
     val categoryColor = getCategoryColor(link.category)
+    val coroutineScope = rememberCoroutineScope()
     
-    // Utiliser le displayName de l'utilisateur connecté si ownerDisplayName est vide
-    val displayName by sessionManager?.displayName?.collectAsState() ?: remember { mutableStateOf(null) }
-    val ownerName = link.ownerDisplayName.ifBlank { displayName ?: "Anonyme" }
+    // Display owner name with fallback to "Anonyme" if empty
+    val ownerName = if (link.ownerDisplayName.isNotBlank()) {
+        link.ownerDisplayName
+    } else {
+        "Anonyme"
+    }
+    
+    // Follow state
+    var isFollowing by remember { mutableStateOf(false) }
+    var isLoadingFollow by remember { mutableStateOf(false) }
+    
+    // Check if following on mount
+    LaunchedEffect(link.ownerId) {
+        if (followRepository != null && link.ownerId.isNotBlank() && link.ownerId != currentUserId) {
+            followRepository.isFollowing(link.ownerId).onSuccess { following ->
+                isFollowing = following
+            }
+        }
+    }
 
     Surface(
         modifier = modifier
@@ -235,29 +255,105 @@ fun IdeaCard(
                                 color = Color.White
                             )
                         }
-                        Text(
-                            text = ownerName,
-                            fontSize = 12.sp,
-                            color = Color(0xFF6B7280)
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = ownerName,
+                                fontSize = 12.sp,
+                                color = Color(0xFF6B7280)
+                            )
+                            // Admin badge
+                            if (link.ownerIsAdmin) {
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(0xFFDC2626)
+                                ) {
+                                    Text(
+                                        text = "ADMIN",
+                                        fontSize = 8.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // Follow button - only show if not own link and has owner ID
+                        if (followRepository != null && link.ownerId.isNotBlank() && link.ownerId != currentUserId) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isFollowing) Color(0xFFF3F4F6) else Color(0xFFF97316),
+                                modifier = Modifier.clickable(enabled = !isLoadingFollow) {
+                                    isLoadingFollow = true
+                                    coroutineScope.launch {
+                                        if (isFollowing) {
+                                            followRepository.unfollow(link.ownerId).onSuccess {
+                                                isFollowing = false
+                                            }
+                                        } else {
+                                            followRepository.follow(link.ownerId).onSuccess {
+                                                isFollowing = true
+                                            }
+                                        }
+                                        isLoadingFollow = false
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    text = if (isFollowing) "Abonné" else "Suivre",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isFollowing) Color(0xFF6B7280) else Color.White,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
                     }
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { liked = !liked }
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            contentDescription = "Like",
-                            tint = if (liked) Color(0xFFEF4444) else Color(0xFF9CA3AF),
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = if (liked) "1" else "0",
-                            fontSize = 12.sp,
-                            color = Color(0xFF9CA3AF)
-                        )
+                        // Comment button
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { onClick() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Comment,
+                                contentDescription = "Comments",
+                                tint = Color(0xFF9CA3AF),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = link.commentCount.toString(),
+                                fontSize = 12.sp,
+                                color = Color(0xFF9CA3AF)
+                            )
+                        }
+                        
+                        // Like button
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { liked = !liked }
+                        ) {
+                            Icon(
+                                imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = "Like",
+                                tint = if (liked) Color(0xFFEF4444) else Color(0xFF9CA3AF),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = if (liked) "1" else "0",
+                                fontSize = 12.sp,
+                                color = Color(0xFF9CA3AF)
+                            )
+                        }
                     }
                 }
             }

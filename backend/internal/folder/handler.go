@@ -231,7 +231,7 @@ func (h *Handler) RemoveCollaborator(ctx context.Context, req *pb.RemoveCollabor
 func (h *Handler) ListCommunityFolders(ctx context.Context, req *pb.ListCommunityFoldersRequest) (*pb.ListCommunityFoldersResponse, error) {
 	folders, nextToken, err := h.svc.ListCommunity(ctx, req.Search, req.PageSize, req.PageToken)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to list community folders: %v", err)
 	}
 	var pbFolders []*pb.Folder
 	for _, f := range folders {
@@ -247,7 +247,7 @@ func (h *Handler) LikeFolder(ctx context.Context, req *pb.LikeFolderRequest) (*p
 	}
 	count, err := h.svc.Like(ctx, req.FolderId, userID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to like folder: %v", err)
 	}
 	return &pb.LikeFolderResponse{LikeCount: count}, nil
 }
@@ -259,7 +259,7 @@ func (h *Handler) UnlikeFolder(ctx context.Context, req *pb.UnlikeFolderRequest)
 	}
 	count, err := h.svc.Unlike(ctx, req.FolderId, userID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to unlike folder: %v", err)
 	}
 	return &pb.UnlikeFolderResponse{LikeCount: count}, nil
 }
@@ -267,7 +267,7 @@ func (h *Handler) UnlikeFolder(ctx context.Context, req *pb.UnlikeFolderRequest)
 func (h *Handler) ListTopFolders(ctx context.Context, req *pb.ListTopFoldersRequest) (*pb.ListTopFoldersResponse, error) {
 	folders, err := h.svc.ListTop(ctx, req.Limit)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to list top folders: %v", err)
 	}
 	var pbFolders []*pb.Folder
 	for _, f := range folders {

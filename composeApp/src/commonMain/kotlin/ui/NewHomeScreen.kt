@@ -48,6 +48,9 @@ fun NewHomeScreen(
     sessionManager: data.SessionManager? = null,
     onNavigateToAI: () -> Unit = {},
     viewModel: viewmodel.LinkViewModel,
+    onNavigateToFavorites: () -> Unit = {},
+    onNavigateToPublicLinks: () -> Unit = {},
+    onNavigateToFollowing: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val displayName by sessionManager?.displayName?.collectAsState() ?: remember { mutableStateOf(null) }
@@ -117,9 +120,22 @@ fun NewHomeScreen(
     val trendingLinks = remember(links) { links.sortedByDescending { it.updatedAt }.take(5) }
     val recentLinks = remember(links) { links.sortedByDescending { it.updatedAt }.take(3) }
     val savedCount = remember(links) { links.count { it.favorite } }
-    val sharedCount = remember(links) { links.count { it.likedByMe } }
-    // Note: tribeCount nécessiterait une liste de membres de la famille passée en paramètre
-    val tribeCount = 0
+    val sharedCount = remember(links) { links.count { it.visibility == "public" } }
+    
+    // Get following count from current user
+    val currentUserId = sessionManager?.userId?.collectAsState()?.value ?: ""
+    var tribeCount by remember { mutableStateOf(0) }
+    
+    LaunchedEffect(currentUserId) {
+        if (currentUserId.isNotEmpty()) {
+            val followRepository = data.FollowRepository(sessionManager = sessionManager!!)
+            followRepository.getFollowingCount(currentUserId).onSuccess { count ->
+                tribeCount = count
+            }.onFailure { error ->
+                println("ERROR: Failed to get following count: ${error.message}")
+            }
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         PullToRefreshBox(
@@ -230,16 +246,19 @@ fun NewHomeScreen(
                         StatCard(
                             label = "Idées sauvegardées",
                             value = savedCount.toString(),
+                            onClick = onNavigateToFavorites,
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             label = "Partagées",
                             value = sharedCount.toString(),
+                            onClick = onNavigateToPublicLinks,
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             label = "Ma tribu",
                             value = tribeCount.toString(),
+                            onClick = onNavigateToFollowing,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -428,10 +447,13 @@ fun NewHomeScreen(
 private fun StatCard(
     label: String,
     value: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier.height(70.dp),
+        modifier = modifier
+            .height(70.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         color = Color.White.copy(alpha = 0.2f)
     ) {

@@ -37,7 +37,11 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
     var selectedColor by remember { mutableStateOf(folder.color) }
     var selectedVisibility by remember { mutableStateOf(folder.visibility) }
     var submitted by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isDeleting by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val syncStatus by viewModel.syncStatus.collectAsState()
 
     // Écran de confirmation
     if (submitted) {
@@ -80,6 +84,40 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
         return
     }
 
+    // Dialogue de confirmation de suppression
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Supprimer le dossier ?") },
+            text = { Text("Cette action est irréversible. Les liens associés seront orphelins.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        isDeleting = true
+                        scope.launch {
+                            try {
+                                viewModel.deleteFolder(folder.id)
+                                delay(500)
+                                onBack()
+                            } catch (e: Exception) {
+                                errorMessage = "Erreur lors de la suppression: ${e.message}"
+                                isDeleting = false
+                            }
+                        }
+                    }
+                ) {
+                    Text("Supprimer", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Annuler")
+                }
+            }
+        )
+    }
+
     Scaffold(
         containerColor = Color(0xFFF9FAFB)
     ) { padding ->
@@ -120,8 +158,33 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         text = "Modifier le dossier",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
+                        color = Color(0xFF111827),
+                        modifier = Modifier.weight(1f)
                     )
+                    // Bouton supprimer
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFEE2E2))
+                            .clickable(enabled = !isDeleting) { showDeleteConfirm = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isDeleting) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = Color(0xFFEF4444)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Supprimer",
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -133,6 +196,71 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
+                // Message d'erreur
+                errorMessage?.let { error ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color(0xFFFEE2E2),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Warning,
+                                contentDescription = null,
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = error,
+                                fontSize = 13.sp,
+                                color = Color(0xFFEF4444),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Fermer",
+                                tint = Color(0xFFEF4444),
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clickable { errorMessage = null }
+                            )
+                        }
+                    }
+                }
+
+                // Message de statut de synchronisation
+                syncStatus?.let { status ->
+                    if (status.startsWith("Erreur")) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color(0xFFFEF3C7),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Info,
+                                    contentDescription = null,
+                                    tint = Color(0xFFF59E0B),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = status,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF92400E)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // Nom
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(

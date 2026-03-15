@@ -40,6 +40,8 @@ fun ExploreScreen(
     onNavigateToDetail: (String) -> Unit,
     onSaveLink: (Link) -> Unit,
     viewModel: viewmodel.LinkViewModel,
+    sessionManager: data.SessionManager? = null,
+    followRepository: data.FollowRepository? = null,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -49,6 +51,7 @@ fun ExploreScreen(
     var showPublicOnly by remember { mutableStateOf(false) }
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()
+    val currentUserId by sessionManager?.userId?.collectAsState() ?: remember { mutableStateOf(null) }
 
     val filteredLinks = remember(links, searchQuery, selectedCategory, sortOption, showPublicOnly) {
         val filtered = links.filter { link ->
@@ -56,7 +59,7 @@ fun ExploreScreen(
                 link.title.contains(searchQuery, ignoreCase = true) ||
                 link.tags.any { it.contains(searchQuery, ignoreCase = true) }
             val matchesCategory = selectedCategory == null || link.category == selectedCategory
-            val matchesPublic = !showPublicOnly || link.likedByMe
+            val matchesPublic = !showPublicOnly || link.visibility == "public"
             matchesSearch && matchesCategory && matchesPublic
         }
         
@@ -414,7 +417,10 @@ fun ExploreScreen(
                     IdeaCard(
                         link = link,
                         onClick = { onNavigateToDetail(link.id) },
-                        onSaveClick = { onSaveLink(link) }
+                        onSaveClick = { onSaveLink(link) },
+                        sessionManager = sessionManager,
+                        followRepository = followRepository,
+                        currentUserId = currentUserId
                     )
                 }
             }
