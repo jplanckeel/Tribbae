@@ -25,6 +25,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ui.components.getCategoryColor
 import ui.components.getCategoryEmoji
+import ui.components.TagInputWithAutocomplete
 import viewmodel.LinkViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -294,135 +295,15 @@ fun ModernEditLinkScreen(
                 }
 
                 // Tags
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Tags",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
-                    )
-                    
-                    // Tags actuels (chips)
-                    if (tagsList.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            tagsList.forEach { tag ->
-                                Surface(
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = Color(0xFFFFF7ED)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = tag,
-                                            fontSize = 13.sp,
-                                            color = Color(0xFFF97316),
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Icon(
-                                            imageVector = Icons.Filled.Close,
-                                            contentDescription = "Supprimer",
-                                            tint = Color(0xFFF97316),
-                                            modifier = Modifier
-                                                .size(14.dp)
-                                                .clickable {
-                                                    tagsList = tagsList.filter { it != tag }
-                                                    tags = tagsList.joinToString(", ")
-                                                }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Champ de saisie avec bouton Ajouter
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = tagInput,
-                            onValueChange = { tagInput = it },
-                            placeholder = { Text("Ajouter un tag", fontSize = 14.sp) },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                focusedBorderColor = Color(0xFFF97316),
-                                unfocusedBorderColor = Color(0xFFF3F4F6)
-                            ),
-                            singleLine = true
-                        )
-                        Button(
-                            onClick = {
-                                if (tagInput.isNotBlank() && !tagsList.contains(tagInput.trim())) {
-                                    tagsList = tagsList + tagInput.trim()
-                                    tags = tagsList.joinToString(", ")
-                                    tagInput = ""
-                                }
-                            },
-                            enabled = tagInput.isNotBlank(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFF97316)
-                            ),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                    
-                    // Suggestions de tags
-                    val suggestedTags = listOf("famille", "enfants", "nature", "vacances", "weekend", "anniversaire")
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        suggestedTags.take(4).forEach { suggestion ->
-                            if (!tagsList.contains(suggestion)) {
-                                Surface(
-                                    onClick = {
-                                        tagsList = tagsList + suggestion
-                                        tags = tagsList.joinToString(", ")
-                                    },
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = Color(0xFFF3F4F6)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Add,
-                                            contentDescription = null,
-                                            tint = Color(0xFF6B7280),
-                                            modifier = Modifier.size(12.dp)
-                                        )
-                                        Text(
-                                            text = suggestion,
-                                            fontSize = 11.sp,
-                                            color = Color(0xFF6B7280)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                val allKnownTags by viewModel.tags.collectAsState()
+                TagInputWithAutocomplete(
+                    tagsList = tagsList,
+                    onTagsChanged = { updated ->
+                        tagsList = updated
+                        tags = updated.joinToString(", ")
+                    },
+                    allAvailableTags = allKnownTags
+                )
 
                 // Dossier (menu déroulant)
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
