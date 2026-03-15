@@ -14,7 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import data.Link
+import data.Comment
+import data.CommentRepository
+import data.FollowRepository
+import data.SessionManager
+import kotlinx.coroutines.launch
 import ui.components.CategoryPatternBackground
 import ui.components.getCategoryColor
 import ui.components.getCategoryEmoji
@@ -41,13 +48,48 @@ fun LinkDetailScreen(
     onOpenUrl: ((String) -> Unit)? = null,
     readOnly: Boolean = false,
     onSaveToMyList: ((Link, String?) -> Unit)? = null,
-    folders: List<data.Folder> = emptyList()
+    folders: List<data.Folder> = emptyList(),
+    followRepository: FollowRepository? = null,
+    sessionManager: SessionManager? = null,
+    commentRepository: CommentRepository? = null
 ) {
     val categoryColor = getCategoryColor(link.category)
+    val coroutineScope = rememberCoroutineScope()
     var showSaveDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(link.favorite) }
     var liked by remember { mutableStateOf(false) }
+    var isFollowing by remember { mutableStateOf(false) }
+    var isLoadingFollow by remember { mutableStateOf(false) }
+    
+    // Comments state
+    var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
+    var isLoadingComments by remember { mutableStateOf(false) }
+    var commentText by remember { mutableStateOf("") }
+    var isPostingComment by remember { mutableStateOf(false) }
+    
+    // Check if we're following this user
+    LaunchedEffect(link.ownerId) {
+        if (followRepository != null && link.ownerId.isNotEmpty() && sessionManager?.getUserId() != link.ownerId) {
+            followRepository.isFollowing(link.ownerId).onSuccess { following ->
+                isFollowing = following
+            }
+        }
+    }
+    
+    // Load comments
+    LaunchedEffect(link.id) {
+        if (commentRepository != null) {
+            isLoadingComments = true
+            commentRepository.getComments(link.id).onSuccess { loadedComments ->
+                comments = loadedComments
+                isLoadingComments = false
+            }.onFailure {
+                println("ERROR: Failed to load comments: ${it.message}")
+                isLoadingComments = false
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -289,29 +331,75 @@ fun LinkDetailScreen(
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = link.ownerDisplayName.ifBlank { "Anonyme" },
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF111827)
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = link.ownerDisplayName.ifBlank { "Anonyme" },
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF111827)
+                                )
+                                if (link.ownerIsAdmin) {
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Color(0xFFEF4444)
+                                    ) {
+                                        Text(
+                                            text = "ADMIN",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
                             Text(
                                 text = "Partagé récemment",
                                 fontSize = 12.sp,
                                 color = Color(0xFF9CA3AF)
                             )
                         }
-                        Button(
-                            onClick = { },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = categoryColor),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            Text(
-                                text = "Suivre",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                        // Only show follow button if not viewing own link and followRepository is available
+                        if (followRepository != null && sessionManager?.getUserId() != link.ownerId && link.ownerId.isNotEmpty()) {
+                            Button(
+                                onClick = {
+                                    isLoadingFollow = true
+                                    coroutineScope.launch {
+                                        if (isFollowing) {
+                                            followRepository.unfollow(link.ownerId).onSuccess {
+                                                isFollowing = false
+                                                isLoadingFollow = false
+                                            }.onFailure {
+                                                println("ERROR: Failed to unfollow: ${it.message}")
+                                                isLoadingFollow = false
+                                            }
+                                        } else {
+                                            followRepository.follow(link.ownerId).onSuccess {
+                                                isFollowing = true
+                                                isLoadingFollow = false
+                                            }.onFailure {
+                                                println("ERROR: Failed to follow: ${it.message}")
+                                                isLoadingFollow = false
+                                            }
+                                        }
+                                    }
+                                },
+                                enabled = !isLoadingFollow,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isFollowing) Color(0xFF9CA3AF) else categoryColor
+                                ),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    text = if (isFollowing) "Abonné" else "Suivre",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
 
@@ -595,8 +683,172 @@ fun LinkDetailScreen(
                             }
                         }
                     }
+                    
+                    // Comments Section
+                    Divider(color = Color(0xFFF3F4F6), thickness = 1.dp)
+                    
+                    Column(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Commentaires",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF111827)
+                            )
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFFF3F4F6)
+                            ) {
+                                Text(
+                                    text = comments.size.toString(),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF6B7280),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        
+                        // Comment input field
+                        if (commentRepository != null && sessionManager != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(categoryColor, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = (sessionManager.getDisplayName()?.firstOrNull()?.uppercase() ?: "?"),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = commentText,
+                                        onValueChange = { commentText = it },
+                                        placeholder = { Text("Ajouter un commentaire...", fontSize = 14.sp) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = categoryColor,
+                                            unfocusedBorderColor = Color(0xFFE5E7EB)
+                                        ),
+                                        minLines = 2,
+                                        maxLines = 4
+                                    )
+                                    if (commentText.isNotBlank()) {
+                                        Button(
+                                            onClick = {
+                                                isPostingComment = true
+                                                coroutineScope.launch {
+                                                    commentRepository?.createComment(link.id, commentText)?.onSuccess { newComment ->
+                                                        comments = listOf(newComment) + comments
+                                                        commentText = ""
+                                                        isPostingComment = false
+                                                    }?.onFailure {
+                                                        println("ERROR: Failed to create comment: ${it.message}")
+                                                        isPostingComment = false
+                                                    }
+                                                }
+                                            },
+                                            enabled = !isPostingComment,
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = categoryColor),
+                                            modifier = Modifier.align(Alignment.End)
+                                        ) {
+                                            Text(
+                                                text = if (isPostingComment) "Publication..." else "Publier",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Comments list
+                        if (isLoadingComments) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = categoryColor,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        } else if (comments.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.ChatBubbleOutline,
+                                        contentDescription = null,
+                                        tint = Color(0xFF9CA3AF),
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Text(
+                                        text = "Aucun commentaire",
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF9CA3AF)
+                                    )
+                                    Text(
+                                        text = "Soyez le premier à commenter",
+                                        fontSize = 12.sp,
+                                        color = Color(0xFFD1D5DB)
+                                    )
+                                }
+                            }
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                comments.forEach { comment ->
+                                    CommentItem(
+                                        comment = comment,
+                                        categoryColor = categoryColor,
+                                        currentUserId = sessionManager?.getUserId(),
+                                        linkOwnerId = link.ownerId,
+                                        onDelete = { commentId ->
+                                            coroutineScope.launch {
+                                                commentRepository?.deleteComment(commentId)?.onSuccess {
+                                                    comments = comments.filter { it.id != commentId }
+                                                }?.onFailure {
+                                                    println("ERROR: Failed to delete comment: ${it.message}")
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
-            }
+        }
         }
 
         // Bottom CTA
@@ -777,5 +1029,105 @@ fun LinkDetailScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun CommentItem(
+    comment: Comment,
+    categoryColor: Color,
+    currentUserId: String?,
+    linkOwnerId: String,
+    onDelete: (String) -> Unit
+) {
+    val canDelete = currentUserId == comment.userId || currentUserId == linkOwnerId
+    
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(categoryColor.copy(alpha = 0.3f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = (comment.userDisplayName.firstOrNull()?.uppercase() ?: "?"),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = categoryColor
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = comment.userDisplayName.ifBlank { "Anonyme" },
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF111827)
+                )
+                if (comment.userIsAdmin) {
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFFEF4444)
+                    ) {
+                        Text(
+                            text = "ADMIN",
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                Text(
+                    text = "•",
+                    fontSize = 11.sp,
+                    color = Color(0xFF9CA3AF)
+                )
+                Text(
+                    text = formatTimestamp(comment.createdAt),
+                    fontSize = 11.sp,
+                    color = Color(0xFF9CA3AF)
+                )
+            }
+            Text(
+                text = comment.text,
+                fontSize = 14.sp,
+                color = Color(0xFF374151),
+                lineHeight = 20.sp
+            )
+        }
+        if (canDelete) {
+            IconButton(
+                onClick = { onDelete(comment.id) },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = "Supprimer",
+                    tint = Color(0xFF9CA3AF),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+fun formatTimestamp(timestamp: String): String {
+    // Simple timestamp formatting - could be enhanced with proper date parsing
+    return try {
+        // For now, just show "à l'instant" as placeholder
+        // In production, you'd parse the ISO timestamp and calculate relative time
+        "à l'instant"
+    } catch (e: Exception) {
+        "récemment"
     }
 }

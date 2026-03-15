@@ -28,6 +28,7 @@ type Link struct {
 	ReminderEnabled bool               `bson:"reminder_enabled" json:"reminder_enabled"`
 	Rating          int32              `bson:"rating"           json:"rating"`
 	Ingredients     []string           `bson:"ingredients"      json:"ingredients"`
+	Visibility      string             `bson:"visibility"       json:"visibility"` // "private" | "public"
 	Favorite        bool               `bson:"favorite"         json:"favorite"`
 	CreatedAt       time.Time          `bson:"created_at"       json:"created_at"`
 	UpdatedAt       time.Time          `bson:"updated_at"       json:"updated_at"`
@@ -135,6 +136,10 @@ func (s *Service) Create(ctx context.Context, ownerID string, l *Link) (*Link, e
 	if l.Ingredients == nil {
 		l.Ingredients = []string{}
 	}
+	// Default to private if visibility is not set
+	if l.Visibility == "" {
+		l.Visibility = "private"
+	}
 	if _, err := s.col.InsertOne(ctx, l); err != nil {
 		return nil, err
 	}
@@ -233,7 +238,7 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 		"tags": l.Tags, "age_range": l.AgeRange, "location": l.Location,
 		"price": l.Price, "image_url": l.ImageURL, "event_date": l.EventDate,
 		"reminder_enabled": l.ReminderEnabled, "rating": l.Rating,
-		"ingredients": l.Ingredients, "updated_at": l.UpdatedAt,
+		"ingredients": l.Ingredients, "visibility": l.Visibility, "updated_at": l.UpdatedAt,
 	}}
 	if _, err := s.col.UpdateOne(ctx, bson.M{"_id": id}, update); err != nil {
 		return nil, err
@@ -369,7 +374,7 @@ func (s *Service) publicFolderIDs(ctx context.Context) ([]string, error) {
 	return ids, nil
 }
 
-// ListCommunity retourne les liens des dossiers publics
+// ListCommunity retourne les liens publics des dossiers publics
 func (s *Service) ListCommunity(ctx context.Context, category string, limit int32) ([]*Link, error) {
 	if limit <= 0 {
 		limit = 6
@@ -380,7 +385,11 @@ func (s *Service) ListCommunity(ctx context.Context, category string, limit int3
 		return []*Link{}, nil
 	}
 
-	filter := bson.M{"folder_id": bson.M{"$in": folderIDs}}
+	// Filter by public folders AND public visibility
+	filter := bson.M{
+		"folder_id":  bson.M{"$in": folderIDs},
+		"visibility": "public",
+	}
 	if category != "" {
 		filter["category"] = category
 	}
@@ -402,7 +411,7 @@ func (s *Service) ListCommunity(ctx context.Context, category string, limit int3
 	return links, nil
 }
 
-// ListNew retourne les derniers liens des dossiers publics, triés par date de création décroissante
+// ListNew retourne les derniers liens publics des dossiers publics, triés par date de création décroissante
 func (s *Service) ListNew(ctx context.Context, limit int32) ([]*Link, error) {
 	if limit <= 0 {
 		limit = 10
@@ -415,7 +424,12 @@ func (s *Service) ListNew(ctx context.Context, limit int32) ([]*Link, error) {
 
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(int64(limit))
 
-	cursor, err := s.col.Find(ctx, bson.M{"folder_id": bson.M{"$in": folderIDs}}, opts)
+	// Filter by public folders AND public visibility
+	filter := bson.M{
+		"folder_id":  bson.M{"$in": folderIDs},
+		"visibility": "public",
+	}
+	cursor, err := s.col.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -431,7 +445,9 @@ func (s *Service) ListNew(ctx context.Context, limit int32) ([]*Link, error) {
 	return links, nil
 }
 
-// GetOwnerInfo retourne le display_name et le statut admin d'un user par son ID
+// GetOwnerInfo retourne le display_name et le statut admin d'un user par son ID.
+// Si le display_name n'est pas défini dans la base de données, retourne une chaîne vide (pas null).
+// Cette chaîne vide permet aux clients de gérer l'affichage d'un nom par défaut (ex: "Anonyme").
 func (s *Service) GetOwnerInfo(ctx context.Context, ownerID string) (string, bool) {
 	oid, err := primitive.ObjectIDFromHex(ownerID)
 	if err != nil {
@@ -444,5 +460,6 @@ func (s *Service) GetOwnerInfo(ctx context.Context, ownerID string) (string, boo
 	if err := s.userCol.FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
 		return "", false
 	}
+	// user.DisplayName sera une chaîne vide si le champ n'existe pas ou est vide dans MongoDB
 	return user.DisplayName, user.IsAdmin
 }

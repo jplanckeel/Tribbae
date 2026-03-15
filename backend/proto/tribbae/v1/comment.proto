@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package tribbae.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
+
+// --- Messages ---
+
+message Comment {
+  string id = 1;
+  string link_id = 2;
+  string user_id = 3;
+  string user_display_name = 4;
+  bool user_is_admin = 5;
+  string text = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message CreateCommentRequest {
+  string link_id = 1;
+  string text = 2;
+}
+
+message CreateCommentResponse {
+  Comment comment = 1;
+}
+
+message GetCommentsRequest {
+  string link_id = 1;
+}
+
+message GetCommentsResponse {
+  repeated Comment comments = 1;
+}
+
+message DeleteCommentRequest {
+  string comment_id = 1;
+}
+
+message DeleteCommentResponse {}
+
+message GetCommentCountRequest {
+  string link_id = 1;
+}
+
+message GetCommentCountResponse {
+  int32 count = 1;
+}
+
+// --- Service ---
+
+service CommentService {
+  rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse) {
+    option (google.api.http) = {
+      post: "/v1/links/{link_id}/comments"
+      body: "*"
+    };
+  }
+  rpc GetComments(GetCommentsRequest) returns (GetCommentsResponse) {
+    option (google.api.http) = {
+      get: "/v1/links/{link_id}/comments"
+    };
+  }
+  rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse) {
+    option (google.api.http) = {
+      delete: "/v1/comments/{comment_id}"
+    };
+  }
+  rpc GetCommentCount(GetCommentCountRequest) returns (GetCommentCountResponse) {
+    option (google.api.http) = {
+      get: "/v1/links/{link_id}/comments/count"
+    };
+  }
+}

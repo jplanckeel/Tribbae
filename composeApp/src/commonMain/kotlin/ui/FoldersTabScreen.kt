@@ -175,8 +175,7 @@ fun FoldersTabScreen(
                                 linkCount = viewModel.getLinksForFolder(folder.id).size,
                                 onClick = { selectedFolderId = folder.id },
                                 onEdit = { onEditFolderClick(folder) },
-                                onDelete = { viewModel.deleteFolder(folder.id) }
-                            )
+                                onDelete = { viewModel.deleteFolder(folder.id) }                            )
                         }
                     }
                 }

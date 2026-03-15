@@ -27,6 +27,22 @@ captures/
 # ── Kotlin ───────────────────────────────────────────────
 .kotlin/
 composeApp/build/
+composeApp/.kotlin/
+**/*.kotlin_module
+**/kotlin-tooling-metadata.json
+
+# ── Android build outputs ────────────────────────────────
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
+proguard/
+mapping.txt
+seeds.txt
+usage.txt
 
 
 # ── Go (backend) ─────────────────────────────────────────

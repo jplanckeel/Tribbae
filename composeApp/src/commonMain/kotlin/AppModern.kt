@@ -25,6 +25,8 @@ fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val authRepository = remember { AuthRepository() }
+    val followRepository = remember { FollowRepository(sessionManager = sessionManager) }
+    val commentRepository = remember { CommentRepository(sessionManager = sessionManager) }
     val isLoggedIn by sessionManager.isLoggedIn.collectAsState()
     
     LaunchedEffect(isLoggedIn) {
@@ -38,7 +40,9 @@ fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null) {
         vm = vm, 
         sharedUrl = sharedUrl, 
         sessionManager = sessionManager, 
-        authRepository = authRepository
+        authRepository = authRepository,
+        followRepository = followRepository,
+        commentRepository = commentRepository
     )
 }
 
@@ -47,7 +51,9 @@ private fun ModernMainApp(
     vm: LinkViewModel, 
     sharedUrl: String?, 
     sessionManager: SessionManager,
-    authRepository: AuthRepository
+    authRepository: AuthRepository,
+    followRepository: FollowRepository,
+    commentRepository: CommentRepository
 ) {
     var currentDestination by remember { mutableStateOf(NavDestination.HOME) }
     var subScreen by remember { mutableStateOf<SubScreen?>(
@@ -91,7 +97,10 @@ private fun ModernMainApp(
                     onBack = { subScreen = null },
                     onDelete = { vm.deleteLink(freshLink.id); subScreen = null },
                     onEdit = { subScreen = SubScreen.Edit },
-                    onOpenUrl = vm.urlOpener
+                    onOpenUrl = vm.urlOpener,
+                    followRepository = followRepository,
+                    sessionManager = sessionManager,
+                    commentRepository = commentRepository
                 )
             }
             return
@@ -121,7 +130,10 @@ private fun ModernMainApp(
                             ingredients = linkToSave.ingredients
                         )
                     },
-                    folders = folders
+                    folders = folders,
+                    followRepository = followRepository,
+                    sessionManager = sessionManager,
+                    commentRepository = commentRepository
                 )
             }
             return
@@ -167,6 +179,12 @@ private fun ModernMainApp(
                     links = links,
                     onBack = { subScreen = null },
                     onEdit = { subScreen = SubScreen.EditFolder },
+                    onDelete = {
+                        vm.deleteFolder(folder.id) {
+                            selectedFolder = null
+                            subScreen = null
+                        }
+                    },
                     onLinkClick = { linkId ->
                         selectedLink = links.find { it.id == linkId }
                         subScreen = SubScreen.Detail

@@ -408,6 +408,10 @@
         },
         "favorite": {
           "type": "boolean"
+        },
+        "visibility": {
+          "type": "string",
+          "title": "\"private\" | \"public\""
         }
       }
     },
@@ -494,6 +498,10 @@
         },
         "favorite": {
           "type": "boolean"
+        },
+        "visibility": {
+          "type": "string",
+          "title": "\"private\" | \"public\""
         }
       }
     },
@@ -607,6 +615,10 @@
         },
         "ownerIsAdmin": {
           "type": "boolean"
+        },
+        "visibility": {
+          "type": "string",
+          "title": "\"private\" | \"public\""
         }
       }
     },

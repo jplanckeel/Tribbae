@@ -33,11 +33,31 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     /** Client API authentifié */
     private var authenticatedClient: data.AuthenticatedApiClient? = null
     
+    /** Follow repository */
+    private var followRepository: data.FollowRepository? = null
+    
+    /** Comment repository */
+    private var commentRepository: data.CommentRepository? = null
+    
     private val _syncStatus = MutableStateFlow<String?>(null)
     val syncStatus: StateFlow<String?> = _syncStatus.asStateFlow()
     
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+    
+    // Follow state
+    private val _followStatus = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val followStatus: StateFlow<Map<String, Boolean>> = _followStatus.asStateFlow()
+    
+    private val _followingCount = MutableStateFlow(0)
+    val followingCount: StateFlow<Int> = _followingCount.asStateFlow()
+    
+    // Comment state
+    private val _comments = MutableStateFlow<Map<String, List<data.Comment>>>(emptyMap())
+    val comments: StateFlow<Map<String, List<data.Comment>>> = _comments.asStateFlow()
+    
+    private val _commentCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val commentCounts: StateFlow<Map<String, Int>> = _commentCounts.asStateFlow()
 
     /** Fonction pour récupérer l'image OG — injectée côté Android */
     var ogImageFetcher: (suspend (String) -> String?)? = null
@@ -168,13 +188,28 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
 
-    fun deleteFolder(id: String) { 
-        repository.deleteFolder(id)
-        updateFilteredLinks()
-        
-        // Supprimer du backend si authentifié
-        if (authenticatedClient != null) {
-            deleteFolderFromBackend(id)
+    fun deleteFolder(id: String, onSuccess: () -> Unit = {}) {
+        val client = authenticatedClient
+        if (client == null) {
+            // Mode hors-ligne : suppression locale uniquement
+            repository.deleteFolder(id)
+            updateFilteredLinks()
+            onSuccess()
+            return
+        }
+
+        // Appel backend d'abord, suppression locale uniquement en cas de succès
+        viewModelScope.launch {
+            try {
+                client.deleteFolder(id)
+                repository.deleteFolder(id)
+                updateFilteredLinks()
+                println("DEBUG: Folder $id deleted successfully")
+                onSuccess()
+            } catch (e: Exception) {
+                println("ERROR: Failed to delete folder $id - ${e.message}")
+                _syncStatus.value = "Erreur suppression dossier: ${e.message}"
+            }
         }
     }
 
@@ -382,15 +417,251 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         _filteredLinks.value = results
     }
     
+    // ── Follow Management ─────────────────────────────────────────────────────
+    
+    /**
+     * Follow a user
+     * @param userId The ID of the user to follow
+     */
+    fun followUser(userId: String) {
+        val repo = followRepository ?: return
+        viewModelScope.launch {
+            try {
+                repo.follow(userId).getOrThrow()
+                // Update local state
+                _followStatus.value = _followStatus.value + (userId to true)
+                // Refresh following count
+                loadFollowingCount()
+            } catch (e: Exception) {
+                println("ERROR: Failed to follow user: ${e.message}")
+                _syncStatus.value = "Erreur: impossible de suivre l'utilisateur"
+            }
+        }
+    }
+    
+    /**
+     * Unfollow a user
+     * @param userId The ID of the user to unfollow
+     */
+    fun unfollowUser(userId: String) {
+        val repo = followRepository ?: return
+        viewModelScope.launch {
+            try {
+                repo.unfollow(userId).getOrThrow()
+                // Update local state
+                _followStatus.value = _followStatus.value + (userId to false)
+                // Refresh following count
+                loadFollowingCount()
+            } catch (e: Exception) {
+                println("ERROR: Failed to unfollow user: ${e.message}")
+                _syncStatus.value = "Erreur: impossible de ne plus suivre l'utilisateur"
+            }
+        }
+    }
+    
+    /**
+     * Check if the current user is following another user
+     * @param userId The ID of the user to check
+     */
+    fun checkFollowStatus(userId: String) {
+        val repo = followRepository ?: return
+        viewModelScope.launch {
+            try {
+                val isFollowing = repo.isFollowing(userId).getOrThrow()
+                _followStatus.value = _followStatus.value + (userId to isFollowing)
+            } catch (e: Exception) {
+                println("ERROR: Failed to check follow status: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Load the following count for the current user
+     */
+    private fun loadFollowingCount() {
+        val repo = followRepository ?: return
+        val userId = sessionManager?.getUserId() ?: return
+        viewModelScope.launch {
+            try {
+                val count = repo.getFollowingCount(userId).getOrThrow()
+                _followingCount.value = count
+            } catch (e: Exception) {
+                println("ERROR: Failed to load following count: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Get the following count for the current user
+     * @return The number of users being followed
+     */
+    suspend fun getFollowingCount(): Int {
+        val repo = followRepository ?: return 0
+        val userId = sessionManager?.getUserId() ?: return 0
+        return try {
+            repo.getFollowingCount(userId).getOrThrow()
+        } catch (e: Exception) {
+            println("ERROR: Failed to get following count: ${e.message}")
+            0
+        }
+    }
+    
+    // ── Comment Management ────────────────────────────────────────────────────
+    
+    /**
+     * Create a new comment on a link
+     * @param linkId The ID of the link to comment on
+     * @param text The comment text
+     */
+    fun createComment(linkId: String, text: String) {
+        val repo = commentRepository ?: return
+        viewModelScope.launch {
+            try {
+                val comment = repo.createComment(linkId, text).getOrThrow()
+                // Update local state - add comment to the list
+                val currentComments = _comments.value[linkId] ?: emptyList()
+                _comments.value = _comments.value + (linkId to listOf(comment) + currentComments)
+                // Update comment count
+                val currentCount = _commentCounts.value[linkId] ?: 0
+                _commentCounts.value = _commentCounts.value + (linkId to currentCount + 1)
+            } catch (e: Exception) {
+                println("ERROR: Failed to create comment: ${e.message}")
+                _syncStatus.value = "Erreur: impossible de créer le commentaire"
+            }
+        }
+    }
+    
+    /**
+     * Load comments for a link
+     * @param linkId The ID of the link
+     */
+    fun loadComments(linkId: String) {
+        val repo = commentRepository ?: return
+        viewModelScope.launch {
+            try {
+                val comments = repo.getComments(linkId).getOrThrow()
+                _comments.value = _comments.value + (linkId to comments)
+                _commentCounts.value = _commentCounts.value + (linkId to comments.size)
+            } catch (e: Exception) {
+                println("ERROR: Failed to load comments: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Delete a comment
+     * @param commentId The ID of the comment to delete
+     * @param linkId The ID of the link the comment belongs to
+     */
+    fun deleteComment(commentId: String, linkId: String) {
+        val repo = commentRepository ?: return
+        viewModelScope.launch {
+            try {
+                repo.deleteComment(commentId).getOrThrow()
+                // Update local state - remove comment from the list
+                val currentComments = _comments.value[linkId] ?: emptyList()
+                _comments.value = _comments.value + (linkId to currentComments.filter { it.id != commentId })
+                // Update comment count
+                val currentCount = _commentCounts.value[linkId] ?: 0
+                _commentCounts.value = _commentCounts.value + (linkId to maxOf(0, currentCount - 1))
+            } catch (e: Exception) {
+                println("ERROR: Failed to delete comment: ${e.message}")
+                _syncStatus.value = "Erreur: impossible de supprimer le commentaire"
+            }
+        }
+    }
+    
+    /**
+     * Load comment count for a link
+     * @param linkId The ID of the link
+     */
+    fun loadCommentCount(linkId: String) {
+        val repo = commentRepository ?: return
+        viewModelScope.launch {
+            try {
+                val count = repo.getCommentCount(linkId).getOrThrow()
+                _commentCounts.value = _commentCounts.value + (linkId to count)
+            } catch (e: Exception) {
+                println("ERROR: Failed to load comment count: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Get comments for a link from state
+     * @param linkId The ID of the link
+     * @return List of comments
+     */
+    fun getCommentsForLink(linkId: String): List<data.Comment> {
+        return _comments.value[linkId] ?: emptyList()
+    }
+    
+    /**
+     * Get comment count for a link from state
+     * @param linkId The ID of the link
+     * @return The number of comments
+     */
+    fun getCommentCountForLink(linkId: String): Int {
+        return _commentCounts.value[linkId] ?: 0
+    }
+    
+    // ── Visibility Management ─────────────────────────────────────────────────
+    
+    /**
+     * Update link visibility
+     * @param linkId The ID of the link
+     * @param visibility The new visibility value ("private" or "public")
+     */
+    fun updateLinkVisibility(linkId: String, visibility: String) {
+        val link = repository.links.value.find { it.id == linkId } ?: return
+        val updatedLink = link.copy(visibility = visibility)
+        updateLink(updatedLink)
+    }
+    
+    /**
+     * Update folder visibility
+     * @param folderId The ID of the folder
+     * @param visibility The new visibility value ("PRIVATE", "PUBLIC", or "SHARED")
+     */
+    fun updateFolderVisibility(folderId: String, visibility: String) {
+        val folder = repository.folders.value.find { it.id == folderId } ?: return
+        val updatedFolder = folder.copy(visibility = visibility)
+        updateFolder(updatedFolder)
+    }
+    
+    /**
+     * Refresh data after visibility changes
+     * This ensures the UI reflects the latest visibility state
+     */
+    fun refreshAfterVisibilityChange() {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                _syncStatus.value = "Actualisation..."
+                performSync(client)
+                updateFilteredLinks()
+                _syncStatus.value = "Actualisé"
+            } catch (e: Exception) {
+                println("ERROR: Failed to refresh after visibility change: ${e.message}")
+                _syncStatus.value = "Erreur: ${e.message}"
+            }
+        }
+    }
+    
     // ── Backend Sync ──────────────────────────────────────────────────────────
     
     fun initAuthenticatedClient(sessionManager: data.SessionManager) {
         this.sessionManager = sessionManager
         authenticatedClient = data.AuthenticatedApiClient(sessionManager = sessionManager)
+        followRepository = data.FollowRepository(sessionManager = sessionManager)
+        commentRepository = data.CommentRepository(sessionManager = sessionManager)
         authToken = sessionManager.getToken()
         
         // Mettre à jour les liens existants avec le displayName si vide
         updateExistingLinksOwner()
+        
+        // Charger le nombre de following
+        loadFollowingCount()
     }
     
     private fun updateExistingLinksOwner() {
@@ -439,31 +710,34 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
     
     private suspend fun performSync(client: data.AuthenticatedApiClient) {
-        // Charger les dossiers
+        // Le backend est la source de vérité : on remplace tout localement
+
+        // Dossiers : remplacer la liste locale par celle du backend
         val foldersResponse = client.listFolders()
-        foldersResponse.folders.forEach { apiFolder ->
-            val localFolder = repository.folders.value.find { it.id == apiFolder.id }
-            
-            // Toujours synchroniser (le backend est la source de vérité)
-            val folder = apiFolderToFolder(apiFolder)
-            if (localFolder == null) {
+        val backendFolders = foldersResponse.folders.map { apiFolderToFolder(it) }
+        val backendFolderIds = backendFolders.map { it.id }.toSet()
+
+        // Supprimer les dossiers locaux absents du backend (ex: supprimés)
+        repository.folders.value
+            .filter { it.id !in backendFolderIds }
+            .forEach { repository.deleteFolder(it.id) }
+
+        // Ajouter ou mettre à jour les dossiers du backend
+        backendFolders.forEach { folder ->
+            if (repository.folders.value.none { it.id == folder.id }) {
                 repository.addFolder(folder)
             } else {
                 repository.updateFolder(folder)
             }
         }
-        
-        // Charger les liens
+
+        // Liens : remplacer la liste locale par celle du backend
         val linksResponse = client.listLinks()
-        linksResponse.links.forEach { apiLink ->
+        val backendLinks = linksResponse.links.map { apiLink ->
             val category = try {
                 LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
             } catch (_: Exception) { LinkCategory.IDEE }
-            
-            val localLink = repository.links.value.find { it.id == apiLink.id }
-            
-            // Toujours synchroniser (le backend est la source de vérité)
-            val link = Link(
+            Link(
                 id = apiLink.id,
                 title = apiLink.title,
                 url = apiLink.url,
@@ -482,7 +756,17 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 favorite = apiLink.likedByMe,
                 updatedAt = apiLink.updatedAt
             )
-            if (localLink == null) {
+        }
+        val backendLinkIds = backendLinks.map { it.id }.toSet()
+
+        // Supprimer les liens locaux absents du backend
+        repository.links.value
+            .filter { it.id !in backendLinkIds }
+            .forEach { repository.deleteLink(it.id) }
+
+        // Ajouter ou mettre à jour les liens du backend
+        backendLinks.forEach { link ->
+            if (repository.links.value.none { it.id == link.id }) {
                 repository.addLink(link)
             } else {
                 repository.updateLink(link)
@@ -609,17 +893,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
     
-    fun deleteFolderFromBackend(folderId: String) {
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            try {
-                client.deleteFolder(folderId)
-            } catch (e: Exception) {
-                _syncStatus.value = "Erreur suppression dossier: ${e.message}"
-            }
-        }
-    }
-
     private fun updateFolderOnBackend(folder: Folder) {
         val client = authenticatedClient ?: return
         viewModelScope.launch {

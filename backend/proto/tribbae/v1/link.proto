@@ -42,6 +42,7 @@ message Link {
   bool favorite = 21;
   string owner_display_name = 22;
   bool owner_is_admin = 23;
+  string visibility = 24;  // "private" | "public"
 }
 
 message CreateLinkRequest {
@@ -60,6 +61,7 @@ message CreateLinkRequest {
   int32 rating = 13;
   repeated string ingredients = 14;
   bool favorite = 15;
+  string visibility = 16;  // "private" | "public"
 }
 
 message CreateLinkResponse {
@@ -99,6 +101,7 @@ message UpdateLinkRequest {
   int32 rating = 14;
   repeated string ingredients = 15;
   bool favorite = 16;
+  string visibility = 17;  // "private" | "public"
 }
 
 message UpdateLinkResponse {

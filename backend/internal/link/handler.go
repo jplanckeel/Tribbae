@@ -48,6 +48,7 @@ func (h *Handler) toProto(ctx context.Context, l *Link, userID string) *pb.Link 
 		Favorite:         l.Favorite,
 		OwnerDisplayName: ownerDisplayName,
 		OwnerIsAdmin:     ownerIsAdmin,
+		Visibility:       l.Visibility,
 	}
 }
 
@@ -71,6 +72,7 @@ func (h *Handler) CreateLink(ctx context.Context, req *pb.CreateLinkRequest) (*p
 		ReminderEnabled: req.ReminderEnabled,
 		Rating:          req.Rating,
 		Ingredients:     req.Ingredients,
+		Visibility:      req.Visibility,
 	}
 	// Scraper OG si pas d'image fournie
 	if l.ImageURL == "" && l.URL != "" {
@@ -141,6 +143,7 @@ func (h *Handler) UpdateLink(ctx context.Context, req *pb.UpdateLinkRequest) (*p
 		ReminderEnabled: req.ReminderEnabled,
 		Rating:          req.Rating,
 		Ingredients:     req.Ingredients,
+		Visibility:      req.Visibility,
 	}
 	updated, err := h.svc.Update(ctx, req.LinkId, ownerID, l)
 	if err != nil {
