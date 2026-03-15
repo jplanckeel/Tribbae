@@ -117,8 +117,8 @@ fun NewHomeScreen(
         )
     }
 
-    val trendingLinks = remember(links) { links.sortedByDescending { it.updatedAt }.take(5) }
-    val recentLinks = remember(links) { links.sortedByDescending { it.updatedAt }.take(3) }
+    val trendingLinks = remember(links) { links.sortedByDescending { it.likeCount }.take(5) }
+    val recentLinks = remember(links) { links.sortedByDescending { it.createdAt }.take(3) }
     val savedCount = remember(links) { links.count { it.favorite } }
     val children by viewModel.children.collectAsState()
     val familyCount = children.size + 1

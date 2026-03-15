@@ -69,6 +69,7 @@ data class ApiAuthLink(
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
     val updatedAt: String = "",
+    val createdAt: String = "",
     val ownerDisplayName: String = "",
     val ownerIsAdmin: Boolean = false
 )

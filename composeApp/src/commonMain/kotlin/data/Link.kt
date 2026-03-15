@@ -54,6 +54,7 @@ data class Link(
     val ownerDisplayName: String = "",
     val ownerIsAdmin: Boolean = false,
     val visibility: String = "private",
+    val createdAt: String = "",
     val updatedAt: String = ""
 )
 
