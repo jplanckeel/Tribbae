@@ -754,7 +754,10 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 rating = apiLink.rating,
                 ingredients = apiLink.ingredients,
                 favorite = apiLink.likedByMe,
-                updatedAt = apiLink.updatedAt
+                updatedAt = apiLink.updatedAt,
+                ownerId = apiLink.ownerId,
+                ownerDisplayName = apiLink.ownerDisplayName,
+                ownerIsAdmin = apiLink.ownerIsAdmin
             )
         }
         val backendLinkIds = backendLinks.map { it.id }.toSet()
