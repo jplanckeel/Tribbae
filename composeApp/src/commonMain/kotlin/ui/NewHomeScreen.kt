@@ -120,22 +120,8 @@ fun NewHomeScreen(
     val trendingLinks = remember(links) { links.sortedByDescending { it.updatedAt }.take(5) }
     val recentLinks = remember(links) { links.sortedByDescending { it.updatedAt }.take(3) }
     val savedCount = remember(links) { links.count { it.favorite } }
-    val sharedCount = remember(links) { links.count { it.visibility == "public" } }
-    
-    // Get following count from current user
-    val currentUserId = sessionManager?.userId?.collectAsState()?.value ?: ""
-    var tribeCount by remember { mutableStateOf(0) }
-    
-    LaunchedEffect(currentUserId) {
-        if (currentUserId.isNotEmpty()) {
-            val followRepository = data.FollowRepository(sessionManager = sessionManager!!)
-            followRepository.getFollowingCount(currentUserId).onSuccess { count ->
-                tribeCount = count
-            }.onFailure { error ->
-                println("ERROR: Failed to get following count: ${error.message}")
-            }
-        }
-    }
+    val children by viewModel.children.collectAsState()
+    val familyCount = children.size + 1
 
     Box(modifier = modifier.fillMaxSize()) {
         PullToRefreshBox(
@@ -244,20 +230,20 @@ fun NewHomeScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         StatCard(
-                            label = "Idées sauvegardées",
-                            value = savedCount.toString(),
+                            label = "Idées",
+                            value = links.size.toString(),
                             onClick = onNavigateToFavorites,
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
-                            label = "Partagées",
-                            value = sharedCount.toString(),
+                            label = "Sauvegardées",
+                            value = savedCount.toString(),
                             onClick = onNavigateToPublicLinks,
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
-                            label = "Ma tribu",
-                            value = tribeCount.toString(),
+                            label = "Tribu",
+                            value = familyCount.toString(),
                             onClick = onNavigateToFollowing,
                             modifier = Modifier.weight(1f)
                         )
