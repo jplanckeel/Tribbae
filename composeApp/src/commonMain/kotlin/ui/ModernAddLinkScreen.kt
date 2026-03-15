@@ -50,6 +50,7 @@ fun ModernAddLinkScreen(
     var selectedFolderId by remember { mutableStateOf<String?>(null) }
     var expandedFolder by remember { mutableStateOf(false) }
     var submitted by remember { mutableStateOf(false) }
+    var imageUrl by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val folders by viewModel.folders.collectAsState()
 
@@ -194,49 +195,11 @@ fun ModernAddLinkScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 // Upload photo
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(176.dp)
-                        .clickable { /* TODO: Image picker */ },
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color(0xFFFFF7ED),
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = 2.dp,
-                        color = Color(0xFFF97316)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(Color(0xFFF97316), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.CameraAlt,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                        Text(
-                            text = "Ajouter une photo",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFFF97316)
-                        )
-                        Text(
-                            text = "PNG, JPG jusqu'à 10MB",
-                            fontSize = 12.sp,
-                            color = Color(0xFF9CA3AF)
-                        )
-                    }
-                }
+                ImagePickerSection(
+                    imageUrl = imageUrl,
+                    viewModel = viewModel,
+                    onImageSelected = { imageUrl = it }
+                )
 
                 // Titre
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -828,7 +791,8 @@ fun ModernAddLinkScreen(
                                 ageRange = ageRange,
                                 location = location,
                                 price = price,
-                                rating = rating
+                                rating = rating,
+                                imageUrl = imageUrl
                             )
                             submitted = true
                             scope.launch {

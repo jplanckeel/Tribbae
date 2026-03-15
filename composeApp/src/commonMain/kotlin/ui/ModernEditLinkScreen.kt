@@ -49,6 +49,7 @@ fun ModernEditLinkScreen(
     var selectedFolderId by remember { mutableStateOf(link.folderId) }
     var isPublic by remember { mutableStateOf(link.likedByMe) }
     var submitted by remember { mutableStateOf(false) }
+    var imageUrl by remember { mutableStateOf(link.imageUrl) }
     val scope = rememberCoroutineScope()
 
     val categories = listOf(
@@ -162,9 +163,9 @@ fun ModernEditLinkScreen(
             ) {
                 // Image picker
                 ImagePickerSection(
-                    imageUrl = link.imageUrl,
+                    imageUrl = imageUrl,
                     viewModel = viewModel,
-                    onImageSelected = { /* TODO: Gérer la mise à jour de l'image */ }
+                    onImageSelected = { imageUrl = it }
                 )
 
                 // Titre
@@ -758,7 +759,8 @@ fun ModernEditLinkScreen(
                                 location = location,
                                 rating = rating,
                                 folderId = selectedFolderId,
-                                likedByMe = isPublic
+                                likedByMe = isPublic,
+                                imageUrl = imageUrl
                             )
                             viewModel.updateLink(updatedLink)
                             submitted = true
