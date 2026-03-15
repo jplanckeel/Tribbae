@@ -561,84 +561,177 @@ private fun SimpleAuthDialog(
     onDismiss: () -> Unit,
     onSuccess: () -> Unit
 ) {
+    var isLoginMode by remember { mutableStateOf(true) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var displayName by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    
+
     AlertDialog(onDismissRequest = { if (!isLoading) onDismiss() }) {
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = Color.White
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Connexion",
+                    text = if (isLoginMode) "Connexion" else "Inscription",
                     fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF111827)
                 )
-                
+
+                // Tabs connexion / inscription
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(true to "Connexion", false to "Inscription").forEach { (mode, label) ->
+                        Button(
+                            onClick = { isLoginMode = mode; errorMessage = null },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isLoginMode == mode) Color(0xFFF97316) else Color(0xFFF3F4F6),
+                                contentColor = if (isLoginMode == mode) Color.White else Color(0xFF6B7280)
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(vertical = 10.dp)
+                        ) {
+                            Text(label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+
+                // Pseudo (inscription uniquement)
+                if (!isLoginMode) {
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = { displayName = it; errorMessage = null },
+                        label = { Text("Pseudo") },
+                        leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFF97316),
+                            focusedLabelColor = Color(0xFFF97316)
+                        )
+                    )
+                }
+
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it; errorMessage = null },
                     label = { Text("Email") },
+                    leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Email
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFF97316),
+                        focusedLabelColor = Color(0xFFF97316)
+                    )
                 )
-                
+
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it; errorMessage = null },
                     label = { Text("Mot de passe") },
+                    leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordVisible)
+                        androidx.compose.ui.text.input.VisualTransformation.None
+                    else
+                        androidx.compose.ui.text.input.PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
-                )
-                
-                if (errorMessage != null) {
-                    Text(
-                        text = errorMessage ?: "",
-                        color = Color(0xFFEF4444),
-                        fontSize = 12.sp
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFF97316),
+                        focusedLabelColor = Color(0xFFF97316)
                     )
+                )
+
+                if (errorMessage != null) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color(0xFFFFEBEE),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = errorMessage ?: "",
+                            color = Color(0xFFD32F2F),
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
                 }
-                
+
                 Button(
                     onClick = {
                         scope.launch {
                             isLoading = true
+                            errorMessage = null
                             try {
-                                val response = authRepository.login(email, password)
+                                val response = if (isLoginMode) {
+                                    authRepository.login(email, password)
+                                } else {
+                                    authRepository.register(email, password, displayName)
+                                }
                                 sessionManager.saveSession(response.userId, response.token, response.displayName)
                                 onSuccess()
                             } catch (e: Exception) {
-                                errorMessage = "Erreur de connexion"
+                                println("ERROR: Auth failed - ${e.message}")
+                                errorMessage = when {
+                                    e.message?.contains("401") == true || e.message?.contains("invalid credentials") == true ->
+                                        "Email ou mot de passe incorrect"
+                                    e.message?.contains("409") == true || e.message?.contains("already exists") == true ->
+                                        "Cet email est déjà utilisé"
+                                    e.message?.contains("timeout") == true || e.message?.contains("Connection") == true ->
+                                        "Impossible de se connecter au serveur"
+                                    else -> "Erreur: ${e.message}"
+                                }
                             } finally {
                                 isLoading = false
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !isLoading && email.isNotBlank() && password.isNotBlank()
+                    enabled = !isLoading && email.isNotBlank() && password.isNotBlank() &&
+                            (isLoginMode || displayName.isNotBlank()),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                     } else {
-                        Text("Se connecter")
+                        Text(
+                            text = if (isLoginMode) "Se connecter" else "S'inscrire",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
-                
+
                 TextButton(onClick = { if (!isLoading) onDismiss() }) {
-                    Text("Annuler")
+                    Text("Annuler", color = Color(0xFF6B7280))
                 }
             }
         }

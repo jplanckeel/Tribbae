@@ -838,7 +838,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     name = folder.name,
                     icon = folder.icon.name,
                     color = folder.color.name,
-                    visibility = "PRIVATE",
+                    visibility = folder.visibility.ifBlank { "PRIVATE" }.lowercase(),
                     bannerUrl = folder.bannerUrl,
                     tags = folder.tags
                 )
@@ -906,7 +906,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     name = folder.name,
                     icon = folder.icon.name,
                     color = folder.color.name,
-                    visibility = folder.visibility.ifBlank { "PRIVATE" },
+                    visibility = folder.visibility.ifBlank { "PRIVATE" }.lowercase(),
                     bannerUrl = folder.bannerUrl,
                     tags = folder.tags
                 )
@@ -968,7 +968,13 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             color = try { FolderColor.valueOf(apiFolder.color) } catch (_: Exception) { FolderColor.ORANGE },
             bannerUrl = apiFolder.bannerUrl,
             tags = apiFolder.tags,
-            visibility = apiFolder.visibility,
+            visibility = apiFolder.visibility.uppercase().let {
+                when (it) {
+                    "PUBLIC" -> "PUBLIC"
+                    "SHARED" -> "SHARED"
+                    else -> "PRIVATE"
+                }
+            },
             ownerDisplayName = apiFolder.ownerDisplayName,
             linkCount = apiFolder.linkCount,
             likeCount = apiFolder.likeCount,
