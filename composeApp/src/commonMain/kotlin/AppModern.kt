@@ -98,6 +98,7 @@ private fun ModernMainApp(
                     onDelete = { vm.deleteLink(freshLink.id); subScreen = null },
                     onEdit = { subScreen = SubScreen.Edit },
                     onOpenUrl = vm.urlOpener,
+                    folders = folders,
                     followRepository = followRepository,
                     sessionManager = sessionManager,
                     commentRepository = commentRepository
