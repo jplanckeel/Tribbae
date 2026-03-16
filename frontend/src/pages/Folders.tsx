@@ -368,15 +368,15 @@ export default function Folders() {
             <div
               key={folder.id}
               onClick={() => openFolder(folder)}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200 overflow-hidden group"
             >
-              <div className="h-28 bg-gradient-to-br from-amber-100 to-orange-50 relative">
+              <div className="h-28 bg-gradient-to-br from-orange-100 to-amber-50 relative overflow-hidden">
                 {folder.bannerUrl ? (
-                  <img src={folder.bannerUrl} alt="" className="w-full h-full object-cover" />
+                  <img src={folder.bannerUrl} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-4xl opacity-50">📁</div>
+                  <div className="w-full h-full flex items-center justify-center text-4xl opacity-50 transition-transform duration-300 group-hover:scale-110">📁</div>
                 )}
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm rounded-full p-1">
                   {visIcon(folder.visibility)}
                 </div>
               </div>
@@ -385,7 +385,7 @@ export default function Folders() {
                 {folder.tags && folder.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1 mb-1">
                     {folder.tags.slice(0, 3).map((tag: string, i: number) => (
-                      <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-600">
+                      <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-600">
                         {tag}
                       </span>
                     ))}

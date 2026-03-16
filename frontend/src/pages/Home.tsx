@@ -209,11 +209,13 @@ export default function Home() {
   });
 
   const CATEGORIES = [
-    { key: "LINK_CATEGORY_RECETTE", path: "recette", emoji: "🍳", label: "Recettes" },
-    { key: "LINK_CATEGORY_CADEAU", path: "cadeau", emoji: "🎁", label: "Cadeaux" },
-    { key: "LINK_CATEGORY_ACTIVITE", path: "activite", emoji: "🏃", label: "Activités" },
-    { key: "LINK_CATEGORY_EVENEMENT", path: "evenement", emoji: "📅", label: "Événements" },
-    { key: "LINK_CATEGORY_IDEE", path: "idee", emoji: "💡", label: "Idées" },
+    { key: "LINK_CATEGORY_RECETTE",    path: "recette",    emoji: "🍳", label: "Recettes",    color: "#81C784" },
+    { key: "LINK_CATEGORY_CADEAU",     path: "cadeau",     emoji: "🎁", label: "Cadeaux",     color: "#FF8C00" },
+    { key: "LINK_CATEGORY_ACTIVITE",   path: "activite",   emoji: "🏃", label: "Activités",   color: "#4FC3F7" },
+    { key: "LINK_CATEGORY_EVENEMENT",  path: "evenement",  emoji: "📅", label: "Événements",  color: "#FF7043" },
+    { key: "LINK_CATEGORY_IDEE",       path: "idee",       emoji: "💡", label: "Idées",       color: "#FFD700" },
+    { key: "LINK_CATEGORY_LIVRE",      path: "livre",      emoji: "📚", label: "Livres",      color: "#9C27B0" },
+    { key: "LINK_CATEGORY_DECORATION", path: "decoration", emoji: "🎨", label: "Décorations", color: "#E91E63" },
   ];
 
   // Vue détail d'un dossier public
@@ -357,15 +359,29 @@ export default function Home() {
               {/* Catégories */}
               <div className="mb-8">
                 <h2 className="text-lg font-bold text-gray-800 mb-3">🎯 Explorer par catégorie</h2>
-                <div className="grid grid-cols-5 gap-3">
-                  {CATEGORIES.map(({ path, emoji, label }) => (
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                  {CATEGORIES.map(({ path, emoji, label, color }) => (
                     <Link
                       key={path}
                       to={`/category/${path}`}
-                      className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 p-4 hover:border-orange-400 hover:shadow-md transition-all duration-300 text-center group"
+                      className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group"
                     >
-                      <div className="text-3xl mb-1.5 group-hover:scale-110 transition-transform">{emoji}</div>
-                      <p className="font-semibold text-gray-800 text-sm">{label}</p>
+                      <div
+                        className="relative h-20 sm:h-24 flex flex-col items-center justify-center gap-1"
+                        style={{ background: `linear-gradient(135deg, ${color}CC, ${color}88)` }}
+                      >
+                        <div className="absolute inset-0 flex flex-col justify-evenly opacity-10">
+                          {[0, 1].map((row) => (
+                            <div key={row} className="flex justify-evenly" style={{ marginLeft: row % 2 === 1 ? 12 : 0 }}>
+                              {Array.from({ length: 8 }).map((_, i) => (
+                                <span key={i} className="text-base">{emoji}</span>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                        <span className="text-2xl sm:text-3xl group-hover:scale-110 transition-transform relative z-10">{emoji}</span>
+                        <p className="text-white font-semibold text-[11px] sm:text-xs relative z-10 drop-shadow">{label}</p>
+                      </div>
                     </Link>
                   ))}
                 </div>

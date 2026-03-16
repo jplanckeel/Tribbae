@@ -100,7 +100,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         category: LinkCategory, folderId: String?,
         tags: List<String>, ageRange: String, location: String, price: String,
         eventDate: Long? = null, reminderEnabled: Boolean = false, rating: Int = 0,
-        imageUrl: String = "", ingredients: List<String> = emptyList()
+        imageUrl: String = "", ingredients: List<String> = emptyList(),
+        visibility: String = "private"
     ) {
         val ownerDisplayName = sessionManager?.getDisplayName() ?: ""
         val link = Link(
@@ -111,6 +112,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             eventDate = eventDate, reminderEnabled = reminderEnabled, rating = rating,
             imageUrl = imageUrl, ingredients = ingredients,
             ownerDisplayName = ownerDisplayName,
+            visibility = visibility,
             updatedAt = ""
         )
         repository.addLink(link)
@@ -758,7 +760,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 createdAt = apiLink.createdAt,
                 ownerId = apiLink.ownerId,
                 ownerDisplayName = apiLink.ownerDisplayName,
-                ownerIsAdmin = apiLink.ownerIsAdmin
+                ownerIsAdmin = apiLink.ownerIsAdmin,
+                visibility = apiLink.visibility.ifBlank { "private" }
             )
         }
         val backendLinkIds = backendLinks.map { it.id }.toSet()
@@ -817,7 +820,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     eventDate = link.eventDate ?: 0,
                     reminderEnabled = link.reminderEnabled,
                     rating = link.rating,
-                    ingredients = link.ingredients
+                    ingredients = link.ingredients,
+                    visibility = link.visibility.ifBlank { "private" }.lowercase()
                 )
                 val savedLink = client.createLink(req)
                 // Supprimer l'ancien lien local et ajouter le nouveau avec l'ID du backend
@@ -883,7 +887,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     eventDate = link.eventDate ?: 0,
                     reminderEnabled = link.reminderEnabled,
                     rating = link.rating,
-                    ingredients = link.ingredients
+                    ingredients = link.ingredients,
+                    visibility = link.visibility.ifBlank { "private" }.lowercase()
                 )
                 client.updateLink(req)
             } catch (e: Exception) {

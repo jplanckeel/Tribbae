@@ -18,9 +18,11 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-amber-50">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      {children}
+      <div className="pb-16 sm:pb-0">
+        {children}
+      </div>
     </div>
   );
 }

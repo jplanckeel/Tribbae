@@ -1,11 +1,21 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { community as communityApi, links as linksApi } from "../api";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faGlobe, faSearch, faXmark, faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
 import AdminBadge from "../components/AdminBadge";
 import SEOHead from "../components/SEOHead";
+
+const CATEGORIES = [
+  { path: "recette",    emoji: "🍳", label: "Recettes",    color: "#81C784" },
+  { path: "cadeau",     emoji: "🎁", label: "Cadeaux",     color: "#FF8C00" },
+  { path: "activite",   emoji: "🏃", label: "Activités",   color: "#4FC3F7" },
+  { path: "evenement",  emoji: "📅", label: "Événements",  color: "#FF7043" },
+  { path: "idee",       emoji: "💡", label: "Idées",       color: "#FFD700" },
+  { path: "livre",      emoji: "📚", label: "Livres",      color: "#9C27B0" },
+  { path: "decoration", emoji: "🎨", label: "Décorations", color: "#E91E63" },
+];
 
 function FolderCard({ folder, onOpen, onLike, liking }: any) {
   return (
@@ -177,6 +187,37 @@ export default function AllFolders() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">🌍 Toutes les listes publiques</h1>
           <p className="text-sm text-gray-500">{folders.length} liste{folders.length > 1 ? "s" : ""} disponible{folders.length > 1 ? "s" : ""}</p>
+        </div>
+      </div>
+
+      {/* Catégories */}
+      <div className="mb-6">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Explorer par catégorie</h2>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          {CATEGORIES.map(({ path, emoji, label, color }) => (
+            <Link
+              key={path}
+              to={`/category/${path}`}
+              className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 group"
+            >
+              <div
+                className="relative h-20 flex flex-col items-center justify-center gap-1"
+                style={{ background: `linear-gradient(135deg, ${color}CC, ${color}88)` }}
+              >
+                <div className="absolute inset-0 flex flex-col justify-evenly opacity-10">
+                  {[0, 1].map((row) => (
+                    <div key={row} className="flex justify-evenly" style={{ marginLeft: row % 2 === 1 ? 12 : 0 }}>
+                      {Array.from({ length: 8 }).map((_, i) => (
+                        <span key={i} className="text-base">{emoji}</span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <span className="text-2xl group-hover:scale-110 transition-transform relative z-10">{emoji}</span>
+                <p className="text-white font-semibold text-[11px] relative z-10 drop-shadow">{label}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 
