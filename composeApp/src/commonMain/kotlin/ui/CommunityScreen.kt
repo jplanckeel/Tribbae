@@ -25,6 +25,7 @@ import data.ApiClient
 import data.Link
 import data.LinkCategory
 import kotlinx.coroutines.launch
+import ui.components.getCategoryColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -176,6 +177,18 @@ fun CommunityScreen(
                 color = CategoryColors["IDEE"] ?: Orange,
                 selected = selectedCategory == LinkCategory.IDEE,
                 onClick = { selectedCategory = if (selectedCategory == LinkCategory.IDEE) null else LinkCategory.IDEE }
+            )
+            QuickExploreCategoryChip(
+                label = "Livres", icon = Icons.Default.MenuBook,
+                color = getCategoryColor(LinkCategory.LIVRE),
+                selected = selectedCategory == LinkCategory.LIVRE,
+                onClick = { selectedCategory = if (selectedCategory == LinkCategory.LIVRE) null else LinkCategory.LIVRE }
+            )
+            QuickExploreCategoryChip(
+                label = "Décorations", icon = Icons.Default.Palette,
+                color = getCategoryColor(LinkCategory.DECORATION),
+                selected = selectedCategory == LinkCategory.DECORATION,
+                onClick = { selectedCategory = if (selectedCategory == LinkCategory.DECORATION) null else LinkCategory.DECORATION }
             )
         }
 

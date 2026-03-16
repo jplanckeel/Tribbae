@@ -673,7 +673,8 @@ fun ModernAddLinkScreen(
                                 location = location,
                                 price = price,
                                 rating = rating,
-                                imageUrl = imageUrl
+                                imageUrl = imageUrl,
+                                visibility = if (isPublic) "public" else "private"
                             )
                             submitted = true
                             scope.launch {

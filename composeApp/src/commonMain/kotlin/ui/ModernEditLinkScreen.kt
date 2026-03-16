@@ -48,7 +48,7 @@ fun ModernEditLinkScreen(
     var location by remember { mutableStateOf(link.location) }
     var rating by remember { mutableStateOf(link.rating) }
     var selectedFolderId by remember { mutableStateOf(link.folderId) }
-    var isPublic by remember { mutableStateOf(link.likedByMe) }
+    var isPublic by remember { mutableStateOf(link.visibility == "public") }
     var submitted by remember { mutableStateOf(false) }
     var imageUrl by remember { mutableStateOf(link.imageUrl) }
     val scope = rememberCoroutineScope()
@@ -640,7 +640,7 @@ fun ModernEditLinkScreen(
                                 location = location,
                                 rating = rating,
                                 folderId = selectedFolderId,
-                                likedByMe = isPublic,
+                                visibility = if (isPublic) "public" else "private",
                                 imageUrl = imageUrl
                             )
                             viewModel.updateLink(updatedLink)

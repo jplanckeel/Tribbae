@@ -71,7 +71,8 @@ data class ApiAuthLink(
     val updatedAt: String = "",
     val createdAt: String = "",
     val ownerDisplayName: String = "",
-    val ownerIsAdmin: Boolean = false
+    val ownerIsAdmin: Boolean = false,
+    val visibility: String = "private"
 )
 
 @Serializable
@@ -127,7 +128,8 @@ data class CreateLinkRequest(
     val eventDate: Long = 0,
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
-    val ingredients: List<String> = emptyList()
+    val ingredients: List<String> = emptyList(),
+    val visibility: String = "private"
 )
 
 @Serializable
@@ -146,7 +148,8 @@ data class UpdateLinkRequest(
     val eventDate: Long = 0,
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
-    val ingredients: List<String> = emptyList()
+    val ingredients: List<String> = emptyList(),
+    val visibility: String = "private"
 )
 
 class AuthenticatedApiClient(
