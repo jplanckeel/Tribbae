@@ -66,6 +66,7 @@ private fun ModernMainApp(
 
     val links by vm.repository.links.collectAsState()
     val folders by vm.folders.collectAsState()
+    val communityLinks by vm.communityLinks.collectAsState()
 
     BackHandler(enabled = subScreen != null) {
         when (subScreen) {
@@ -101,7 +102,8 @@ private fun ModernMainApp(
                     folders = folders,
                     followRepository = followRepository,
                     sessionManager = sessionManager,
-                    commentRepository = commentRepository
+                    commentRepository = commentRepository,
+                    viewModel = vm
                 )
             }
             return
@@ -134,7 +136,8 @@ private fun ModernMainApp(
                     folders = folders,
                     followRepository = followRepository,
                     sessionManager = sessionManager,
-                    commentRepository = commentRepository
+                    commentRepository = commentRepository,
+                    viewModel = vm
                 )
             }
             return
@@ -155,6 +158,10 @@ private fun ModernMainApp(
         }
         is SubScreen.AiGenerate -> {
             AiGenerateScreen(viewModel = vm, onBack = { subScreen = null })
+            return
+        }
+        is SubScreen.Faq -> {
+            FaqScreen(onBack = { subScreen = null })
             return
         }
         is SubScreen.Shopping -> {
@@ -251,12 +258,15 @@ private fun ModernMainApp(
                 )
             }
             NavDestination.EXPLORE -> {
+                LaunchedEffect(Unit) {
+                    vm.loadCommunityLinks()
+                }
                 ExploreScreen(
-                    links = links,
+                    links = communityLinks,
                     onNavigateBack = { currentDestination = NavDestination.HOME },
                     onNavigateToDetail = { linkId ->
-                        selectedLink = links.find { link: Link -> link.id == linkId }
-                        subScreen = SubScreen.Detail
+                        selectedLink = communityLinks.find { link: Link -> link.id == linkId }
+                        subScreen = SubScreen.PublicDetail
                     },
                     onSaveLink = { link -> vm.toggleFavorite(link.id) },
                     viewModel = vm
@@ -295,7 +305,8 @@ private fun ModernMainApp(
                     authRepository = authRepository,
                     onLoginSuccess = {
                         vm.syncWithBackend(sessionManager)
-                    }
+                    },
+                    onNavigateToFaq = { subScreen = SubScreen.Faq }
                 )
             }
         }

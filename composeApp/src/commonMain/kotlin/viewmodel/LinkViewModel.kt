@@ -44,6 +44,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private val _communityLinks = MutableStateFlow<List<Link>>(emptyList())
+    val communityLinks: StateFlow<List<Link>> = _communityLinks.asStateFlow()
     
     // Follow state
     private val _followStatus = MutableStateFlow<Map<String, Boolean>>(emptyMap())
@@ -260,6 +263,23 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 // Rollback en cas d'erreur
                 repository.updateLink(link.copy(favorite = !newFavorite))
                 updateFilteredLinks()
+            }
+        }
+    }
+
+    /** Like/unlike direct sur l'API — pour les liens communautaires non présents dans le repository local */
+    fun toggleLike(linkId: String, currentlyLiked: Boolean, onResult: (liked: Boolean, likeCount: Int) -> Unit) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            try {
+                val newCount = if (currentlyLiked) {
+                    client.unlikeLink(linkId)
+                } else {
+                    client.likeLink(linkId)
+                }
+                onResult(!currentlyLiked, newCount)
+            } catch (e: Exception) {
+                println("ERROR: Failed to toggle like for link $linkId - ${e.message}")
             }
         }
     }
@@ -651,7 +671,48 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
     
     // ── Backend Sync ──────────────────────────────────────────────────────────
-    
+
+    /** Charge les liens publics de la communauté depuis l'API publique (sans auth) */
+    fun loadCommunityLinks() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                val response = apiClient.listCommunityLinks(limit = 100)
+                _communityLinks.value = response.links.map { apiLink ->
+                    val category = try {
+                        LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
+                    } catch (_: Exception) { LinkCategory.IDEE }
+                    Link(
+                        id = apiLink.id,
+                        title = apiLink.title,
+                        url = apiLink.url,
+                        description = apiLink.description,
+                        category = category,
+                        tags = apiLink.tags,
+                        ageRange = apiLink.ageRange,
+                        location = apiLink.location,
+                        price = apiLink.price,
+                        imageUrl = apiLink.imageUrl,
+                        eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
+                        rating = apiLink.rating,
+                        ingredients = apiLink.ingredients,
+                        likeCount = apiLink.likeCount,
+                        likedByMe = apiLink.likedByMe,
+                        ownerId = apiLink.ownerId,
+                        ownerDisplayName = apiLink.ownerDisplayName,
+                        ownerIsAdmin = apiLink.ownerIsAdmin,
+                        visibility = "public"
+                    )
+                }
+                println("DEBUG: Loaded ${_communityLinks.value.size} community links")
+            } catch (e: Exception) {
+                println("ERROR: Failed to load community links - ${e.message}")
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
     fun initAuthenticatedClient(sessionManager: data.SessionManager) {
         this.sessionManager = sessionManager
         authenticatedClient = data.AuthenticatedApiClient(sessionManager = sessionManager)

@@ -188,6 +188,10 @@ private fun MainApp(
             // Écran de catégorie - pas utilisé dans l'ancienne version
             return
         }
+        is SubScreen.Faq -> {
+            FaqScreen(onBack = { subScreen = null })
+            return
+        }
         null -> {} // continue to tabs
     }
 
@@ -275,4 +279,5 @@ sealed class SubScreen {
     object Shopping : SubScreen()
     object Tags : SubScreen()
     object Category : SubScreen()
+    object Faq : SubScreen()
 }

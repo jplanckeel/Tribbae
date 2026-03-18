@@ -354,42 +354,13 @@ func (s *Service) ToggleFavorite(ctx context.Context, linkID, ownerID string) (b
 	return newFavorite, nil
 }
 
-// publicFolderIDs retourne les IDs des dossiers publics
-func (s *Service) publicFolderIDs(ctx context.Context) ([]string, error) {
-	cursor, err := s.folderCol.Find(ctx, bson.M{"visibility": "public"})
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	var ids []string
-	for cursor.Next(ctx) {
-		var f struct {
-			ID primitive.ObjectID `bson:"_id"`
-		}
-		if err := cursor.Decode(&f); err == nil {
-			ids = append(ids, f.ID.Hex())
-		}
-	}
-	return ids, nil
-}
-
-// ListCommunity retourne les liens publics des dossiers publics
+// ListCommunity retourne tous les liens avec visibility="public"
 func (s *Service) ListCommunity(ctx context.Context, category string, limit int32) ([]*Link, error) {
 	if limit <= 0 {
 		limit = 6
 	}
 
-	folderIDs, err := s.publicFolderIDs(ctx)
-	if err != nil || len(folderIDs) == 0 {
-		return []*Link{}, nil
-	}
-
-	// Filter by public folders AND public visibility
-	filter := bson.M{
-		"folder_id":  bson.M{"$in": folderIDs},
-		"visibility": "public",
-	}
+	filter := bson.M{"visibility": "public"}
 	if category != "" {
 		filter["category"] = category
 	}
@@ -411,24 +382,15 @@ func (s *Service) ListCommunity(ctx context.Context, category string, limit int3
 	return links, nil
 }
 
-// ListNew retourne les derniers liens publics des dossiers publics, triés par date de création décroissante
+// ListNew retourne les derniers liens publics, triés par date de création décroissante
 func (s *Service) ListNew(ctx context.Context, limit int32) ([]*Link, error) {
 	if limit <= 0 {
 		limit = 10
 	}
 
-	folderIDs, err := s.publicFolderIDs(ctx)
-	if err != nil || len(folderIDs) == 0 {
-		return []*Link{}, nil
-	}
-
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(int64(limit))
+	filter := bson.M{"visibility": "public"}
 
-	// Filter by public folders AND public visibility
-	filter := bson.M{
-		"folder_id":  bson.M{"$in": folderIDs},
-		"visibility": "public",
-	}
 	cursor, err := s.col.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err

@@ -170,150 +170,87 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 func TestProperty_PublicLinksInCommunityListings(t *testing.T) {
 	_, db, cleanup := setupTestDB(t)
 	defer cleanup()
-	
+
 	ctx := context.Background()
 	linksCol := db.Collection("links")
 	foldersCol := db.Collection("folders")
-	
+
 	svc := NewService(linksCol, foldersCol)
-	
+
 	parameters := gopter.DefaultTestParameters()
 	parameters.MinSuccessfulTests = 100
 	properties := gopter.NewProperties(parameters)
-	
-	properties.Property("community listings include all and only public links", prop.ForAll(
-		func(linkVisibilities []string, numPublicFolders int) bool {
-			// Clean up collections before each test
+
+	properties.Property("community listings include all and only public links regardless of folder", prop.ForAll(
+		func(linkVisibilities []string) bool {
 			linksCol.DeleteMany(ctx, bson.M{})
 			foldersCol.DeleteMany(ctx, bson.M{})
-			
-			// Ensure we have at least one public folder
-			if numPublicFolders < 1 {
-				numPublicFolders = 1
-			}
-			if numPublicFolders > len(linkVisibilities) {
-				numPublicFolders = len(linkVisibilities)
-			}
-			
-			// Create public folders
-			publicFolderIDs := make([]string, numPublicFolders)
-			for i := 0; i < numPublicFolders; i++ {
-				folderID := primitive.NewObjectID()
-				folder := bson.M{
-					"_id":        folderID,
-					"owner_id":   "test_owner",
-					"name":       "Public Folder " + folderID.Hex(),
-					"visibility": "public",
-					"created_at": time.Now(),
-					"updated_at": time.Now(),
-				}
-				if _, err := foldersCol.InsertOne(ctx, folder); err != nil {
-					t.Logf("Failed to insert public folder: %v", err)
-					return false
-				}
-				publicFolderIDs[i] = folderID.Hex()
-			}
-			
-			// Create private folders
+
+			// Create one private and one public folder to mix things up
 			privateFolderID := primitive.NewObjectID()
-			privateFolder := bson.M{
-				"_id":        privateFolderID,
-				"owner_id":   "test_owner",
-				"name":       "Private Folder",
-				"visibility": "private",
-				"created_at": time.Now(),
-				"updated_at": time.Now(),
-			}
-			if _, err := foldersCol.InsertOne(ctx, privateFolder); err != nil {
-				t.Logf("Failed to insert private folder: %v", err)
-				return false
-			}
-			
-			// Track expected public links
+			foldersCol.InsertOne(ctx, bson.M{
+				"_id": privateFolderID, "owner_id": "test_owner",
+				"name": "Private Folder", "visibility": "private",
+				"created_at": time.Now(), "updated_at": time.Now(),
+			})
+			publicFolderID := primitive.NewObjectID()
+			foldersCol.InsertOne(ctx, bson.M{
+				"_id": publicFolderID, "owner_id": "test_owner",
+				"name": "Public Folder", "visibility": "public",
+				"created_at": time.Now(), "updated_at": time.Now(),
+			})
+
 			expectedPublicCount := 0
-			
-			// Create links with mixed visibilities
+
 			for i, visibility := range linkVisibilities {
-				// Normalize visibility to "public" or "private"
 				normalizedVisibility := "private"
 				if visibility == "public" {
 					normalizedVisibility = "public"
+					expectedPublicCount++
 				}
-				
-				// Assign to public or private folder
-				folderID := privateFolderID.Hex()
-				if i < numPublicFolders {
-					folderID = publicFolderIDs[i%numPublicFolders]
+				// Alternate between private and public folders to verify folder doesn't matter
+				folderID := privateFolderID
+				if i%2 == 0 {
+					folderID = publicFolderID
 				}
-				
 				link := &Link{
-					ID:          primitive.NewObjectID(),
-					OwnerID:     "test_owner",
-					FolderID:    folderID,
-					Title:       "Link " + primitive.NewObjectID().Hex(),
-					URL:         "https://example.com/" + primitive.NewObjectID().Hex(),
-					Description: "Test link",
-					Category:    "LINK_CATEGORY_IDEE",
-					Tags:        []string{},
-					Ingredients: []string{},
-					Visibility:  normalizedVisibility,
-					CreatedAt:   time.Now(),
-					UpdatedAt:   time.Now(),
+					ID: primitive.NewObjectID(), OwnerID: "test_owner",
+					FolderID: folderID.Hex(), Title: "Link " + primitive.NewObjectID().Hex(),
+					URL: "https://example.com", Category: "LINK_CATEGORY_IDEE",
+					Tags: []string{}, Ingredients: []string{},
+					Visibility: normalizedVisibility, CreatedAt: time.Now(), UpdatedAt: time.Now(),
 				}
-				
 				if _, err := linksCol.InsertOne(ctx, link); err != nil {
 					t.Logf("Failed to insert link: %v", err)
 					return false
 				}
-				
-				// Count expected public links (must be in public folder AND have public visibility)
-				if normalizedVisibility == "public" && i < numPublicFolders {
-					expectedPublicCount++
-				}
 			}
-			
-			// Call ListCommunity
+
 			communityLinks, err := svc.ListCommunity(ctx, "", 1000)
 			if err != nil {
 				t.Logf("ListCommunity failed: %v", err)
 				return false
 			}
-			
-			// Verify all returned links are public
+
+			// All returned links must be public
 			for _, link := range communityLinks {
 				if link.Visibility != "public" {
-					t.Logf("Found non-public link in community listing: %s (visibility=%s)", link.ID.Hex(), link.Visibility)
-					return false
-				}
-				
-				// Verify link is in a public folder
-				isInPublicFolder := false
-				for _, pubFolderID := range publicFolderIDs {
-					if link.FolderID == pubFolderID {
-						isInPublicFolder = true
-						break
-					}
-				}
-				if !isInPublicFolder {
-					t.Logf("Found link in non-public folder in community listing: %s (folder=%s)", link.ID.Hex(), link.FolderID)
+					t.Logf("Found non-public link in community listing: visibility=%s", link.Visibility)
 					return false
 				}
 			}
-			
-			// Verify count matches expected
+
+			// Count must match
 			if len(communityLinks) != expectedPublicCount {
 				t.Logf("Expected %d public links, got %d", expectedPublicCount, len(communityLinks))
 				return false
 			}
-			
+
 			return true
 		},
-		// Generate a list of visibilities (public or private)
 		gen.SliceOfN(10, gen.OneConstOf("public", "private")),
-		// Generate number of public folders (1 to 5)
-		gen.IntRange(1, 5),
 	))
-	
+
 	properties.TestingRun(t)
 }
 

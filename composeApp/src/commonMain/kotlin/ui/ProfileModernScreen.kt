@@ -30,7 +30,8 @@ fun ProfileModernScreen(
     modifier: Modifier = Modifier,
     sessionManager: data.SessionManager,
     authRepository: data.AuthRepository,
-    onLoginSuccess: () -> Unit = {}
+    onLoginSuccess: () -> Unit = {},
+    onNavigateToFaq: () -> Unit = {}
 ) {
     val children by viewModel.children.collectAsState()
     val links by viewModel.repository.links.collectAsState()
@@ -331,7 +332,7 @@ fun ProfileModernScreen(
                         icon = Icons.Filled.Help,
                         title = "Aide & Support",
                         subtitle = "FAQ et contact",
-                        onClick = { }
+                        onClick = onNavigateToFaq
                     )
                 }
 
