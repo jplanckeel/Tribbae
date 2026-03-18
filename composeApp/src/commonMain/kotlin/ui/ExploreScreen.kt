@@ -429,7 +429,7 @@ fun ExploreScreen(
         // Content
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = { viewModel.forceSync() },
+            onRefresh = { viewModel.loadCommunityLinks() },
             state = pullRefreshState,
             modifier = Modifier.fillMaxSize()
         ) {

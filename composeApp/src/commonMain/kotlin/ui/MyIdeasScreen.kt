@@ -428,13 +428,13 @@ fun MyIdeasScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
-                                        imageVector = if (link.likedByMe) Icons.Filled.Public else Icons.Filled.Lock,
+                                        imageVector = if (link.visibility == "public") Icons.Filled.Public else Icons.Filled.Lock,
                                         contentDescription = null,
                                         tint = Color.White,
                                         modifier = Modifier.size(10.dp)
                                     )
                                     Text(
-                                        text = if (link.likedByMe) "Public" else "Privé",
+                                        text = if (link.visibility == "public") "Public" else "Privé",
                                         fontSize = 9.sp,
                                         color = Color.White
                                     )

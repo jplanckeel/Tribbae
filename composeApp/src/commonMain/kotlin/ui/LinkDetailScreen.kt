@@ -55,7 +55,8 @@ fun LinkDetailScreen(
     folders: List<data.Folder> = emptyList(),
     followRepository: FollowRepository? = null,
     sessionManager: SessionManager? = null,
-    commentRepository: CommentRepository? = null
+    commentRepository: CommentRepository? = null,
+    viewModel: viewmodel.LinkViewModel? = null
 ) {
     val categoryColor = getCategoryColor(link.category)
     val coroutineScope = rememberCoroutineScope()
@@ -228,7 +229,7 @@ fun LinkDetailScreen(
                         }
                         Surface(
                             shape = RoundedCornerShape(20.dp),
-                            color = if (readOnly) Color(0xFF10B981).copy(alpha = 0.85f) else Color(0xFF6B7280).copy(alpha = 0.85f)
+                            color = Color(0xFF6B7280).copy(alpha = 0.85f)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -236,11 +237,11 @@ fun LinkDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    if (readOnly) Icons.Filled.Public else Icons.Filled.Lock,
+                                    if (link.visibility == "public") Icons.Filled.Public else Icons.Filled.Lock,
                                     null, tint = Color.White, modifier = Modifier.size(10.dp)
                                 )
                                 Text(
-                                    if (readOnly) "Public" else "Privé",
+                                    if (link.visibility == "public") "Public" else "Privé",
                                     fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White
                                 )
                             }
@@ -705,8 +706,18 @@ fun LinkDetailScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clickable {
-                            liked = !liked
-                            currentLikeCount += if (liked) 1 else -1
+                            if (readOnly) {
+                                // Lien communautaire : appel API direct
+                                viewModel?.toggleLike(link.id, liked) { newLiked, newCount ->
+                                    liked = newLiked
+                                    currentLikeCount = newCount
+                                }
+                            } else {
+                                // Lien personnel : mise à jour locale + backend via toggleFavorite
+                                liked = !liked
+                                currentLikeCount += if (liked) 1 else -1
+                                viewModel?.toggleFavorite(link.id)
+                            }
                         },
                     shape = RoundedCornerShape(16.dp),
                     color = if (liked) Color(0xFFFEF2F2) else Color.White,
@@ -741,6 +752,7 @@ fun LinkDetailScreen(
                             showSaveDialog = true
                         } else {
                             saved = !saved
+                            viewModel?.toggleFavorite(link.id)
                         }
                     },
                     modifier = Modifier.weight(1f).height(48.dp),
