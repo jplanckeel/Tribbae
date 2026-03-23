@@ -1,0 +1,26 @@
+{
+  "name": "Tribbae — Idées en famille",
+  "short_name": "Tribbae",
+  "description": "Organisez et partagez vos idées en famille : recettes, activités, cadeaux, événements",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F0",
+  "theme_color": "#FF8C00",
+  "orientation": "any",
+  "lang": "fr",
+  "categories": ["lifestyle", "social", "productivity"],
+  "icons": [
+    {
+      "src": "/tribbae.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+version: "3.8"
+
+services:
+  # ── MongoDB ──────────────────────────────────────────────
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: tribbae
+    networks:
+      - internal
+
+  # ── Backend Go ───────────────────────────────────────────
+  backend:
+    image: jplanckeel/tribbae:latest
+    restart: unless-stopped
+    depends_on:
+      - mongo
+      - ollama
+      - searxng
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+      MONGO_DB: tribbae
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      PORT: "8080"
+      GRPC_PORT: "9090"
+      BASE_URL: ${BASE_URL:-http://backend:8080}
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      SEARXNG_URL: http://searxng:8080
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tribbae-backend.rule=Host(`${BACKEND_HOST:-tribbae.bananaops.cloud}`)"
+      - "traefik.http.routers.tribbae-backend.entrypoints=websecure"
+      - "traefik.http.routers.tribbae-backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.tribbae-backend.loadbalancer.server.port=8080"
+    networks:
+      - internal
+      - dokploy-network
+
+  # ── Ollama (IA) ──────────────────────────────────────────
+  ollama:
+    image: ollama/ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    networks:
+      - internal
+
+  # ── SearXNG (recherche web) ──────────────────────────────
+  searxng:
+    image: jplanckeel/tribbae-searxng:latest
+    restart: unless-stopped
+    environment:
+      SEARXNG_BASE_URL: http://searxng:8080/
+    networks:
+      - internal
+
+volumes:
+  mongo_data:
+  ollama_data:
+
+networks:
+  internal:
+    driver: bridge
+  dokploy-network:
+    external: true

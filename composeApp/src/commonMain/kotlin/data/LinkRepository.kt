@@ -61,6 +61,11 @@ class LinkRepository(private val storage: Storage? = null) {
         storage?.saveLinks(_links.value)
     }
 
+    fun updateFolder(folder: Folder) {
+        _folders.value = _folders.value.map { if (it.id == folder.id) folder else it }
+        storage?.saveFolders(_folders.value)
+    }
+
     fun addTag(tag: String) {
         val trimmed = tag.trim().lowercase()
         if (trimmed.isNotEmpty() && !_tags.value.contains(trimmed)) {
@@ -87,6 +92,18 @@ class LinkRepository(private val storage: Storage? = null) {
     fun deleteChild(id: String) {
         _children.value = _children.value.filter { it.id != id }
         storage?.saveChildren(_children.value)
+    }
+
+    /** Vide toutes les données locales (pour forcer un refresh complet) */
+    fun clearAll() {
+        _links.value = emptyList()
+        _folders.value = emptyList()
+        _children.value = emptyList()
+        _tags.value = emptyList()
+        storage?.saveLinks(emptyList())
+        storage?.saveFolders(emptyList())
+        storage?.saveChildren(emptyList())
+        storage?.saveTags(emptyList())
     }
 
     fun searchLinks(

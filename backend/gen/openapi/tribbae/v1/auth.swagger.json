@@ -164,6 +164,9 @@
         },
         "displayName": {
           "type": "string"
+        },
+        "isAdmin": {
+          "type": "boolean"
         }
       }
     },
@@ -205,6 +208,9 @@
         },
         "token": {
           "type": "string"
+        },
+        "isAdmin": {
+          "type": "boolean"
         }
       }
     }

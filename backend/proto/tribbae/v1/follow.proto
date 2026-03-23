@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package tribbae.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
+
+// --- Messages ---
+
+message UserProfile {
+  string id = 1;
+  string display_name = 2;
+  string email = 3;
+  bool is_admin = 4;
+  int32 follower_count = 5;
+  int32 following_count = 6;
+}
+
+message FollowRequest {
+  string user_id = 1;
+}
+
+message FollowResponse {}
+
+message UnfollowRequest {
+  string user_id = 1;
+}
+
+message UnfollowResponse {}
+
+message IsFollowingRequest {
+  string user_id = 1;
+}
+
+message IsFollowingResponse {
+  bool is_following = 1;
+}
+
+message GetFollowersRequest {
+  string user_id = 1;
+}
+
+message GetFollowersResponse {
+  repeated UserProfile followers = 1;
+}
+
+message GetFollowingRequest {
+  string user_id = 1;
+}
+
+message GetFollowingResponse {
+  repeated UserProfile following = 1;
+}
+
+// --- Service ---
+
+service FollowService {
+  rpc Follow(FollowRequest) returns (FollowResponse) {
+    option (google.api.http) = {
+      post: "/v1/users/{user_id}/follow"
+      body: "*"
+    };
+  }
+  rpc Unfollow(UnfollowRequest) returns (UnfollowResponse) {
+    option (google.api.http) = {
+      delete: "/v1/users/{user_id}/follow"
+    };
+  }
+  rpc IsFollowing(IsFollowingRequest) returns (IsFollowingResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/{user_id}/is-following"
+    };
+  }
+  rpc GetFollowers(GetFollowersRequest) returns (GetFollowersResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/{user_id}/followers"
+    };
+  }
+  rpc GetFollowing(GetFollowingRequest) returns (GetFollowingResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/{user_id}/following"
+    };
+  }
+}
