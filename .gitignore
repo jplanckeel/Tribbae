@@ -36,7 +36,7 @@ composeApp/.kotlin/
 *.dex
 *.class
 bin/
-gen/
+composeApp/build/gen/
 out/
 release/
 proguard/
