@@ -6,8 +6,10 @@ import Folders from "./pages/Folders";
 import Tags from "./pages/Tags";
 import LinkDetail from "./pages/LinkDetail";
 import SharedFolder from "./pages/SharedFolder";
-import Community from "./pages/Community";
 import Children from "./pages/Children";
+import Category from "./pages/Category";
+import Admin from "./pages/Admin";
+import AllFolders from "./pages/AllFolders";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("token");
@@ -16,9 +18,11 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-amber-50">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      {children}
+      <div className="pb-16 sm:pb-0">
+        {children}
+      </div>
     </div>
   );
 }
@@ -32,9 +36,19 @@ export default function App() {
         <Route
           path="/"
           element={
-            <PrivateRoute>
-              <AppLayout><Home /></AppLayout>
-            </PrivateRoute>
+            <AppLayout><Home /></AppLayout>
+          }
+        />
+        <Route
+          path="/category/:category"
+          element={
+            <AppLayout><Category /></AppLayout>
+          }
+        />
+        <Route
+          path="/discover"
+          element={
+            <AppLayout><AllFolders /></AppLayout>
           }
         />
         <Route
@@ -62,18 +76,18 @@ export default function App() {
           }
         />
         <Route
-          path="/community"
-          element={
-            <PrivateRoute>
-              <AppLayout><Community /></AppLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
           path="/children"
           element={
             <PrivateRoute>
               <AppLayout><Children /></AppLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute>
+              <AppLayout><Admin /></AppLayout>
             </PrivateRoute>
           }
         />

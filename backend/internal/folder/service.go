@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,9 +28,14 @@ type Folder struct {
 	Name          string              `bson:"name"`
 	Icon          string              `bson:"icon"`
 	Color         string              `bson:"color"`
+	BannerURL     string              `bson:"banner_url,omitempty"`
+	Tags          []string            `bson:"tags,omitempty"`
 	Visibility    string              `bson:"visibility"` // "private" | "public" | "shared"
 	ShareToken    string              `bson:"share_token,omitempty"`
 	Collaborators []CollaboratorEntry `bson:"collaborators,omitempty"`
+	LikeCount     int32               `bson:"like_count"`
+	LikedBy       []string            `bson:"liked_by,omitempty"`
+	AiGenerated   bool                `bson:"ai_generated"`
 	CreatedAt     time.Time           `bson:"created_at"`
 	UpdatedAt     time.Time           `bson:"updated_at"`
 }
@@ -45,13 +51,18 @@ func NewService(col *mongo.Collection, linkCol *mongo.Collection, userCol *mongo
 	return &Service{col: col, linkCol: linkCol, userCol: userCol, baseURL: baseURL}
 }
 
-func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibility string) (*Folder, error) {
+func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibility, bannerURL string, tags []string) (*Folder, error) {
+	if tags == nil {
+		tags = []string{}
+	}
 	f := &Folder{
 		ID:         primitive.NewObjectID(),
 		OwnerID:    ownerID,
 		Name:       name,
 		Icon:       icon,
 		Color:      color,
+		BannerURL:  bannerURL,
+		Tags:       tags,
 		Visibility: visibility,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
@@ -99,7 +110,10 @@ func (s *Service) List(ctx context.Context, ownerID string) ([]*Folder, error) {
 	return folders, cursor.All(ctx, &folders)
 }
 
-func (s *Service) Update(ctx context.Context, folderID, ownerID, name, icon, color, visibility string) (*Folder, error) {
+func (s *Service) Update(ctx context.Context, folderID, ownerID, name, icon, color, visibility, bannerURL string, tags []string) (*Folder, error) {
+	if tags == nil {
+		tags = []string{}
+	}
 	id, err := primitive.ObjectIDFromHex(folderID)
 	if err != nil {
 		return nil, errors.New("invalid folder id")
@@ -112,9 +126,10 @@ func (s *Service) Update(ctx context.Context, folderID, ownerID, name, icon, col
 			bson.M{"collaborators": bson.M{"$elemMatch": bson.M{"user_id": ownerID, "role": "editor"}}},
 		},
 	}
+	// Update includes visibility field to ensure it's persisted correctly
 	update := bson.M{"$set": bson.M{
 		"name": name, "icon": icon, "color": color,
-		"visibility": visibility, "updated_at": time.Now(),
+		"visibility": visibility, "banner_url": bannerURL, "tags": tags, "updated_at": time.Now(),
 	}}
 	res, err := s.col.UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -132,8 +147,27 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 		return errors.New("invalid folder id")
 	}
 	// Seul le owner peut supprimer
-	_, err = s.col.DeleteOne(ctx, bson.M{"_id": id, "owner_id": ownerID})
-	return err
+	res, err := s.col.DeleteOne(ctx, bson.M{"_id": id, "owner_id": ownerID})
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount == 0 {
+		return errors.New("folder not found or not authorized to delete")
+	}
+	
+	// Orphan associated links by setting their folder_id to empty string
+	// This preserves user data while removing the folder association
+	_, err = s.linkCol.UpdateMany(ctx,
+		bson.M{"folder_id": folderID},
+		bson.M{"$set": bson.M{"folder_id": "", "updated_at": time.Now()}},
+	)
+	if err != nil {
+		// Log the error but don't fail the deletion
+		// The folder is already deleted at this point
+		return fmt.Errorf("folder deleted but failed to orphan links: %w", err)
+	}
+	
+	return nil
 }
 
 func (s *Service) GenerateShareToken(ctx context.Context, folderID, ownerID string) (string, string, error) {
@@ -295,19 +329,20 @@ func (s *Service) ListCommunity(ctx context.Context, search string, pageSize int
 	return folders, nextToken, nil
 }
 
-// GetOwnerDisplayName retourne le display_name d'un user par son ID
-func (s *Service) GetOwnerDisplayName(ctx context.Context, ownerID string) string {
+// GetOwnerInfo retourne le display_name et le statut admin d'un user par son ID
+func (s *Service) GetOwnerInfo(ctx context.Context, ownerID string) (string, bool) {
 	oid, err := primitive.ObjectIDFromHex(ownerID)
 	if err != nil {
-		return ""
+		return "", false
 	}
 	var user struct {
 		DisplayName string `bson:"display_name"`
+		IsAdmin     bool   `bson:"is_admin"`
 	}
 	if err := s.userCol.FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
-		return ""
+		return "", false
 	}
-	return user.DisplayName
+	return user.DisplayName, user.IsAdmin
 }
 
 // CountLinks retourne le nombre de liens dans un dossier
@@ -317,4 +352,100 @@ func (s *Service) CountLinks(ctx context.Context, folderID string) int32 {
 		return 0
 	}
 	return int32(count)
+}
+
+// IsLikedBy vérifie si un utilisateur a liké un dossier
+func (s *Service) IsLikedBy(ctx context.Context, folderID, userID string) bool {
+	id, err := primitive.ObjectIDFromHex(folderID)
+	if err != nil {
+		return false
+	}
+	count, _ := s.col.CountDocuments(ctx, bson.M{"_id": id, "liked_by": userID})
+	return count > 0
+}
+
+// Like ajoute un like d'un utilisateur sur un dossier
+func (s *Service) Like(ctx context.Context, folderID, userID string) (int32, error) {
+	id, err := primitive.ObjectIDFromHex(folderID)
+	if err != nil {
+		return 0, errors.New("invalid folder id")
+	}
+	// Ajouter le userID au tableau liked_by (s'il n'y est pas déjà)
+	_, err = s.col.UpdateOne(ctx,
+		bson.M{"_id": id, "liked_by": bson.M{"$ne": userID}},
+		bson.M{
+			"$addToSet": bson.M{"liked_by": userID},
+			"$inc":      bson.M{"like_count": 1},
+		},
+	)
+	if err != nil {
+		return 0, err
+	}
+	var f Folder
+	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&f); err != nil {
+		return 0, err
+	}
+	return f.LikeCount, nil
+}
+
+// Unlike retire un like d'un utilisateur sur un dossier
+func (s *Service) Unlike(ctx context.Context, folderID, userID string) (int32, error) {
+	id, err := primitive.ObjectIDFromHex(folderID)
+	if err != nil {
+		return 0, errors.New("invalid folder id")
+	}
+	res, err := s.col.UpdateOne(ctx,
+		bson.M{"_id": id, "liked_by": userID},
+		bson.M{
+			"$pull": bson.M{"liked_by": userID},
+			"$inc":  bson.M{"like_count": -1},
+		},
+	)
+	if err != nil {
+		return 0, err
+	}
+	if res.MatchedCount == 0 {
+		// Pas liké, retourner le count actuel
+	}
+	var f Folder
+	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&f); err != nil {
+		return 0, err
+	}
+	return f.LikeCount, nil
+}
+
+// ListTop retourne les dossiers publics triés par nombre de likes
+func (s *Service) ListTop(ctx context.Context, limit int32) ([]*Folder, error) {
+	if limit <= 0 || limit > 20 {
+		limit = 10
+	}
+	opts := options.Find().
+		SetSort(bson.M{"like_count": -1, "updated_at": -1}).
+		SetLimit(int64(limit))
+	cursor, err := s.col.Find(ctx, bson.M{"visibility": "public", "like_count": bson.M{"$gt": 0}}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	var folders []*Folder
+	return folders, cursor.All(ctx, &folders)
+}
+
+// CreateAiFolder crée un dossier public pour les idées générées par IA
+func (s *Service) CreateAiFolder(ctx context.Context, ownerID, name string) (*Folder, error) {
+	f := &Folder{
+		ID:          primitive.NewObjectID(),
+		OwnerID:     ownerID,
+		Name:        name,
+		Icon:        "sparkles",
+		Color:       "PURPLE",
+		Visibility:  "public",
+		AiGenerated: true,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+	if _, err := s.col.InsertOne(ctx, f); err != nil {
+		return nil, err
+	}
+	return f, nil
 }

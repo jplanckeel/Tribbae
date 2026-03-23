@@ -30,3 +30,7 @@ func Connect(uri, dbName string) (*DB, error) {
 func (d *DB) Col(name string) *mongo.Collection {
 	return d.Database.Collection(name)
 }
+
+func (d *DB) DB() *mongo.Database {
+	return d.Database
+}

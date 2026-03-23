@@ -4,24 +4,7 @@
             "outputFile": "com.linkkeeper.app.composeApp-mergeDebugResources-44:/values-pl/values-pl.xml",
             "map": [
                 {
-                    "source": "/home/jplanckeel/.gradle/caches/9.3.1/transforms/1f1262c5378912d7b6695c03d9e87b45/transformed/foundation-release/res/values-pl/values-pl.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,143",
-                        "endColumns": "87,87",
-                        "endOffsets": "138,226"
-                    },
-                    "to": {
-                        "startLines": "85,86",
-                        "startColumns": "4,4",
-                        "startOffsets": "8750,8838",
-                        "endColumns": "87,87",
-                        "endOffsets": "8833,8921"
-                    }
-                },
-                {
-                    "source": "/home/jplanckeel/.gradle/caches/9.3.1/transforms/4759743dcc1a0d02242c6dc0fe403500/transformed/ui-release/res/values-pl/values-pl.xml",
+                    "source": "/home/jplanckeel/.gradle/caches/9.3.1/transforms/055c27cb994b9fd690378b5c7ec63294/transformed/ui-release/res/values-pl/values-pl.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -38,7 +21,24 @@
                     }
                 },
                 {
-                    "source": "/home/jplanckeel/.gradle/caches/9.3.1/transforms/be3dc436ab7dc0346ffb0d91aab4b7bd/transformed/material3-release/res/values-pl/values-pl.xml",
+                    "source": "/home/jplanckeel/.gradle/caches/9.3.1/transforms/96568b56679845bc9c22d8b05cb29160/transformed/foundation-release/res/values-pl/values-pl.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,143",
+                        "endColumns": "87,87",
+                        "endOffsets": "138,226"
+                    },
+                    "to": {
+                        "startLines": "85,86",
+                        "startColumns": "4,4",
+                        "startOffsets": "8750,8838",
+                        "endColumns": "87,87",
+                        "endOffsets": "8833,8921"
+                    }
+                },
+                {
+                    "source": "/home/jplanckeel/.gradle/caches/9.3.1/transforms/3182bc3b4d187b4f95732a949cdeb6f0/transformed/material3-release/res/values-pl/values-pl.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -55,7 +55,7 @@
                     }
                 },
                 {
-                    "source": "/home/jplanckeel/.gradle/caches/9.3.1/transforms/e7fcce9c1581f208f8178e90cb7b31a8/transformed/core-1.13.1/res/values-pl/values-pl.xml",
+                    "source": "/home/jplanckeel/.gradle/caches/9.3.1/transforms/60b814dd7ab6ba39e70f43095a244576/transformed/core-1.13.1/res/values-pl/values-pl.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",

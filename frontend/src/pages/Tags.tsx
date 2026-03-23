@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { links as linksApi } from "../api";
 import LinkCard from "../components/LinkCard";
-import { Tag, ArrowLeft } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTag, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 
 export default function Tags() {
   const [allLinks, setAllLinks] = useState<any[]>([]);
@@ -33,7 +34,7 @@ export default function Tags() {
           onClick={() => setSelectedTag(null)}
           className="flex items-center gap-1 text-orange-500 mb-4"
         >
-          <ArrowLeft size={18} /> Tous les tags
+          <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Tous les tags
         </button>
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           #{selectedTag}
@@ -71,7 +72,7 @@ export default function Tags() {
               onClick={() => setSelectedTag(tag)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white shadow-sm hover:shadow text-sm font-medium text-gray-700 hover:text-orange-500 transition-colors"
             >
-              <Tag size={14} className="text-orange-400" />
+              <FontAwesomeIcon icon={faTag} className="w-3.5 h-3.5 text-orange-400" />
               {tag}
               <span className="text-xs text-gray-400 ml-1">({count})</span>
             </button>

@@ -86,6 +86,7 @@ type RegisterResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	IsAdmin       bool                   `protobuf:"varint,3,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -132,6 +133,13 @@ func (x *RegisterResponse) GetToken() string {
 		return x.Token
 	}
 	return ""
+}
+
+func (x *RegisterResponse) GetIsAdmin() bool {
+	if x != nil {
+		return x.IsAdmin
+	}
+	return false
 }
 
 type LoginRequest struct {
@@ -191,6 +199,7 @@ type LoginResponse struct {
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
 	DisplayName   string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	IsAdmin       bool                   `protobuf:"varint,4,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -244,6 +253,13 @@ func (x *LoginResponse) GetDisplayName() string {
 		return x.DisplayName
 	}
 	return ""
+}
+
+func (x *LoginResponse) GetIsAdmin() bool {
+	if x != nil {
+		return x.IsAdmin
+	}
+	return false
 }
 
 type RefreshTokenRequest struct {
@@ -343,17 +359,19 @@ const file_tribbae_v1_auth_proto_rawDesc = "" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12!\n" +
-	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\"A\n" +
+	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\"\\\n" +
 	"\x10RegisterResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05token\"@\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\x12\x19\n" +
+	"\bis_admin\x18\x03 \x01(\bR\aisAdmin\"@\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"|\n" +
 	"\rLoginResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\x12!\n" +
-	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\"+\n" +
+	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x19\n" +
+	"\bis_admin\x18\x04 \x01(\bR\aisAdmin\"+\n" +
 	"\x13RefreshTokenRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\",\n" +
 	"\x14RefreshTokenResponse\x12\x14\n" +

@@ -10,19 +10,22 @@ val YellowLight = Color(0xFFFFF8E1)
 val BlueSky = Color(0xFF4FC3F7)
 val BlueSkyLight = Color(0xFFE1F5FE)
 val Coral = Color(0xFFFF7043)
+val Purple = Color(0xFF9C27B0)
 
 val SurfaceColor = Color(0xFFFFFBF5)
 val CardColor = Color(0xFFFFFFFF)
 val TextPrimary = Color(0xFF2D2D2D)
 val TextSecondary = Color(0xFF757575)
 
-// Couleurs par catégorie
+// Couleurs par catégorie — cohérentes avec frontend/src/types.ts et IdeaCard.kt
 val CategoryColors = mapOf(
-    "IDEE"      to Color(0xFFFFD700), // Jaune — ampoule
-    "CADEAU"    to Color(0xFFFF8C00), // Orange — cadeau
-    "ACTIVITE"  to Color(0xFF4FC3F7), // Bleu ciel — sport
-    "EVENEMENT" to Color(0xFF81C784), // Vert doux — calendrier
-    "RECETTE"   to Color(0xFFFF7043)  // Corail — cuisine
+    "IDEE"       to Color(0xFFFFD700), // Jaune
+    "CADEAU"     to Color(0xFFFF8C00), // Orange
+    "ACTIVITE"   to Color(0xFF4FC3F7), // Bleu ciel
+    "EVENEMENT"  to Color(0xFFFF7043), // Corail
+    "RECETTE"    to Color(0xFF81C784), // Vert doux
+    "LIVRE"      to Color(0xFF9C27B0), // Violet
+    "DECORATION" to Color(0xFFE91E63)  // Rose
 )
 
 // Couleurs de dossiers
