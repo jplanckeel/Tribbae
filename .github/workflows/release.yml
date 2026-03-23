@@ -27,17 +27,25 @@ jobs:
       - name: Build APK
         run: ./gradlew assembleRelease
       
-      - name: Sign APK
-        if: ${{ secrets.KEYSTORE_FILE != '' }}
-        run: |
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > keystore.jks
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-            -keystore keystore.jks \
-            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" \
-            composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk \
-            "${{ secrets.KEY_ALIAS }}"
-          rm keystore.jks
+      #- name: Sign APK
+      #  env:
+      #    KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
+      #    KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      #    KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      #    KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      #  run: |
+      #    if [ -z "$KEYSTORE_FILE" ]; then
+      #      echo "INFO: Pas de keystore configuré, APK non signé"
+      #      exit 0
+      #    fi
+      #    echo "$KEYSTORE_FILE" | base64 -d > keystore.jks
+      #    jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+      #      -keystore keystore.jks \
+      #      -storepass "$KEYSTORE_PASSWORD" \
+      #      -keypass "$KEY_PASSWORD" \
+      #      composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk \
+      #      "$KEY_ALIAS"
+      #    rm keystore.jks
       
       - name: Rename APK
         run: |
