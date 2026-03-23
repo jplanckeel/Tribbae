@@ -1,0 +1,272 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "tribbae/v1/follow.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "FollowService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/users/{userId}/follow": {
+      "delete": {
+        "operationId": "FollowService_Unfollow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UnfollowResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FollowService"
+        ]
+      },
+      "post": {
+        "operationId": "FollowService_Follow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1FollowResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FollowServiceFollowBody"
+            }
+          }
+        ],
+        "tags": [
+          "FollowService"
+        ]
+      }
+    },
+    "/v1/users/{userId}/followers": {
+      "get": {
+        "operationId": "FollowService_GetFollowers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetFollowersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FollowService"
+        ]
+      }
+    },
+    "/v1/users/{userId}/following": {
+      "get": {
+        "operationId": "FollowService_GetFollowing",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetFollowingResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FollowService"
+        ]
+      }
+    },
+    "/v1/users/{userId}/is-following": {
+      "get": {
+        "operationId": "FollowService_IsFollowing",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1IsFollowingResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FollowService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "FollowServiceFollowBody": {
+      "type": "object"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1FollowResponse": {
+      "type": "object"
+    },
+    "v1GetFollowersResponse": {
+      "type": "object",
+      "properties": {
+        "followers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1UserProfile"
+          }
+        }
+      }
+    },
+    "v1GetFollowingResponse": {
+      "type": "object",
+      "properties": {
+        "following": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1UserProfile"
+          }
+        }
+      }
+    },
+    "v1IsFollowingResponse": {
+      "type": "object",
+      "properties": {
+        "isFollowing": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1UnfollowResponse": {
+      "type": "object"
+    },
+    "v1UserProfile": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "isAdmin": {
+          "type": "boolean"
+        },
+        "followerCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "followingCount": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    }
+  }
+}
