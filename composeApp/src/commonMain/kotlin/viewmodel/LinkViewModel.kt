@@ -45,6 +45,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private val _communityFolders = MutableStateFlow<List<Folder>>(emptyList())
+    val communityFolders: StateFlow<List<Folder>> = _communityFolders.asStateFlow()
+
     private val _communityLinks = MutableStateFlow<List<Link>>(emptyList())
     val communityLinks: StateFlow<List<Link>> = _communityLinks.asStateFlow()
     
@@ -261,21 +264,21 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     fun toggleFavorites() { _favoritesOnly.value = !_favoritesOnly.value; updateFilteredLinks() }
 
-    /** Toggle le favori d'un lien (cœur) — appelle l'API like/unlike du backend */
+    /** Toggle le favori d'un lien (étoile personnelle), synchronisé avec le backend */
     fun toggleFavorite(linkId: String) {
         val link = repository.links.value.find { it.id == linkId } ?: return
         val newFavorite = !link.favorite
         repository.updateLink(link.copy(favorite = newFavorite))
         updateFilteredLinks()
         
-        // Synchroniser avec le backend via like/unlike
+        // Favori personnel, synchronisé via /favorite (le like est un geste communautaire distinct)
         val client = authenticatedClient ?: return
         viewModelScope.launch {
             try {
-                if (newFavorite) {
-                    client.likeLink(linkId)
-                } else {
-                    client.unlikeLink(linkId)
+                val serverFavorite = client.toggleFavorite(linkId)
+                if (serverFavorite != newFavorite) {
+                    repository.links.value.find { it.id == linkId }?.let { repository.updateLink(it.copy(favorite = serverFavorite)) }
+                    updateFilteredLinks()
                 }
             } catch (e: Exception) {
                 // Rollback en cas d'erreur
@@ -717,6 +720,42 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     
     // ── Backend Sync ──────────────────────────────────────────────────────────
 
+    private fun bearer(): String? = sessionManager?.getToken() ?: authToken
+
+    /** Dossiers publics de la communauté (onglet « Dossiers » de l'Explorer). */
+    fun loadCommunityFolders(search: String = "") {
+        viewModelScope.launch {
+            runCatching { apiClient.listCommunityFolders(search = search, pageSize = 50, token = bearer()) }
+                .onSuccess { r -> _communityFolders.value = r.folders.map { it.toFolder() } }
+                .onFailure { println("ERROR: Failed to load community folders - ${it.message}") }
+        }
+    }
+
+    /** Idées visibles d'un dossier public (seulement celles que le serveur autorise). */
+    suspend fun loadPublicFolderLinks(folderId: String): List<Link>? =
+        runCatching { apiClient.listFolderLinks(folderId, bearer()).links.map { it.toLink() } }.getOrNull()
+
+    /** Dossier ouvert depuis un lien de partage (https://…/share/<jeton>). */
+    suspend fun loadSharedFolder(token: String): Pair<Folder, List<Link>>? = runCatching {
+        val r = apiClient.getSharedFolder(token)
+        val folder = r.folder.copy(linkCount = r.links.size).toFolder()
+        folder to r.links.map { it.toLink().copy(folderId = folder.id) }
+    }.getOrNull()
+
+    /** Like / unlike d'un dossier de la communauté. */
+    fun toggleFolderLike(folderId: String, currentlyLiked: Boolean, onResult: (liked: Boolean, likeCount: Int) -> Unit) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            runCatching { if (currentlyLiked) client.unlikeFolder(folderId) else client.likeFolder(folderId) }
+                .onSuccess { count ->
+                    onResult(!currentlyLiked, count)
+                    _communityFolders.value = _communityFolders.value.map {
+                        if (it.id == folderId) it.copy(likedByMe = !currentlyLiked, likeCount = count) else it
+                    }
+                }
+        }
+    }
+
     /** Charge les liens publics de la communauté depuis l'API publique (sans auth) */
     fun loadCommunityLinks() {
         viewModelScope.launch {
@@ -861,7 +900,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 reminderEnabled = apiLink.reminderEnabled,
                 rating = apiLink.rating,
                 ingredients = apiLink.ingredients,
-                favorite = apiLink.likedByMe,
+                favorite = apiLink.favorite,
+                likeCount = apiLink.likeCount,
+                likedByMe = apiLink.likedByMe,
                 updatedAt = apiLink.updatedAt,
                 createdAt = apiLink.createdAt,
                 ownerId = apiLink.ownerId,

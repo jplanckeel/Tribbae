@@ -32,13 +32,36 @@ data class ApiFolder(
     val shareToken: String = "",
     val ownerDisplayName: String = "",
     val ownerIsAdmin: Boolean = false,
-    val linkCount: Int = 0
-)
+    val linkCount: Int = 0,
+    val likeCount: Int = 0,
+    val likedByMe: Boolean = false,
+    val aiGenerated: Boolean = false,
+    val tags: List<String> = emptyList(),
+    val bannerUrl: String = ""
+) {
+    /** Dossier affichable (dossier d'un autre membre : communauté ou lien de partage). */
+    fun toFolder(): Folder = Folder(
+        id = id,
+        name = name,
+        icon = runCatching { FolderIcon.valueOf(icon) }.getOrDefault(FolderIcon.FOLDER),
+        color = runCatching { FolderColor.valueOf(color) }.getOrDefault(FolderColor.ORANGE),
+        bannerUrl = bannerUrl,
+        tags = tags,
+        visibility = if (visibility.uppercase().contains("PUBLIC")) "PUBLIC" else "PRIVATE",
+        ownerDisplayName = ownerDisplayName,
+        ownerIsAdmin = ownerIsAdmin,
+        linkCount = linkCount,
+        likeCount = likeCount,
+        likedByMe = likedByMe,
+        aiGenerated = aiGenerated,
+    )
+}
 
 @Serializable
 data class ApiLink(
     val id: String = "",
     val ownerId: String = "",
+    val folderId: String = "",
     val title: String = "",
     val url: String = "",
     val description: String = "",
@@ -55,8 +78,33 @@ data class ApiLink(
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
     val ownerDisplayName: String = "",
-    val ownerIsAdmin: Boolean = false
-)
+    val ownerIsAdmin: Boolean = false,
+    val visibility: String = ""
+) {
+    /** Idée en lecture (communauté, dossier public, lien de partage). */
+    fun toLink(): Link = Link(
+        id = id,
+        title = title,
+        url = url,
+        description = description,
+        category = runCatching { LinkCategory.valueOf(category.removePrefix("LINK_CATEGORY_")) }.getOrDefault(LinkCategory.IDEE),
+        folderId = folderId.ifBlank { null },
+        tags = tags,
+        ageRange = ageRange,
+        location = location,
+        price = price,
+        imageUrl = imageUrl,
+        eventDate = eventDate.takeIf { it > 0 },
+        rating = rating,
+        ingredients = ingredients,
+        likeCount = likeCount,
+        likedByMe = likedByMe,
+        ownerId = ownerId,
+        ownerDisplayName = ownerDisplayName,
+        ownerIsAdmin = ownerIsAdmin,
+        visibility = visibility.ifBlank { "private" }
+    )
+}
 
 /**
  * Aperçu d'une page (GET /v1/links/preview) : titre, description, meilleure
@@ -108,13 +156,20 @@ class ApiClient(private val baseUrl: String = "https://tribbae.bananaops.cloud")
         }
     }
 
-    suspend fun listCommunityFolders(search: String = "", pageSize: Int = 20, pageToken: String = ""): ApiFolderResponse {
+    suspend fun listCommunityFolders(search: String = "", pageSize: Int = 20, pageToken: String = "", token: String? = null): ApiFolderResponse {
         val params = mutableListOf<String>()
         if (search.isNotBlank()) params += "search=${URLEncoder.encode(search, "UTF-8")}"
         if (pageSize > 0) params += "pageSize=$pageSize"
         if (pageToken.isNotBlank()) params += "pageToken=$pageToken"
         val qs = if (params.isNotEmpty()) "?${params.joinToString("&")}" else ""
-        val body = get("/v1/community/folders$qs")
+        // Jeton facultatif : il renseigne likedByMe
+        val body = get("/v1/community/folders$qs", token)
+        return json.decodeFromString(body)
+    }
+
+    /** Idées d'un dossier visible (public, ou dont on est membre si un jeton est fourni). */
+    suspend fun listFolderLinks(folderId: String, token: String? = null): ApiLinksResponse {
+        val body = get("/v1/links?folderId=${URLEncoder.encode(folderId, "UTF-8")}", token)
         return json.decodeFromString(body)
     }
 

@@ -19,7 +19,7 @@ import ui.components.rememberBottomNavScrollState
 import viewmodel.LinkViewModel
 
 @Composable
-fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null, sharedTitle: String? = null) {
+fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null, sharedTitle: String? = null, sharedFolderToken: String? = null) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val authRepository = remember { AuthRepository() }
@@ -34,7 +34,7 @@ fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null, shared
         }
     }
 
-    ModernMainApp(vm, sharedUrl, sharedTitle, sessionManager, authRepository, followRepository, commentRepository)
+    ModernMainApp(vm, sharedUrl, sharedTitle, sharedFolderToken, sessionManager, authRepository, followRepository, commentRepository)
 }
 
 /** Écrans empilés au-dessus des onglets (navigation par état, comme avant). */
@@ -53,6 +53,9 @@ private sealed class Screen {
     data class Ai(val folderId: String? = null, val prompt: String = "") : Screen()
     object Shopping : Screen()
     object Faq : Screen()
+    object Admin : Screen()
+    /** Dossier d'un autre membre : public (folder) ou ouvert par lien de partage (shareToken). */
+    data class PublicFolder(val folder: Folder? = null, val shareToken: String? = null) : Screen()
 }
 
 @Composable
@@ -60,6 +63,7 @@ private fun ModernMainApp(
     vm: LinkViewModel,
     sharedUrl: String?,
     sharedTitle: String?,
+    sharedFolderToken: String?,
     sessionManager: SessionManager,
     authRepository: AuthRepository,
     followRepository: FollowRepository,
@@ -67,7 +71,12 @@ private fun ModernMainApp(
 ) {
     var tab by remember { mutableStateOf(NavDestination.HOME) }
     // Pile d'écrans : retour = dépiler
-    val stack = remember { mutableStateListOf<Screen>().apply { if (sharedUrl != null || sharedTitle != null) add(Screen.IdeaForm(url = sharedUrl, title = sharedTitle)) } }
+    val stack = remember {
+        mutableStateListOf<Screen>().apply {
+            if (sharedUrl != null || sharedTitle != null) add(Screen.IdeaForm(url = sharedUrl, title = sharedTitle))
+            if (sharedFolderToken != null) add(Screen.PublicFolder(shareToken = sharedFolderToken))
+        }
+    }
     var showAdd by remember { mutableStateOf(false) }
     var exploreQuery by remember { mutableStateOf("") }
     var exploreCategory by remember { mutableStateOf<LinkCategory?>(null) }
@@ -80,6 +89,10 @@ private fun ModernMainApp(
     val navScroll = rememberBottomNavScrollState()
     fun push(s: Screen) { stack.add(s); navScroll.hidden = false }
     fun pop() { if (stack.isNotEmpty()) stack.removeAt(stack.lastIndex); navScroll.hidden = false }
+    // Un dossier de la communauté dont je suis membre s'ouvre en mode normal
+    fun openCommunityFolder(f: Folder) {
+        push(folders.find { it.id == f.id }?.let { Screen.FolderDetail(it) } ?: Screen.PublicFolder(folder = f))
+    }
     fun openLink(id: String) { links.find { it.id == id }?.let { push(Screen.Detail(it)) } }
     fun openExplore(query: String = "", category: LinkCategory? = null) {
         exploreQuery = query; exploreCategory = category
@@ -125,6 +138,7 @@ private fun ModernMainApp(
                             initialQuery = exploreQuery,
                             initialCategory = exploreCategory,
                             onNavigateToAI = { push(Screen.Ai(prompt = exploreQuery)) },
+                            onOpenFolder = ::openCommunityFolder,
                         )
                     }
                     NavDestination.MY_IDEAS -> MyIdeasScreen(
@@ -148,6 +162,7 @@ private fun ModernMainApp(
                         onLoginSuccess = { vm.syncWithBackend(sessionManager) },
                         onNavigateToFaq = { push(Screen.Faq) },
                         onOpenShopping = { push(Screen.Shopping) },
+                        onOpenAdmin = { push(Screen.Admin) },
                     )
                 }
                 }
@@ -251,6 +266,21 @@ private fun ModernMainApp(
             Screen.Shopping -> ShoppingListScreen(vm, onBack = ::pop, onAddRecipe = { push(Screen.IdeaForm(category = LinkCategory.RECETTE)) })
 
             Screen.Faq -> FaqScreen(onBack = ::pop)
+            is Screen.PublicFolder -> PublicFolderScreen(
+                folder = screen.folder,
+                shareToken = screen.shareToken,
+                viewModel = vm,
+                onBack = ::pop,
+                onLinkClick = { l ->
+                    val mine = links.find { it.id == l.id }
+                    push(if (mine != null) Screen.Detail(mine) else Screen.Detail(l, public = true))
+                },
+            )
+            Screen.Admin -> AdminScreen(
+                adminRepository = remember { AdminRepository(tokenProvider = { sessionManager.getToken() }) },
+                modifier = Modifier.fillMaxSize().statusBarsPadding(),
+                onBack = ::pop
+            )
         }
 
         if (showAdd) {

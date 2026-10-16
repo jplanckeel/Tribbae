@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -102,6 +103,88 @@ fun FolderDetailScreen(
     }
 }
 
+/**
+ * Dossier d'un autre membre, en lecture : dossier public de la communauté, ou
+ * dossier ouvert depuis un lien de partage (https://…/share/<jeton>). Seules
+ * les idées que le serveur autorise sont listées ; on peut aimer le dossier.
+ */
+@Composable
+fun PublicFolderScreen(
+    folder: Folder?,
+    shareToken: String?,
+    viewModel: viewmodel.LinkViewModel,
+    onBack: () -> Unit,
+    onLinkClick: (Link) -> Unit,
+) {
+    var current by remember { mutableStateOf(folder) }
+    var items by remember { mutableStateOf<List<Link>?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    var liked by remember { mutableStateOf(folder?.likedByMe ?: false) }
+    var likeCount by remember { mutableStateOf(folder?.likeCount ?: 0) }
+    val loggedIn = viewModel.currentUserId() != null
+
+    LaunchedEffect(folder?.id, shareToken) {
+        if (shareToken != null) {
+            val r = viewModel.loadSharedFolder(shareToken)
+            if (r == null) failed = true else { current = r.first; items = r.second }
+        } else if (folder != null) {
+            val r = viewModel.loadPublicFolderLinks(folder.id)
+            if (r == null) failed = true else items = r
+        }
+    }
+
+    val f = current
+    if (f == null) {
+        // Lien de partage : chargement, ou lien invalide / révoqué
+        Box(Modifier.fillMaxSize().background(Sable).statusBarsPadding().padding(20.dp)) {
+            CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = Sable2)
+            Box(Modifier.align(Alignment.Center)) {
+                if (failed) EmptyBlock(Icons.Outlined.LinkOff, "Lien de partage invalide", "Ce dossier n'est plus partagé, ou le lien est incomplet.")
+                else CircularProgressIndicator(color = Terracotta)
+            }
+        }
+        return
+    }
+
+    val list = items.orEmpty()
+    val owner = f.ownerDisplayName.takeIf { it.isNotBlank() }
+    CollectionScaffold(
+        title = f.name,
+        subtitle = if (items == null && !failed) "Chargement…"
+            else "${list.size} idée${if (list.size > 1) "s" else ""}" + (owner?.let { " · par $it" } ?: ""),
+        bg = folderBg(f.color),
+        solid = folderSolid(f.color),
+        icon = folderIconVector(f),
+        onBack = onBack,
+        extra = {
+            if (f.aiGenerated) Tag("IA", Prune, Sable, Icons.Outlined.AutoAwesome)
+            if (shareToken != null) Tag("Partagé avec vous", Color.White, Ecorce, Icons.Outlined.Link)
+            else Tag("Public", Color(0xFFDCEDF3), Color(0xFF235C77), Icons.Outlined.Public)
+        },
+        buttons = {
+            // Like réservé aux dossiers publics (un lien de partage n'est pas une publication)
+            if (shareToken == null && loggedIn) {
+                CampButton(
+                    if (likeCount > 0) "J'aime · $likeCount" else "J'aime",
+                    { viewModel.toggleFolderLike(f.id, liked) { l, c -> liked = l; likeCount = c } },
+                    kind = if (liked) ButtonKind.Dark else ButtonKind.Ghost,
+                    icon = if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    height = 40.dp
+                )
+            }
+        },
+        links = list,
+        emptyTitle = when {
+            failed -> "Impossible de charger ce dossier"
+            items == null -> "Chargement…"
+            else -> "Ce dossier est encore vide"
+        },
+        emptyText = if (failed) "Vérifiez votre connexion et réessayez." else null,
+        onLinkClick = { id -> list.find { it.id == id }?.let(onLinkClick) },
+        onFavorite = null
+    )
+}
+
 /** Idées d'une catégorie (ou idées non rangées) avec le même gabarit que les dossiers. */
 @Composable
 fun CategoryDetailScreen(
@@ -149,7 +232,7 @@ private fun CollectionScaffold(
     emptyTitle: String,
     emptyText: String?,
     onLinkClick: (String) -> Unit,
-    onFavorite: (Link) -> Unit,
+    onFavorite: ((Link) -> Unit)?,
 ) {
     Column(Modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = 40.dp)) {
         Box(Modifier.fillMaxWidth().background(bg)) {
@@ -180,7 +263,7 @@ private fun CollectionScaffold(
                 EmptyBlock(Icons.Outlined.Cottage, emptyTitle, emptyText)
             } else {
                 TwoColumnMosaic(links) { l, i ->
-                    MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.favorite, onLike = { onFavorite(l) })
+                    MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.favorite, onLike = onFavorite?.let { fav -> { fav(l) } })
                 }
             }
         }

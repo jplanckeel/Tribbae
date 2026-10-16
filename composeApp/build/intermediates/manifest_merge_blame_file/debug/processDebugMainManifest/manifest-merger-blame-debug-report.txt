@@ -46,7 +46,7 @@
 25-->[androidx.core:core:1.15.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/40af061f7f86e7b85f7c901f99738bc6/transformed/core-1.15.0/AndroidManifest.xml:26:22-94
 26
 27    <application
-27-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:11:5-44:19
+27-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:11:5-51:19
 28        android:allowBackup="true"
 28-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:12:9-35
 29        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
@@ -67,7 +67,7 @@
 37        android:theme="@style/Theme.Tribbae" >
 37-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:17:9-45
 38        <activity
-38-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:19:9-31:20
+38-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:19:9-38:20
 39            android:name="com.linkkeeper.app.MainActivity"
 39-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:20:13-41
 40            android:exported="true" >
@@ -96,97 +96,121 @@
 51-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:29:17-55
 51-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:29:23-52
 52            </intent-filter>
-53        </activity>
-54
-55        <receiver
-55-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:32:9-34:40
-56            android:name="data.ReminderReceiver"
-56-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:33:13-49
-57            android:exported="false" />
-57-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:34:13-37
-58
-59        <provider
-59-->INJECTED
-60            android:name="androidx.core.content.FileProvider"
-60-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:36:13-62
-61            android:authorities="com.linkkeeper.app.provider"
-61-->INJECTED
-62            android:exported="false"
-62-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:38:13-37
-63            android:grantUriPermissions="true" >
-63-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:39:13-47
-64            <meta-data
-64-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:40:13-42:54
-65                android:name="android.support.FILE_PROVIDER_PATHS"
-65-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:41:17-67
-66                android:resource="@xml/file_paths" />
-66-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:42:17-51
-67        </provider>
-68        <provider
-68-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
-69            android:name="androidx.startup.InitializationProvider"
-69-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:25:13-67
-70            android:authorities="com.linkkeeper.app.androidx-startup"
-70-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:26:13-68
-71            android:exported="false" >
-71-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:27:13-37
-72            <meta-data
-72-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
-73                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-73-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:30:17-75
-74                android:value="androidx.startup" />
-74-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:31:17-49
-75            <meta-data
-75-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/2d5c2f17beea140182c7ba6c73920cc0/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:29:13-31:52
-76                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-76-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/2d5c2f17beea140182c7ba6c73920cc0/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:30:17-78
-77                android:value="androidx.startup" />
-77-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/2d5c2f17beea140182c7ba6c73920cc0/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:31:17-49
-78            <meta-data
-78-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
-79                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-79-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
-80                android:value="androidx.startup" />
-80-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
-81        </provider>
-82
-83        <receiver
-83-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
-84            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-84-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
-85            android:directBootAware="false"
-85-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
-86            android:enabled="true"
-86-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
-87            android:exported="true"
-87-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
-88            android:permission="android.permission.DUMP" >
-88-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
-89            <intent-filter>
-89-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
-90                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-90-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
-90-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
-91            </intent-filter>
-92            <intent-filter>
-92-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
-93                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-93-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
-93-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
-94            </intent-filter>
-95            <intent-filter>
-95-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
-96                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-96-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
-96-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
-97            </intent-filter>
-98            <intent-filter>
-98-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
-99                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-99-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
-99-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
-100            </intent-filter>
-101        </receiver>
-102    </application>
-103
-104</manifest>
+53            <!-- Liens de partage de dossier : https://tribbae.bananaops.cloud/share/<jeton> -->
+54            <intent-filter android:autoVerify="true" >
+54-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:32:13-37:29
+54-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:32:28-53
+55                <action android:name="android.intent.action.VIEW" />
+55-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:33:17-69
+55-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:33:25-66
+56
+57                <category android:name="android.intent.category.DEFAULT" />
+57-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:28:17-76
+57-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:28:27-73
+58                <category android:name="android.intent.category.BROWSABLE" />
+58-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:35:17-78
+58-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:35:27-75
+59
+60                <data
+60-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:29:17-55
+61                    android:host="tribbae.bananaops.cloud"
+61-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:36:46-84
+62                    android:pathPrefix="/share/"
+62-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:36:85-113
+63                    android:scheme="https" />
+63-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:36:23-45
+64            </intent-filter>
+65        </activity>
+66
+67        <receiver
+67-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:39:9-41:40
+68            android:name="data.ReminderReceiver"
+68-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:40:13-49
+69            android:exported="false" />
+69-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:41:13-37
+70
+71        <provider
+71-->INJECTED
+72            android:name="androidx.core.content.FileProvider"
+72-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:43:13-62
+73            android:authorities="com.linkkeeper.app.provider"
+73-->INJECTED
+74            android:exported="false"
+74-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:45:13-37
+75            android:grantUriPermissions="true" >
+75-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:46:13-47
+76            <meta-data
+76-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:47:13-49:54
+77                android:name="android.support.FILE_PROVIDER_PATHS"
+77-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:48:17-67
+78                android:resource="@xml/file_paths" />
+78-->/Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:49:17-51
+79        </provider>
+80        <provider
+80-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:24:9-32:20
+81            android:name="androidx.startup.InitializationProvider"
+81-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:25:13-67
+82            android:authorities="com.linkkeeper.app.androidx-startup"
+82-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:26:13-68
+83            android:exported="false" >
+83-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:27:13-37
+84            <meta-data
+84-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:29:13-31:52
+85                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+85-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:30:17-75
+86                android:value="androidx.startup" />
+86-->[androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:31:17-49
+87            <meta-data
+87-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/2d5c2f17beea140182c7ba6c73920cc0/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:29:13-31:52
+88                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+88-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/2d5c2f17beea140182c7ba6c73920cc0/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:30:17-78
+89                android:value="androidx.startup" />
+89-->[androidx.lifecycle:lifecycle-process:2.9.4] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/2d5c2f17beea140182c7ba6c73920cc0/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:31:17-49
+90            <meta-data
+90-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+91                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+91-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+92                android:value="androidx.startup" />
+92-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+93        </provider>
+94
+95        <receiver
+95-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+96            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+96-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+97            android:directBootAware="false"
+97-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+98            android:enabled="true"
+98-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+99            android:exported="true"
+99-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+100            android:permission="android.permission.DUMP" >
+100-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+101            <intent-filter>
+101-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+102                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+102-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+102-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+103            </intent-filter>
+104            <intent-filter>
+104-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+105                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+105-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+105-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+106            </intent-filter>
+107            <intent-filter>
+107-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+108                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+108-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+108-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+109            </intent-filter>
+110            <intent-filter>
+110-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+111                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+111-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+111-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8b427015fecf6ef1938f8d7c994cdc75/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+112            </intent-filter>
+113        </receiver>
+114    </application>
+115
+116</manifest>

@@ -68,6 +68,7 @@ data class ApiAuthLink(
     val ingredients: List<String> = emptyList(),
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
+    val favorite: Boolean = false,
     val updatedAt: String = "",
     val createdAt: String = "",
     val ownerDisplayName: String = "",
@@ -278,7 +279,7 @@ class AuthenticatedApiClient(
     suspend fun likeLink(linkId: String): Int {
         return request("/v1/links/$linkId/like", "POST", "{}") { response ->
             @Serializable
-            data class LikeResponse(val likeCount: Int)
+            data class LikeResponse(val likeCount: Int = 0)
             json.decodeFromString<LikeResponse>(response).likeCount
         }
     }
@@ -286,8 +287,34 @@ class AuthenticatedApiClient(
     suspend fun unlikeLink(linkId: String): Int {
         return request("/v1/links/$linkId/like", "DELETE", null) { response ->
             @Serializable
-            data class LikeResponse(val likeCount: Int)
+            data class LikeResponse(val likeCount: Int = 0)
             json.decodeFromString<LikeResponse>(response).likeCount
+        }
+    }
+
+    // Folder likes (dossiers de la communauté)
+    suspend fun likeFolder(folderId: String): Int {
+        return request("/v1/folders/$folderId/like", "POST", "{}") { response ->
+            @Serializable
+            data class LikeResponse(val likeCount: Int = 0)
+            json.decodeFromString<LikeResponse>(response).likeCount
+        }
+    }
+
+    suspend fun unlikeFolder(folderId: String): Int {
+        return request("/v1/folders/$folderId/like", "DELETE", null) { response ->
+            @Serializable
+            data class LikeResponse(val likeCount: Int = 0)
+            json.decodeFromString<LikeResponse>(response).likeCount
+        }
+    }
+
+    /** Favori personnel (distinct du like communautaire) : bascule et renvoie le nouvel état. */
+    suspend fun toggleFavorite(linkId: String): Boolean {
+        return request("/v1/links/$linkId/favorite", "POST", "{}") { response ->
+            @Serializable
+            data class FavoriteResponse(val favorite: Boolean = false)
+            json.decodeFromString<FavoriteResponse>(response).favorite
         }
     }
 

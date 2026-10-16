@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,9 +52,14 @@ fun ExploreScreen(
     initialQuery: String = "",
     initialCategory: LinkCategory? = null,
     onNavigateToAI: () -> Unit = {},
+    onOpenFolder: (data.Folder) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var query by remember(initialQuery) { mutableStateOf(initialQuery) }
+    // 0 = idées, 1 = dossiers publics (comme l'onglet « Dossiers » du web)
+    var view by rememberSaveable { mutableStateOf(0) }
+    val communityFolders by viewModel.communityFolders.collectAsState()
+    LaunchedEffect(view) { if (view == 1) viewModel.loadCommunityFolders() }
     var category by remember(initialCategory) { mutableStateOf(initialCategory) }
     var ages by remember { mutableStateOf(setOf<String>()) }
     var tags by remember { mutableStateOf(setOf<String>()) }
@@ -124,7 +130,17 @@ fun ExploreScreen(
                 }
             }
 
-            SearchField(query, { query = it }, "Sortie nature, crêpes, Lego…", Modifier.fillMaxWidth().padding(horizontal = 20.dp))
+            SearchField(
+                query, { query = it },
+                if (view == 1) "Anniversaire, vacances, recettes d'hiver…" else "Sortie nature, crêpes, Lego…",
+                Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+            )
+
+            SegmentedTabs(listOf("Idées", "Dossiers"), view, { view = it }, Modifier.padding(horizontal = 20.dp))
+
+            if (view == 1) {
+                CommunityFolderGrid(communityFolders, query, isRefreshing, onOpenFolder)
+            } else {
 
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp),
@@ -187,6 +203,7 @@ fun ExploreScreen(
                         }
                     }
                 }
+            }
             }
         }
     }
@@ -260,5 +277,42 @@ private fun AiPromoCard(onClick: () -> Unit) {
             fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ecorce,
             modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Soleil).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 8.dp)
         )
+    }
+}
+
+/** Dossiers publics de la communauté, filtrés par la recherche. */
+@Composable
+private fun CommunityFolderGrid(folders: List<data.Folder>, query: String, loading: Boolean, onOpen: (data.Folder) -> Unit) {
+    val q = query.trim().lowercase()
+    val list = if (q.isEmpty()) folders else folders.filter { f ->
+        f.name.lowercase().contains(q) || f.tags.any { it.lowercase().contains(q) } || f.ownerDisplayName.lowercase().contains(q)
+    }
+    Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            "${list.size} dossier${if (list.size > 1) "s" else ""} partagé${if (list.size > 1) "s" else ""} par la communauté",
+            fontSize = 13.sp, color = TextSec
+        )
+        if (list.isEmpty()) {
+            EmptyBlock(
+                Icons.Outlined.Explore,
+                if (loading && folders.isEmpty()) "Chargement…" else "Aucun dossier public",
+                "Rendez un de vos dossiers public pour inspirer les autres tribus."
+            )
+        } else {
+            list.chunked(2).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    row.forEach { f ->
+                        FolderCard(
+                            f, f.linkCount, { onOpen(f) }, Modifier.weight(1f),
+                            ownerLabel = listOfNotNull(
+                                f.ownerDisplayName.takeIf { it.isNotBlank() },
+                                f.likeCount.takeIf { it > 0 }?.let { "♥ $it" }
+                            ).joinToString(" · ").ifBlank { null }
+                        )
+                    }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        }
     }
 }

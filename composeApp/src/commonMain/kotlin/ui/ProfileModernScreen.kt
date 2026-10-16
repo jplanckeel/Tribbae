@@ -16,6 +16,7 @@ import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.outlined.AdminPanelSettings
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingCart
@@ -59,6 +60,7 @@ fun ProfileModernScreen(
     onLoginSuccess: () -> Unit = {},
     onNavigateToFaq: () -> Unit = {},
     onOpenShopping: () -> Unit = {},
+    onOpenAdmin: () -> Unit = {},
 ) {
     val isLoggedIn by sessionManager.isLoggedIn.collectAsState()
     var authMode by remember { mutableStateOf<Boolean?>(null) } // true = inscription
@@ -71,7 +73,7 @@ fun ProfileModernScreen(
             onFaq = onNavigateToFaq
         )
     } else {
-        TribeContent(viewModel, sessionManager, modifier, onNavigateToFaq, onOpenShopping)
+        TribeContent(viewModel, sessionManager, modifier, onNavigateToFaq, onOpenShopping, onOpenAdmin)
     }
 
     authMode?.let { register ->
@@ -132,6 +134,7 @@ private fun TribeContent(
     modifier: Modifier,
     onFaq: () -> Unit,
     onOpenShopping: () -> Unit,
+    onOpenAdmin: () -> Unit,
 ) {
     val links by viewModel.repository.links.collectAsState()
     val folders by viewModel.folders.collectAsState()
@@ -241,6 +244,7 @@ private fun TribeContent(
                 ListRow(Icons.Outlined.FavoriteBorder, "Tribus suivies", following?.size?.toString()) { showFollowing = true }
                 ListRow(Icons.Outlined.ShoppingCart, "Liste de courses", onClick = onOpenShopping)
                 ListRow(Icons.Outlined.HelpOutline, "Aide & FAQ", onClick = onFaq)
+                if (sessionManager.isAdmin()) ListRow(Icons.Outlined.AdminPanelSettings, "Administration", onClick = onOpenAdmin)
                 ListRow(Icons.Outlined.Logout, "Se déconnecter", last = true) { showLogout = true }
             }
         }
@@ -509,7 +513,7 @@ private fun SimpleAuthDialog(
                                 } else {
                                     authRepository.register(email, password, displayName)
                                 }
-                                sessionManager.saveSession(response.userId, response.token, response.displayName)
+                                sessionManager.saveSession(response.userId, response.token, response.displayName, response.isAdmin)
                                 onSuccess()
                             } catch (e: Exception) {
                                 println("ERROR: Auth failed - ${e.message}")

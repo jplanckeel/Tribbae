@@ -639,7 +639,7 @@ private suspend fun handleAuth(
             authRepository.register(email, password, displayName)
         }
         
-        sessionManager.saveSession(response.userId, response.token, response.displayName)
+        sessionManager.saveSession(response.userId, response.token, response.displayName, response.isAdmin)
         onSuccess()
     } catch (e: Exception) {
         onError(

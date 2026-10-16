@@ -1,20 +1,20 @@
 -- Merging decision tree log ---
 provider#androidx.core.content.FileProvider
-INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:35:9-43:20
+INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:42:9-50:20
 	android:grantUriPermissions
-		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:39:13-47
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:46:13-47
 	android:authorities
 		INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml
-		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:37:13-60
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:44:13-60
 	android:exported
-		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:38:13-37
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:45:13-37
 	android:name
-		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:36:13-62
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:43:13-62
 manifest
-ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:2:1-45:12
-INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:2:1-45:12
-INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:2:1-45:12
-INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:2:1-45:12
+ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:2:1-52:12
+INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:2:1-52:12
+INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:2:1-52:12
+INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:2:1-52:12
 MERGED from [androidx.activity:activity-ktx:1.11.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/7d8c78070eedef03ec3153c11fe56236/transformed/activity-ktx-1.11.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.activity:activity:1.11.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/8bd75d05683b0711afe0115da2293ca4/transformed/activity-1.11.0/AndroidManifest.xml:17:1-22:12
 MERGED from [androidx.compose.material3:material3-android:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/ba99a57b1ce3a85b87b22cd45b60f3a7/transformed/material3/AndroidManifest.xml:17:1-22:12
@@ -106,8 +106,8 @@ ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/A
 	android:name
 		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:9:19-57
 application
-ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:11:5-44:19
-INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:11:5-44:19
+ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:11:5-51:19
+INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:11:5-51:19
 MERGED from [androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.emoji2:emoji2:1.4.0] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/60efd6d62db8ee209b6ae644a53ac60d/transformed/emoji2-1.4.0/AndroidManifest.xml:23:5-33:19
 MERGED from [androidx.lifecycle:lifecycle-process:2.9.4] /Users/jplanckeel/.gradle/caches/9.6.0/transforms/2d5c2f17beea140182c7ba6c73920cc0/transformed/lifecycle-process-2.9.4/AndroidManifest.xml:23:5-33:19
@@ -139,7 +139,7 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/jplanckeel/.gradle/c
 	android:networkSecurityConfig
 		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:18:9-69
 activity#com.linkkeeper.app.MainActivity
-ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:19:9-31:20
+ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:19:9-38:20
 	android:exported
 		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:21:13-36
 	android:name
@@ -166,20 +166,38 @@ ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/A
 		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:28:27-73
 data
 ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:29:17-55
+	android:host
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:36:46-84
+	android:scheme
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:36:23-45
 	android:mimeType
 		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:29:23-52
+	android:pathPrefix
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:36:85-113
+intent-filter#action:name:android.intent.action.VIEW+category:name:android.intent.category.BROWSABLE+category:name:android.intent.category.DEFAULT+data:host:tribbae.bananaops.cloud+data:pathPrefix:/share/+data:scheme:https
+ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:32:13-37:29
+	android:autoVerify
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:32:28-53
+action#android.intent.action.VIEW
+ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:33:17-69
+	android:name
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:33:25-66
+category#android.intent.category.BROWSABLE
+ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:35:17-78
+	android:name
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:35:27-75
 receiver#data.ReminderReceiver
-ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:32:9-34:40
+ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:39:9-41:40
 	android:exported
-		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:34:13-37
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:41:13-37
 	android:name
-		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:33:13-49
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:40:13-49
 meta-data#android.support.FILE_PROVIDER_PATHS
-ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:40:13-42:54
+ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:47:13-49:54
 	android:resource
-		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:42:17-51
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:49:17-51
 	android:name
-		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:41:17-67
+		ADDED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml:48:17-67
 uses-sdk
 INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /Users/jplanckeel/Git/jplanckeel/Tribbae/composeApp/src/androidMain/AndroidManifest.xml

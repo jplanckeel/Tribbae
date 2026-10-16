@@ -22,11 +22,12 @@ class SessionManager(context: Context) {
         println("DEBUG SessionManager.init: displayName=${getDisplayName()}, userId=${getUserId()}, hasToken=${hasToken()}")
     }
 
-    fun saveSession(userId: String, token: String, displayName: String) {
+    fun saveSession(userId: String, token: String, displayName: String, isAdmin: Boolean = false) {
         prefs.edit().apply {
             putString("user_id", userId)
             putString("token", token)
             putString("display_name", displayName)
+            putBoolean("is_admin", isAdmin)
             apply()
         }
         
@@ -50,6 +51,11 @@ class SessionManager(context: Context) {
 
     fun getDisplayName(): String? {
         return prefs.getString("display_name", null)
+    }
+
+    /** Affichage seulement : le backend vérifie lui-même le rôle sur chaque appel admin. */
+    fun isAdmin(): Boolean {
+        return prefs.getBoolean("is_admin", false)
     }
 
     fun hasToken(): Boolean {

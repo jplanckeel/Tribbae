@@ -327,7 +327,7 @@ private suspend fun handleAuth(
         }
         
         println("DEBUG handleAuth: Sauvegarde de la session")
-        sessionManager.saveSession(response.userId, response.token, response.displayName)
+        sessionManager.saveSession(response.userId, response.token, response.displayName, response.isAdmin)
         println("DEBUG handleAuth: Succès!")
         onSuccess()
     } catch (e: Exception) {

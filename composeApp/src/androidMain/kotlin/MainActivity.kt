@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
         val storage = AndroidStorage(applicationContext)
         val repository = LinkRepository(storage)
         val (sharedUrl, sharedTitle) = extractShared(intent)
+        val sharedFolderToken = extractShareToken(intent)
         val appContext = applicationContext
 
         setContent {
@@ -57,9 +58,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
             TribbaeTheme {
-                AppModern(vm = viewModel, sharedUrl = sharedUrl, sharedTitle = sharedTitle)
+                AppModern(vm = viewModel, sharedUrl = sharedUrl, sharedTitle = sharedTitle, sharedFolderToken = sharedFolderToken)
             }
         }
+    }
+
+    /** Jeton d'un lien de partage de dossier ouvert dans l'app (https://…/share/<jeton>). */
+    private fun extractShareToken(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+        val segments = intent.data?.pathSegments ?: return null
+        return segments.takeIf { it.size == 2 && it[0] == "share" }?.get(1)?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{16,64}")) }
     }
 
     /**
