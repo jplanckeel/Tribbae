@@ -5,8 +5,8 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import ui.TribbaeTheme
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.remember
 import data.AndroidStorage
 import data.ImagePickerHelper
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
                     it.fetchMissingImages()
                 }
             }
-            MaterialTheme {
+            TribbaeTheme {
                 AppModern(vm = viewModel, sharedUrl = sharedUrl)
             }
         }

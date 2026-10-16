@@ -250,4 +250,3 @@ func (s *Service) getUserProfile(ctx context.Context, userID string) (UserProfil
 		FollowingCount: followingCount,
 	}, nil
 }
-

@@ -10,7 +10,16 @@ jobs:
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest
-    
+    # Les tests d'intégration se sautent sans MongoDB : on en fournit un
+    services:
+      mongo:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,9 +34,17 @@ jobs:
         working-directory: backend
         run: go build -v ./...
       
+      - name: Vet
+        working-directory: backend
+        run: go vet ./...
+
       - name: Run tests
         working-directory: backend
-        run: go test -v ./...
+        run: go test -race ./...
+
+      - name: Vulnerability scan
+        working-directory: backend
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
   test-frontend:
     name: Test Frontend
@@ -40,7 +57,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       
@@ -48,6 +65,10 @@ jobs:
         working-directory: frontend
         run: npm ci
       
+      - name: Lint frontend
+        working-directory: frontend
+        run: npm run lint
+
       - name: Build frontend
         working-directory: frontend
         run: npm run build

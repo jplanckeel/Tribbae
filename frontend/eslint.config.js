@@ -19,5 +19,9 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Fichiers « Provider + hook » : le hook peut cohabiter avec son composant
+      'react-refresh/only-export-components': ['error', { allowExportNames: ['useFeedback', 'useMyData', 'useComposer'] }],
+    },
   },
 ])

@@ -145,7 +145,7 @@ fun IdeaCard(
                     Icon(
                         imageVector = if (saved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
                         contentDescription = "Save",
-                        tint = if (saved) Color(0xFFF97316) else Color(0xFF374151),
+                        tint = if (saved) Color(0xFFC8492C) else Color(0xFF4E3530),
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -167,14 +167,14 @@ fun IdeaCard(
                             Icon(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = null,
-                                tint = Color(0xFFF59E0B),
+                                tint = Color(0xFFF28C38),
                                 modifier = Modifier.size(11.dp)
                             )
                             Text(
                                 text = link.rating.toString(),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1F2937)
+                                color = Color(0xFF3A211B)
                             )
                         }
                     }
@@ -190,7 +190,7 @@ fun IdeaCard(
                     text = link.title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF111827),
+                    color = Color(0xFF3A211B),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 19.6.sp
@@ -204,7 +204,7 @@ fun IdeaCard(
                             link.description
                         },
                         fontSize = 12.sp,
-                        color = Color(0xFF6B7280),
+                        color = Color(0xFF6B5047),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         lineHeight = 18.sp
@@ -220,13 +220,13 @@ fun IdeaCard(
                         Icon(
                             imageVector = Icons.Filled.LocationOn,
                             contentDescription = null,
-                            tint = Color(0xFFEF4444),
+                            tint = Color(0xFFB2412A),
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = link.location,
                             fontSize = 12.sp,
-                            color = Color(0xFF6B7280),
+                            color = Color(0xFF6B5047),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -262,7 +262,7 @@ fun IdeaCard(
                             Text(
                                 text = ownerName,
                                 fontSize = 12.sp,
-                                color = Color(0xFF6B7280)
+                                color = Color(0xFF6B5047)
                             )
                             // Admin badge
                             if (link.ownerIsAdmin) {
@@ -285,7 +285,7 @@ fun IdeaCard(
                         if (followRepository != null && link.ownerId.isNotBlank() && link.ownerId != currentUserId) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isFollowing) Color(0xFFF3F4F6) else Color(0xFFF97316),
+                                color = if (isFollowing) Color(0xFFF1E3D1) else Color(0xFFC8492C),
                                 modifier = Modifier.clickable(enabled = !isLoadingFollow) {
                                     isLoadingFollow = true
                                     coroutineScope.launch {
@@ -306,7 +306,7 @@ fun IdeaCard(
                                     text = if (isFollowing) "Abonné" else "Suivre",
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = if (isFollowing) Color(0xFF6B7280) else Color.White,
+                                    color = if (isFollowing) Color(0xFF6B5047) else Color.White,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                             }
@@ -326,13 +326,13 @@ fun IdeaCard(
                             Icon(
                                 imageVector = Icons.Filled.Comment,
                                 contentDescription = "Comments",
-                                tint = Color(0xFF9CA3AF),
+                                tint = Color(0xFF8A6F64),
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = link.commentCount.toString(),
                                 fontSize = 12.sp,
-                                color = Color(0xFF9CA3AF)
+                                color = Color(0xFF8A6F64)
                             )
                         }
                         
@@ -345,13 +345,13 @@ fun IdeaCard(
                             Icon(
                                 imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = "Like",
-                                tint = if (liked) Color(0xFFEF4444) else Color(0xFF9CA3AF),
+                                tint = if (liked) Color(0xFFB2412A) else Color(0xFF8A6F64),
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 text = if (liked) "1" else "0",
                                 fontSize = 12.sp,
-                                color = Color(0xFF9CA3AF)
+                                color = Color(0xFF8A6F64)
                             )
                         }
                     }
@@ -363,13 +363,13 @@ fun IdeaCard(
 
 fun getCategoryColor(category: LinkCategory): Color {
     return when (category) {
-        LinkCategory.ACTIVITE -> Color(0xFF4FC3F7)
-        LinkCategory.CADEAU -> Color(0xFFFF8C00)
-        LinkCategory.RECETTE -> Color(0xFF81C784)
-        LinkCategory.EVENEMENT -> Color(0xFFFF7043)
-        LinkCategory.IDEE -> Color(0xFFFFD700)
-        LinkCategory.LIVRE -> Color(0xFF9C27B0)
-        LinkCategory.DECORATION -> Color(0xFFE91E63)
+        LinkCategory.ACTIVITE -> Color(0xFF2F7393)
+        LinkCategory.CADEAU -> Color(0xFFC8492C)
+        LinkCategory.RECETTE -> Color(0xFF4C7A3C)
+        LinkCategory.EVENEMENT -> Color(0xFFB2412A)
+        LinkCategory.IDEE -> Color(0xFF9A6510)
+        LinkCategory.LIVRE -> Color(0xFF5E4558)
+        LinkCategory.DECORATION -> Color(0xFF9C3A5C)
     }
 }
 
@@ -385,17 +385,7 @@ fun getCategoryEmoji(category: LinkCategory): String {
     }
 }
 
-fun getCategoryLabel(category: LinkCategory): String {
-    return when (category) {
-        LinkCategory.ACTIVITE -> "Activité"
-        LinkCategory.CADEAU -> "Cadeau"
-        LinkCategory.RECETTE -> "Recette"
-        LinkCategory.EVENEMENT -> "Événement"
-        LinkCategory.IDEE -> "Idée"
-        LinkCategory.LIVRE -> "Livre"
-        LinkCategory.DECORATION -> "Décoration"
-    }
-}
+fun getCategoryLabel(category: LinkCategory): String = category.label
 
 @Composable
 fun CategoryPatternBackground(
@@ -407,7 +397,7 @@ fun CategoryPatternBackground(
     
     Box(
         modifier = modifier
-            .background(categoryColor.copy(alpha = 0.15f))
+            .background(ui.CategoryPalettes[category.name]?.bg ?: categoryColor.copy(alpha = 0.15f))
             .clip(RoundedCornerShape(0.dp))
     ) {
         // Motif répété en diagonale

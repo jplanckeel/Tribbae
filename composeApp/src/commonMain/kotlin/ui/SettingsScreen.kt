@@ -26,8 +26,8 @@ import viewmodel.LinkViewModel
 
 // Couleurs pour les avatars enfants
 private val childColors = listOf(
-    Color(0xFF4FC3F7), Color(0xFFFF8C00), Color(0xFF81C784),
-    Color(0xFFBA68C8), Color(0xFFFF7043), Color(0xFFFFD700)
+    Color(0xFF2F7393), Color(0xFFC8492C), Color(0xFF4C7A3C),
+    Color(0xFF5E4558), Color(0xFFB2412A), Color(0xFF9A6510)
 )
 
 @Composable
@@ -277,7 +277,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth().padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(imageVector = Icons.Default.Tag, contentDescription = null, tint = Color(0xFF4FC3F7), modifier = Modifier.size(28.dp))
+                Icon(imageVector = Icons.Default.Tag, contentDescription = null, tint = Color(0xFF2F7393), modifier = Modifier.size(28.dp))
                 Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Tags", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
@@ -537,7 +537,7 @@ private fun AuthDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8DCD3)),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(
@@ -547,13 +547,13 @@ private fun AuthDialog(
                             Icon(
                                 imageVector = Icons.Default.Error,
                                 contentDescription = null,
-                                tint = Color(0xFFD32F2F),
+                                tint = Color(0xFFB2412A),
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = errorMessage ?: "",
-                                color = Color(0xFFD32F2F),
+                                color = Color(0xFFB2412A),
                                 fontSize = 13.sp
                             )
                         }

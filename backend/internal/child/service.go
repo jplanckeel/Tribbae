@@ -63,13 +63,13 @@ func (s *Service) Update(ctx context.Context, childID, ownerID primitive.ObjectI
 		"birthDate": birthDate,
 		"updatedAt": time.Now().Unix(),
 	}}
-	
+
 	var child Child
 	err := s.coll.FindOneAndUpdate(ctx, filter, update).Decode(&child)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Récupérer le document mis à jour
 	err = s.coll.FindOne(ctx, filter).Decode(&child)
 	if err != nil {

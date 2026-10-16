@@ -42,7 +42,7 @@ kotlin {
 
 android {
     namespace = "com.linkkeeper.app"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.linkkeeper.app"

@@ -143,6 +143,13 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
 
+    /** Titre, description et image d'une page web, via le backend. Null si hors ligne ou non connecté. */
+    suspend fun previewLink(url: String): data.LinkPreview? {
+        val token = sessionManager?.getToken() ?: authToken ?: return null
+        val normalized = if ("://" in url) url.trim() else "https://${url.trim()}"
+        return runCatching { apiClient.previewLink(normalized, token) }.getOrNull()
+    }
+
     fun deleteLink(id: String) {
         reminderCanceller?.invoke(id)
         repository.deleteLink(id)
@@ -404,6 +411,34 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 imageUrl = idea.imageUrl,
                 ingredients = idea.ingredients
             )
+        }
+    }
+
+    /**
+     * Range les idées de l'IA dans un nouveau dossier. Le dossier est d'abord créé
+     * sur le serveur (quand on est connecté) pour que les idées y pointent avec
+     * son identifiant définitif, et non un identifiant local provisoire.
+     */
+    fun saveAiIdeasInNewFolder(ideas: List<AiSuggestedLink>, name: String, onDone: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            val local = Folder(
+                id = kotlin.random.Random.nextLong().toString(),
+                name = name.take(80).ifBlank { "Idées de l'IA" },
+                icon = FolderIcon.MAGIC, color = FolderColor.PURPLE, visibility = "PRIVATE", aiGenerated = true
+            )
+            val folder = authenticatedClient?.let { client ->
+                runCatching {
+                    client.createFolder(
+                        data.CreateFolderRequest(
+                            name = local.name, icon = local.icon.name, color = local.color.name,
+                            visibility = "VISIBILITY_PRIVATE", bannerUrl = "", tags = emptyList()
+                        )
+                    )
+                }.getOrNull()?.let { local.copy(id = it.id) }
+            } ?: local
+            repository.addFolder(folder)
+            saveAiIdeas(ideas, folder.id)
+            onDone(folder.id)
         }
     }
 

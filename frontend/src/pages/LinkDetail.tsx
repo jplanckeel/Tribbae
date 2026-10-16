@@ -1,445 +1,454 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { links as linksApi, folders as foldersApi } from "../api";
-import { CATEGORIES, CATEGORY_COLORS, normalizeCategory } from "../types";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faArrowLeft, faExternalLinkAlt, faMapMarkerAlt, faStar,
-  faCalendar, faTrash, faPen, faHeart, faFolderOpen,
-  faTimes, faCheck, faCopy, faEuroSign, faBaby,
-} from "@fortawesome/free-solid-svg-icons";
-import { faHeart as faHeartRegular, faBookmark } from "@fortawesome/free-regular-svg-icons";
-import AdminBadge from "../components/AdminBadge";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link as RouterLink, useNavigate, useParams } from "react-router";
+import { useComposer } from "../components/Composer";
+import { useFeedback } from "../components/feedback";
+import Icon, { type IconName } from "../components/Icon";
+import { TipiMark } from "../components/Logo";
+import Sheet from "../components/Sheet";
+import { Avatar, Button, EmptyState, MenuItem, PageSpinner, Spinner, Toggle } from "../components/ui";
+import * as api from "../lib/api";
+import { AVATAR_COLORS, categoryMeta } from "../lib/categories";
+import { useMyData } from "../lib/data";
+import { eventDateMs, formatShortDate, formatTime, hostname, safeHref, safeImage } from "../lib/format";
+import { canEditFolder, copyInput, toInput } from "../lib/links";
+import { useSession } from "../lib/session";
+import { shareOrCopy } from "../lib/share";
+import type { Comment, Link } from "../lib/types";
+import { useAsync } from "../lib/useAsync";
 
-function catLabel(v: string) { return CATEGORIES.find((c) => c.value === v)?.label ?? "Idée"; }
-function catIcon(v: string) { return CATEGORIES.find((c) => c.value === v)?.icon ?? "💡"; }
+export default function LinkDetail() {
+  const { id = "" } = useParams();
+  const res = useAsync(() => api.links.get(id), [id]);
+  if (res.loading) return <PageSpinner />;
+  if (res.error || !res.data) {
+    return (
+      <div className="mx-auto max-w-md px-5 pt-16">
+        <EmptyState
+          icon="tipi"
+          title="Idée introuvable"
+          text={res.error?.message ?? "Elle a peut-être été supprimée ou n'est pas partagée avec vous."}
+          action={<RouterLink to="/explorer" className="font-bold text-terracotta">Explorer les idées</RouterLink>}
+        />
+      </div>
+    );
+  }
+  return <Detail link={res.data} onChange={(l) => res.setData(l)} />;
+}
 
-const inputCls = "w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm";
+function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void }) {
+  const session = useSession();
+  const navigate = useNavigate();
+  const { editLink } = useComposer();
+  const { folders, upsertLink, removeLink } = useMyData();
+  const { toast, confirm } = useFeedback();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [liked, setLiked] = useState(!!link.likedByMe);
+  const [likes, setLikes] = useState(link.likeCount ?? 0);
+  const [imgBroken, setImgBroken] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const commentsRef = useRef<HTMLElement>(null);
 
-function InfoPill({ icon, label, value, accent }: { icon: any; label: string; value: string; accent: string }) {
+  const cat = categoryMeta(link.category);
+  const isOwner = !!session && link.ownerId === session.userId;
+  const folder = folders.find((f) => f.id === link.folderId);
+  const canEdit = isOwner || (!!folder && canEditFolder(folder, session?.userId));
+  const at = eventDateMs(link.eventDate);
+  const href = safeHref(link.url);
+  const img = safeImage(link.imageUrl);
+  const comments = useAsync(() => api.comments.list(link.id), [link.id]);
+
+  const requireAuth = () => navigate(`/bienvenue?next=/links/${link.id}`);
+
+  const apply = (l: Link) => {
+    onChange(l);
+    if (canEdit) upsertLink(l);
+  };
+
+  const like = async () => {
+    if (!session) return requireAuth();
+    const next = !liked;
+    setLiked(next);
+    setLikes((n) => n + (next ? 1 : -1));
+    try {
+      const r = next ? await api.links.like(link.id) : await api.links.unlike(link.id);
+      if (typeof r?.likeCount === "number") setLikes(r.likeCount);
+    } catch {
+      setLiked(!next);
+      setLikes((n) => n + (next ? -1 : 1));
+    }
+  };
+
+  const toggleReminder = async (v: boolean) => {
+    const prev = link;
+    apply({ ...link, reminderEnabled: v });
+    try {
+      apply(await api.links.update(link.id, { ...toInput(link), reminderEnabled: v }));
+      toast(v ? "Rappel activé la veille" : "Rappel désactivé");
+    } catch (e) {
+      apply(prev);
+      toast((e as Error).message, "error");
+    }
+  };
+
+  const toggleFavorite = async () => {
+    setMenuOpen(false);
+    try {
+      const r = await api.links.toggleFavorite(link.id);
+      apply({ ...link, favorite: !!r.favorite });
+      toast(r.favorite ? "Ajoutée aux favoris" : "Retirée des favoris");
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+
+  const saveCopy = async () => {
+    if (!session) return requireAuth();
+    setSaving(true);
+    try {
+      const copy = await api.links.create(copyInput(link));
+      upsertLink(copy);
+      toast("Enregistrée dans vos idées");
+      navigate(`/links/${copy.id}`);
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async () => {
+    setMenuOpen(false);
+    if (!(await confirm({ title: "Supprimer cette idée ?", text: `« ${link.title} » sera définitivement supprimée.`, confirmLabel: "Supprimer", danger: true }))) return;
+    try {
+      await api.links.delete(link.id);
+      removeLink(link.id);
+      toast("Idée supprimée");
+      navigate(-1);
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+
+  const share = async () => {
+    const r = await shareOrCopy(window.location.href, link.title);
+    if (r === "copied") toast(link.visibility === "public" ? "Lien copié" : "Lien copié — visible par les membres du dossier");
+  };
+
+  const infos: { icon: IconName; label: string; value: string }[] = [];
+  if (at) infos.push({ icon: "calendar", label: "Quand", value: [formatShortDate(at), formatTime(at)].filter(Boolean).join(" · ") });
+  if (link.ageRange) infos.push({ icon: "person", label: "Âge", value: link.ageRange });
+  if (link.location) infos.push({ icon: "pin", label: "Où", value: link.location });
+  if (link.price) infos.push({ icon: "euro", label: "Prix", value: link.price });
+
   return (
-    <div className="flex items-center gap-3 p-3.5 rounded-2xl" style={{ backgroundColor: accent + "0D" }}>
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: accent + "20", color: accent }}>
-        <FontAwesomeIcon icon={icon} className="w-4 h-4" />
+    <article className="mx-auto max-w-3xl md:px-8 md:pt-8">
+      <title>{`${link.title} · Tribbae`}</title>
+
+      {/* Visuel */}
+      <div className={`relative h-[300px] overflow-hidden md:h-[360px] md:rounded-xl ${cat.bg}`}>
+        {img && !imgBroken ? (
+          <img src={img} alt="" referrerPolicy="no-referrer" onError={() => setImgBroken(true)} className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <>
+            <div aria-hidden="true" className="absolute -bottom-[120px] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-soleil" />
+            <span className="absolute bottom-6 left-1/2 -translate-x-1/2"><TipiMark size={140} stroke={1.6} /></span>
+          </>
+        )}
+        <div className="absolute inset-x-4 top-4 flex justify-between">
+          <button
+            type="button"
+            onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
+            aria-label="Retour"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-white"
+          >
+            <Icon name="chevronLeft" size={22} />
+          </button>
+          <div className="flex gap-2">
+            <button type="button" onClick={share} aria-label="Partager" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-white">
+              <Icon name="share" size={21} />
+            </button>
+            {session && (
+              <button type="button" onClick={() => setMenuOpen(true)} aria-label="Plus d'actions" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-white">
+                <Icon name="dots" size={21} />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-        <p className="text-sm font-semibold text-gray-800 truncate">{value}</p>
+
+      {/* Contenu */}
+      <div className="relative -mt-7 flex flex-col gap-4 rounded-t-xl bg-sable px-5 pt-[22px] pb-32 md:px-0 md:pb-12">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${cat.bg} ${cat.ink}`}>{cat.label}</span>
+          <span className="text-[13px] text-sec">
+            {link.ownerDisplayName && !isOwner ? `par ${link.ownerDisplayName}` : isOwner ? "par vous" : ""}
+            {folder ? <> · dossier <RouterLink to={`/dossiers/${folder.id}`} className="font-semibold text-ecorce underline-offset-2 hover:underline">{folder.name}</RouterLink></> : ""}
+          </span>
+          {link.favorite && <Icon name="star" size={16} filled className="text-braise" />}
+          {link.visibility === "public" && (
+            <span className="flex items-center gap-1 text-xs text-sec"><Icon name="globe" size={14} />public</span>
+          )}
+        </div>
+
+        <h1 className="font-display text-[28px] leading-[1.1] font-extrabold tracking-[-0.6px] md:text-[36px]">{link.title}</h1>
+
+        {!isOwner && link.ownerId && session && <FollowAuthor userId={link.ownerId} name={link.ownerDisplayName} />}
+
+        {infos.length > 0 && (
+          <dl className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+            {infos.map((i) => (
+              <div key={i.label} className="flex items-center gap-2.5 rounded-2xl bg-white p-3">
+                <Icon name={i.icon} size={20} className={cat.ic} />
+                <div className="flex min-w-0 flex-col">
+                  <dt className="text-xs text-sec">{i.label}</dt>
+                  <dd className="truncate text-sm font-bold" title={i.value}>{i.value}</dd>
+                </div>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        {at && canEdit && (
+          <label className="flex items-center gap-3 rounded-2xl bg-soleil px-3.5 py-3">
+            <Icon name="bell" size={20} />
+            <span className="flex-1 text-sm font-semibold">Me le rappeler la veille</span>
+            <Toggle label="Rappel la veille" checked={!!link.reminderEnabled} onChange={toggleReminder} />
+          </label>
+        )}
+
+        {(link.rating ?? 0) > 0 && (
+          <div className="flex items-center gap-1 text-braise" aria-label={`Note : ${link.rating} sur 5`}>
+            {[1, 2, 3, 4, 5].map((n) => <Icon key={n} name="star" size={20} filled={(link.rating ?? 0) >= n} />)}
+          </div>
+        )}
+
+        {link.description && <p className="text-[15px] leading-relaxed whitespace-pre-line text-ecorce-2">{link.description}</p>}
+
+        {!!link.ingredients?.length && (
+          <section className="flex flex-col gap-2.5 rounded-l bg-white p-4">
+            <h2 className="flex items-center gap-2 text-lg font-bold"><Icon name="cart" size={20} className="text-recette-ic" />Ingrédients</h2>
+            <ul className="flex flex-col gap-1.5">
+              {link.ingredients.map((ing, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-[15px] text-ecorce-2">
+                  <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-recette-ic" />
+                  {ing}
+                </li>
+              ))}
+            </ul>
+            <RouterLink to="/courses" className="self-start text-sm font-bold text-terracotta">Préparer la liste de courses</RouterLink>
+          </section>
+        )}
+
+        {!!link.tags?.length && (
+          <div className="flex flex-wrap gap-1.5">
+            {link.tags.map((t) => (
+              <RouterLink key={t} to={`/mes-idees?vue=tags&tag=${encodeURIComponent(t)}`} className="rounded-[10px] bg-sable-2 px-2.5 py-1 text-[13px] text-sec hover:bg-line">
+                #{t}
+              </RouterLink>
+            ))}
+          </div>
+        )}
+
+        {href && <span className="text-xs text-muted">Source : {hostname(href)}</span>}
+
+        {!canEdit && session && (
+          <Button variant="secondary" icon="bookmark" loading={saving} onClick={saveCopy} className="self-start">
+            Enregistrer dans mes idées
+          </Button>
+        )}
+
+        <section ref={commentsRef} id="commentaires" className="mt-2 flex scroll-mt-6 flex-col gap-3">
+          <h2 className="text-xl font-bold">Commentaires{comments.data?.length ? ` (${comments.data.length})` : ""}</h2>
+          <Comments
+            linkId={link.id}
+            list={comments.data ?? []}
+            loading={comments.loading}
+            onChange={(c) => comments.setData(c)}
+            canModerate={isOwner}
+            onRequireAuth={requireAuth}
+          />
+        </section>
       </div>
+
+      {/* Barre d'actions */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-sable/95 px-5 pt-3.5 pb-[max(26px,env(safe-area-inset-bottom))] backdrop-blur-md md:sticky md:mt-0 md:rounded-t-xl md:px-0 md:pb-4">
+        <div className="mx-auto flex max-w-3xl gap-2.5">
+          <button
+            type="button"
+            onClick={like}
+            aria-pressed={liked}
+            aria-label={`J'aime, ${likes}`}
+            className="flex h-[54px] items-center gap-1.5 rounded-m border-[1.5px] border-line-2 bg-white px-4 font-bold text-terracotta transition-colors hover:bg-sable-2"
+          >
+            <Icon name="heart" size={20} filled={liked} />
+            {likes}
+          </button>
+          <button
+            type="button"
+            onClick={() => commentsRef.current?.scrollIntoView({ behavior: "smooth" })}
+            aria-label={`Commentaires, ${comments.data?.length ?? 0}`}
+            className="flex h-[54px] items-center gap-1.5 rounded-m border-[1.5px] border-line-2 bg-white px-4 font-bold transition-colors hover:bg-sable-2"
+          >
+            <Icon name="comment" size={20} />
+            {comments.data?.length ?? 0}
+          </button>
+          {href ? (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-m bg-terracotta font-bold text-white transition-colors hover:bg-terracotta-dark"
+            >
+              Voir le site
+              <Icon name="external" size={20} />
+            </a>
+          ) : canEdit ? (
+            <Button block icon="pencil" className="!h-[54px]" onClick={() => editLink(link, onChange)}>Modifier</Button>
+          ) : !session ? (
+            <Button block onClick={requireAuth}>Rejoindre Tribbae</Button>
+          ) : null}
+        </div>
+      </div>
+
+      {session && (
+        <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Idée">
+          <div className="flex flex-col gap-2">
+            {canEdit && <MenuItem icon="pencil" label="Modifier" onClick={() => { setMenuOpen(false); editLink(link, onChange); }} />}
+            {isOwner && <MenuItem icon="star" label={link.favorite ? "Retirer des favoris" : "Ajouter aux favoris"} onClick={toggleFavorite} />}
+            {!canEdit && <MenuItem icon="bookmark" label="Enregistrer dans mes idées" onClick={() => { setMenuOpen(false); saveCopy(); }} />}
+            <MenuItem icon="share" label="Partager le lien" onClick={() => { setMenuOpen(false); share(); }} />
+            {isOwner && <MenuItem icon="trash" label="Supprimer" danger onClick={remove} />}
+          </div>
+        </Sheet>
+      )}
+    </article>
+  );
+}
+
+function FollowAuthor({ userId, name }: { userId: string; name?: string }) {
+  const [following, setFollowing] = useState<boolean>();
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    api.follows.isFollowing(userId).then((v) => alive && setFollowing(v)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
+  if (following === undefined) return null;
+  const toggle = async () => {
+    setBusy(true);
+    try {
+      if (following) await api.follows.unfollow(userId);
+      else await api.follows.follow(userId);
+      setFollowing(!following);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-white p-2.5 pr-3">
+      <Avatar name={name} size={36} rounded="rounded-s" />
+      <span className="flex-1 text-sm"><strong>{name || "Une tribu"}</strong><span className="text-sec"> partage ses idées</span></span>
+      <Button size="sm" variant={following ? "ghost" : "dark"} loading={busy} onClick={toggle}>
+        {following ? "Suivie" : "Suivre"}
+      </Button>
     </div>
   );
 }
 
-export default function LinkDetail() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [link, setLink] = useState<any>(null);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<any>({});
-  const [folderList, setFolderList] = useState<any[]>([]);
-  const [showSaveToList, setShowSaveToList] = useState(false);
-  const [saveToFolderId, setSaveToFolderId] = useState("");
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [copied, setCopied] = useState(false);
+const timeFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
-  useEffect(() => {
-    if (!id) return;
-    linksApi.get(id).then((res) => { setLink(res.link); setForm(res.link); });
-    foldersApi.list().then((res) => setFolderList(res.folders || []));
-  }, [id]);
+function Comments({ linkId, list, loading, onChange, canModerate, onRequireAuth }: {
+  linkId: string; list: Comment[]; loading: boolean; onChange: (c: Comment[]) => void; canModerate: boolean; onRequireAuth: () => void;
+}) {
+  const session = useSession();
+  const { toast, confirm } = useFeedback();
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  if (!link) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500" />
-      </div>
-    );
-  }
-
-  const category = normalizeCategory(link.category);
-  const color = CATEGORY_COLORS[category] || "#FF8C00";
-  const hasImage = link.imageUrl && link.imageUrl.length > 0;
-  const folderName = folderList.find((f: any) => f.id === link.folderId)?.name;
-  const isLoggedIn = !!localStorage.getItem("token");
-  const currentUserId = localStorage.getItem("userId");
-  const isOwnLink = currentUserId && link.ownerId && link.ownerId === currentUserId;
-
-  const handleDelete = async () => {
-    if (!confirm("Supprimer cette idée ?")) return;
-    await linksApi.delete(link.id);
-    navigate("/");
-  };
-
-  const handleSave = async () => {
-    await linksApi.update(link.id, {
-      title: form.title, url: form.url, description: form.description,
-      category: form.category, tags: form.tags, location: form.location,
-      price: form.price, ageRange: form.ageRange, rating: form.rating,
-      ingredients: form.ingredients, folderId: form.folderId || "",
-      imageUrl: form.imageUrl || "",
-    });
-    setLink({ ...form });
-    setEditing(false);
-  };
-
-  const toggleLike = async () => {
+  const send = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setBusy(true);
     try {
-      if (link.likedByMe) {
-        const res = await linksApi.unlike(link.id);
-        setLink({ ...link, likedByMe: false, likeCount: res.likeCount });
-      } else {
-        const res = await linksApi.like(link.id);
-        setLink({ ...link, likedByMe: true, likeCount: res.likeCount });
-      }
-    } catch { /* silencieux */ }
-  };
-
-  const handleCopyUrl = () => {
-    if (link.url) {
-      navigator.clipboard.writeText(link.url).catch(() => {});
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const c = await api.comments.create(linkId, text.trim());
+      onChange([...list, c]);
+      setText("");
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleSaveToMyList = async () => {
-    setSaving(true);
+  const remove = async (c: Comment) => {
+    if (!(await confirm({ title: "Supprimer ce commentaire ?", confirmLabel: "Supprimer", danger: true }))) return;
     try {
-      await linksApi.create({
-        title: link.title, url: link.url || "", description: link.description || "",
-        category: link.category, tags: link.tags || [], location: link.location || "",
-        price: link.price || "", ageRange: link.ageRange || "", rating: link.rating || 0,
-        ingredients: link.ingredients || [], folderId: saveToFolderId || "",
-        imageUrl: link.imageUrl || "",
-      });
-      setSaved(true);
-      setShowSaveToList(false);
-    } catch { /* silencieux */ }
-    setSaving(false);
+      await api.comments.delete(c.id);
+      onChange(list.filter((x) => x.id !== c.id));
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
   };
 
-  // ── Edit view ──
-  if (editing) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-6 pb-24 sm:pb-6">
-        <button onClick={() => setEditing(false)} className="flex items-center gap-1.5 text-orange-500 mb-4 text-sm font-medium">
-          <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Retour
-        </button>
-        <div className="bg-white rounded-2xl shadow-sm p-6 space-y-3">
-          <input value={form.title || ""} onChange={(e) => setForm({ ...form, title: e.target.value })} className={`${inputCls} font-semibold`} placeholder="Titre" />
-          <input value={form.url || ""} onChange={(e) => setForm({ ...form, url: e.target.value })} className={inputCls} placeholder="URL" />
-          <textarea value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className={`${inputCls} resize-none`} placeholder="Description" />
-          <div className="space-y-2">
-            <input value={form.imageUrl || ""} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} className={inputCls} placeholder="URL de l'image" />
-            {form.imageUrl && (
-              <div className="relative rounded-xl overflow-hidden h-32">
-                <img src={form.imageUrl} alt="aperçu" className="w-full h-full object-cover" />
-                <button type="button" onClick={() => setForm({ ...form, imageUrl: "" })}
-                  className="absolute top-2 right-2 bg-black/50 text-white rounded-full w-6 h-6 flex items-center justify-center">
-                  <FontAwesomeIcon icon={faTimes} className="w-3 h-3" />
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {CATEGORIES.map((cat) => {
-              const active = normalizeCategory(form.category) === cat.value;
-              const c = CATEGORY_COLORS[cat.value];
-              return (
-                <button key={cat.value} type="button" onClick={() => setForm({ ...form, category: cat.value })}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                  style={{ backgroundColor: active ? c : c + "18", color: active ? "white" : c }}>
-                  {cat.icon} {cat.label}
-                </button>
-              );
-            })}
-          </div>
-          <select value={form.folderId || ""} onChange={(e) => setForm({ ...form, folderId: e.target.value })}
-            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:outline-none text-sm bg-white">
-            <option value="">Aucune liste</option>
-            {folderList.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
-          </select>
-          <div className="grid grid-cols-2 gap-3">
-            <input value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputCls} placeholder="Lieu" />
-            <input value={form.price || ""} onChange={(e) => setForm({ ...form, price: e.target.value })} className={inputCls} placeholder="Prix" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input value={form.ageRange || ""} onChange={(e) => setForm({ ...form, ageRange: e.target.value })} className={inputCls} placeholder="Âge" />
-            <input value={(form.tags || []).join(", ")} onChange={(e) => setForm({ ...form, tags: e.target.value.split(",").map((t: string) => t.trim()).filter(Boolean) })} className={inputCls} placeholder="Tags (virgule)" />
-          </div>
-          {normalizeCategory(form.category) === "LINK_CATEGORY_RECETTE" && (
-            <textarea value={(form.ingredients || []).join("\n")} onChange={(e) => setForm({ ...form, ingredients: e.target.value.split("\n").filter(Boolean) })}
-              rows={4} className={`${inputCls} resize-none`} placeholder="Ingrédients (un par ligne)" />
-          )}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Note :</span>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" onClick={() => setForm({ ...form, rating: form.rating === n ? 0 : n })}>
-                <FontAwesomeIcon icon={faStar} className="w-5 h-5" style={{ color: n <= (form.rating || 0) ? "#FFD700" : "#e5e7eb" }} />
-              </button>
-            ))}
-          </div>
-          <button onClick={handleSave} className="w-full py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors">
-            Enregistrer
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Detail view ──
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 sm:pb-8">
-      <div className="max-w-2xl mx-auto">
-
-        {/* Hero */}
-        <div className="relative h-72 sm:h-80">
-          {hasImage ? (
-            <img src={link.imageUrl} alt={link.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full overflow-hidden" style={{ backgroundColor: color + "25" }}>
-              <div className="absolute inset-0 flex flex-col justify-evenly opacity-15">
-                {[0, 1, 2, 3].map((row) => (
-                  <div key={row} className="flex justify-evenly" style={{ marginLeft: row % 2 === 1 ? 20 : 0 }}>
-                    {Array.from({ length: 12 }).map((_, i) => (
-                      <span key={i} className="text-2xl">{catIcon(category)}</span>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
-
-          <button onClick={() => navigate(-1)}
-            className="absolute top-12 left-4 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
-            <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4 text-white" />
-          </button>
-
-          <div className="absolute top-12 right-4 flex gap-2">
-            {isLoggedIn && !isOwnLink && (
-              <button onClick={() => { if (!saved) setShowSaveToList(!showSaveToList); }}
-                className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                <FontAwesomeIcon icon={faBookmark} className={`w-4 h-4 ${saved ? "text-orange-400" : "text-white"}`} />
-              </button>
-            )}
-            {isOwnLink && (
-              <>
-                <button onClick={() => setEditing(true)} className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                  <FontAwesomeIcon icon={faPen} className="w-4 h-4 text-white" />
-                </button>
-                <button onClick={handleDelete} className="w-10 h-10 rounded-full bg-red-500/80 backdrop-blur-sm flex items-center justify-center">
-                  <FontAwesomeIcon icon={faTrash} className="w-4 h-4 text-white" />
-                </button>
-              </>
-            )}
-          </div>
-
-          <div className="absolute bottom-5 left-4 right-4">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-white text-[11px] font-semibold mb-2" style={{ backgroundColor: color }}>
-              {catIcon(category)} {catLabel(category)}
-            </span>
-            <h1 className="text-white text-xl font-bold leading-snug">{link.title}</h1>
-          </div>
-        </div>
-
-        {/* White card */}
-        <div className="bg-white rounded-t-3xl -mt-5 relative z-10 px-4 sm:px-6">
-
-          {/* Stats */}
-          <div className="flex items-center justify-around py-4 border-b border-gray-100">
-            {link.rating > 0 && (
-              <div className="flex flex-col items-center gap-0.5">
-                <div className="flex items-center gap-1">
-                  <FontAwesomeIcon icon={faStar} className="w-3.5 h-3.5 text-yellow-400" />
-                  <span className="text-base font-bold text-gray-800">{link.rating}</span>
-                </div>
-                <span className="text-[10px] text-gray-400">Note</span>
-              </div>
-            )}
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="text-base font-bold text-gray-800">{link.likeCount || 0}</span>
-              <span className="text-[10px] text-gray-400">J'aime</span>
-            </div>
-            {link.ownerDisplayName && (
-              <div className="flex flex-col items-center gap-0.5 max-w-[100px]">
-                <span className="text-sm font-semibold text-gray-800 truncate">{link.ownerDisplayName}</span>
-                <span className="text-[10px] text-gray-400">Auteur</span>
-              </div>
-            )}
-          </div>
-
-          {/* Author */}
-          <div className="flex items-center gap-3 py-3.5 border-b border-gray-100">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-              style={{ background: `linear-gradient(135deg, ${color}, ${color}CC)` }}>
-              {link.ownerDisplayName?.charAt(0).toUpperCase() || "?"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-semibold text-gray-800">{link.ownerDisplayName || "Anonyme"}</p>
-                {link.ownerIsAdmin && <AdminBadge />}
-              </div>
-              {link.createdAt && (
-                <p className="text-xs text-gray-400">
-                  Partagé le {new Date(link.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Save panel */}
-          {showSaveToList && (
-            <div className="my-4 bg-orange-50 rounded-2xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-gray-700">📥 Ajouter à mes listes</p>
-              <select value={saveToFolderId} onChange={(e) => setSaveToFolderId(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-orange-200 focus:border-orange-400 focus:outline-none text-sm bg-white">
-                <option value="">Sans liste (mes idées)</option>
-                {folderList.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
-              </select>
-              <div className="flex gap-2">
-                <button onClick={handleSaveToMyList} disabled={saving}
-                  className="flex-1 py-2 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors">
-                  {saving ? "Ajout..." : "Ajouter"}
-                </button>
-                <button onClick={() => setShowSaveToList(false)}
-                  className="px-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors">
-                  Annuler
-                </button>
-              </div>
-            </div>
-          )}
-
-          {saved && !showSaveToList && (
-            <div className="my-3 flex items-center gap-2 text-sm text-green-600 bg-green-50 rounded-xl px-3 py-2">
-              <FontAwesomeIcon icon={faCheck} className="w-3.5 h-3.5" /> Idée ajoutée à vos listes
-            </div>
-          )}
-
-          {/* URL */}
-          {link.url && (
-            <div className="py-4">
-              <div className="rounded-2xl overflow-hidden" style={{ border: `1.5px solid ${color}40` }}>
-                <div className="flex items-center gap-2 px-4 py-2.5" style={{ backgroundColor: color + "15" }}>
-                  <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3" style={{ color }} />
-                  <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color }}>Lien de l'idée</span>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-3 bg-white">
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
-                    className="flex-1 text-sm font-medium truncate" style={{ color }}>
-                    {link.url}
-                  </a>
-                  <button onClick={handleCopyUrl}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors"
-                    style={{ backgroundColor: copied ? "#DCFCE7" : "#F3F4F6" }}>
-                    <FontAwesomeIcon icon={copied ? faCheck : faCopy} className="w-3.5 h-3.5"
-                      style={{ color: copied ? "#16A34A" : "#9CA3AF" }} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Description */}
-          {link.description && (
-            <div className="py-3">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2">Description</p>
-              <p className="text-sm text-gray-700 leading-relaxed">{link.description}</p>
-            </div>
-          )}
-
-          {/* Info pills */}
-          {(link.price || link.ageRange || link.location || folderName) && (
-            <div className="py-3">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-3">Infos pratiques</p>
-              <div className="grid grid-cols-2 gap-2.5">
-                {link.price && <InfoPill icon={faEuroSign} label="Budget" value={link.price} accent="#10B981" />}
-                {link.ageRange && <InfoPill icon={faBaby} label="Âge conseillé" value={link.ageRange} accent="#8B5CF6" />}
-                {link.location && (
-                  <button className="text-left" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(link.location)}`, "_blank")}>
-                    <InfoPill icon={faMapMarkerAlt} label="Lieu" value={link.location} accent="#3B82F6" />
-                  </button>
-                )}
-                {folderName && <InfoPill icon={faFolderOpen} label="Dossier" value={folderName} accent={color} />}
-              </div>
-            </div>
-          )}
-
-          {/* Tags */}
-          {link.tags?.length > 0 && (
-            <div className="py-3">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2">Tags</p>
-              <div className="flex flex-wrap gap-2">
-                {link.tags.map((tag: string) => (
-                  <span key={tag} className="px-3 py-1 rounded-full text-xs font-semibold"
-                    style={{ backgroundColor: color + "18", color }}>
-                    #{tag}
+    <div className="flex flex-col gap-3">
+      {loading ? (
+        <Spinner className="text-terracotta" />
+      ) : list.length === 0 ? (
+        <p className="text-sm text-sec">Pas encore de commentaire. Une astuce, un retour d'expérience ?</p>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {list.map((c, i) => {
+            const [bg, ink] = AVATAR_COLORS[i % AVATAR_COLORS.length];
+            const mine = c.userId === session?.userId;
+            return (
+              <li key={c.id} className="flex gap-2.5">
+                <Avatar name={c.userDisplayName} color={bg} ink={ink} size={34} rounded="rounded-s" />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-2xl rounded-tl-md bg-white px-3.5 py-2.5">
+                  <span className="flex items-baseline gap-2 text-[13px]">
+                    <strong>{c.userDisplayName || "Membre"}</strong>
+                    {c.createdAt && <span className="text-xs text-muted">{timeFmt.format(new Date(c.createdAt))}</span>}
+                    {(mine || canModerate) && (
+                      <button type="button" onClick={() => remove(c)} aria-label="Supprimer le commentaire" className="ml-auto text-muted hover:text-sortie-ink">
+                        <Icon name="trash" size={15} />
+                      </button>
+                    )}
                   </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Event date */}
-          {link.eventDate && (
-            <div className="py-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 text-sm">
-                <FontAwesomeIcon icon={faCalendar} className="w-3.5 h-3.5" />
-                {new Date(Number(link.eventDate) * 1000).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
-              </span>
-            </div>
-          )}
-
-          {/* Ingredients */}
-          {link.ingredients?.length > 0 && (
-            <div className="py-3">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400 mb-2">Ingrédients</p>
-              <ul className="space-y-1.5">
-                {link.ingredients.map((ing: string, i: number) => (
-                  <li key={i} className="text-sm text-gray-600 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                    {ing}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="h-4" />
-        </div>
-      </div>
-
-      {/* Bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 sm:relative sm:bottom-auto bg-white border-t border-gray-100 px-4 pt-3 pb-6 sm:pb-3 sm:border-0 sm:bg-transparent sm:max-w-2xl sm:mx-auto sm:mt-2">
-        <div className="flex gap-3">
-          {isLoggedIn && (
-            <button onClick={toggleLike}
-              className="w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all flex-shrink-0"
-              style={{ borderColor: link.likedByMe ? "#EF4444" : "#E5E7EB", backgroundColor: link.likedByMe ? "#FEF2F2" : "white" }}>
-              <FontAwesomeIcon icon={link.likedByMe ? faHeart : faHeartRegular}
-                className={`w-5 h-5 ${link.likedByMe ? "text-red-500" : "text-gray-400"}`} />
-            </button>
-          )}
-          {link.url && (
-            <a href={link.url} target="_blank" rel="noopener noreferrer"
-              className="flex-1 h-12 rounded-2xl flex items-center justify-center gap-2 text-white font-semibold text-sm"
-              style={{ background: `linear-gradient(135deg, ${color}, ${color}CC)` }}>
-              <FontAwesomeIcon icon={faExternalLinkAlt} className="w-4 h-4" />
-              Ouvrir le lien
-            </a>
-          )}
-          {isLoggedIn && !isOwnLink && !link.url && (
-            <button onClick={() => { if (!saved) setShowSaveToList(!showSaveToList); }}
-              className="flex-1 h-12 rounded-2xl flex items-center justify-center gap-2 text-white font-semibold text-sm"
-              style={{ background: saved ? "linear-gradient(135deg, #9CA3AF, #6B7280)" : `linear-gradient(135deg, ${color}, ${color}CC)` }}>
-              <FontAwesomeIcon icon={faBookmark} className="w-4 h-4" />
-              {saved ? "Sauvegardé ✓" : "Sauvegarder"}
-            </button>
-          )}
-        </div>
-      </div>
+                  <p className="text-sm break-words whitespace-pre-line text-ecorce-2">{c.text}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {session ? (
+        <form onSubmit={send} className="flex items-end gap-2">
+          <label className="sr-only" htmlFor="comment">Votre commentaire</label>
+          <textarea
+            id="comment"
+            rows={1}
+            maxLength={1000}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Ajouter un commentaire…"
+            className="max-h-40 min-h-[48px] flex-1 resize-y rounded-m border-[1.5px] border-line-2 bg-white px-4 py-3 text-[15px] outline-none placeholder:text-muted focus:border-terracotta"
+          />
+          <button
+            type="submit"
+            disabled={busy || !text.trim()}
+            aria-label="Envoyer"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-m bg-ecorce text-sable disabled:opacity-50"
+          >
+            {busy ? <Spinner size={18} /> : <Icon name="send" size={20} />}
+          </button>
+        </form>
+      ) : (
+        <button type="button" onClick={onRequireAuth} className="self-start text-sm font-bold text-terracotta">
+          Connectez-vous pour commenter
+        </button>
+      )}
     </div>
   );
 }

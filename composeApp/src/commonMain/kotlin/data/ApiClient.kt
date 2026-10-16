@@ -58,6 +58,14 @@ data class ApiLink(
     val ownerIsAdmin: Boolean = false
 )
 
+/** Aperçu Open Graph d'une page (titre, description, image), cf. GET /v1/links/preview. */
+@Serializable
+data class LinkPreview(
+    val title: String = "",
+    val description: String = "",
+    val image: String = ""
+)
+
 @Serializable
 data class SharedFolderResponse(
     val folder: ApiFolder = ApiFolder(),
@@ -67,9 +75,10 @@ data class SharedFolderResponse(
 class ApiClient(private val baseUrl: String = "https://tribbae.bananaops.cloud") {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    private suspend fun get(path: String): String = withContext(Dispatchers.IO) {
+    private suspend fun get(path: String, token: String? = null): String = withContext(Dispatchers.IO) {
         val conn = URL("$baseUrl$path").openConnection() as HttpURLConnection
         conn.requestMethod = "GET"
+        if (!token.isNullOrBlank()) conn.setRequestProperty("Authorization", "Bearer $token")
         conn.connectTimeout = 10_000
         conn.readTimeout = 10_000
         try {
@@ -100,6 +109,12 @@ class ApiClient(private val baseUrl: String = "https://tribbae.bananaops.cloud")
         if (limit > 0) params += "limit=$limit"
         val qs = if (params.isNotEmpty()) "?${params.joinToString("&")}" else ""
         val body = get("/v1/community/links$qs")
+        return json.decodeFromString(body)
+    }
+
+    /** Le serveur récupère la page (protection SSRF côté backend) : nécessite une session. */
+    suspend fun previewLink(url: String, token: String): LinkPreview {
+        val body = get("/v1/links/preview?url=${URLEncoder.encode(url, "UTF-8")}", token)
         return json.decodeFromString(body)
     }
 }

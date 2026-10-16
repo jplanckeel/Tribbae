@@ -1,5 +1,5 @@
 # Stage 1 : Build frontend
-FROM node:22-alpine AS frontend
+FROM node:24-alpine AS frontend
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -14,12 +14,14 @@ WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /server ./cmd/server
 
 # Stage 3 : Image finale
-FROM alpine:3.20
+FROM alpine:3.22
 RUN apk add --no-cache ca-certificates
 COPY --from=backend /server /server
 COPY --from=frontend /app/dist /public
+# Exécution sans privilèges root
+USER 65532:65532
 EXPOSE 8080
 CMD ["/server"]

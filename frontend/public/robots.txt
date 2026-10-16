@@ -1,12 +1,13 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
-Disallow: /login
+Disallow: /connexion
+Disallow: /bienvenue
 Disallow: /admin
-Disallow: /folders
-Disallow: /tags
-Disallow: /children
-Disallow: /links/
+Disallow: /mes-idees
+Disallow: /tribu
+Disallow: /courses
+Disallow: /share/
 
 # Sitemap
 Sitemap: https://tribbae.bananaops.cloud/sitemap.xml

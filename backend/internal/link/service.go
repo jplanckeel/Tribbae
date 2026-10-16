@@ -83,26 +83,42 @@ func (s *Service) accessibleFolderIDs(ctx context.Context, userID string) ([]str
 	return ids, nil
 }
 
-// canAccessLink vérifie si l'utilisateur peut accéder à un lien
+// canAccessLink vérifie si l'utilisateur peut voir un lien : son auteur, tout
+// le monde si le lien est public, sinon les personnes qui voient son dossier.
 func (s *Service) canAccessLink(ctx context.Context, l *Link, userID string) bool {
-	if l.OwnerID == userID {
+	if userID != "" && l.OwnerID == userID {
 		return true
 	}
-	if l.FolderID == "" {
-		return false
+	if l.Visibility == "public" {
+		return true
 	}
-	fid, err := primitive.ObjectIDFromHex(l.FolderID)
+	return s.canViewFolder(ctx, l.FolderID, userID)
+}
+
+// CanView indique si l'utilisateur (éventuellement anonyme) peut voir le lien.
+func (s *Service) CanView(ctx context.Context, linkID, userID string) bool {
+	id, err := primitive.ObjectIDFromHex(linkID)
 	if err != nil {
 		return false
 	}
-	// Vérifier si le dossier est public ou si l'utilisateur est collaborateur
-	count, _ := s.folderCol.CountDocuments(ctx, bson.M{
-		"_id": fid,
-		"$or": bson.A{
-			bson.M{"visibility": "public"},
-			bson.M{"collaborators.user_id": userID},
-		},
-	})
+	var l Link
+	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&l); err != nil {
+		return false
+	}
+	return s.canAccessLink(ctx, &l, userID)
+}
+
+// canViewFolder : dossier public, ou utilisateur propriétaire / collaborateur.
+func (s *Service) canViewFolder(ctx context.Context, folderID, userID string) bool {
+	fid, err := primitive.ObjectIDFromHex(folderID)
+	if err != nil {
+		return false
+	}
+	or := bson.A{bson.M{"visibility": "public"}}
+	if userID != "" {
+		or = append(or, bson.M{"owner_id": userID}, bson.M{"collaborators.user_id": userID})
+	}
+	count, _ := s.folderCol.CountDocuments(ctx, bson.M{"_id": fid, "$or": or})
 	return count > 0
 }
 
@@ -126,6 +142,12 @@ func (s *Service) canEditFolder(ctx context.Context, folderID, userID string) bo
 }
 
 func (s *Service) Create(ctx context.Context, ownerID string, l *Link) (*Link, error) {
+	if err := l.sanitize(); err != nil {
+		return nil, err
+	}
+	if l.FolderID != "" && !s.canEditFolder(ctx, l.FolderID, ownerID) {
+		return nil, ErrForbidden
+	}
 	l.ID = primitive.NewObjectID()
 	l.OwnerID = ownerID
 	l.CreatedAt = time.Now()
@@ -149,21 +171,27 @@ func (s *Service) Create(ctx context.Context, ownerID string, l *Link) (*Link, e
 func (s *Service) Get(ctx context.Context, linkID, userID string) (*Link, error) {
 	id, err := primitive.ObjectIDFromHex(linkID)
 	if err != nil {
-		return nil, errors.New("invalid link id")
+		return nil, ErrNotFound
 	}
 	var l Link
 	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&l); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	if !s.canAccessLink(ctx, &l, userID) {
-		return nil, errors.New("not found")
+		return nil, ErrNotFound
 	}
 	return &l, nil
 }
 
 func (s *Service) List(ctx context.Context, ownerID, folderID string) ([]*Link, error) {
 	if folderID != "" {
-		// Si un dossier est spécifié, retourner ses liens (si accès)
+		// Si un dossier est spécifié, retourner ses liens seulement si l'utilisateur y a accès
+		if !s.canViewFolder(ctx, folderID, ownerID) {
+			return nil, ErrNotFound
+		}
 		return s.listByFolder(ctx, folderID)
 	}
 	// Sinon, retourner les liens propres + ceux des dossiers partagés
@@ -217,18 +245,36 @@ func (s *Service) listByFolder(ctx context.Context, folderID string) ([]*Link, e
 func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*Link, error) {
 	id, err := primitive.ObjectIDFromHex(linkID)
 	if err != nil {
-		return nil, errors.New("invalid link id")
+		return nil, ErrNotFound
+	}
+
+	if err := l.sanitize(); err != nil {
+		return nil, err
 	}
 
 	// Charger le lien existant
 	var existing Link
 	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&existing); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 
 	// Vérifier : owner OU éditeur du dossier
 	if existing.OwnerID != userID && !s.canEditFolder(ctx, existing.FolderID, userID) {
-		return nil, errors.New("not authorized")
+		return nil, ErrForbidden
+	}
+	// Déplacer le lien vers un autre dossier exige aussi le droit d'y écrire
+	if l.FolderID != "" && l.FolderID != existing.FolderID && !s.canEditFolder(ctx, l.FolderID, userID) {
+		return nil, ErrForbidden
+	}
+	// Seul l'auteur choisit si son lien est publié dans la communauté
+	if existing.OwnerID != userID {
+		l.Visibility = existing.Visibility
+	}
+	if l.Visibility == "" {
+		l.Visibility = existing.Visibility
 	}
 
 	l.UpdatedAt = time.Now()
@@ -249,16 +295,19 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 	id, err := primitive.ObjectIDFromHex(linkID)
 	if err != nil {
-		return errors.New("invalid link id")
+		return ErrNotFound
 	}
 
 	var existing Link
 	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&existing); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return ErrNotFound
+		}
 		return err
 	}
 
 	if existing.OwnerID != userID && !s.canEditFolder(ctx, existing.FolderID, userID) {
-		return errors.New("not authorized")
+		return ErrForbidden
 	}
 
 	_, err = s.col.DeleteOne(ctx, bson.M{"_id": id})
@@ -270,11 +319,11 @@ func (s *Service) LikeLink(ctx context.Context, linkID, userID string) (int32, e
 	// Vérifier que le lien existe
 	id, err := primitive.ObjectIDFromHex(linkID)
 	if err != nil {
-		return 0, errors.New("invalid link id")
+		return 0, ErrNotFound
 	}
 	var l Link
-	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&l); err != nil {
-		return 0, err
+	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&l); err != nil || !s.canAccessLink(ctx, &l, userID) {
+		return 0, ErrNotFound
 	}
 
 	// Vérifier si déjà liké
@@ -359,6 +408,9 @@ func (s *Service) ListCommunity(ctx context.Context, category string, limit int3
 	if limit <= 0 {
 		limit = 6
 	}
+	if limit > 100 {
+		limit = 100
+	}
 
 	filter := bson.M{"visibility": "public"}
 	if category != "" {
@@ -386,6 +438,9 @@ func (s *Service) ListCommunity(ctx context.Context, category string, limit int3
 func (s *Service) ListNew(ctx context.Context, limit int32) ([]*Link, error) {
 	if limit <= 0 {
 		limit = 10
+	}
+	if limit > 50 {
+		limit = 50
 	}
 
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(int64(limit))
@@ -424,4 +479,87 @@ func (s *Service) GetOwnerInfo(ctx context.Context, ownerID string) (string, boo
 	}
 	// user.DisplayName sera une chaîne vide si le champ n'existe pas ou est vide dans MongoDB
 	return user.DisplayName, user.IsAdmin
+}
+
+// OwnerInfo contient les informations publiques d'un auteur.
+type OwnerInfo struct {
+	DisplayName string
+	IsAdmin     bool
+}
+
+// Stats regroupe les données d'affichage (likes, auteur) d'un lot de liens,
+// chargées en trois requêtes quel que soit le nombre de liens.
+type Stats struct {
+	LikeCount map[string]int32
+	LikedByMe map[string]bool
+	Owners    map[string]OwnerInfo
+}
+
+// LoadStats charge likes, "aimé par moi" et auteurs pour une liste de liens.
+func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *Stats {
+	st := &Stats{
+		LikeCount: map[string]int32{},
+		LikedByMe: map[string]bool{},
+		Owners:    map[string]OwnerInfo{},
+	}
+	if len(links) == 0 {
+		return st
+	}
+	ids := make([]string, 0, len(links))
+	ownerSet := map[primitive.ObjectID]struct{}{}
+	for _, l := range links {
+		ids = append(ids, l.ID.Hex())
+		if oid, err := primitive.ObjectIDFromHex(l.OwnerID); err == nil {
+			ownerSet[oid] = struct{}{}
+		}
+	}
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"link_id": bson.M{"$in": ids}}}},
+		{{Key: "$group", Value: bson.M{"_id": "$link_id", "n": bson.M{"$sum": 1}}}},
+	}
+	if cur, err := s.linkLikeCol.Aggregate(ctx, pipeline); err == nil {
+		var rows []struct {
+			ID string `bson:"_id"`
+			N  int32  `bson:"n"`
+		}
+		if cur.All(ctx, &rows) == nil {
+			for _, r := range rows {
+				st.LikeCount[r.ID] = r.N
+			}
+		}
+	}
+
+	if userID != "" {
+		filter := bson.M{"link_id": bson.M{"$in": ids}, "user_id": userID}
+		if cur, err := s.linkLikeCol.Find(ctx, filter, options.Find().SetProjection(bson.M{"link_id": 1})); err == nil {
+			var rows []struct {
+				LinkID string `bson:"link_id"`
+			}
+			if cur.All(ctx, &rows) == nil {
+				for _, r := range rows {
+					st.LikedByMe[r.LinkID] = true
+				}
+			}
+		}
+	}
+
+	oids := make([]primitive.ObjectID, 0, len(ownerSet))
+	for oid := range ownerSet {
+		oids = append(oids, oid)
+	}
+	proj := options.Find().SetProjection(bson.M{"display_name": 1, "is_admin": 1})
+	if cur, err := s.userCol.Find(ctx, bson.M{"_id": bson.M{"$in": oids}}, proj); err == nil {
+		var rows []struct {
+			ID          primitive.ObjectID `bson:"_id"`
+			DisplayName string             `bson:"display_name"`
+			IsAdmin     bool               `bson:"is_admin"`
+		}
+		if cur.All(ctx, &rows) == nil {
+			for _, r := range rows {
+				st.Owners[r.ID.Hex()] = OwnerInfo{DisplayName: r.DisplayName, IsAdmin: r.IsAdmin}
+			}
+		}
+	}
+	return st
 }

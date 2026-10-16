@@ -3,7 +3,10 @@ package auth
 import (
 	"context"
 	"errors"
+	"net/mail"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,7 +34,40 @@ func NewService(col *mongo.Collection, jwtSecret string) *Service {
 	return &Service{col: col, jwtSecret: []byte(jwtSecret)}
 }
 
+// ErrInvalidInput signale une saisie d'inscription invalide.
+var ErrInvalidInput = errors.New("invalid input")
+
+// ErrInvalidCredentials est volontairement identique que l'email existe ou non.
+var ErrInvalidCredentials = errors.New("invalid credentials")
+
+// dummyHash sert à garder un temps de réponse constant quand l'email est inconnu
+// (sinon le temps de réponse révèle quels emails ont un compte).
+var dummyHash, _ = bcrypt.GenerateFromPassword([]byte("tribbae-timing-equalizer"), bcrypt.DefaultCost)
+
+// NormalizeEmail met l'email en minuscules sans espaces.
+func NormalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
+func validateRegistration(email, password, displayName string) error {
+	if a, err := mail.ParseAddress(email); err != nil || a.Address != email || len(email) > 254 {
+		return errors.Join(ErrInvalidInput, errors.New("a valid email is required"))
+	}
+	if utf8.RuneCountInString(password) < 8 || len(password) > 72 {
+		return errors.Join(ErrInvalidInput, errors.New("password must be between 8 and 72 characters"))
+	}
+	if utf8.RuneCountInString(displayName) > 50 {
+		return errors.Join(ErrInvalidInput, errors.New("display name is too long"))
+	}
+	return nil
+}
+
 func (s *Service) Register(ctx context.Context, email, password, displayName string) (string, string, bool, error) {
+	email = NormalizeEmail(email)
+	displayName = strings.TrimSpace(displayName)
+	if err := validateRegistration(email, password, displayName); err != nil {
+		return "", "", false, err
+	}
 	// Vérifie si l'email existe déjà
 	var existing User
 	err := s.col.FindOne(ctx, bson.M{"email": email}).Decode(&existing)
@@ -64,11 +100,15 @@ func (s *Service) Register(ctx context.Context, email, password, displayName str
 
 func (s *Service) Login(ctx context.Context, email, password string) (string, string, string, bool, error) {
 	var user User
-	if err := s.col.FindOne(ctx, bson.M{"email": email}).Decode(&user); err != nil {
-		return "", "", "", false, errors.New("invalid credentials")
+	// Les comptes historiques peuvent avoir un email avec majuscules : on accepte les deux formes.
+	raw := strings.TrimSpace(email)
+	filter := bson.M{"email": bson.M{"$in": bson.A{NormalizeEmail(raw), raw}}}
+	if err := s.col.FindOne(ctx, filter).Decode(&user); err != nil {
+		_ = bcrypt.CompareHashAndPassword(dummyHash, []byte(password))
+		return "", "", "", false, ErrInvalidCredentials
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", "", "", false, errors.New("invalid credentials")
+		return "", "", "", false, ErrInvalidCredentials
 	}
 	token, err := s.generateToken(user.ID.Hex())
 	return user.ID.Hex(), token, user.DisplayName, user.IsAdmin, err
@@ -76,11 +116,8 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, st
 
 func (s *Service) ValidateToken(tokenStr string) (string, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
-		}
 		return s.jwtSecret, nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithExpirationRequired())
 	if err != nil || !token.Valid {
 		return "", errors.New("invalid token")
 	}

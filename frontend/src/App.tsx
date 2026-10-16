@@ -1,98 +1,58 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Folders from "./pages/Folders";
-import Tags from "./pages/Tags";
-import LinkDetail from "./pages/LinkDetail";
-import SharedFolder from "./pages/SharedFolder";
-import Children from "./pages/Children";
-import Category from "./pages/Category";
+import { createBrowserRouter, Navigate, RouterProvider, useParams } from "react-router";
+import { AppLayout, BareLayout, RequireAuth } from "./components/Shell";
 import Admin from "./pages/Admin";
-import AllFolders from "./pages/AllFolders";
+import Explorer from "./pages/Explorer";
+import Faq from "./pages/Faq";
+import FolderDetail from "./pages/FolderDetail";
+import Home from "./pages/Home";
+import LinkDetail from "./pages/LinkDetail";
+import MyIdeas from "./pages/MyIdeas";
+import SharedFolder from "./pages/SharedFolder";
+import Shopping from "./pages/Shopping";
+import Tribe from "./pages/Tribe";
+import Welcome, { Auth } from "./pages/Welcome";
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem("token");
-  return token ? <>{children}</> : <Navigate to="/login" replace />;
+const auth = (el: React.ReactNode) => <RequireAuth>{el}</RequireAuth>;
+
+function LegacyCategory() {
+  const { slug } = useParams();
+  return <Navigate to={`/category/${slug}`} replace />;
 }
 
-function AppLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <div className="pb-16 sm:pb-0">
-        {children}
-      </div>
-    </div>
-  );
-}
+const router = createBrowserRouter([
+  {
+    element: <BareLayout />,
+    children: [
+      { path: "/bienvenue", element: <Welcome /> },
+      { path: "/connexion", element: <Auth /> },
+      { path: "/share/:token", element: <SharedFolder /> },
+    ],
+  },
+  {
+    element: <AppLayout />,
+    children: [
+      { path: "/", element: <Home /> },
+      { path: "/explorer", element: <Explorer /> },
+      { path: "/category/:slug", element: <Explorer /> },
+      { path: "/links/:id", element: <LinkDetail /> },
+      { path: "/dossiers/:id", element: <FolderDetail /> },
+      { path: "/aide", element: <Faq /> },
+      { path: "/mes-idees", element: auth(<MyIdeas />) },
+      { path: "/courses", element: auth(<Shopping />) },
+      { path: "/tribu", element: auth(<Tribe />) },
+      { path: "/admin", element: auth(<Admin />) },
+      // Anciennes URLs (favoris, liens partagés, référencement)
+      { path: "/login", element: <Navigate to="/connexion" replace /> },
+      { path: "/discover", element: <Navigate to="/explorer?vue=dossiers" replace /> },
+      { path: "/folders", element: <Navigate to="/mes-idees" replace /> },
+      { path: "/tags", element: <Navigate to="/mes-idees?vue=tags" replace /> },
+      { path: "/children", element: <Navigate to="/tribu" replace /> },
+      { path: "/categorie/:slug", element: <LegacyCategory /> },
+      { path: "*", element: <Navigate to="/" replace /> },
+    ],
+  },
+]);
 
 export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/share/:token" element={<SharedFolder />} />
-        <Route
-          path="/"
-          element={
-            <AppLayout><Home /></AppLayout>
-          }
-        />
-        <Route
-          path="/category/:category"
-          element={
-            <AppLayout><Category /></AppLayout>
-          }
-        />
-        <Route
-          path="/discover"
-          element={
-            <AppLayout><AllFolders /></AppLayout>
-          }
-        />
-        <Route
-          path="/folders"
-          element={
-            <PrivateRoute>
-              <AppLayout><Folders /></AppLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/tags"
-          element={
-            <PrivateRoute>
-              <AppLayout><Tags /></AppLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/links/:id"
-          element={
-            <PrivateRoute>
-              <AppLayout><LinkDetail /></AppLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/children"
-          element={
-            <PrivateRoute>
-              <AppLayout><Children /></AppLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <PrivateRoute>
-              <AppLayout><Admin /></AppLayout>
-            </PrivateRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }

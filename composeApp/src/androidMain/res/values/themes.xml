@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Palette « feu de camp » : fond sable, barres système assorties -->
     <style name="Theme.Tribbae" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowBackground">@color/sable</item>
+        <item name="android:statusBarColor">@color/sable</item>
+        <item name="android:navigationBarColor">@color/sable</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:colorAccent">@color/terracotta</item>
     </style>
 </resources>

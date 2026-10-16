@@ -93,7 +93,7 @@ func (s *Service) CreateComment(ctx context.Context, linkID, userID, text string
 func (s *Service) GetComments(ctx context.Context, linkID string) ([]CommentWithUser, error) {
 	// Sort by created_at descending (newest first)
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
-	
+
 	cursor, err := s.col.Find(ctx, bson.M{"link_id": linkID}, opts)
 	if err != nil {
 		return nil, err

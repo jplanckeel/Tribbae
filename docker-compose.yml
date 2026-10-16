@@ -30,6 +30,9 @@ services:
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
       SEARXNG_URL: http://searxng:8080
+      # Compte admin tribbae@bananaops.cloud (≥ 12 caractères). Remplace aussi l'ancien mot de passe par défaut.
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tribbae-backend.rule=Host(`${BACKEND_HOST:-tribbae.bananaops.cloud}`)"

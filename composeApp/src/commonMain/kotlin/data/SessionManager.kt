@@ -23,7 +23,6 @@ class SessionManager(context: Context) {
     }
 
     fun saveSession(userId: String, token: String, displayName: String) {
-        println("DEBUG SessionManager.saveSession: userId=$userId, token=${token.take(10)}..., displayName='$displayName'")
         prefs.edit().apply {
             putString("user_id", userId)
             putString("token", token)

@@ -19,24 +19,24 @@ import (
 func TestProperty_FavoriteCountAccuracy(t *testing.T) {
 	_, db, cleanup := setupTestDB(t)
 	defer cleanup()
-	
+
 	ctx := context.Background()
 	linksCol := db.Collection("links")
 	foldersCol := db.Collection("folders")
-	
+
 	parameters := gopter.DefaultTestParameters()
 	parameters.MinSuccessfulTests = 100
 	properties := gopter.NewProperties(parameters)
-	
+
 	properties.Property("favorite count equals number of links with favorite=true", prop.ForAll(
 		func(favoriteFlags []bool) bool {
 			// Clean up collections before each test
 			linksCol.DeleteMany(ctx, bson.M{})
 			foldersCol.DeleteMany(ctx, bson.M{})
-			
+
 			// Create a test user
 			userID := "test_user_" + primitive.NewObjectID().Hex()
-			
+
 			// Create a folder for the links
 			folderID := primitive.NewObjectID()
 			folder := bson.M{
@@ -51,10 +51,10 @@ func TestProperty_FavoriteCountAccuracy(t *testing.T) {
 				t.Logf("Failed to insert folder: %v", err)
 				return false
 			}
-			
+
 			// Track expected favorite count
 			expectedFavoriteCount := 0
-			
+
 			// Create links with the generated favorite flags
 			for i, isFavorite := range favoriteFlags {
 				link := &Link{
@@ -72,17 +72,17 @@ func TestProperty_FavoriteCountAccuracy(t *testing.T) {
 					CreatedAt:   time.Now(),
 					UpdatedAt:   time.Now(),
 				}
-				
+
 				if _, err := linksCol.InsertOne(ctx, link); err != nil {
 					t.Logf("Failed to insert link: %v", err)
 					return false
 				}
-				
+
 				if isFavorite {
 					expectedFavoriteCount++
 				}
 			}
-			
+
 			// Query links owned by the user
 			cursor, err := linksCol.Find(ctx, bson.M{"owner_id": userID})
 			if err != nil {
@@ -90,7 +90,7 @@ func TestProperty_FavoriteCountAccuracy(t *testing.T) {
 				return false
 			}
 			defer cursor.Close(ctx)
-			
+
 			// Count favorites
 			actualFavoriteCount := 0
 			for cursor.Next(ctx) {
@@ -103,19 +103,19 @@ func TestProperty_FavoriteCountAccuracy(t *testing.T) {
 					actualFavoriteCount++
 				}
 			}
-			
+
 			// Verify count matches expected
 			if actualFavoriteCount != expectedFavoriteCount {
 				t.Logf("Favorite count mismatch: expected=%d, got=%d", expectedFavoriteCount, actualFavoriteCount)
 				return false
 			}
-			
+
 			return true
 		},
 		// Generate a list of boolean flags for favorite status
 		gen.SliceOfN(20, gen.Bool()),
 	))
-	
+
 	properties.TestingRun(t)
 }
 
@@ -126,24 +126,24 @@ func TestProperty_FavoriteCountAccuracy(t *testing.T) {
 func TestProperty_PublicLinksCountAccuracy(t *testing.T) {
 	_, db, cleanup := setupTestDB(t)
 	defer cleanup()
-	
+
 	ctx := context.Background()
 	linksCol := db.Collection("links")
 	foldersCol := db.Collection("folders")
-	
+
 	parameters := gopter.DefaultTestParameters()
 	parameters.MinSuccessfulTests = 100
 	properties := gopter.NewProperties(parameters)
-	
+
 	properties.Property("public links count equals number of links with visibility=public", prop.ForAll(
 		func(visibilities []string) bool {
 			// Clean up collections before each test
 			linksCol.DeleteMany(ctx, bson.M{})
 			foldersCol.DeleteMany(ctx, bson.M{})
-			
+
 			// Create a test user
 			userID := "test_user_" + primitive.NewObjectID().Hex()
-			
+
 			// Create a folder for the links
 			folderID := primitive.NewObjectID()
 			folder := bson.M{
@@ -158,10 +158,10 @@ func TestProperty_PublicLinksCountAccuracy(t *testing.T) {
 				t.Logf("Failed to insert folder: %v", err)
 				return false
 			}
-			
+
 			// Track expected public count
 			expectedPublicCount := 0
-			
+
 			// Create links with the generated visibilities
 			for i, visibility := range visibilities {
 				// Normalize visibility to "public" or "private"
@@ -170,7 +170,7 @@ func TestProperty_PublicLinksCountAccuracy(t *testing.T) {
 					normalizedVisibility = "public"
 					expectedPublicCount++
 				}
-				
+
 				link := &Link{
 					ID:          primitive.NewObjectID(),
 					OwnerID:     userID,
@@ -185,13 +185,13 @@ func TestProperty_PublicLinksCountAccuracy(t *testing.T) {
 					CreatedAt:   time.Now(),
 					UpdatedAt:   time.Now(),
 				}
-				
+
 				if _, err := linksCol.InsertOne(ctx, link); err != nil {
 					t.Logf("Failed to insert link: %v", err)
 					return false
 				}
 			}
-			
+
 			// Query links owned by the user
 			cursor, err := linksCol.Find(ctx, bson.M{"owner_id": userID})
 			if err != nil {
@@ -199,7 +199,7 @@ func TestProperty_PublicLinksCountAccuracy(t *testing.T) {
 				return false
 			}
 			defer cursor.Close(ctx)
-			
+
 			// Count public links
 			actualPublicCount := 0
 			for cursor.Next(ctx) {
@@ -212,18 +212,18 @@ func TestProperty_PublicLinksCountAccuracy(t *testing.T) {
 					actualPublicCount++
 				}
 			}
-			
+
 			// Verify count matches expected
 			if actualPublicCount != expectedPublicCount {
 				t.Logf("Public links count mismatch: expected=%d, got=%d", expectedPublicCount, actualPublicCount)
 				return false
 			}
-			
+
 			return true
 		},
 		// Generate a list of visibilities (public or private)
 		gen.SliceOfN(20, gen.OneConstOf("public", "private")),
 	))
-	
+
 	properties.TestingRun(t)
 }

@@ -1,7 +1,10 @@
 package ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -9,21 +12,44 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.linkkeeper.app.R
+import data.FollowRepository
+import data.UserProfile
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import ui.campfire.*
 import viewmodel.LinkViewModel
 
+private data class Member(val key: String, val name: String, val sub: String? = null)
+
+/** « Ma tribu » : profil, statistiques, membres, invitations, réglages. Sans compte : écran Bienvenue. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileModernScreen(
     viewModel: LinkViewModel,
@@ -31,526 +57,311 @@ fun ProfileModernScreen(
     sessionManager: data.SessionManager,
     authRepository: data.AuthRepository,
     onLoginSuccess: () -> Unit = {},
-    onNavigateToFaq: () -> Unit = {}
+    onNavigateToFaq: () -> Unit = {},
+    onOpenShopping: () -> Unit = {},
 ) {
-    val children by viewModel.children.collectAsState()
-    val links by viewModel.repository.links.collectAsState()
     val isLoggedIn by sessionManager.isLoggedIn.collectAsState()
-    val displayName by sessionManager.displayName.collectAsState()
-    
-    LaunchedEffect(displayName) {
-        println("DEBUG ProfileModernScreen: displayName changé = '$displayName'")
-    }
-    
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    var showAuthDialog by remember { mutableStateOf(false) }
-    var showFamilyDialog by remember { mutableStateOf(false) }
-    var showInviteDialog by remember { mutableStateOf(false) }
+    var authMode by remember { mutableStateOf<Boolean?>(null) } // true = inscription
 
-    val savedCount = links.count { it.favorite }
-    val familyCount = children.size + 1
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFF9FAFB))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 100.dp)
-        ) {
-            // Header avec gradient
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(Color(0xFFFF6B35), Color(0xFFF97316))
-                        )
-                    )
-                    .padding(top = 48.dp, bottom = 32.dp, start = 20.dp, end = 20.dp)
-            ) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White)
-                                    .clickable { /* TODO: Choisir avatar */ },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = (displayName?.firstOrNull()?.uppercase() ?: "U"),
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFF97316)
-                                )
-                            }
-
-                            Column {
-                                Text(
-                                    text = displayName ?: "Utilisateur",
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = "@${(displayName ?: "user").lowercase().replace(" ", ".")}",
-                                    fontSize = 13.sp,
-                                    color = Color.White.copy(alpha = 0.8f)
-                                )
-                            }
-                        }
-                        
-                        IconButton(
-                            onClick = { /* TODO: Éditer profil */ },
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f))
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = "Éditer profil",
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    // Stats
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        StatCard(
-                            icon = Icons.Filled.Bookmark,
-                            value = links.size.toString(),
-                            label = "Idées",
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            icon = Icons.Filled.Star,
-                            value = savedCount.toString(),
-                            label = "Sauvegardées",
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            icon = Icons.Filled.People,
-                            value = familyCount.toString(),
-                            label = "Tribu",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-            // Content
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Ma tribu section
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Ma tribu",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF111827)
-                        )
-                        
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Bouton Inviter
-                            TextButton(
-                                onClick = { showInviteDialog = true },
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.PersonAdd,
-                                    contentDescription = null,
-                                    tint = Color(0xFF3B82F6),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = "Inviter",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF3B82F6)
-                                )
-                            }
-                            
-                            if (children.isNotEmpty()) {
-                                TextButton(
-                                    onClick = { showFamilyDialog = true },
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                                ) {
-                                    Text(
-                                        text = "Gérer",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color(0xFFF97316)
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Filled.ChevronRight,
-                                        contentDescription = null,
-                                        tint = Color(0xFFF97316),
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (children.isNotEmpty()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            children.take(4).forEach { child ->
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(56.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFFFF7ED)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = child.name.firstOrNull()?.uppercase() ?: "?",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFF97316)
-                                        )
-                                    }
-                                    Text(
-                                        text = child.name,
-                                        fontSize = 11.sp,
-                                        color = Color(0xFF6B7280),
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFFFF7ED)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text(
-                                    text = "👨‍👩‍👧‍👦",
-                                    fontSize = 32.sp
-                                )
-                                Text(
-                                    text = "Ajoutez les membres de votre tribu",
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF6B7280),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                                Button(
-                                    onClick = { showFamilyDialog = true },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFFF97316)
-                                    ),
-                                    shape = RoundedCornerShape(12.dp),
-                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Add,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Ajouter", fontSize = 13.sp)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Paramètres section
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Paramètres",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
-                    )
-                    
-                    SettingItem(
-                        icon = Icons.Filled.Person,
-                        title = "Mon compte",
-                        subtitle = "Gérer mes informations",
-                        onClick = { }
-                    )
-                    
-                    SettingItem(
-                        icon = Icons.Filled.Notifications,
-                        title = "Notifications",
-                        subtitle = "Gérer les alertes",
-                        onClick = { }
-                    )
-                    
-                    SettingItem(
-                        icon = Icons.Filled.Lock,
-                        title = "Confidentialité",
-                        subtitle = "Paramètres de confidentialité",
-                        onClick = { }
-                    )
-                    
-                    SettingItem(
-                        icon = Icons.Filled.Help,
-                        title = "Aide & Support",
-                        subtitle = "FAQ et contact",
-                        onClick = onNavigateToFaq
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Logout or Login button
-                if (isLoggedIn) {
-                    Button(
-                        onClick = { showLogoutDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFFEF2F2)
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Logout,
-                            contentDescription = null,
-                            tint = Color(0xFFEF4444),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "Déconnexion",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFFEF4444)
-                        )
-                    }
-                } else {
-                    Button(
-                        onClick = { showAuthDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFF97316)
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Login,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "Se connecter",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-
-                Text(
-                    text = "Tribbae v1.0.0 • Fait avec ❤️ pour les familles",
-                    fontSize = 11.sp,
-                    color = Color(0xFFD1D5DB),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-        }
-    }
-
-    if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Filled.Logout,
-                    contentDescription = null,
-                    tint = Color(0xFFF97316)
-                )
-            },
-            title = { Text("Déconnexion", fontWeight = FontWeight.Bold) },
-            text = { Text("Voulez-vous vraiment vous déconnecter ?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    sessionManager.clearSession()
-                    showLogoutDialog = false
-                }) {
-                    Text("Déconnexion", color = Color(0xFFF97316), fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Annuler")
-                }
-            }
+    if (!isLoggedIn) {
+        WelcomeScreen(
+            modifier = modifier,
+            onRegister = { authMode = true },
+            onLogin = { authMode = false },
+            onFaq = onNavigateToFaq
         )
+    } else {
+        TribeContent(viewModel, sessionManager, modifier, onNavigateToFaq, onOpenShopping)
     }
 
-    if (showAuthDialog) {
+    authMode?.let { register ->
         SimpleAuthDialog(
             sessionManager = sessionManager,
             authRepository = authRepository,
-            onDismiss = { showAuthDialog = false },
-            onSuccess = {
-                showAuthDialog = false
-                onLoginSuccess()
-            }
-        )
-    }
-    
-    if (showFamilyDialog) {
-        FamilyManagementDialog(
-            viewModel = viewModel,
-            onDismiss = { showFamilyDialog = false }
-        )
-    }
-    
-    if (showInviteDialog) {
-        InviteTribeDialog(
-            onDismiss = { showInviteDialog = false },
-            onInvite = { email ->
-                // TODO: Implémenter l'invitation via l'API
-                showInviteDialog = false
-            }
+            onDismiss = { authMode = null },
+            onSuccess = { authMode = null; onLoginSuccess() },
+            startInRegister = register
         )
     }
 }
 
 @Composable
-private fun StatCard(
-    icon: ImageVector,
-    value: String,
-    label: String,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White.copy(alpha = 0.2f)
-    ) {
+private fun WelcomeScreen(modifier: Modifier, onRegister: () -> Unit, onLogin: () -> Unit, onFaq: () -> Unit) {
+    Column(modifier.fillMaxSize().background(Color(0xFFF7955A))) {
+        Box(Modifier.weight(1f).fillMaxWidth().statusBarsPadding().padding(start = 10.dp, end = 10.dp, top = 24.dp), contentAlignment = Alignment.BottomCenter) {
+            Image(
+                painterResource(R.drawable.welcome),
+                contentDescription = "Le tipi Tribbae entouré de la famille, d'un cadeau, d'une ampoule, de couverts et d'un ballon",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
+                .background(Sable)
+                .padding(start = 24.dp, end = 24.dp, top = 30.dp, bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(16.dp)
+            Text("Tribbae", style = display(38.sp))
+            Text(
+                "Toutes les idées de la tribu au même endroit : sorties, recettes, cadeaux, activités.",
+                fontSize = 17.sp, lineHeight = 24.sp, color = Ecorce2
+            )
+            Spacer(Modifier.height(4.dp))
+            CampButton("Créer ma tribu", onRegister, Modifier.fillMaxWidth(), height = 56.dp)
+            CampButton("J'ai déjà un compte", onLogin, Modifier.fillMaxWidth(), kind = ButtonKind.Secondary, height = 56.dp)
+            Text(
+                "Invité par un proche ? Ouvrez simplement son lien.",
+                fontSize = 13.sp, color = TextSec, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
             )
             Text(
-                text = value,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                text = label,
-                fontSize = 10.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                "Aide & FAQ", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Terracotta, textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable(onClick = onFaq).padding(4.dp)
             )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
+private fun TribeContent(
+    viewModel: LinkViewModel,
+    sessionManager: data.SessionManager,
+    modifier: Modifier,
+    onFaq: () -> Unit,
+    onOpenShopping: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFFFFF7ED)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = Color(0xFFF97316),
-                    modifier = Modifier.size(20.dp)
-                )
+    val links by viewModel.repository.links.collectAsState()
+    val folders by viewModel.folders.collectAsState()
+    val children by viewModel.children.collectAsState()
+    val displayName by sessionManager.displayName.collectAsState()
+    val userId by sessionManager.userId.collectAsState()
+    val followRepository = remember { FollowRepository(sessionManager = sessionManager) }
+    var following by remember { mutableStateOf<List<UserProfile>?>(null) }
+    val scope = rememberCoroutineScope()
+
+    var showFamily by remember { mutableStateOf(false) }
+    var showInvite by remember { mutableStateOf(false) }
+    var shareFolder by remember { mutableStateOf<data.Folder?>(null) }
+    var showFollowing by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    var showLogout by remember { mutableStateOf(false) }
+
+    LaunchedEffect(userId) {
+        userId?.let { id -> followRepository.getFollowing(id).onSuccess { following = it } }
+    }
+
+    val name = displayName?.ifBlank { null } ?: "Moi"
+    val likesReceived = links.sumOf { it.likeCount } + folders.sumOf { it.likeCount }
+    val members = remember(folders, children, name) {
+        val seen = mutableSetOf<String>()
+        buildList {
+            add(Member("me", name))
+            folders.flatMap { it.collaborators }.forEach { c ->
+                if (seen.add(c.userId)) add(Member(c.userId, c.displayName.ifBlank { c.email.ifBlank { "Membre" } }))
             }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF111827)
-                )
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    color = Color(0xFF9CA3AF)
-                )
-            }
-            Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = Color(0xFF9CA3AF),
-                modifier = Modifier.size(20.dp)
-            )
+            children.forEach { add(Member("child-${it.id}", it.name, formatAge(it.birthDate))) }
         }
+    }
+
+    Column(modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = 120.dp)) {
+        // ── Bandeau orange : soleil + tipi ──
+        Box(Modifier.fillMaxWidth().background(Braise)) {
+            Box(Modifier.align(Alignment.BottomCenter).offset(y = 170.dp).size(360.dp).clip(CircleShape).background(Soleil))
+            Column(Modifier.fillMaxWidth().statusBarsPadding()) {
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Ma tribu", style = display(26.sp))
+                    CircleIconButton(Icons.Outlined.Settings, "Paramètres", { showSettings = true }, background = Color.White.copy(alpha = 0.6f))
+                }
+                Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.BottomCenter) {
+                    TipiMark(110.dp, stroke = 1.8f)
+                }
+            }
+        }
+
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("La tribu $name", style = display(24.sp))
+                Text("${members.size} membre${if (members.size > 1) "s" else ""}", fontSize = 14.sp, color = TextSec)
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Stat(links.size, if (links.size > 1) "idées" else "idée", Modifier.weight(1f))
+                Stat(folders.size, if (folders.size > 1) "dossiers" else "dossier", Modifier.weight(1f))
+                Stat(likesReceived, "j'aime reçus", Modifier.weight(1f))
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SectionHeader("Les membres", "Gérer") { showFamily = true }
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    members.forEachIndexed { i, m ->
+                        Column(Modifier.width(70.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            InitialAvatar(m.name, i)
+                            Text(
+                                m.name + (m.sub?.let { " · $it" } ?: ""),
+                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce, textAlign = TextAlign.Center,
+                                maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 16.sp
+                            )
+                        }
+                    }
+                    Column(
+                        Modifier.width(70.dp).clip(RoundedCornerShape(16.dp)).clickable { showFamily = true },
+                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(Modifier.size(58.dp).clip(RoundedCornerShape(20.dp)).dashedBorder(Dash, 20.dp), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.ChildCare, null, tint = Terracotta, modifier = Modifier.size(24.dp))
+                        }
+                        Text("Enfant", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextSec)
+                    }
+                }
+            }
+
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Ecorce).clickable { showInvite = true }.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Braise), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.PersonAdd, null, tint = Ecorce, modifier = Modifier.size(22.dp))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Inviter dans la tribu", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Sable)
+                    Text("Partagez dossiers et idées en un lien", fontSize = 13.sp, color = BarkSoft)
+                }
+                Icon(Icons.Outlined.ChevronRight, null, tint = BarkSoft)
+            }
+
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color.White)) {
+                ListRow(Icons.Outlined.FavoriteBorder, "Tribus suivies", following?.size?.toString()) { showFollowing = true }
+                ListRow(Icons.Outlined.ShoppingCart, "Liste de courses", onClick = onOpenShopping)
+                ListRow(Icons.Outlined.HelpOutline, "Aide & FAQ", onClick = onFaq)
+                ListRow(Icons.Outlined.Logout, "Se déconnecter", last = true) { showLogout = true }
+            }
+        }
+    }
+
+    if (showFamily) FamilyManagementDialog(viewModel = viewModel, onDismiss = { showFamily = false })
+
+    if (showInvite) {
+        ModalBottomSheet(onDismissRequest = { showInvite = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Inviter dans la tribu", style = display(24.sp))
+                Text(
+                    "Choisissez le dossier à partager : vos proches pourront le consulter par lien ou y ajouter leurs idées.",
+                    fontSize = 15.sp, color = Ecorce2, modifier = Modifier.padding(bottom = 8.dp)
+                )
+                if (folders.isEmpty()) {
+                    EmptyBlock(Icons.Filled.CreateNewFolder, "Aucun dossier à partager", "Créez d'abord un dossier dans « Mes idées ».")
+                }
+                folders.forEach { f ->
+                    MenuRow(folderIconVector(f), f.name, tint = folderSolid(f.color)) { showInvite = false; shareFolder = f }
+                }
+            }
+        }
+    }
+    shareFolder?.let { ShareFolderSheet(it, viewModel) { shareFolder = null } }
+
+    if (showFollowing) {
+        ModalBottomSheet(onDismissRequest = { showFollowing = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Tribus suivies", style = display(24.sp))
+                val list = following.orEmpty()
+                if (list.isEmpty()) {
+                    EmptyBlock(Icons.Filled.FavoriteBorder, "Vous ne suivez personne", "Depuis la fiche d'une idée de la communauté, suivez la tribu qui l'a partagée.")
+                } else {
+                    list.forEachIndexed { i, u ->
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            InitialAvatar(u.displayName, i, 40.dp, 12.dp, 16.sp)
+                            Column(Modifier.weight(1f)) {
+                                Text(u.displayName.ifBlank { "Tribu" }, fontWeight = FontWeight.Bold, color = Ecorce)
+                                Text("${u.followerCount} abonné${if (u.followerCount > 1) "s" else ""}", fontSize = 12.sp, color = TextSec)
+                            }
+                            CampButton("Ne plus suivre", {
+                                scope.launch {
+                                    followRepository.unfollow(u.id).onSuccess { following = following?.filterNot { it.id == u.id } }
+                                }
+                            }, kind = ButtonKind.Ghost, height = 40.dp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showSettings) {
+        ModalBottomSheet(onDismissRequest = { showSettings = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("Paramètres", style = display(24.sp))
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    InitialAvatar(name, 0, 48.dp, 16.dp, 20.sp)
+                    Column {
+                        Text(name, fontWeight = FontWeight.Bold, color = Ecorce)
+                        Text("Synchronisé avec tribbae.bananaops.cloud", fontSize = 12.sp, color = TextSec)
+                    }
+                }
+                Text(
+                    "Pour modifier votre mot de passe ou supprimer votre compte, écrivez à support@tribbae.com.",
+                    fontSize = 14.sp, color = TextSec
+                )
+                MenuRow(Icons.Outlined.HelpOutline, "Aide & FAQ") { showSettings = false; onFaq() }
+                MenuRow(Icons.Outlined.Logout, "Se déconnecter", danger = true) { showSettings = false; showLogout = true }
+            }
+        }
+    }
+
+    if (showLogout) {
+        AlertDialog(
+            onDismissRequest = { showLogout = false },
+            containerColor = Sable,
+            title = { Text("Se déconnecter ?", style = display(20.sp, FontWeight.Bold)) },
+            text = { Text("Vos idées restent sur cet appareil et sur votre compte.", color = Ecorce2) },
+            confirmButton = {
+                TextButton(onClick = { sessionManager.clearSession(); showLogout = false }) {
+                    Text("Se déconnecter", color = Terracotta, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = { TextButton(onClick = { showLogout = false }) { Text("Annuler", color = Ecorce) } }
+        )
+    }
+}
+
+@Composable
+private fun Stat(value: Int, label: String, modifier: Modifier) {
+    Column(
+        modifier.clip(RoundedCornerShape(16.dp)).background(Color.White).padding(vertical = 12.dp, horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("$value", style = display(22.sp))
+        Text(label, fontSize = 12.sp, color = TextSec)
+    }
+}
+
+@Composable
+private fun ListRow(icon: ImageVector, label: String, value: String? = null, last: Boolean = false, onClick: () -> Unit) {
+    Column {
+        Row(
+            Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(icon, null, tint = Ecorce, modifier = Modifier.size(20.dp))
+            Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ecorce, modifier = Modifier.weight(1f))
+            if (value != null) Text(value, fontSize = 13.sp, color = TextSec)
+            Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(18.dp))
+        }
+        if (!last) HorizontalDivider(color = Sable2)
     }
 }
 
@@ -560,9 +371,10 @@ private fun SimpleAuthDialog(
     sessionManager: data.SessionManager,
     authRepository: data.AuthRepository,
     onDismiss: () -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
+    startInRegister: Boolean = false
 ) {
-    var isLoginMode by remember { mutableStateOf(true) }
+    var isLoginMode by remember { mutableStateOf(!startInRegister) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var displayName by remember { mutableStateOf("") }
@@ -587,7 +399,7 @@ private fun SimpleAuthDialog(
                     text = if (isLoginMode) "Connexion" else "Inscription",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF111827)
+                    color = Color(0xFF3A211B)
                 )
 
                 // Tabs connexion / inscription
@@ -600,8 +412,8 @@ private fun SimpleAuthDialog(
                             onClick = { isLoginMode = mode; errorMessage = null },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isLoginMode == mode) Color(0xFFF97316) else Color(0xFFF3F4F6),
-                                contentColor = if (isLoginMode == mode) Color.White else Color(0xFF6B7280)
+                                containerColor = if (isLoginMode == mode) Color(0xFFC8492C) else Color(0xFFF1E3D1),
+                                contentColor = if (isLoginMode == mode) Color.White else Color(0xFF6B5047)
                             ),
                             shape = RoundedCornerShape(12.dp),
                             contentPadding = PaddingValues(vertical = 10.dp)
@@ -622,8 +434,8 @@ private fun SimpleAuthDialog(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFFF97316),
-                            focusedLabelColor = Color(0xFFF97316)
+                            focusedBorderColor = Color(0xFFC8492C),
+                            focusedLabelColor = Color(0xFFC8492C)
                         )
                     )
                 }
@@ -640,8 +452,8 @@ private fun SimpleAuthDialog(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Email
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFF97316),
-                        focusedLabelColor = Color(0xFFF97316)
+                        focusedBorderColor = Color(0xFFC8492C),
+                        focusedLabelColor = Color(0xFFC8492C)
                     )
                 )
 
@@ -666,20 +478,20 @@ private fun SimpleAuthDialog(
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFF97316),
-                        focusedLabelColor = Color(0xFFF97316)
+                        focusedBorderColor = Color(0xFFC8492C),
+                        focusedLabelColor = Color(0xFFC8492C)
                     )
                 )
 
                 if (errorMessage != null) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFFFFEBEE),
+                        color = Color(0xFFF8DCD3),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             text = errorMessage ?: "",
-                            color = Color(0xFFD32F2F),
+                            color = Color(0xFFB2412A),
                             fontSize = 12.sp,
                             modifier = Modifier.padding(10.dp)
                         )
@@ -718,7 +530,7 @@ private fun SimpleAuthDialog(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading && email.isNotBlank() && password.isNotBlank() &&
                             (isLoginMode || displayName.isNotBlank()),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC8492C)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     if (isLoading) {
@@ -732,7 +544,7 @@ private fun SimpleAuthDialog(
                 }
 
                 TextButton(onClick = { if (!isLoading) onDismiss() }) {
-                    Text("Annuler", color = Color(0xFF6B7280))
+                    Text("Annuler", color = Color(0xFF6B5047))
                 }
             }
         }
@@ -776,7 +588,7 @@ private fun FamilyManagementDialog(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF97316))
+                            .background(Color(0xFFC8492C))
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Add,
@@ -802,7 +614,7 @@ private fun FamilyManagementDialog(
                         Text(
                             text = "Aucun membre pour l'instant",
                             fontSize = 14.sp,
-                            color = Color(0xFF9CA3AF)
+                            color = Color(0xFF8A6F64)
                         )
                     }
                 } else {
@@ -811,7 +623,7 @@ private fun FamilyManagementDialog(
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFFF9FAFB)
+                                color = Color(0xFFFBF3E7)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(12.dp),
@@ -822,14 +634,14 @@ private fun FamilyManagementDialog(
                                         modifier = Modifier
                                             .size(40.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0xFFFFF7ED)),
+                                            .background(Color(0xFFFDE6BD)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(
                                             text = child.name.firstOrNull()?.uppercase() ?: "?",
                                             fontSize = 16.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFF97316)
+                                            color = Color(0xFFC8492C)
                                         )
                                     }
                                     Column(modifier = Modifier.weight(1f)) {
@@ -837,7 +649,7 @@ private fun FamilyManagementDialog(
                                             text = child.name,
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF111827)
+                                            color = Color(0xFF3A211B)
                                         )
                                         val age = remember(child.birthDate) {
                                             val now = System.currentTimeMillis()
@@ -848,7 +660,7 @@ private fun FamilyManagementDialog(
                                         Text(
                                             text = "$age ans",
                                             fontSize = 12.sp,
-                                            color = Color(0xFF9CA3AF)
+                                            color = Color(0xFF8A6F64)
                                         )
                                     }
                                     IconButton(
@@ -858,7 +670,7 @@ private fun FamilyManagementDialog(
                                         Icon(
                                             imageVector = Icons.Filled.Edit,
                                             contentDescription = "Modifier",
-                                            tint = Color(0xFF6B7280),
+                                            tint = Color(0xFF6B5047),
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
@@ -873,7 +685,7 @@ private fun FamilyManagementDialog(
                                         Icon(
                                             imageVector = Icons.Filled.Delete,
                                             contentDescription = "Supprimer",
-                                            tint = Color(0xFFEF4444),
+                                            tint = Color(0xFFB2412A),
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
@@ -957,7 +769,7 @@ private fun ChildDialog(
                 Text(
                     text = "Date de naissance: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(birthDate))}",
                     fontSize = 14.sp,
-                    color = Color(0xFF6B7280)
+                    color = Color(0xFF6B5047)
                 )
                 
                 Row(
@@ -979,262 +791,10 @@ private fun ChildDialog(
                         enabled = name.isNotBlank(),
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFF97316)
+                            containerColor = Color(0xFFC8492C)
                         )
                     ) {
                         Text("Confirmer")
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun InviteTribeDialog(
-    onDismiss: () -> Unit,
-    onInvite: (String) -> Unit
-) {
-    var inviteLink by remember { mutableStateOf("") }
-    var isGenerating by remember { mutableStateOf(false) }
-    var linkGenerated by remember { mutableStateOf(false) }
-    var showCopiedMessage by remember { mutableStateOf(false) }
-    
-    // Générer le lien automatiquement au chargement
-    LaunchedEffect(Unit) {
-        isGenerating = true
-        delay(500) // Simuler la génération
-        // TODO: Appeler l'API pour générer un vrai lien d'invitation
-        inviteLink = "https://tribbae.app/invite/${java.util.UUID.randomUUID().toString().take(8)}"
-        isGenerating = false
-        linkGenerated = true
-    }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss
-    ) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "Inviter à ma tribu",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF111827)
-                        )
-                        Text(
-                            text = "Partagez tous vos dossiers et idées",
-                            fontSize = 13.sp,
-                            color = Color(0xFF6B7280)
-                        )
-                    }
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = "Fermer",
-                            tint = Color(0xFF9CA3AF)
-                        )
-                    }
-                }
-                
-                Divider(color = Color(0xFFF3F4F6))
-                
-                // Icône
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF3B82F6).copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Link,
-                            contentDescription = null,
-                            tint = Color(0xFF3B82F6),
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                }
-                
-                // Lien d'invitation
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Lien d'invitation",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
-                    )
-                    
-                    if (isGenerating) {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFF9FAFB)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = Color(0xFF3B82F6),
-                                    strokeWidth = 2.dp
-                                )
-                                Text(
-                                    text = "Génération du lien...",
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF6B7280)
-                                )
-                            }
-                        }
-                    } else {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFF9FAFB),
-                            border = androidx.compose.foundation.BorderStroke(
-                                width = 1.dp,
-                                color = Color(0xFFE5E7EB)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = inviteLink,
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF3B82F6),
-                                    modifier = Modifier.weight(1f),
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
-                                IconButton(
-                                    onClick = {
-                                        // TODO: Copier dans le presse-papier
-                                        showCopiedMessage = true
-                                    },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = if (showCopiedMessage) Icons.Filled.Check else Icons.Filled.ContentCopy,
-                                        contentDescription = "Copier",
-                                        tint = if (showCopiedMessage) Color(0xFF10B981) else Color(0xFF6B7280),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (showCopiedMessage) {
-                        LaunchedEffect(Unit) {
-                            delay(2000)
-                            showCopiedMessage = false
-                        }
-                        Text(
-                            text = "✓ Lien copié !",
-                            fontSize = 12.sp,
-                            color = Color(0xFF10B981),
-                            fontWeight = FontWeight.Medium
-                        )
-                    } else {
-                        Text(
-                            text = "Partagez ce lien avec la personne que vous souhaitez inviter",
-                            fontSize = 12.sp,
-                            color = Color(0xFF6B7280)
-                        )
-                    }
-                }
-                
-                // Informations
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFFFF7ED)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Info,
-                            contentDescription = null,
-                            tint = Color(0xFFF97316),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(
-                                text = "Cette personne aura accès à :",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF92400E)
-                            )
-                            Text(
-                                text = "• Tous vos dossiers\n• Toutes vos idées\n• Possibilité de créer et modifier",
-                                fontSize = 11.sp,
-                                color = Color(0xFF92400E),
-                                lineHeight = 16.sp
-                            )
-                        }
-                    }
-                }
-                
-                // Boutons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Fermer", fontSize = 14.sp)
-                    }
-                    Button(
-                        onClick = {
-                            // TODO: Partager le lien via le système de partage natif
-                            onInvite(inviteLink)
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF3B82F6)
-                        ),
-                        enabled = linkGenerated
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Share,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text("Partager", fontSize = 14.sp)
                     }
                 }
             }

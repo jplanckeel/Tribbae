@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Caméra facultative : l'app reste installable sur les appareils sans appareil photo -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     
     <application
         android:allowBackup="true"

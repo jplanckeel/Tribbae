@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"log"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
 	"google.golang.org/grpc/codes"
@@ -20,7 +22,11 @@ func NewHandler(svc *Service) *Handler {
 func (h *Handler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	userID, token, isAdmin, err := h.svc.Register(ctx, req.Email, req.Password, req.DisplayName)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		if errors.Is(err, ErrInvalidInput) || err.Error() == "email already registered" {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		log.Printf("auth: register: %v", err)
+		return nil, status.Error(codes.Internal, "registration failed")
 	}
 	return &pb.RegisterResponse{UserId: userID, Token: token, IsAdmin: isAdmin}, nil
 }
@@ -28,7 +34,7 @@ func (h *Handler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 func (h *Handler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	userID, token, displayName, isAdmin, err := h.svc.Login(ctx, req.Email, req.Password)
 	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.Unauthenticated, ErrInvalidCredentials.Error())
 	}
 	return &pb.LoginResponse{UserId: userID, Token: token, DisplayName: displayName, IsAdmin: isAdmin}, nil
 }

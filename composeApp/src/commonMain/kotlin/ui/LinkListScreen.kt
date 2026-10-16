@@ -62,7 +62,7 @@ fun NetworkImage(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(Color(0xFFF5F5F5)),
+                    .background(Color(0xFFF1E3D1)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -77,7 +77,7 @@ fun NetworkImage(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(Color(0xFFF5F5F5)),
+                    .background(Color(0xFFF1E3D1)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -97,7 +97,7 @@ enum class LinkViewMode { LIST, GRID }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = null) {
-    val catColor = CategoryColors[link.category.name] ?: Color(0xFFE0E0E0)
+    val catColor = CategoryColors[link.category.name] ?: Color(0xFFEADBC8)
     val hasImage = link.imageUrl.isNotBlank()
 
     Card(
@@ -195,7 +195,7 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                             Icon(
                                 imageVector = if (link.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = null,
-                                tint = if (link.favorite) Color(0xFFEF4444) else Color(0xFF6B7280),
+                                tint = if (link.favorite) Color(0xFFB2412A) else Color(0xFF6B5047),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -217,14 +217,14 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = Color(0xFFF59E0B),
+                                tint = Color(0xFFF28C38),
                                 modifier = Modifier.size(11.dp)
                             )
                             Text(
                                 link.rating.toString(),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1F2937)
+                                color = Color(0xFF3A211B)
                             )
                         }
                     }
@@ -241,14 +241,14 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
                     maxLines = 2,
-                    color = Color(0xFF111827),
+                    color = Color(0xFF3A211B),
                     lineHeight = 18.sp
                 )
                 
                 if (link.description.isNotEmpty()) {
                     Text(
                         link.description,
-                        color = Color(0xFF6B7280),
+                        color = Color(0xFF6B5047),
                         fontSize = 12.sp,
                         maxLines = 2,
                         lineHeight = 16.sp
@@ -284,7 +284,7 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                             Text(
                                 link.ownerDisplayName,
                                 fontSize = 12.sp,
-                                color = Color(0xFF6B7280)
+                                color = Color(0xFF6B5047)
                             )
                         }
                     }
@@ -298,13 +298,13 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
                             Icon(
                                 imageVector = if (link.likedByMe) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = null,
-                                tint = if (link.likedByMe) Color(0xFFEF4444) else Color(0xFF9CA3AF),
+                                tint = if (link.likedByMe) Color(0xFFB2412A) else Color(0xFF8A6F64),
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
                                 link.likeCount.toString(),
                                 fontSize = 12.sp,
-                                color = Color(0xFF9CA3AF)
+                                color = Color(0xFF8A6F64)
                             )
                         }
                     }
@@ -318,7 +318,7 @@ fun LinkCard(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)? = null) {
-    val catColor = CategoryColors[link.category.name] ?: Color(0xFFE0E0E0)
+    val catColor = CategoryColors[link.category.name] ?: Color(0xFFEADBC8)
     val hasImage = link.imageUrl.isNotBlank()
 
     Card(
@@ -401,7 +401,7 @@ fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)
                             Icon(
                                 imageVector = if (link.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                                 contentDescription = null,
-                                tint = if (link.favorite) Color(0xFFEF4444) else Color(0xFF6B7280),
+                                tint = if (link.favorite) Color(0xFFB2412A) else Color(0xFF6B5047),
                                 modifier = Modifier.size(14.dp)
                             )
                         }
@@ -423,14 +423,14 @@ fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = Color(0xFFF59E0B),
+                                tint = Color(0xFFF28C38),
                                 modifier = Modifier.size(10.dp)
                             )
                             Text(
                                 link.rating.toString(),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1F2937)
+                                color = Color(0xFF3A211B)
                             )
                         }
                     }
@@ -447,7 +447,7 @@ fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 12.sp,
                     maxLines = 2,
-                    color = Color(0xFF111827),
+                    color = Color(0xFF3A211B),
                     lineHeight = 15.sp
                 )
                 
@@ -473,7 +473,7 @@ fun LinkCardGrid(link: Link, onClick: () -> Unit, onFavoriteToggle: (() -> Unit)
                         Text(
                             link.ownerDisplayName,
                             fontSize = 10.sp,
-                            color = Color(0xFF6B7280),
+                            color = Color(0xFF6B5047),
                             maxLines = 1
                         )
                     }

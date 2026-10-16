@@ -3,8 +3,10 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
+	"unicode/utf8"
 )
 
 // UserGetter récupère un utilisateur par son ID
@@ -35,59 +37,75 @@ type generateResponseWithFolder struct {
 	FolderID string          `json:"folderId,omitempty"`
 }
 
+const (
+	maxRequestBytes = 4 << 10
+	maxPromptRunes  = 500
+	// maxConcurrent borne le nombre de générations simultanées : Ollama traite
+	// une requête à la fois, au-delà on répond 429 plutôt que d'empiler.
+	maxConcurrent = 2
+)
+
+var slots = make(chan struct{}, maxConcurrent)
+
+func writeJSON(w http.ResponseWriter, code int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_ = json.NewEncoder(w).Encode(v)
+}
+
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"message": "method not allowed"})
+		return
+	}
+
+	// La génération coûte cher (LLM + recherche web) : réservée aux comptes connectés.
+	userID, err := h.tokenParser(r)
+	if err != nil || userID == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"message": "authentication required"})
 		return
 	}
 
 	var req GenerateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxRequestBytes)).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"message": "invalid request body"})
 		return
 	}
+	req.Prompt = strings.TrimSpace(req.Prompt)
 	if req.Prompt == "" {
-		http.Error(w, "prompt is required", http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"message": "prompt is required"})
+		return
+	}
+	if utf8.RuneCountInString(req.Prompt) > maxPromptRunes {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"message": "prompt is too long"})
+		return
+	}
+
+	select {
+	case slots <- struct{}{}:
+		defer func() { <-slots }()
+	default:
+		writeJSON(w, http.StatusTooManyRequests, map[string]string{"message": "AI is busy, please retry in a moment"})
 		return
 	}
 
 	// Récupérer l'utilisateur pour vérifier son statut premium
 	var isPremium bool
-	if h.tokenParser != nil && h.userGetter != nil {
-		if userID, err := h.tokenParser(r); err == nil && userID != "" {
-			if premium, err := h.userGetter.GetUser(r.Context(), userID); err == nil {
-				isPremium = premium
-			}
+	if h.userGetter != nil {
+		if premium, err := h.userGetter.GetUser(r.Context(), userID); err == nil {
+			isPremium = premium
 		}
 	}
 
-	result, err := h.svc.Generate(r.Context(), req.Prompt, req.Model, isPremium)
+	// Le modèle est imposé par la configuration serveur : le client ne choisit pas.
+	result, err := h.svc.Generate(r.Context(), req.Prompt, "", isPremium)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadGateway)
-		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		log.Printf("ai: generate: %v", err)
+		writeJSON(w, http.StatusBadGateway, map[string]string{"message": "idea generation failed"})
 		return
 	}
 
-	resp := generateResponseWithFolder{Ideas: result.Ideas}
-
-	// NOTE: Automatic creation disabled to avoid duplicates as frontend now handles explicit saving.
-	/*
-	if h.tokenParser != nil && h.folderCreator != nil && h.linkCreator != nil && len(result.Ideas) > 0 {
-		if userID, err := h.tokenParser(r); err == nil && userID != "" {
-			folderName := buildFolderName(req.Prompt)
-			if folderID, err := h.folderCreator(r.Context(), userID, folderName); err == nil {
-				resp.FolderID = folderID
-				for _, idea := range result.Ideas {
-					_ = h.linkCreator(r.Context(), userID, idea, folderID)
-				}
-			}
-		}
-	}
-	*/
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	writeJSON(w, http.StatusOK, generateResponseWithFolder{Ideas: result.Ideas})
 }
 
 // buildFolderName génère un nom de dossier à partir du prompt

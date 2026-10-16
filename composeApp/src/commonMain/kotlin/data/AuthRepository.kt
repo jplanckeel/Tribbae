@@ -56,7 +56,6 @@ class AuthRepository(private val baseUrl: String = "https://tribbae.bananaops.cl
                     val response = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
                     println("DEBUG: Réponse reçue: $response")
                     val authResponse = json.decodeFromString<AuthResponse>(response)
-                    println("DEBUG: AuthResponse décodé: userId=${authResponse.userId}, token=${authResponse.token}, displayName=${authResponse.displayName}")
                     authResponse
                 } else {
                     val errorStream = conn.errorStream
