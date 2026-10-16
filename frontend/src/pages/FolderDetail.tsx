@@ -134,7 +134,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
       <title>{`${folder.name} · Tribbae`}</title>
       <header className="relative overflow-hidden px-5 pt-5 pb-8 md:px-8" style={{ background: color.bg }}>
         <div aria-hidden="true" className="absolute -right-24 -bottom-40 h-80 w-80 rounded-full bg-white/45" />
-        <div className="relative mx-auto flex max-w-6xl flex-col gap-5">
+        <div className="relative mx-auto flex max-w-[1200px] flex-col gap-5">
           <div className="flex items-center justify-between">
             <button
               type="button"
@@ -202,7 +202,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
         </div>
       </header>
 
-      <div className="relative mx-auto -mt-4 flex max-w-6xl flex-col gap-5 rounded-t-xl bg-sable px-5 pt-5 md:px-8">
+      <div className="relative mx-auto -mt-4 flex max-w-[1200px] flex-col gap-5 rounded-t-xl bg-sable px-5 pt-5 md:px-8">
         {canEdit && (
           <div className="flex flex-wrap gap-2">
             <Button icon="plus" size="sm" onClick={() => (virtual ? newLink() : openAdd({ folderId: folder.id }))}>Ajouter une idée</Button>

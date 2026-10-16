@@ -112,9 +112,9 @@ tasks:
 
   # ── Ollama ───────────────────────────────────────────────
   ollama:
-    desc: "Démarrer Ollama en Docker + pull qwen2.5:1.5b (optimisé CPU, 4Go RAM)"
+    desc: "Démarrer Ollama en Docker + pull du petit modèle de prod (CPU, 4 Go RAM)"
     vars:
-      MODEL: '{{.OLLAMA_MODEL | default "qwen2.5:1.5b"}}'
+      MODEL: '{{.OLLAMA_MODEL | default "qwen3:1.7b"}}'
     env:
       OLLAMA_MODEL: "{{.MODEL}}"
     cmds:
@@ -245,42 +245,56 @@ tasks:
       - docker compose -f docker-compose.local.yml down
 
   # ── Docker build & push ──────────────────────────────────
+  # Images multi-architecture : le serveur est en amd64, les Mac en arm64.
+  # `docker buildx` construit les deux et pousse un manifeste unique.
+  docker:builder:
+    desc: "Créer (une fois) le builder buildx multi-architecture"
+    status:
+      - docker buildx inspect tribbae >/dev/null 2>&1
+    cmds:
+      - docker buildx create --name tribbae --driver docker-container --bootstrap
+      - echo "Builder buildx 'tribbae' prêt"
+
   docker:build:
-    desc: "Build l'image Docker Tribbae (backend + frontend)"
+    desc: "Build local de l'image Tribbae (une seule architecture, chargée dans Docker). PLATFORM=linux/amd64 pour tester l'image du serveur"
     vars:
       TAG: '{{.TAG | default "latest"}}'
+      PLATFORM: '{{.PLATFORM | default ""}}'
     cmds:
-      - docker build -t jplanckeel/tribbae:{{.TAG}} -f Dockerfile .
+      - docker buildx build {{if .PLATFORM}}--platform {{.PLATFORM}}{{end}} --load -t jplanckeel/tribbae:{{.TAG}} -f Dockerfile .
       - echo "jplanckeel/tribbae:{{.TAG}} built"
 
   docker:push:
-    desc: "Build et push l'image Docker Tribbae"
+    desc: "Build et push l'image Tribbae pour amd64 + arm64"
+    deps: [docker:builder]
     vars:
       TAG: '{{.TAG | default "latest"}}'
+      PLATFORMS: '{{.PLATFORMS | default "linux/amd64,linux/arm64"}}'
     cmds:
-      - docker build -t jplanckeel/tribbae:{{.TAG}} -f Dockerfile .
-      - docker push jplanckeel/tribbae:{{.TAG}}
-      - echo "jplanckeel/tribbae:{{.TAG}} pushed"
+      - docker buildx build --builder tribbae --platform {{.PLATFORMS}} -t jplanckeel/tribbae:{{.TAG}} -f Dockerfile --push .
+      - docker buildx imagetools inspect jplanckeel/tribbae:{{.TAG}} | grep -E "Platform|Name:"
 
   docker:build:searxng:
-    desc: "Build l'image Docker SearXNG custom"
+    desc: "Build local de l'image SearXNG custom"
     vars:
       TAG: '{{.TAG | default "latest"}}'
+      PLATFORM: '{{.PLATFORM | default ""}}'
     cmds:
-      - docker build -t jplanckeel/tribbae-searxng:{{.TAG}} -f searxng/Dockerfile ./searxng
+      - docker buildx build {{if .PLATFORM}}--platform {{.PLATFORM}}{{end}} --load -t jplanckeel/tribbae-searxng:{{.TAG}} -f searxng/Dockerfile ./searxng
       - echo "jplanckeel/tribbae-searxng:{{.TAG}} built"
 
   docker:push:searxng:
-    desc: "Build et push l'image Docker SearXNG custom"
+    desc: "Build et push l'image SearXNG custom pour amd64 + arm64"
+    deps: [docker:builder]
     vars:
       TAG: '{{.TAG | default "latest"}}'
+      PLATFORMS: '{{.PLATFORMS | default "linux/amd64,linux/arm64"}}'
     cmds:
-      - docker build -t jplanckeel/tribbae-searxng:{{.TAG}} -f searxng/Dockerfile ./searxng
-      - docker push jplanckeel/tribbae-searxng:{{.TAG}}
-      - echo "jplanckeel/tribbae-searxng:{{.TAG}} pushed"
+      - docker buildx build --builder tribbae --platform {{.PLATFORMS}} -t jplanckeel/tribbae-searxng:{{.TAG}} -f searxng/Dockerfile --push ./searxng
+      - docker buildx imagetools inspect jplanckeel/tribbae-searxng:{{.TAG}} | grep -E "Platform|Name:"
 
   docker:push:all:
-    desc: "Build et push toutes les images Docker (Tribbae + SearXNG)"
+    desc: "Build et push toutes les images (Tribbae + SearXNG) pour amd64 + arm64"
     vars:
       TAG: '{{.TAG | default "latest"}}'
     cmds:

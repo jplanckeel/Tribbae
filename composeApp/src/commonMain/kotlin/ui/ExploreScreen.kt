@@ -64,6 +64,8 @@ fun ExploreScreen(
     var ages by remember { mutableStateOf(setOf<String>()) }
     var tags by remember { mutableStateOf(setOf<String>()) }
     var minRating by remember { mutableStateOf(0) }
+    // Budget max en euros : null = peu importe, 0 = gratuit (même filtre que le web)
+    var budget by remember { mutableStateOf<Int?>(null) }
     var sort by remember { mutableStateOf(Sort.POPULAR) }
     var showFilters by remember { mutableStateOf(false) }
     // État « j'aime » optimiste, par idée
@@ -75,7 +77,7 @@ fun ExploreScreen(
         links.flatMap { it.tags }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.take(20).map { it.key }
     }
 
-    val list = remember(links, query, category, ages, tags, minRating, sort) {
+    val list = remember(links, query, category, ages, tags, minRating, budget, sort) {
         val bands = AGES.filter { it.key in ages }
         links.filter { l ->
             (query.isBlank() || listOf(l.title, l.description, l.location, l.ownerDisplayName).any { it.contains(query, true) } ||
@@ -83,7 +85,8 @@ fun ExploreScreen(
                 (category == null || l.category == category) &&
                 (bands.isEmpty() || bands.any { matchesAge(l.ageRange, it.min, it.max) }) &&
                 (tags.isEmpty() || tags.all { it in l.tags }) &&
-                l.rating >= minRating
+                l.rating >= minRating &&
+                budget.let { max -> max == null || priceValue(l.price)?.let { if (max == 0) it == 0.0 else it < max } == true }
         }.let { f ->
             when (sort) {
                 Sort.POPULAR -> f.sortedByDescending { it.likeCount }
@@ -92,7 +95,7 @@ fun ExploreScreen(
             }
         }
     }
-    val activeFilters = ages.size + tags.size + (if (minRating > 0) 1 else 0) + (if (sort != Sort.POPULAR) 1 else 0)
+    val activeFilters = ages.size + tags.size + (if (minRating > 0) 1 else 0) + (if (budget != null) 1 else 0) + (if (sort != Sort.POPULAR) 1 else 0)
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -236,6 +239,11 @@ fun ExploreScreen(
                         Text("L'âge de mes enfants (${children.joinToString { it.name }})", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta)
                     }
                 }
+                FilterGroup("Budget") {
+                    listOf<Pair<Int?, String>>(null to "Peu importe", 0 to "Gratuit", 10 to "Moins de 10 €").forEach { (b, label) ->
+                        Pill(label, budget == b, { budget = b })
+                    }
+                }
                 FilterGroup("Note minimale") {
                     listOf(0, 3, 4, 5).forEach { r -> Pill(if (r == 0) "Toutes" else "$r ★ et +", minRating == r, { minRating = r }) }
                 }
@@ -246,7 +254,7 @@ fun ExploreScreen(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     CampButton("Réinitialiser", {
-                        ages = emptySet(); tags = emptySet(); minRating = 0; sort = Sort.POPULAR
+                        ages = emptySet(); tags = emptySet(); minRating = 0; budget = null; sort = Sort.POPULAR
                     }, Modifier.weight(1f), kind = ButtonKind.Ghost)
                     CampButton("Voir ${list.size} idées", { showFilters = false }, Modifier.weight(1f), kind = ButtonKind.Dark)
                 }
@@ -315,4 +323,16 @@ private fun CommunityFolderGrid(folders: List<data.Folder>, query: String, loadi
             }
         }
     }
+}
+
+/**
+ * Prix comparable d'une idée, en euros : 0 si gratuite, le premier montant
+ * trouvé sinon (« 6 € / enfant » → 6), null si absent ou illisible.
+ * Même logique que `priceValue` côté web (frontend/src/lib/format.ts).
+ */
+private fun priceValue(price: String): Double? {
+    val p = price.trim().lowercase()
+    if (p.isEmpty()) return null
+    if (Regex("gratuit|free|offert").containsMatchIn(p)) return 0.0
+    return Regex("""\d+(?:[.,]\d+)?""").find(p)?.value?.replace(',', '.')?.toDoubleOrNull()
 }

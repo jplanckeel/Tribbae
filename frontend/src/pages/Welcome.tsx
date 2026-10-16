@@ -108,7 +108,7 @@ export function Auth() {
         <RouterLink to="/bienvenue" aria-label="Retour" className="absolute top-5 left-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/60 hover:bg-white/80">
           <Icon name="chevronLeft" size={22} />
         </RouterLink>
-        <span className="relative mb-0"><TipiMark size={120} stroke={1.8} /></span>
+        <span className="relative mb-0"><TipiMark size={120} /></span>
       </div>
       <div className="flex flex-1 justify-center rounded-t-[32px] bg-sable px-6 pt-8 pb-10">
         <form onSubmit={submit} className="flex w-full max-w-md flex-col gap-4" noValidate>

@@ -5,6 +5,8 @@ search:
     - html
     - json
   default_lang: "fr"
+  # Application familiale : filtrage modéré par défaut (le backend envoie aussi safesearch=1)
+  safe_search: 1
 
 server:
   secret_key: "tribbae-searxng-secret-key-change-me"
@@ -16,8 +18,9 @@ server:
   method: "POST"
 
 outgoing:
-  request_timeout: 10.0
-  max_request_timeout: 15.0
+  # Le backend accorde 12 s à la recherche : un moteur lent est abandonné avant
+  request_timeout: 6.0
+  max_request_timeout: 10.0
 
 ui:
   static_use_hash: true
@@ -40,26 +43,30 @@ botdetection:
       - "::/0"
 
 engines:
-  # Désactiver les moteurs problématiques
-  - name: duckduckgo
+  # Depuis l'IP d'un VPS (datacenter), Google, Qwant et Startpage (qui interroge
+  # Google) répondent 403 / CAPTCHA puis sont suspendus 180 s : désactivés pour
+  # ne pas perdre de temps ni remplir les journaux.
+  - name: google
     disabled: true
-  - name: wikidata
+  - name: qwant
+    disabled: true
+  - name: startpage
     disabled: true
   - name: brave
     disabled: true
-    shortcut: br
-  # Activer des moteurs plus fiables
-  - name: google
+  - name: wikidata
+    disabled: true
+  # (« google cse », recherche personnalisée publique de Google, reste actif par
+  # défaut : il passe mieux que la recherche Google classique.)
+  # Moteurs qui tolèrent le mieux une IP de serveur (à surveiller dans les journaux :
+  # un moteur bloqué apparaît en « suspended »)
+  - name: bing
     disabled: false
-    shortcut: g
+  - name: duckduckgo
+    disabled: false
+  - name: mojeek
+    disabled: false
+  # API publique, jamais bloquée : utile pour les sorties (lieux, musées, parcs)
   - name: wikipedia
     disabled: false
     shortcut: wp
-  - name: qwant
-    disabled: false
-    shortcut: qw
-  - name: startpage
-    disabled: false
-    shortcut: sp
-  - name: reddit
-    disabled: true

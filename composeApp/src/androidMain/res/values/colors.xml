@@ -2,4 +2,6 @@
 <resources>
     <color name="sable">#FBF3E7</color>
     <color name="terracotta">#C8492C</color>
+    <!-- Orange « plein été » du logo A : fond de l'écran de lancement -->
+    <color name="logo_orange">#F7955A</color>
 </resources>

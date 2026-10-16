@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Icône de l'écran de lancement, version fixe (Android 7 à 11, sans animation).
+  Canevas 288 dp sans fond d'icône : le dessin doit tenir dans le cercle central de 192 dp
+  (échelle 1,8, centré sur le point (50, 47) du logo).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288">
+    <group android:scaleX="1.8" android:scaleY="1.8" android:translateX="54" android:translateY="59.4">
+        <path android:fillColor="#FDE6BD" android:pathData="M14,80A36,36 0,0 1,86 80Z" />
+        <path android:fillColor="#D45A43" android:strokeColor="#3A211B" android:strokeWidth="4"
+            android:strokeLineJoin="round" android:pathData="M50,24L81,80H19Z" />
+        <path android:strokeColor="#3A211B" android:strokeWidth="4" android:strokeLineCap="round"
+            android:pathData="M43,13L54,30M57,13L46,30" />
+        <path android:fillColor="#5E4558" android:strokeColor="#3A211B" android:strokeWidth="4"
+            android:strokeLineJoin="round" android:pathData="M50,50L64,80H36Z" />
+        <path android:fillColor="#F28C38" android:strokeColor="#3A211B" android:strokeWidth="3.5"
+            android:strokeLineJoin="round" android:pathData="M34,52H50L42,68Z" />
+        <path android:fillColor="#00000000" android:strokeColor="#3A211B" android:strokeWidth="2.6"
+            android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:pathData="M49,43l2.7,-3 2.7,3 2.6,-3M58,62l2.7,-3 2.7,3 2.6,-3" />
+        <path android:strokeColor="#3A211B" android:strokeWidth="4" android:strokeLineCap="round"
+            android:pathData="M14,80H86" />
+    </group>
+</vector>

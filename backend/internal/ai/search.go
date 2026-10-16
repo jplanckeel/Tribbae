@@ -10,216 +10,268 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/tribbae/backend/internal/preview"
+	"unicode/utf8"
 )
 
-// SearchResult représente un résultat de recherche web
+// SearchResult est un résultat web proposé au modèle comme source d'idée.
 type SearchResult struct {
-	Title    string `json:"title"`
-	URL      string `json:"url"`
-	Content  string `json:"content"`
-	ImageURL string `json:"img_src,omitempty"`
+	Title    string
+	URL      string
+	Content  string
+	ImageURL string
 }
 
-// buildSearchQueries génère des requêtes de recherche ciblées (le but est d'exclure Reddit comme demandé)
-func buildSearchQueries(prompt string) []string {
+// Domain retourne le domaine de la source, sans « www. ».
+func (r SearchResult) Domain() string {
+	u, err := url.Parse(r.URL)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+}
+
+const (
+	maxSources       = 8
+	perQueryResults  = 8
+	maxPerDomain     = 2
+	maxSnippetRunes  = 220
+	searchBudget     = 12 * time.Second
+	searxHTTPTimeout = 10 * time.Second
+)
+
+// Sites dont les pages ne donnent pas d'idée exploitable (contenu derrière
+// connexion, fils de discussion, petites annonces) : écartés des sources.
+var blockedDomains = []string{
+	"reddit.com", "facebook.com", "instagram.com", "tiktok.com", "x.com", "twitter.com",
+	"linkedin.com", "quora.com", "leboncoin.fr",
+}
+
+var searxClient = &http.Client{Timeout: searxHTTPTimeout}
+
+// Orientation ajoutée à la seconde requête selon le type de demande.
+// category est la catégorie attendue (clé courte de prompt.go), suggérée au modèle.
+var queryHints = []struct {
+	words    []string
+	hint     string
+	category string
+}{
+	{[]string{"recette", "cuisine", "goûter", "gouter", "repas", "dessert", "gâteau", "gateau", "menu"}, "recette facile enfants", "recette"},
+	{[]string{"cadeau", "offrir", "anniversaire", "noël", "noel"}, "idée cadeau", "cadeau"},
+	{[]string{"livre", "lecture", "roman", "album"}, "livre jeunesse", "livre"},
+	{[]string{"sortie", "visite", "autour de", "près de", "pres de", "week-end", "weekend", "balade"}, "sortie en famille", "sortie"},
+	{[]string{"déco", "deco", "décoration", "decoration", "chambre"}, "idée déco DIY", "deco"},
+}
+
+// expectedCategory retourne la catégorie évidente d'une demande, ou "".
+func expectedCategory(prompt string) string {
+	lower := strings.ToLower(prompt)
+	for _, h := range queryHints {
+		if containsAny(lower, h.words...) {
+			return h.category
+		}
+	}
+	return ""
+}
+
+// buildQueries décline la demande en une ou deux requêtes : la demande telle
+// quelle, et une variante orientée vers des pages d'idées pour familles.
+func buildQueries(prompt string) []string {
 	p := strings.TrimSpace(prompt)
-	exclude := " -site:reddit.com"
-	queries := []string{p + exclude}
-
 	lower := strings.ToLower(p)
-	if !strings.Contains(lower, "recette") {
-		queries = append(queries, p+" avis recommandation"+exclude)
-	} else {
-		queries = append(queries, p+" recette facile"+exclude)
+	hint := "en famille avec enfants"
+	for _, h := range queryHints {
+		if containsAny(lower, h.words...) {
+			hint = h.hint
+			break
+		}
 	}
-
-	return queries
+	// Ne garde de l'orientation que les mots absents de la demande
+	var extra []string
+	for _, w := range strings.Fields(hint) {
+		if !strings.Contains(lower, strings.ToLower(w)) {
+			extra = append(extra, w)
+		}
+	}
+	if len(extra) == 0 {
+		return []string{p}
+	}
+	return []string{p, p + " " + strings.Join(extra, " ")}
 }
 
-// searchWebMulti lance les requêtes SearXNG en parallèle et déduplique
-func searchWebMulti(ctx context.Context, searxURL, prompt string, maxResults int) ([]SearchResult, error) {
-	if searxURL == "" {
-		return nil, nil
+func containsAny(s string, subs ...string) bool {
+	for _, sub := range subs {
+		if strings.Contains(s, sub) {
+			return true
+		}
 	}
-	if maxResults == 0 {
-		maxResults = 8
-	}
+	return false
+}
 
-	// Timeout global pour toute la recherche : 15s max
-	searchCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+// searchFunc lance une requête auprès d'un moteur (SearXNG, API Ollama…).
+type searchFunc func(ctx context.Context, query string) ([]SearchResult, error)
+
+// runSearch lance les requêtes en parallèle et retourne des sources
+// dédoublonnées, variées (max 2 par site) et nettoyées.
+func runSearch(ctx context.Context, queries []string, search searchFunc) ([]SearchResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, searchBudget)
 	defer cancel()
 
-	queries := buildSearchQueries(prompt)
-
-	type queryResult struct {
-		results []SearchResult
-		err     error
+	lists := make([][]SearchResult, len(queries))
+	errs := make([]error, len(queries))
+	var wg sync.WaitGroup
+	for i, q := range queries {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			lists[i], errs[i] = search(ctx, q)
+		}()
 	}
+	wg.Wait()
 
-	ch := make(chan queryResult, len(queries))
-	for _, q := range queries {
-		go func(query string) {
-			results, err := searchWeb(searchCtx, searxURL, query, 5)
-			ch <- queryResult{results, err}
-		}(q)
-	}
-
-	seen := make(map[string]bool)
-	var allResults []SearchResult
-
-	for range queries {
-		qr := <-ch
-		if qr.err != nil {
-			fmt.Printf("search query failed: %v\n", qr.err)
-			continue
-		}
-		for _, r := range qr.results {
-			if seen[r.URL] {
-				continue
+	// Entrelace les listes : les meilleurs résultats de chaque requête d'abord
+	var merged []SearchResult
+	for rank := 0; rank < perQueryResults+2; rank++ {
+		for _, l := range lists {
+			if rank < len(l) {
+				merged = append(merged, l[rank])
 			}
-			seen[r.URL] = true
-			allResults = append(allResults, r)
 		}
 	}
-
-	if len(allResults) > maxResults {
-		allResults = allResults[:maxResults]
+	sources := selectSources(merged)
+	if len(sources) == 0 {
+		for _, err := range errs {
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
-	return allResults, nil
+	return sources, nil
 }
 
-// searchWeb interroge SearXNG et retourne les résultats pertinents
-func searchWeb(ctx context.Context, searxURL, query string, maxResults int) ([]SearchResult, error) {
+// selectSources filtre, dédoublonne et nettoie les résultats bruts.
+func selectSources(results []SearchResult) []SearchResult {
+	seen := map[string]bool{}
+	perDomain := map[string]int{}
+	var out []SearchResult
+	for _, r := range results {
+		u, err := url.Parse(r.URL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			continue
+		}
+		d := r.Domain()
+		if blocked(d) || perDomain[d] >= maxPerDomain {
+			continue
+		}
+		key := d + strings.TrimRight(u.EscapedPath(), "/") + "?" + u.RawQuery
+		if seen[key] {
+			continue
+		}
+		r.Title = cleanSnippet(r.Title, 120)
+		r.Content = cleanSnippet(r.Content, maxSnippetRunes)
+		if r.Title == "" {
+			continue
+		}
+		seen[key] = true
+		perDomain[d]++
+		out = append(out, r)
+		if len(out) == maxSources {
+			break
+		}
+	}
+	return out
+}
+
+func blocked(domain string) bool {
+	for _, b := range blockedDomains {
+		if domain == b || strings.HasSuffix(domain, "."+b) {
+			return true
+		}
+	}
+	return false
+}
+
+// cleanSnippet normalise les espaces et coupe proprement sur un mot.
+func cleanSnippet(s string, maxRunes int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if utf8.RuneCountInString(s) <= maxRunes {
+		return s
+	}
+	cut := string([]rune(s)[:maxRunes])
+	if i := strings.LastIndex(cut, " "); i > len(cut)/2 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " ,;:.-") + "…"
+}
+
+// searxSources interroge SearXNG avec la demande et sa variante orientée.
+func searxSources(ctx context.Context, searxURL, prompt string) ([]SearchResult, error) {
 	if searxURL == "" {
 		return nil, nil
 	}
-	if maxResults == 0 {
-		maxResults = 5
+	return runSearch(ctx, buildQueries(prompt), func(ctx context.Context, q string) ([]SearchResult, error) {
+		return searxSearch(ctx, searxURL, q)
+	})
+}
+
+// searxSearch interroge l'API JSON de SearXNG.
+func searxSearch(ctx context.Context, searxURL, query string) ([]SearchResult, error) {
+	form := url.Values{
+		"q":          {query},
+		"format":     {"json"},
+		"language":   {"fr-FR"},
+		"safesearch": {"1"}, // application familiale
+		"categories": {"general"},
 	}
-
-	params := url.Values{
-		"q":      {query},
-		"format": {"json"},
-		"lang":   {"fr"},
-	}
-
-	reqURL := fmt.Sprintf("%s/search", strings.TrimRight(searxURL, "/"))
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, strings.NewReader(params.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		strings.TrimRight(searxURL, "/")+"/search", strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Accept-Language", "fr-FR,fr;q=0.9,en;q=0.8")
-	req.Header.Set("Accept-Encoding", "gzip, deflate")
-	req.Header.Set("Connection", "keep-alive")
+	req.Header.Set("Accept-Language", "fr-FR,fr;q=0.9")
 
-	resp, err := client.Do(req)
+	resp, err := searxClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("searxng unreachable: %w", err)
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("searxng returned status %d", resp.StatusCode)
 	}
 
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	trimmed := strings.TrimSpace(string(raw))
-	if len(trimmed) > 0 && trimmed[0] != '{' {
-		preview := trimmed
-		if len(preview) > 200 {
-			preview = preview[:200]
-		}
-		return nil, fmt.Errorf("searxng returned non-JSON (status %d), starts with: %s", resp.StatusCode, preview)
-	}
-
-	var searxResp struct {
+	var body struct {
 		Results []struct {
 			Title   string `json:"title"`
 			URL     string `json:"url"`
 			Content string `json:"content"`
 			ImgSrc  string `json:"img_src"`
+			Thumb   string `json:"thumbnail"`
 		} `json:"results"`
 	}
-	if err := json.Unmarshal(raw, &searxResp); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 2<<20)).Decode(&body); err != nil {
 		return nil, fmt.Errorf("invalid searxng response: %w", err)
 	}
-
-	var results []SearchResult
-	for _, r := range searxResp.Results {
-		if len(results) >= maxResults {
+	var out []SearchResult
+	for _, r := range body.Results {
+		if len(out) == perQueryResults {
 			break
 		}
-		if r.Title == "" && r.Content == "" {
-			continue
-		}
-		content := r.Content
-		if len(content) > 150 {
-			content = content[:150] + "..."
-		}
-		results = append(results, SearchResult{
+		out = append(out, SearchResult{
 			Title:    r.Title,
 			URL:      r.URL,
-			Content:  content,
-			ImageURL: r.ImgSrc,
+			Content:  r.Content,
+			ImageURL: firstNonEmpty(r.ImgSrc, r.Thumb),
 		})
 	}
-
-	return results, nil
+	return out, nil
 }
 
-// formatSearchContext formate les résultats de recherche pour le prompt LLM (compact)
-func formatSearchContext(results []SearchResult) string {
-	if len(results) == 0 {
-		return ""
-	}
-
-	var sb strings.Builder
-	sb.WriteString("\n\n--- RÉSULTATS WEB ---\n")
-	for i, r := range results {
-		fmt.Fprintf(&sb, "[%d] %s\n", i+1, r.Title)
-		if r.URL != "" {
-			fmt.Fprintf(&sb, "    URL: %s\n", r.URL)
-		}
-		if r.Content != "" {
-			fmt.Fprintf(&sb, "    %s\n", r.Content)
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if strings.TrimSpace(v) != "" {
+			return v
 		}
 	}
-	sb.WriteString("---\n")
-	return sb.String()
-}
-
-// enrichImagesFromOG récupère l'image des pages en parallèle (max 3, budget global 8s)
-func enrichImagesFromOG(ctx context.Context, ideas []SuggestedLink) {
-	ogCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
-	defer cancel()
-
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, 3) // max 3 en parallèle
-
-	for i := range ideas {
-		if ideas[i].URL == "" || ideas[i].ImageURL != "" {
-			continue
-		}
-		wg.Add(1)
-		go func(idx int) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			if img := preview.Image(ogCtx, ideas[idx].URL); img != "" {
-				ideas[idx].ImageURL = img
-			}
-		}(i)
-	}
-	wg.Wait()
+	return ""
 }

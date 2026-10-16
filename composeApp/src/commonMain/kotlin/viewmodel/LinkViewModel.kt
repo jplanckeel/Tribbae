@@ -393,6 +393,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                         "Impossible de se connecter au backend. Vérifiez votre connexion internet."
                     e.message?.contains("401") == true || e.message?.contains("403") == true ->
                         "Session expirée. Reconnectez-vous dans Profil."
+                    e.message?.contains("AI is busy") == true ->
+                        "L'IA prépare déjà des idées pour une autre tribu. Réessayez dans une trentaine de secondes."
+                    e.message?.contains("(429)") == true ->
+                        "Trop de demandes, réessayez dans une minute."
+                    e.message?.contains("idea generation failed") == true ->
+                        "L'IA n'a pas réussi à préparer d'idées. Réessayez ou reformulez votre demande."
                     else -> e.message ?: "Erreur inconnue"
                 }
                 _aiError.value = errorMsg

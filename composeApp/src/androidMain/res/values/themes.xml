@@ -8,4 +8,11 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:colorAccent">@color/terracotta</item>
     </style>
+
+    <!-- Écran de lancement (Android 7 à 11 : icône fixe, l'animation n'y est pas prise en charge) -->
+    <style name="Theme.Tribbae.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/logo_orange</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.Tribbae</item>
+    </style>
 </resources>

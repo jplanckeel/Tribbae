@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link as RouterLink } from "react-router";
 import * as api from "../lib/api";
 import { AVATAR_COLORS, categoryMeta, folderColor, folderIcon, type CategoryMeta } from "../lib/categories";
-import { metaLine, plural, safeImage } from "../lib/format";
+import { dayBadge, eventDateMs, metaLine, plural, safeImage } from "../lib/format";
 import { useSession } from "../lib/session";
 import type { Folder, Link } from "../lib/types";
 import Icon from "./Icon";
@@ -221,11 +221,101 @@ export function FolderCard({ folder, count, showOwner }: { folder: Folder; count
   );
 }
 
+/**
+ * Carte d'idée de la grille bureau (maquette « Web · Explorer ») : grand
+ * visuel, pastille catégorie (et date d'une sortie), titre, âge · prix · j'aime.
+ */
+export function IdeaCard({ link, onRequireAuth }: { link: Link; onRequireAuth?: () => void }) {
+  const cat = categoryMeta(link.category);
+  const at = eventDateMs(link.eventDate);
+  const badge = at ? `${cat.label} · ${dayBadge(at).weekday.toLowerCase()} ${dayBadge(at).day}` : cat.label;
+  const likes = link.likeCount ?? 0;
+  const meta = [metaLine(link), likes > 0 ? `${likes} j'aime` : ""].filter(Boolean).join(" · ");
+  return (
+    <RouterLink
+      to={`/links/${link.id}`}
+      className="group overflow-hidden rounded-[22px] bg-white shadow-card transition-transform hover:-translate-y-0.5"
+    >
+      <div className="relative">
+        <IdeaVisual link={link} height={160} iconSize={56} />
+        <span className={`absolute top-3 left-3 rounded-full bg-white px-2.5 py-[5px] text-xs font-bold ${cat.ink}`}>{badge}</span>
+        <LikeButton link={link} onRequireAuth={onRequireAuth} className="absolute top-2.5 right-2.5" />
+      </div>
+      <div className="flex flex-col gap-1.5 px-4 pt-3.5 pb-4">
+        <span className="line-clamp-2 font-display text-[17px] leading-[1.2] font-bold">{link.title}</span>
+        {meta && <span className="text-sm text-sec">{meta}</span>}
+      </div>
+    </RouterLink>
+  );
+}
+
+/**
+ * Carte « liste » d'un dossier public (maquette « Les listes qui plaisent aux
+ * tribus ») : bandeau coloré (ou image du dossier), nom, auteur · idées · j'aime.
+ */
+export function ListCard({ folder }: { folder: Folder }) {
+  const color = folderColor(folder.color);
+  const banner = safeImage(folder.bannerUrl);
+  const n = folder.linkCount ?? 0;
+  const likes = folder.likeCount ?? 0;
+  const meta = [
+    folder.ownerDisplayName ? `par ${folder.ownerDisplayName}` : "",
+    plural(n, "idée", "idées"),
+    likes > 0 ? `${likes} j'aime` : "",
+  ].filter(Boolean).join(" · ");
+  return (
+    <RouterLink
+      to={`/dossiers/${folder.id}`}
+      className="overflow-hidden rounded-[24px] bg-white shadow-card transition-transform hover:-translate-y-0.5"
+    >
+      <div className="relative h-[130px] overflow-hidden" style={{ background: color.bg }}>
+        {banner ? (
+          <img src={banner} alt="" loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <>
+            <span aria-hidden="true" className="absolute -right-[30px] -bottom-[60px] h-40 w-40 rounded-full opacity-20" style={{ background: color.solid }} />
+            <span className="absolute bottom-[18px] left-[22px]" style={{ color: color.solid }}>
+              <Icon name={folderIcon(folder.icon)} size={54} />
+            </span>
+          </>
+        )}
+        {folder.aiGenerated && (
+          <span className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-prune px-2 py-1 text-xs font-semibold text-sable">
+            <Icon name="sparkle" size={12} />IA
+          </span>
+        )}
+      </div>
+      <div className="flex flex-col gap-1.5 px-[18px] pt-4 pb-[18px]">
+        <span className="line-clamp-2 font-display text-[19px] leading-tight font-bold">{folder.name}</span>
+        <span className="text-sm text-sec">{meta}</span>
+      </div>
+    </RouterLink>
+  );
+}
+
+/** Carte prune « l'IA prépare une liste » glissée dans les grilles. */
+export function AiCard({ title, text, onClick, className = "" }: { title: string; text?: string; onClick: () => void; className?: string }) {
+  return (
+    <div className={`flex flex-col justify-between gap-3 rounded-[24px] bg-prune p-[22px] text-sable ${className}`}>
+      <Icon name="sparkles" size={30} className="text-soleil" />
+      <span className="font-display text-[21px] leading-[1.2] font-bold">{title}</span>
+      {text && <span className="text-sm text-prune-soft">{text}</span>}
+      <button
+        type="button"
+        onClick={onClick}
+        className="self-start rounded-[14px] bg-soleil px-4 py-2.5 text-sm font-bold text-ecorce transition-colors hover:bg-white"
+      >
+        Essayer
+      </button>
+    </div>
+  );
+}
+
 /** Rail horizontal défilant (déborde à droite comme sur la maquette). */
 export function Rail({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="no-scrollbar -mx-5 flex snap-x gap-3 overflow-x-auto scroll-px-5 px-5 pb-2 md:-mx-8 md:scroll-px-8 md:px-8"
+      className="no-scrollbar -mx-5 flex snap-x gap-3 overflow-x-auto scroll-px-5 px-5 pb-2 md:-mx-6 md:scroll-px-6 md:px-6"
     >
       {children}
     </div>

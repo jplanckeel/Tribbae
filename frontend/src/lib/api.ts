@@ -15,7 +15,9 @@ export class ApiError extends Error {
 
 /** Traduit les messages d'erreur serveur les plus courants. */
 function frenchMessage(status: number, message: string): string {
+  if (status === 429 && /ai is busy/i.test(message)) return "L'IA prépare déjà des idées pour une autre tribu. Réessayez dans une trentaine de secondes.";
   if (status === 429) return "Trop de tentatives, réessayez dans une minute.";
+  if (/idea generation failed/i.test(message)) return "L'IA n'a pas réussi à préparer d'idées. Réessayez ou reformulez votre demande.";
   if (status === 401 && /credentials/i.test(message)) return "Email ou mot de passe incorrect.";
   if (status === 401) return "Votre session a expiré, reconnectez-vous.";
   if (status === 403) return "Vous n'avez pas les droits pour cette action.";

@@ -97,8 +97,14 @@ export function initial(name: string | undefined): string {
 export const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
 
 /** Ligne de métadonnées courte : "3–10 ans · 6 €". */
+/** Prix affiché : « 0 », « 0 € »… deviennent « Gratuit ». */
+export function priceLabel(price: string | undefined): string {
+  const p = (price ?? "").trim();
+  return /^0+(?:[.,]0+)?\s*(?:€|eur|euros?)?$/i.test(p) ? "Gratuit" : p;
+}
+
 export function metaLine(l: Link): string {
-  return [l.ageRange, l.price].filter(Boolean).join(" · ");
+  return [l.ageRange, priceLabel(l.price)].filter(Boolean).join(" · ");
 }
 
 export function matchesQuery(l: Link, q: string): boolean {
@@ -111,4 +117,17 @@ export function matchesQuery(l: Link, q: string): boolean {
 export function safeNext(raw: string | null): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return "/";
   return raw;
+}
+
+/**
+ * Prix comparable d'une idée, en euros : 0 si gratuite, le premier montant
+ * trouvé sinon (« 6 € / enfant » → 6, « dès 12,50 € » → 12.5), undefined si
+ * le prix n'est pas renseigné ou illisible.
+ */
+export function priceValue(price: string | undefined): number | undefined {
+  const p = (price ?? "").trim().toLowerCase();
+  if (!p) return undefined;
+  if (/gratuit|free|offert/.test(p)) return 0;
+  const m = p.match(/\d+(?:[.,]\d+)?/);
+  return m ? Number(m[0].replace(",", ".")) : undefined;
 }

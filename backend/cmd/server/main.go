@@ -65,7 +65,18 @@ func main() {
 	childSvc := child.NewService(database.DB())
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
 	commentSvc := comment.NewService(database.Col("comments"), database.Col("links"), database.Col("users"))
-	aiSvc := ai.NewService(cfg.OllamaURL, cfg.OllamaModel, cfg.SearxURL, cfg.GeminiAPIKey)
+	aiSvc := ai.NewService(ai.Config{
+		OllamaURL:       cfg.OllamaURL,
+		OllamaModel:     cfg.OllamaModel,
+		OllamaKeepAlive: cfg.OllamaKeepAlive,
+		OllamaNumThread: cfg.OllamaNumThread,
+		SearxURL:        cfg.SearxURL,
+		WebSearchAPIKey: cfg.OllamaAPIKey,
+		GeminiAPIKey:    cfg.GeminiAPIKey,
+		GeminiModel:     cfg.GeminiModel,
+	})
+	// Télécharge (si besoin) et charge le modèle local sans retarder le démarrage
+	go aiSvc.Warmup(context.Background())
 
 	// Handlers (gRPC servers)
 	authH := auth.NewHandler(authSvc)
@@ -88,34 +99,7 @@ func main() {
 		return authSvc.ValidateToken(token)
 	}
 
-	aiH := ai.NewHandler(aiSvc, userGetter, bearerUser,
-		// Folder creator : crée un dossier IA (privé)
-		func(ctx context.Context, ownerID, name string) (string, error) {
-			f, err := folderSvc.CreateAiFolder(ctx, ownerID, name)
-			if err != nil {
-				return "", err
-			}
-			return f.ID.Hex(), nil
-		},
-		// Link creator : crée un lien dans le dossier
-		func(ctx context.Context, ownerID string, idea ai.SuggestedLink, folderID string) error {
-			l := &link.Link{
-				FolderID:    folderID,
-				Title:       idea.Title,
-				URL:         idea.URL,
-				Description: idea.Description,
-				Category:    idea.Category,
-				Tags:        idea.Tags,
-				AgeRange:    idea.AgeRange,
-				Location:    idea.Location,
-				Price:       idea.Price,
-				ImageURL:    idea.ImageURL,
-				Ingredients: idea.Ingredients,
-			}
-			_, err := linkSvc.Create(ctx, ownerID, l)
-			return err
-		},
-	)
+	aiH := ai.NewHandler(aiSvc, userGetter, bearerUser)
 
 	// Serveur gRPC
 	grpcServer := grpc.NewServer(

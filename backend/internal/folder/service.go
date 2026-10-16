@@ -489,7 +489,9 @@ func (s *Service) ListTop(ctx context.Context, limit int32) ([]*Folder, error) {
 		limit = 10
 	}
 	opts := options.Find().
-		SetSort(bson.M{"like_count": -1, "updated_at": -1}).
+		// bson.D et non bson.M : un tri sur plusieurs clés doit être ordonné
+		// (le driver refuse une map à plusieurs clés).
+		SetSort(bson.D{{Key: "like_count", Value: -1}, {Key: "updated_at", Value: -1}}).
 		SetLimit(int64(limit))
 	cursor, err := s.col.Find(ctx, bson.M{"visibility": "public", "like_count": bson.M{"$gt": 0}}, opts)
 	if err != nil {
@@ -498,26 +500,6 @@ func (s *Service) ListTop(ctx context.Context, limit int32) ([]*Folder, error) {
 	defer cursor.Close(ctx)
 	var folders []*Folder
 	return folders, cursor.All(ctx, &folders)
-}
-
-// CreateAiFolder crée un dossier pour les idées générées par IA. Il est privé :
-// publier reste un choix explicite de l'utilisateur.
-func (s *Service) CreateAiFolder(ctx context.Context, ownerID, name string) (*Folder, error) {
-	f := &Folder{
-		ID:          primitive.NewObjectID(),
-		OwnerID:     ownerID,
-		Name:        name,
-		Icon:        "sparkles",
-		Color:       "PURPLE",
-		Visibility:  "private",
-		AiGenerated: true,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-	if _, err := s.col.InsertOne(ctx, f); err != nil {
-		return nil, err
-	}
-	return f, nil
 }
 
 // canView : dossier public, ou utilisateur propriétaire / collaborateur.

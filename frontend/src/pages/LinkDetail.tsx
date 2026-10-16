@@ -151,7 +151,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         ) : (
           <>
             <div aria-hidden="true" className="absolute -bottom-[120px] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-soleil" />
-            <span className="absolute bottom-6 left-1/2 -translate-x-1/2"><TipiMark size={140} stroke={1.6} /></span>
+            <span className="absolute bottom-6 left-1/2 -translate-x-1/2"><TipiMark size={140} /></span>
           </>
         )}
         <div className="absolute inset-x-4 top-4 flex justify-between">

@@ -458,7 +458,11 @@ fun CategoryBadge(cat: CategoryUi, modifier: Modifier = Modifier, onWhite: Boole
     )
 }
 
-fun metaLine(link: Link): String = listOf(link.ageRange, link.price).filter { it.isNotBlank() }.joinToString(" · ")
+fun metaLine(link: Link): String = listOf(link.ageRange, priceLabel(link.price)).filter { it.isNotBlank() }.joinToString(" · ")
+
+/** Prix affiché : « 0 », « 0 € »… deviennent « Gratuit » (comme sur le web). */
+fun priceLabel(price: String): String =
+    if (Regex("""^0+(?:[.,]0+)?\s*(?:€|eur|euros?)?$""", RegexOption.IGNORE_CASE).matches(price.trim())) "Gratuit" else price.trim()
 
 /** Carte « rail » de l'accueil (210 dp). */
 @Composable

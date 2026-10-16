@@ -4,7 +4,6 @@ import { useSession } from "../lib/session";
 import { ComposerProvider, useComposer } from "./Composer";
 import Icon, { type IconName } from "./Icon";
 import Logo from "./Logo";
-import { Avatar } from "./ui";
 
 const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/", label: "Accueil", icon: "home", end: true },
@@ -118,25 +117,26 @@ function BottomNav() {
   );
 }
 
-/** En-tête collant pour les grands écrans. */
+/** En-tête des grands écrans (maquette « Web · Accueil »). */
 function TopBar() {
   const session = useSession();
-  const { openAdd, openAi } = useComposer();
+  const { openAdd } = useComposer();
+  const initial = (session?.displayName?.trim() || "?").charAt(0).toUpperCase();
   return (
-    <header className="sticky top-0 z-40 hidden border-b border-line/70 bg-sable/90 backdrop-blur-md md:block">
-      <div className="mx-auto flex h-[72px] max-w-6xl items-center gap-6 px-8">
-        <NavLink to="/" aria-label="Tribbae, accueil">
-          <Logo />
+    <header className="relative z-40 hidden md:block">
+      <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-7 gap-y-3 px-6 py-[18px]">
+        <NavLink to="/" aria-label="Tribbae, accueil" className="text-ecorce">
+          <Logo size={40} />
         </NavLink>
-        <nav aria-label="Navigation principale" className="flex flex-1 items-center gap-1">
+        <nav aria-label="Navigation principale" className="flex flex-1 flex-wrap gap-1">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               end={n.end}
               className={({ isActive }) =>
-                `flex h-10 items-center gap-2 rounded-s px-3.5 text-sm font-bold transition-colors ${
-                  isActive ? "bg-ecorce text-sable" : "text-sec hover:bg-sable-2 hover:text-ecorce"
+                `rounded-[14px] px-4 py-2.5 text-[15px] transition-colors ${
+                  isActive ? "bg-ecorce font-bold text-sable" : "font-semibold text-ecorce hover:bg-sable-2"
                 }`
               }
             >
@@ -144,33 +144,53 @@ function TopBar() {
             </NavLink>
           ))}
         </nav>
-        <button
-          type="button"
-          onClick={() => openAi()}
-          className="flex h-11 items-center gap-2 rounded-s bg-prune px-4 text-sm font-bold text-sable transition-colors hover:bg-[#4d3848]"
-        >
-          <Icon name="sparkles" size={18} className="text-soleil" />
-          IA
-        </button>
-        <button
-          type="button"
-          onClick={() => openAdd()}
-          className="flex h-11 items-center gap-2 rounded-s bg-terracotta px-4 text-sm font-bold text-white transition-colors hover:bg-terracotta-dark"
-        >
-          <Icon name="plus" size={18} strokeWidth={2.6} />
-          Ajouter
-        </button>
-        {session ? (
-          <NavLink to="/tribu" aria-label="Ma tribu">
-            <Avatar name={session.displayName} size={40} rounded="rounded-[14px]" />
-          </NavLink>
-        ) : (
-          <NavLink to="/connexion" className="text-sm font-bold text-terracotta hover:text-terracotta-dark">
-            Se connecter
-          </NavLink>
-        )}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => openAdd()}
+            className="flex h-[46px] items-center gap-2 rounded-[16px] bg-terracotta px-[18px] text-[15px] font-bold text-white transition-colors hover:bg-terracotta-dark"
+          >
+            <Icon name="plus" size={18} strokeWidth={2.6} />
+            Ajouter une idée
+          </button>
+          {session ? (
+            <NavLink
+              to="/tribu"
+              aria-label={`Ma tribu (${session.displayName || "mon compte"})`}
+              className="flex h-[46px] w-[46px] items-center justify-center rounded-[16px] bg-braise font-display text-lg font-extrabold text-ecorce transition-transform hover:-translate-y-0.5"
+            >
+              {initial}
+            </NavLink>
+          ) : (
+            <NavLink
+              to="/connexion"
+              className="flex h-[46px] items-center rounded-[16px] border-2 border-ecorce px-4 text-[15px] font-bold text-ecorce transition-colors hover:bg-ecorce hover:text-sable"
+            >
+              Se connecter
+            </NavLink>
+          )}
+        </div>
       </div>
     </header>
+  );
+}
+
+/** Grand soleil de l'accueil bureau, qui passe derrière l'en-tête (maquette « Web · Accueil »). */
+function DesktopSun() {
+  const { pathname } = useLocation();
+  if (pathname !== "/") return null;
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute -top-[220px] -right-[160px] hidden h-[620px] w-[620px] rounded-full bg-soleil md:block" />
+  );
+}
+
+/** Pied de page des grands écrans. */
+function Footer() {
+  return (
+    <footer className="hidden border-t border-line px-6 py-6 text-center text-sm text-sec md:block">
+      Tribbae — les idées de la tribu, au même endroit ·{" "}
+      <NavLink to="/aide" className="font-semibold text-terracotta hover:text-terracotta-dark">Aide</NavLink>
+    </footer>
   );
 }
 
@@ -178,16 +198,23 @@ function TopBar() {
 export function AppLayout() {
   return (
     <ComposerProvider>
-      <a
-        href="#contenu"
-        className="sr-only z-[80] rounded-s bg-ecorce px-4 py-2 font-bold text-sable focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
-      >
-        Aller au contenu
-      </a>
-      <TopBar />
-      <main id="contenu" className="pb-[calc(124px+env(safe-area-inset-bottom))] md:pb-16">
-        <Outlet />
-      </main>
+      {/* Colonne pleine hauteur : le pied de page reste en bas sur les pages courtes */}
+      <div className="flex min-h-dvh flex-col">
+        <a
+          href="#contenu"
+          className="sr-only z-[80] rounded-s bg-ecorce px-4 py-2 font-bold text-sable focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+        >
+          Aller au contenu
+        </a>
+        <div className="relative flex-1 overflow-x-clip">
+          <DesktopSun />
+          <TopBar />
+          <main id="contenu" className="relative pb-[calc(124px+env(safe-area-inset-bottom))] md:pb-16">
+            <Outlet />
+          </main>
+        </div>
+        <Footer />
+      </div>
       <BottomNav />
       <ScrollRestoration />
     </ComposerProvider>
@@ -206,7 +233,7 @@ export function BareLayout() {
 
 /** Conteneur de page standard. */
 export function Page({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto flex max-w-6xl flex-col gap-5 px-5 pt-5 md:px-8 md:pt-8 ${className}`}>{children}</div>;
+  return <div className={`mx-auto flex max-w-[1200px] flex-col gap-5 px-5 pt-5 md:px-6 md:pt-4 ${className}`}>{children}</div>;
 }
 
 /** Redirige vers l'écran de bienvenue si aucune session. */
