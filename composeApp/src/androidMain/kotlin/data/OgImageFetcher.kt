@@ -2,146 +2,161 @@ package data
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import org.jsoup.Jsoup
+import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
+import java.net.InetAddress
+import java.net.URI
 import java.net.URL
+import java.net.URLEncoder
 
 /**
- * Récupère l'image d'une page web avec stratégie multi-fallback :
- * 1. og:image
- * 2. twitter:image
- * 3. <link rel="image_src">
- * 4. schema.org image (JSON-LD)
- * 5. Première grande <img> du <body>
+ * Récupère l'image d'une page directement depuis le téléphone : utilisé quand
+ * le backend n'est pas joignable (hors ligne, pas de compte). Même stratégie que
+ * le backend (backend/internal/preview) : plusieurs identités essayées, oEmbed
+ * des plateformes vidéo, extraction par PageImageExtractor.
  */
 object OgImageFetcher {
 
-    private const val USER_AGENT =
-        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+    private const val MAX_BYTES = 2 shl 20
+    private const val MAX_REDIRECTS = 5
 
-    // og:image — les deux ordres d'attributs + variante name=
-    private val ogImagePatterns = listOf(
-        Regex("""<meta[^>]+property\s*=\s*["']og:image["'][^>]+content\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE),
-        Regex("""<meta[^>]+content\s*=\s*["']([^"']+)["'][^>]+property\s*=\s*["']og:image["']""", RegexOption.IGNORE_CASE),
-        Regex("""<meta[^>]+name\s*=\s*["']og:image["'][^>]+content\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE),
-        Regex("""<meta[^>]+content\s*=\s*["']([^"']+)["'][^>]+name\s*=\s*["']og:image["']""", RegexOption.IGNORE_CASE),
+    /** Identités essayées dans l'ordre : navigateur, puis robots d'aperçu des messageries. */
+    private val attempts = listOf(
+        mapOf(
+            "User-Agent" to "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36",
+            "Accept" to "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language" to "fr-FR,fr;q=0.9,en;q=0.7",
+            "Sec-Fetch-Dest" to "document",
+            "Sec-Fetch-Mode" to "navigate",
+            "Sec-Fetch-Site" to "none",
+            "Upgrade-Insecure-Requests" to "1",
+        ),
+        mapOf("User-Agent" to "WhatsApp/2.24.20.0", "Accept-Language" to "fr-FR,fr;q=0.9"),
+        mapOf("User-Agent" to "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)", "Accept-Language" to "fr-FR,fr;q=0.9"),
     )
 
-    // twitter:image
-    private val twitterImagePatterns = listOf(
-        Regex("""<meta[^>]+(?:name|property)\s*=\s*["']twitter:image(?::src)?["'][^>]+content\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE),
-        Regex("""<meta[^>]+content\s*=\s*["']([^"']+)["'][^>]+(?:name|property)\s*=\s*["']twitter:image(?::src)?["']""", RegexOption.IGNORE_CASE),
-    )
-
-    // <link rel="image_src">
-    private val linkImageSrc = Regex(
-        """<link[^>]+rel\s*=\s*["']image_src["'][^>]+href\s*=\s*["']([^"']+)["']""",
-        RegexOption.IGNORE_CASE
-    )
-
-    // JSON-LD schema.org "image"
-    private val jsonLdImage = Regex(
-        """"image"\s*:\s*"([^"]+)"""",
-        RegexOption.IGNORE_CASE
-    )
-
-    // Première <img> avec src http(s)
-    private val imgTag = Regex(
-        """<img[^>]+src\s*=\s*["'](https?://[^"']+)["']""",
-        RegexOption.IGNORE_CASE
-    )
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     suspend fun fetch(pageUrl: String): String? = withContext(Dispatchers.IO) {
-        try {
-            val html = downloadPage(pageUrl) ?: return@withContext null
-
-            // 1. og:image
-            findFirst(html, ogImagePatterns)?.let { return@withContext resolveUrl(it, pageUrl) }
-
-            // 2. twitter:image
-            findFirst(html, twitterImagePatterns)?.let { return@withContext resolveUrl(it, pageUrl) }
-
-            // 3. <link rel="image_src">
-            linkImageSrc.find(html)?.groupValues?.get(1)?.let { return@withContext resolveUrl(it, pageUrl) }
-
-            // 4. JSON-LD schema.org
-            jsonLdImage.find(html)?.groupValues?.get(1)?.let { return@withContext resolveUrl(it, pageUrl) }
-
-            // 5. Première <img> avec URL absolue (filtre les icônes/petites images par nom)
-            imgTag.findAll(html)
-                .map { it.groupValues[1] }
-                .firstOrNull { url ->
-                    !url.contains("logo", ignoreCase = true) &&
-                    !url.contains("icon", ignoreCase = true) &&
-                    !url.contains("sprite", ignoreCase = true) &&
-                    !url.contains("pixel", ignoreCase = true) &&
-                    !url.contains("1x1", ignoreCase = true) &&
-                    !url.contains("tracking", ignoreCase = true) &&
-                    !url.endsWith(".svg", ignoreCase = true) &&
-                    !url.endsWith(".gif", ignoreCase = true)
-                }?.let { return@withContext resolveUrl(it, pageUrl) }
-
-            null
-        } catch (_: Exception) {
-            null
-        }
+        runCatching { fetchImages(pageUrl).firstOrNull() }.getOrNull()
     }
 
-    private fun downloadPage(pageUrl: String): String? {
-        val conn = (URL(pageUrl).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 8000
-            readTimeout = 8000
-            instanceFollowRedirects = true
-            setRequestProperty("User-Agent", USER_AGENT)
-            setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-            setRequestProperty("Accept-Language", "fr-FR,fr;q=0.9,en;q=0.5")
+    /** Images candidates de la page, la meilleure d'abord (vide si rien trouvé). */
+    fun fetchImages(pageUrl: String): List<String> {
+        val url = pageUrl.trim()
+        knownThumbnail(url)?.let { return listOf(it) }
+        for (headers in attempts) {
+            val page = runCatching { download(url, headers) }.getOrNull() ?: continue
+            if (page.isImage) return listOf(page.finalUrl)
+            val doc = Jsoup.parse(ByteArrayInputStream(page.body), page.charset, page.finalUrl)
+            val result = PageImageExtractor.extract(doc, page.finalUrl)
+            if (result.images.isNotEmpty()) return result.images
+            // oEmbed déclaré par la page (vidéos, réseaux)
+            doc.selectFirst("link[type=application/json+oembed][href]")?.absUrl("href")
+                ?.takeIf { it.isNotEmpty() }
+                ?.let { oembedThumbnail(it) }
+                ?.let { return listOf(it) }
         }
-        return try {
-            // Gère les redirections manuelles (certains sites redirigent 301/302 vers un autre domaine)
-            val code = conn.responseCode
-            if (code in 300..399) {
-                val location = conn.getHeaderField("Location")
-                conn.disconnect()
-                if (location != null) {
-                    return downloadPage(resolveUrl(location, pageUrl))
+        return emptyList()
+    }
+
+    private class Page(val finalUrl: String, val body: ByteArray, val charset: String?, val isImage: Boolean)
+
+    /** Télécharge la page en suivant les redirections, chaque saut étant vérifié. */
+    private fun download(start: String, headers: Map<String, String>, anyType: Boolean = false): Page? {
+        var current = start
+        repeat(MAX_REDIRECTS + 1) {
+            val target = URL(current)
+            if (target.protocol != "http" && target.protocol != "https") return null
+            if (!isPublicHost(target.host)) return null
+            val conn = (target.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 8000
+                instanceFollowRedirects = false // suivies à la main, pour vérifier chaque hôte
+                headers.forEach { (k, v) -> setRequestProperty(k, v) }
+            }
+            try {
+                val code = conn.responseCode
+                if (code in 300..399) {
+                    val location = conn.getHeaderField("Location") ?: return null
+                    current = URL(target, location).toString()
+                    return@repeat
                 }
-                return null
-            }
-            if (code != 200) {
+                if (code >= 400) return null
+                val type = conn.contentType.orEmpty().lowercase()
+                if (type.startsWith("image/")) return Page(current, ByteArray(0), null, isImage = true)
+                if (!anyType && type.isNotEmpty() && !type.contains("html") && !type.contains("xml")) return null
+                val body = conn.inputStream.use { input ->
+                    val out = java.io.ByteArrayOutputStream()
+                    val buf = ByteArray(16 * 1024)
+                    while (out.size() < MAX_BYTES) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        out.write(buf, 0, n)
+                    }
+                    out.toByteArray()
+                }
+                val charset = Regex("charset=([\\w-]+)").find(type)?.groupValues?.get(1)
+                return Page(current, body, charset, isImage = false)
+            } finally {
                 conn.disconnect()
-                return null
             }
-            // Lire seulement les premiers 100KB (le head + début du body suffisent)
-            val bytes = conn.inputStream.bufferedReader().use { reader ->
-                val buf = CharArray(100_000)
-                val read = reader.read(buf)
-                if (read > 0) String(buf, 0, read) else ""
-            }
-            conn.disconnect()
-            bytes
-        } catch (_: Exception) {
-            conn.disconnect()
-            null
-        }
-    }
-
-    private fun findFirst(html: String, patterns: List<Regex>): String? {
-        for (pattern in patterns) {
-            pattern.find(html)?.groupValues?.get(1)?.let { return it }
         }
         return null
     }
 
-    /** Résout une URL relative en absolue */
-    private fun resolveUrl(imageUrl: String, pageUrl: String): String {
-        val trimmed = imageUrl.trim()
-            .replace("&amp;", "&")
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
-        if (trimmed.startsWith("//")) return "https:$trimmed"
-        return try {
-            URL(URL(pageUrl), trimmed).toString()
-        } catch (_: Exception) {
-            trimmed
+    /**
+     * Refuse les adresses du réseau local : un lien partagé ne doit pas faire
+     * interroger la box, le NAS ou une autre machine du domicile.
+     */
+    private fun isPublicHost(host: String): Boolean = runCatching {
+        InetAddress.getAllByName(host).all { a ->
+            !(a.isLoopbackAddress || a.isSiteLocalAddress || a.isLinkLocalAddress ||
+                a.isAnyLocalAddress || a.isMulticastAddress ||
+                (a.address.size == 4 && a.address[0].toInt() == 100 && (a.address[1].toInt() and 0xC0) == 64))
         }
+    }.getOrDefault(false)
+
+    private val youTubeId = Regex("""^[A-Za-z0-9_-]{11}$""")
+
+    /** Miniature connue sans télécharger la page (vidéos), ou null. */
+    private fun knownThumbnail(url: String): String? {
+        val u = runCatching { URI(url) }.getOrNull() ?: return null
+        val host = u.host.orEmpty().lowercase().removePrefix("www.").removePrefix("m.")
+        val path = u.path.orEmpty()
+        val ytId = when (host) {
+            "youtu.be" -> path.trim('/')
+            "youtube.com", "music.youtube.com" -> when {
+                path == "/watch" -> u.rawQuery.orEmpty().split('&').firstOrNull { it.startsWith("v=") }?.removePrefix("v=")
+                else -> path.trim('/').split('/').takeIf { it.size == 2 && it[0] in setOf("shorts", "embed", "live") }?.get(1)
+            }
+            else -> null
+        }
+        if (ytId != null && youTubeId.matches(ytId)) return "https://i.ytimg.com/vi/$ytId/hqdefault.jpg"
+
+        val q = URLEncoder.encode(url, "UTF-8")
+        val endpoint = when {
+            host == "vimeo.com" -> "https://vimeo.com/api/oembed.json?url=$q"
+            host == "tiktok.com" || host.endsWith(".tiktok.com") -> "https://www.tiktok.com/oembed?url=$q"
+            host == "dailymotion.com" || host == "dai.ly" -> "https://www.dailymotion.com/services/oembed?format=json&url=$q"
+            host.startsWith("pinterest.") || host.contains(".pinterest.") -> {
+                // L'oEmbed Pinterest n'accepte que le domaine .com
+                val com = URI(u.scheme, "www.pinterest.com", u.path, u.query, null).toString()
+                "https://www.pinterest.com/oembed.json?url=${URLEncoder.encode(com, "UTF-8")}"
+            }
+            else -> null
+        } ?: return null
+        return oembedThumbnail(endpoint)
     }
+
+    private fun oembedThumbnail(endpoint: String): String? = runCatching {
+        val page = download(endpoint, mapOf("Accept" to "application/json", "User-Agent" to attempts[0].getValue("User-Agent")), anyType = true)
+            ?: return null
+        val obj = json.parseToJsonElement(String(page.body, Charsets.UTF_8)).jsonObject
+        obj["thumbnail_url"]?.jsonPrimitive?.content?.takeIf { it.startsWith("http") }
+    }.getOrNull()
 }

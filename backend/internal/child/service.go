@@ -19,11 +19,31 @@ type Child struct {
 }
 
 type Service struct {
-	coll *mongo.Collection
+	coll  *mongo.Collection
+	peers func(ctx context.Context, userID string) []string
 }
 
 func NewService(db *mongo.Database) *Service {
 	return &Service{coll: db.Collection("children")}
+}
+
+// SetTribePeers branche la tribu : les enfants sont ceux de toute la tribu.
+func (s *Service) SetTribePeers(peers func(ctx context.Context, userID string) []string) {
+	s.peers = peers
+}
+
+// ownedByTribe : filtre « enfant de userID ou de sa tribu ».
+func (s *Service) ownedByTribe(ctx context.Context, userID primitive.ObjectID) bson.M {
+	ids := []primitive.ObjectID{userID}
+	if s.peers != nil {
+		ids = ids[:0]
+		for _, p := range s.peers(ctx, userID.Hex()) {
+			if oid, err := primitive.ObjectIDFromHex(p); err == nil {
+				ids = append(ids, oid)
+			}
+		}
+	}
+	return bson.M{"ownerId": bson.M{"$in": ids}}
 }
 
 func (s *Service) Create(ctx context.Context, ownerID primitive.ObjectID, name string, birthDate int64) (*Child, error) {
@@ -43,7 +63,7 @@ func (s *Service) Create(ctx context.Context, ownerID primitive.ObjectID, name s
 }
 
 func (s *Service) List(ctx context.Context, ownerID primitive.ObjectID) ([]*Child, error) {
-	cursor, err := s.coll.Find(ctx, bson.M{"ownerId": ownerID})
+	cursor, err := s.coll.Find(ctx, s.ownedByTribe(ctx, ownerID))
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +77,8 @@ func (s *Service) List(ctx context.Context, ownerID primitive.ObjectID) ([]*Chil
 }
 
 func (s *Service) Update(ctx context.Context, childID, ownerID primitive.ObjectID, name string, birthDate int64) (*Child, error) {
-	filter := bson.M{"_id": childID, "ownerId": ownerID}
+	filter := s.ownedByTribe(ctx, ownerID)
+	filter["_id"] = childID
 	update := bson.M{"$set": bson.M{
 		"name":      name,
 		"birthDate": birthDate,
@@ -79,6 +100,8 @@ func (s *Service) Update(ctx context.Context, childID, ownerID primitive.ObjectI
 }
 
 func (s *Service) Delete(ctx context.Context, childID, ownerID primitive.ObjectID) error {
-	_, err := s.coll.DeleteOne(ctx, bson.M{"_id": childID, "ownerId": ownerID})
+	filter := s.ownedByTribe(ctx, ownerID)
+	filter["_id"] = childID
+	_, err := s.coll.DeleteOne(ctx, filter)
 	return err
 }

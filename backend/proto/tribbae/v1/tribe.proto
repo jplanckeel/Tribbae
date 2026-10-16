@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package tribbae.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
+
+// Une tribu regroupe les comptes d'une même famille : ses membres voient et
+// modifient ensemble idées, dossiers, enfants et liste de courses.
+//
+// Un membre ajouté par email voit tout de suite le contenu de la tribu, mais
+// son propre contenu n'y entre qu'après qu'il l'a confirmé (sharing = true) :
+// personne ne peut récupérer les données d'un compte en tapant son email.
+// Les idées restent signées du nom de leur auteur, pas du nom de la tribu.
+
+enum TribeRole {
+  TRIBE_ROLE_UNSPECIFIED = 0;
+  TRIBE_ROLE_OWNER = 1;  // a créé la tribu
+  TRIBE_ROLE_MEMBER = 2;
+}
+
+message TribeMember {
+  string user_id = 1;
+  string display_name = 2;
+  string email = 3;
+  TribeRole role = 4;
+  // Le contenu de ce membre est partagé avec la tribu (confirmé par lui)
+  bool sharing = 5;
+  int64 added_at = 6;
+}
+
+message Tribe {
+  string id = 1;  // vide tant que la tribu ne compte que son créateur
+  // Nom affiché (« La tribu … »), par défaut le nom du compte
+  string name = 2;
+  repeated TribeMember members = 3;
+}
+
+message GetTribeRequest {}
+
+message GetTribeResponse {
+  Tribe tribe = 1;
+}
+
+message UpdateTribeRequest {
+  string name = 1;
+}
+
+message UpdateTribeResponse {
+  Tribe tribe = 1;
+}
+
+message AddTribeMemberRequest {
+  string email = 1;
+}
+
+message AddTribeMemberResponse {
+  Tribe tribe = 1;
+}
+
+message RemoveTribeMemberRequest {
+  string user_id = 1;  // son propre ID : quitter la tribu
+}
+
+message RemoveTribeMemberResponse {
+  Tribe tribe = 1;
+}
+
+message SetTribeSharingRequest {
+  bool sharing = 1;
+}
+
+message SetTribeSharingResponse {
+  Tribe tribe = 1;
+}
+
+service TribeService {
+  rpc GetTribe(GetTribeRequest) returns (GetTribeResponse) {
+    option (google.api.http) = {
+      get: "/v1/tribe"
+    };
+  }
+
+  rpc UpdateTribe(UpdateTribeRequest) returns (UpdateTribeResponse) {
+    option (google.api.http) = {
+      put: "/v1/tribe"
+      body: "*"
+    };
+  }
+
+  rpc AddTribeMember(AddTribeMemberRequest) returns (AddTribeMemberResponse) {
+    option (google.api.http) = {
+      post: "/v1/tribe/members"
+      body: "*"
+    };
+  }
+
+  rpc RemoveTribeMember(RemoveTribeMemberRequest) returns (RemoveTribeMemberResponse) {
+    option (google.api.http) = {
+      delete: "/v1/tribe/members/{user_id}"
+    };
+  }
+
+  rpc SetTribeSharing(SetTribeSharingRequest) returns (SetTribeSharingResponse) {
+    option (google.api.http) = {
+      put: "/v1/tribe/sharing"
+      body: "*"
+    };
+  }
+}

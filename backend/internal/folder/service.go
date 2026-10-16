@@ -45,6 +45,7 @@ type Folder struct {
 }
 
 type Service struct {
+	peers   func(ctx context.Context, userID string) []string
 	col     *mongo.Collection
 	linkCol *mongo.Collection
 	userCol *mongo.Collection
@@ -53,6 +54,21 @@ type Service struct {
 
 func NewService(col *mongo.Collection, linkCol *mongo.Collection, userCol *mongo.Collection, baseURL string) *Service {
 	return &Service{col: col, linkCol: linkCol, userCol: userCol, baseURL: baseURL}
+}
+
+// SetTribePeers branche la tribu : peers(userID) retourne les comptes dont
+// userID voit et gère les dossiers (lui compris). Sans tribu : lui seul.
+func (s *Service) SetTribePeers(peers func(ctx context.Context, userID string) []string) {
+	s.peers = peers
+}
+
+// ownedByTribe : filtre « dossier appartenant à userID ou à sa tribu ».
+func (s *Service) ownedByTribe(ctx context.Context, userID string) bson.M {
+	ids := []string{userID}
+	if s.peers != nil {
+		ids = s.peers(ctx, userID)
+	}
+	return bson.M{"owner_id": bson.M{"$in": ids}}
 }
 
 // ErrInvalidInput signale une saisie invalide (→ codes.InvalidArgument).
@@ -128,7 +144,7 @@ func (s *Service) Get(ctx context.Context, folderID, userID string) (*Folder, er
 	}
 	or := bson.A{bson.M{"visibility": "public"}}
 	if userID != "" {
-		or = append(or, bson.M{"owner_id": userID}, bson.M{"collaborators.user_id": userID})
+		or = append(or, s.ownedByTribe(ctx, userID), bson.M{"collaborators.user_id": userID})
 	}
 	var f Folder
 	if err := s.col.FindOne(ctx, bson.M{"_id": id, "$or": or}).Decode(&f); err != nil {
@@ -141,10 +157,10 @@ func (s *Service) Get(ctx context.Context, folderID, userID string) (*Folder, er
 }
 
 func (s *Service) List(ctx context.Context, ownerID string) ([]*Folder, error) {
-	// Retourne les dossiers dont l'utilisateur est owner OU collaborateur
+	// Retourne les dossiers de l'utilisateur et de sa tribu, ou dont il est collaborateur
 	filter := bson.M{
 		"$or": bson.A{
-			bson.M{"owner_id": ownerID},
+			s.ownedByTribe(ctx, ownerID),
 			bson.M{"collaborators.user_id": ownerID},
 		},
 	}
@@ -166,11 +182,11 @@ func (s *Service) Update(ctx context.Context, folderID, userID, name, icon, colo
 	if err != nil {
 		return nil, ErrNotFound
 	}
-	// Owner OU éditeur peut modifier
+	// Propriétaire, sa tribu, OU éditeur peut modifier
 	filter := bson.M{
 		"_id": id,
 		"$or": bson.A{
-			bson.M{"owner_id": userID},
+			s.ownedByTribe(ctx, userID),
 			bson.M{"collaborators": bson.M{"$elemMatch": bson.M{"user_id": userID, "role": "editor"}}},
 		},
 	}
@@ -197,8 +213,10 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 	if err != nil {
 		return errors.New("invalid folder id")
 	}
-	// Seul le owner peut supprimer
-	res, err := s.col.DeleteOne(ctx, bson.M{"_id": id, "owner_id": ownerID})
+	// Seuls le propriétaire et sa tribu peuvent supprimer
+	filter := s.ownedByTribe(ctx, ownerID)
+	filter["_id"] = id
+	res, err := s.col.DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}
@@ -508,7 +526,7 @@ func (s *Service) canView(ctx context.Context, id primitive.ObjectID, userID str
 		"_id": id,
 		"$or": bson.A{
 			bson.M{"visibility": "public"},
-			bson.M{"owner_id": userID},
+			s.ownedByTribe(ctx, userID),
 			bson.M{"collaborators.user_id": userID},
 		},
 	})

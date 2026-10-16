@@ -458,6 +458,16 @@ fun CategoryBadge(cat: CategoryUi, modifier: Modifier = Modifier, onWhite: Boole
     )
 }
 
+/** Compte connecté, fourni à la racine de l'app : sert à signer les idées des autres. */
+val LocalCurrentUserId = androidx.compose.runtime.staticCompositionLocalOf<String?> { null }
+
+/** « par Camille » pour l'idée d'un autre compte (tribu, communauté), sinon "". */
+@Composable
+fun authorLine(link: Link): String {
+    val me = LocalCurrentUserId.current
+    return if (link.ownerDisplayName.isNotBlank() && link.ownerId.isNotBlank() && link.ownerId != me) "par ${link.ownerDisplayName}" else ""
+}
+
 fun metaLine(link: Link): String = listOf(link.ageRange, priceLabel(link.price)).filter { it.isNotBlank() }.joinToString(" · ")
 
 /** Prix affiché : « 0 », « 0 € »… deviennent « Gratuit » (comme sur le web). */
@@ -475,8 +485,8 @@ fun RailCard(link: Link, onClick: () -> Unit) {
         }
         Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(link.title, style = display(16.sp, FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            val meta = metaLine(link)
-            if (meta.isNotEmpty()) Text(meta, fontSize = 13.sp, color = TextSec)
+            val meta = listOf(metaLine(link), authorLine(link)).filter { it.isNotEmpty() }.joinToString(" · ")
+            if (meta.isNotEmpty()) Text(meta, fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -509,6 +519,8 @@ fun MosaicCard(link: Link, index: Int, onClick: () -> Unit, liked: Boolean, onLi
         Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(link.title, style = display(15.sp, FontWeight.Bold), maxLines = 3, overflow = TextOverflow.Ellipsis)
             Text(metaLine(link).ifEmpty { cat.label }, fontSize = 12.sp, color = TextSec)
+            val author = authorLine(link)
+            if (author.isNotEmpty()) Text(author, fontSize = 12.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (link.likeCount > 0) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Icon(Icons.Outlined.FavoriteBorder, null, tint = TextSec, modifier = Modifier.size(13.dp))
@@ -531,7 +543,7 @@ fun RowCard(link: Link, onClick: () -> Unit, trailing: (@Composable () -> Unit)?
         IdeaVisual(link, 56.dp, Modifier.width(56.dp).clip(RoundedCornerShape(14.dp)), iconSize = 24.dp)
         Column(Modifier.weight(1f)) {
             Text(link.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(listOf(cat.label, metaLine(link)).filter { it.isNotEmpty() }.joinToString(" · "), fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(listOf(cat.label, metaLine(link), authorLine(link)).filter { it.isNotEmpty() }.joinToString(" · "), fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         trailing?.invoke() ?: Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
     }

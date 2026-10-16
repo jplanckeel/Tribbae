@@ -74,6 +74,27 @@ export interface LinkPreview {
   eventDate?: number;
 }
 
+export type TribeRole = "TRIBE_ROLE_OWNER" | "TRIBE_ROLE_MEMBER";
+
+export interface TribeMember {
+  userId: string;
+  displayName?: string;
+  email?: string;
+  role: TribeRole;
+  /** Le contenu de ce membre est partagé avec la tribu (confirmé par lui). */
+  sharing?: boolean;
+  addedAt?: number | string;
+}
+
+/** Tribu : les comptes d'une famille, qui partagent idées, dossiers et enfants. */
+export interface Tribe {
+  /** Vide tant que la tribu ne compte que son créateur. */
+  id?: string;
+  /** Nom affiché (« La tribu … »), par défaut le nom du compte. */
+  name: string;
+  members?: TribeMember[];
+}
+
 export interface Collaborator {
   userId: string;
   email?: string;

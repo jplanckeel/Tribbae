@@ -42,6 +42,7 @@ type LinkLike struct {
 }
 
 type Service struct {
+	peers       func(ctx context.Context, userID string) []string
 	col         *mongo.Collection
 	folderCol   *mongo.Collection
 	linkLikeCol *mongo.Collection
@@ -57,11 +58,43 @@ func NewService(col *mongo.Collection, folderCol *mongo.Collection) *Service {
 	}
 }
 
+// SetTribePeers branche la tribu : peers(userID) retourne les comptes dont
+// userID voit et modifie le contenu (lui compris). Sans tribu : lui seul.
+func (s *Service) SetTribePeers(peers func(ctx context.Context, userID string) []string) {
+	s.peers = peers
+}
+
+func (s *Service) peerIDs(ctx context.Context, userID string) []string {
+	if userID == "" {
+		return nil
+	}
+	if s.peers == nil {
+		return []string{userID}
+	}
+	return s.peers(ctx, userID)
+}
+
+// isPeer : le contenu de ownerID appartient à la tribu de userID (ou à lui).
+func (s *Service) isPeer(ctx context.Context, userID, ownerID string) bool {
+	if userID == "" || ownerID == "" {
+		return false
+	}
+	if ownerID == userID {
+		return true
+	}
+	for _, p := range s.peerIDs(ctx, userID) {
+		if p == ownerID {
+			return true
+		}
+	}
+	return false
+}
+
 // accessibleFolderIDs retourne les IDs de dossiers auxquels l'utilisateur a accès
 func (s *Service) accessibleFolderIDs(ctx context.Context, userID string) ([]string, error) {
 	filter := bson.M{
 		"$or": bson.A{
-			bson.M{"owner_id": userID},
+			bson.M{"owner_id": bson.M{"$in": s.peerIDs(ctx, userID)}},
 			bson.M{"collaborators.user_id": userID},
 		},
 	}
@@ -88,7 +121,7 @@ func (s *Service) accessibleFolderIDs(ctx context.Context, userID string) ([]str
 // d'un dossier public — mais seulement pour les idées du propriétaire du
 // dossier (cf. folderAccess).
 func (s *Service) canAccessLink(ctx context.Context, l *Link, userID string) bool {
-	if userID != "" && l.OwnerID == userID {
+	if s.isPeer(ctx, userID, l.OwnerID) {
 		return true
 	}
 	if l.Visibility == "public" {
@@ -135,7 +168,7 @@ func (s *Service) folderAccess(ctx context.Context, folderID, userID string) (me
 		return false, ""
 	}
 	if userID != "" {
-		if f.OwnerID == userID {
+		if s.isPeer(ctx, userID, f.OwnerID) {
 			return true, ""
 		}
 		for _, c := range f.Collaborators {
@@ -162,11 +195,21 @@ func (s *Service) canEditFolder(ctx context.Context, folderID, userID string) bo
 	count, _ := s.folderCol.CountDocuments(ctx, bson.M{
 		"_id": fid,
 		"$or": bson.A{
-			bson.M{"owner_id": userID},
+			bson.M{"owner_id": bson.M{"$in": s.peerIDs(ctx, userID)}},
 			bson.M{"collaborators": bson.M{"$elemMatch": bson.M{"user_id": userID, "role": "editor"}}},
 		},
 	})
 	return count > 0
+}
+
+// folderIsPublic : le dossier est publié dans la communauté.
+func (s *Service) folderIsPublic(ctx context.Context, folderID string) bool {
+	fid, err := primitive.ObjectIDFromHex(folderID)
+	if err != nil {
+		return false
+	}
+	n, _ := s.folderCol.CountDocuments(ctx, bson.M{"_id": fid, "visibility": "public"})
+	return n > 0
 }
 
 func (s *Service) Create(ctx context.Context, ownerID string, l *Link) (*Link, error) {
@@ -238,7 +281,8 @@ func (s *Service) List(ctx context.Context, ownerID, folderID string) ([]*Link, 
 	// Construire le filtre : toujours inclure les liens propres
 	// N'ajouter le filtre folder_id que si l'utilisateur a des dossiers accessibles
 	conditions := bson.A{
-		bson.M{"owner_id": ownerID},
+		// Ses idées et celles de sa tribu
+		bson.M{"owner_id": bson.M{"$in": s.peerIDs(ctx, ownerID)}},
 	}
 	if len(folderIDs) > 0 {
 		conditions = append(conditions, bson.M{"folder_id": bson.M{"$in": folderIDs}})
@@ -306,15 +350,16 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 		return nil, err
 	}
 
-	// Vérifier : owner OU éditeur du dossier
-	if existing.OwnerID != userID && !s.canEditFolder(ctx, existing.FolderID, userID) {
+	// Vérifier : auteur, membre de sa tribu, OU éditeur du dossier
+	isPeer := s.isPeer(ctx, userID, existing.OwnerID)
+	if !isPeer && !s.canEditFolder(ctx, existing.FolderID, userID) {
 		return nil, ErrForbidden
 	}
-	// Seul l'auteur peut changer son idée de dossier : la déplacer vers un
-	// dossier public reviendrait à la publier à sa place. Il lui faut aussi le
-	// droit d'écrire dans le dossier de destination.
+	// Changer une idée de dossier est réservé à son auteur et à sa tribu, et
+	// seul l'auteur peut la mettre dans un dossier public (ce serait la publier
+	// à sa place). Il faut aussi le droit d'écrire dans le dossier de destination.
 	if l.FolderID != existing.FolderID {
-		if existing.OwnerID != userID {
+		if !isPeer || (existing.OwnerID != userID && l.FolderID != "" && s.folderIsPublic(ctx, l.FolderID)) {
 			return nil, ErrForbidden
 		}
 		if l.FolderID != "" && !s.canEditFolder(ctx, l.FolderID, userID) {
@@ -341,6 +386,11 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 	if _, err := s.col.UpdateOne(ctx, bson.M{"_id": id}, update); err != nil {
 		return nil, err
 	}
+	// Idée sans image dont l'adresse change (ou dont l'image est retirée) :
+	// on cherche aussitôt l'image de la page, en arrière-plan
+	if l.ImageURL == "" && l.URL != "" && (l.URL != existing.URL || existing.ImageURL != "") {
+		s.backfillSoon(id, l.URL)
+	}
 	return s.Get(ctx, linkID, userID)
 }
 
@@ -358,7 +408,7 @@ func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 		return err
 	}
 
-	if existing.OwnerID != userID && !s.canEditFolder(ctx, existing.FolderID, userID) {
+	if !s.isPeer(ctx, userID, existing.OwnerID) && !s.canEditFolder(ctx, existing.FolderID, userID) {
 		return ErrForbidden
 	}
 
@@ -436,7 +486,8 @@ func (s *Service) ToggleFavorite(ctx context.Context, linkID, ownerID string) (b
 
 	// Récupérer le lien actuel
 	var link Link
-	err = s.col.FindOne(ctx, bson.M{"_id": id, "owner_id": ownerID}).Decode(&link)
+	// Les favoris sont ceux de la tribu
+	err = s.col.FindOne(ctx, bson.M{"_id": id, "owner_id": bson.M{"$in": s.peerIDs(ctx, ownerID)}}).Decode(&link)
 	if err != nil {
 		return false, err
 	}
@@ -445,7 +496,7 @@ func (s *Service) ToggleFavorite(ctx context.Context, linkID, ownerID string) (b
 	newFavorite := !link.Favorite
 	_, err = s.col.UpdateOne(
 		ctx,
-		bson.M{"_id": id, "owner_id": ownerID},
+		bson.M{"_id": id},
 		bson.M{"$set": bson.M{"favorite": newFavorite, "updated_at": time.Now()}},
 	)
 	if err != nil {

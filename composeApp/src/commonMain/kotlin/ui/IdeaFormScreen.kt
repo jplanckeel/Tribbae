@@ -313,17 +313,32 @@ fun IdeaFormScreen(
                 }
             }
 
-            Row(
-                Modifier.fillMaxWidth().card(RoundedCornerShape(18.dp), 4.dp).padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(Icons.Outlined.Public, null, tint = Color(0xFF2F7393), modifier = Modifier.size(20.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("Partager avec la communauté", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
-                    Text("Visible dans l'Explorer par toutes les tribus", fontSize = 12.sp, color = TextSec)
+            // Idée d'un autre membre de la tribu : modifiable, mais seul son auteur la publie
+            val authorIsOther = existing != null && existing.ownerId.isNotBlank() && existing.ownerId != viewModel.currentUserId()
+            if (authorIsOther) {
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Outlined.Lock, null, tint = TextSec, modifier = Modifier.size(15.dp).padding(top = 1.dp))
+                    Text(
+                        "Idée de ${existing!!.ownerDisplayName.ifBlank { "un membre de la tribu" }} : seul son auteur peut la partager avec la communauté.",
+                        fontSize = 12.sp, color = TextSec
+                    )
                 }
-                CampSwitch(isPublic, { isPublic = it }, "Partager avec la communauté")
+            } else {
+                Row(
+                    Modifier.fillMaxWidth().card(RoundedCornerShape(18.dp), 4.dp).padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(Icons.Outlined.Public, null, tint = Color(0xFF2F7393), modifier = Modifier.size(20.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Partager avec la communauté", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+                        Text("Visible dans l'Explorer par toutes les tribus", fontSize = 12.sp, color = TextSec)
+                    }
+                    CampSwitch(isPublic, { isPublic = it }, "Partager avec la communauté")
+                }
             }
             // Dans son propre dossier public, une idée est visible de tous même sans être partagée
             // à la communauté (les idées d'un collaborateur, elles, restent réservées aux membres).

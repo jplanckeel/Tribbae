@@ -112,3 +112,45 @@ func TestOnlyAuthorCanMoveIdeaToAnotherFolder(t *testing.T) {
 		t.Errorf("visibility = %q : seul l'auteur peut publier", updated.Visibility)
 	}
 }
+
+func TestTribeSharesIdeasButNotPublication(t *testing.T) {
+	_, db, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc := NewService(db.Collection("links"), db.Collection("folders"))
+	// Alice et Bob forment une tribu ; Eve n'en fait pas partie
+	svc.SetTribePeers(func(_ context.Context, u string) []string {
+		if u == "alice" || u == "bob" {
+			return []string{u, map[string]string{"alice": "bob", "bob": "alice"}[u]}
+		}
+		return []string{u}
+	})
+	alicesPublic := insertFolder(t, ctx, svc, "alice", "public")
+	l, _ := svc.Create(ctx, "bob", &Link{Title: "Idée de Bob", Category: "LINK_CATEGORY_IDEE"})
+
+	mine, _ := svc.List(ctx, "alice", "")
+	if len(mine) != 1 || !svc.CanView(ctx, l.ID.Hex(), "alice") {
+		t.Fatalf("Alice doit voir l'idée de Bob (tribu) : %d idées", len(mine))
+	}
+	if svc.CanView(ctx, l.ID.Hex(), "eve") {
+		t.Error("Eve, hors tribu, ne doit pas voir l'idée privée de Bob")
+	}
+	// Alice modifie l'idée de Bob, sans pouvoir la publier
+	updated, err := svc.Update(ctx, l.ID.Hex(), "alice", &Link{Title: "Renommée par Alice", Category: "LINK_CATEGORY_IDEE", Visibility: "public"})
+	if err != nil || updated.Title != "Renommée par Alice" || updated.Visibility != "private" {
+		t.Fatalf("update par la tribu : %+v, %v", updated, err)
+	}
+	// …ni la ranger dans son dossier public (ce serait la publier à la place de Bob)
+	if _, err := svc.Update(ctx, l.ID.Hex(), "alice", &Link{Title: "x", Category: "LINK_CATEGORY_IDEE", FolderID: alicesPublic}); !errors.Is(err, ErrForbidden) {
+		t.Errorf("déplacement vers un dossier public : err = %v, want ErrForbidden", err)
+	}
+	if _, err := svc.ToggleFavorite(ctx, l.ID.Hex(), "alice"); err != nil {
+		t.Errorf("favori par la tribu : %v", err)
+	}
+	if err := svc.Delete(ctx, l.ID.Hex(), "eve"); !errors.Is(err, ErrForbidden) {
+		t.Errorf("suppression hors tribu : err = %v", err)
+	}
+	if err := svc.Delete(ctx, l.ID.Hex(), "alice"); err != nil {
+		t.Errorf("suppression par la tribu : %v", err)
+	}
+}

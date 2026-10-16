@@ -9,6 +9,7 @@ serialization = "1.9.0"
 coil = "2.7.0"
 coroutines = "1.10.2"
 core-splashscreen = "1.0.1"
+jsoup = "1.18.3"
 # Plus publié après 1.7.x : version propre
 compose-icons = "1.7.8"
 
@@ -26,6 +27,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "core-splashscreen" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

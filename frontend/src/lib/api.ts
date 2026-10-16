@@ -1,6 +1,6 @@
 import { clearSession, getSession } from "./session";
 import type {
-  AdminUser, AiIdea, Child, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, UserProfile, CollaboratorRole,
+  AdminUser, AiIdea, Child, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, UserProfile, CollaboratorRole,
 } from "./types";
 
 const BASE = "/v1";
@@ -27,6 +27,11 @@ function frenchMessage(status: number, message: string): string {
   if (/valid email/i.test(message)) return "Adresse email invalide.";
   if (/user not found with this email/i.test(message)) return "Aucun compte Tribbae avec cet email.";
   if (/already a collaborator/i.test(message)) return "Cette personne fait déjà partie du dossier.";
+  if (/already a member of this tribe/i.test(message)) return "Cette personne fait déjà partie de votre tribu.";
+  if (/already belongs to another tribe/i.test(message)) return "Ce compte fait déjà partie d'une autre tribu : la personne doit d'abord la quitter.";
+  if (/tribe is full/i.test(message)) return "La tribu est complète.";
+  if (/only the tribe owner/i.test(message)) return "Seul le créateur de la tribu peut retirer un membre.";
+  if (/name must be 1 to 60/i.test(message)) return "Le nom de la tribu doit faire entre 1 et 60 caractères.";
   if (/url must be/i.test(message)) return "Le lien doit être une adresse web (https://…).";
   if (status >= 500) return "Le serveur a rencontré un problème, réessayez.";
   return message || "Une erreur est survenue.";
@@ -137,6 +142,18 @@ export const community = {
     request<{ links?: Link[] }>(`/community/links${qs({ category, limit })}`).then((r) => r.links ?? []),
   newLinks: (limit = 12) =>
     request<{ links?: Link[] }>(`/community/new${qs({ limit })}`).then((r) => r.links ?? []),
+};
+
+export const tribe = {
+  get: () => request<{ tribe: Tribe }>("/tribe").then((r) => r.tribe),
+  rename: (name: string) => request<{ tribe: Tribe }>("/tribe", { method: "PUT", body: json({ name }) }).then((r) => r.tribe),
+  addMember: (email: string) =>
+    request<{ tribe: Tribe }>("/tribe/members", { method: "POST", body: json({ email }) }).then((r) => r.tribe),
+  /** Avec son propre ID : quitter la tribu. */
+  removeMember: (userId: string) =>
+    request<{ tribe: Tribe }>(`/tribe/members/${encodeURIComponent(userId)}`, { method: "DELETE" }).then((r) => r.tribe),
+  setSharing: (sharing: boolean) =>
+    request<{ tribe: Tribe }>("/tribe/sharing", { method: "PUT", body: json({ sharing }) }).then((r) => r.tribe),
 };
 
 export const children = {

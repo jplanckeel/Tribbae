@@ -58,7 +58,11 @@ fun NewHomeScreen(
     val counts = remember(links) { links.groupingBy { it.category }.eachCount() }
     val popular = remember(community) { community.sortedByDescending { it.likeCount }.take(10) }
     val recent = remember(links) { links.sortedByDescending { it.createdAt.ifEmpty { it.updatedAt } }.take(6) }
-    val name = displayName?.trim().orEmpty()
+    // « La tribu Dupont » : nom choisi pour la tribu (si c'est bien celle du compte connecté), à défaut celui du compte
+    val tribe by viewModel.tribe.collectAsState()
+    val userId by sessionManager?.userId?.collectAsState() ?: remember { mutableStateOf<String?>(null) }
+    val name = tribe?.takeIf { t -> t.members.any { it.userId == userId } }?.name?.trim()?.ifEmpty { null }
+        ?: displayName?.trim().orEmpty()
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,

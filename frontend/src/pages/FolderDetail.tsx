@@ -63,7 +63,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
   const session = useSession();
   const navigate = useNavigate();
   const { openAdd, openAi, editFolder, newLink } = useComposer();
-  const { upsertFolder, removeFolder, links: mine } = useMyData();
+  const { upsertFolder, removeFolder, links: mine, peers } = useMyData();
   const { toast, confirm } = useFeedback();
   const [shareOpen, setShareOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -71,7 +71,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
   const [likes, setLikes] = useState(folder.likeCount ?? 0);
 
   const isOwner = !virtual && !!session && folder.ownerId === session.userId;
-  const canEdit = virtual || canEditFolder(folder, session?.userId);
+  const canEdit = virtual || canEditFolder(folder, session?.userId, peers);
   const color = folderColor(folder.color);
   // Les idées créées depuis la feuille d'ajout arrivent dans le cache global : on les fusionne
   const shown = useMemo(() => {

@@ -16,6 +16,11 @@ export interface LinkFormProps {
   /** Valeurs initiales (édition ou création pré-remplie). */
   initial: LinkInput;
   editing: boolean;
+  /**
+   * Nom de l'auteur quand l'idée appartient à un autre membre de la tribu :
+   * on peut la modifier, mais seul son auteur décide de la publier.
+   */
+  authorName?: string;
   onSubmit: (data: LinkInput) => Promise<void>;
 }
 
@@ -47,8 +52,8 @@ function fill<T>(current: T | undefined, previousAuto: T | undefined, next: T | 
   return !current || current === previousAuto ? next : current;
 }
 
-export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: LinkFormProps) {
-  const { folders, links } = useMyData();
+export default function LinkFormSheet({ onClose, initial, editing, authorName, onSubmit }: LinkFormProps) {
+  const { folders, links, peers } = useMyData();
   const session = useSession();
   const [form, setForm] = useState<LinkInput>(initial);
   const [tagDraft, setTagDraft] = useState("");
@@ -154,7 +159,7 @@ export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: L
     }
   };
 
-  const editableFolders = folders.filter((f) => canEditFolder(f, session?.userId) || f.id === initial.folderId);
+  const editableFolders = folders.filter((f) => canEditFolder(f, session?.userId, peers) || f.id === initial.folderId);
   // Dans son propre dossier public, une idée est visible de tous même sans être partagée à la communauté
   const chosenFolder = folders.find((f) => f.id === form.folderId);
   const inMyPublicFolder = chosenFolder?.visibility === "VISIBILITY_PUBLIC" && chosenFolder.ownerId === session?.userId;
@@ -366,18 +371,25 @@ export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: L
           </div>
         )}
 
-        <label className="flex items-center gap-3 rounded-m bg-white px-4 py-3.5 shadow-card">
-          <Icon name="globe" size={20} className="text-activite-ic" />
-          <span className="flex flex-1 flex-col">
-            <span className="text-sm font-bold">Partager avec la communauté</span>
-            <span className="text-xs text-sec">Visible dans l'Explorer par toutes les tribus</span>
-          </span>
-          <Toggle
-            label="Partager avec la communauté"
-            checked={form.visibility === "public"}
-            onChange={(v) => set("visibility", v ? "public" : "private")}
-          />
-        </label>
+        {authorName === undefined ? (
+          <label className="flex items-center gap-3 rounded-m bg-white px-4 py-3.5 shadow-card">
+            <Icon name="globe" size={20} className="text-activite-ic" />
+            <span className="flex flex-1 flex-col">
+              <span className="text-sm font-bold">Partager avec la communauté</span>
+              <span className="text-xs text-sec">Visible dans l'Explorer par toutes les tribus</span>
+            </span>
+            <Toggle
+              label="Partager avec la communauté"
+              checked={form.visibility === "public"}
+              onChange={(v) => set("visibility", v ? "public" : "private")}
+            />
+          </label>
+        ) : (
+          <p role="note" className="flex items-start gap-2 rounded-m bg-white px-4 py-3 text-xs text-sec">
+            <Icon name="lock" size={15} className="mt-px shrink-0" />
+            Idée de {authorName || "un membre de la tribu"} : seul son auteur peut la partager avec la communauté.
+          </p>
+        )}
         {inMyPublicFolder && form.visibility !== "public" && (
           <p role="note" className="-mt-2 flex items-start gap-2 px-1 text-xs text-sec">
             <Icon name="eye" size={15} className="mt-px shrink-0" />

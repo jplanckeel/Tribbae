@@ -8,6 +8,12 @@ import type { Folder, Link } from "../lib/types";
 import Icon from "./Icon";
 import { Avatar } from "./ui";
 
+/** « par Camille » pour l'idée d'un autre compte (tribu, communauté), sinon "". */
+function useAuthor(link: Link): string {
+  const session = useSession();
+  return link.ownerDisplayName && link.ownerId !== session?.userId ? `par ${link.ownerDisplayName}` : "";
+}
+
 /** Visuel d'une idée : photo si disponible, sinon fond pastel + icône de catégorie. */
 export function IdeaVisual({ link, height, iconSize = 46, className = "" }: {
   link: Link; height: number; iconSize?: number; className?: string;
@@ -86,7 +92,8 @@ export function LikeButton({ link, className = "", onRequireAuth }: {
 /** Carte « rail » de l'accueil (210 px). */
 export function RailCard({ link }: { link: Link }) {
   const cat = categoryMeta(link.category);
-  const meta = metaLine(link);
+  const author = useAuthor(link);
+  const meta = [metaLine(link), author].filter(Boolean).join(" · ");
   return (
     <RouterLink
       to={`/links/${link.id}`}
@@ -111,6 +118,7 @@ const MOSAIC = [150, 110, 100, 120, 140, 96];
 export function GridCard({ link, index = 0, onRequireAuth }: { link: Link; index?: number; onRequireAuth?: () => void }) {
   const cat = categoryMeta(link.category);
   const meta = metaLine(link) || cat.label;
+  const author = useAuthor(link);
   return (
     <RouterLink
       to={`/links/${link.id}`}
@@ -123,6 +131,7 @@ export function GridCard({ link, index = 0, onRequireAuth }: { link: Link; index
       <div className="flex flex-col gap-1 px-3 pt-2.5 pb-3">
         <span className="line-clamp-3 font-display text-[15px] leading-tight font-bold">{link.title}</span>
         <span className="text-xs text-sec">{meta}</span>
+        {author && <span className="truncate text-xs text-sec">{author}</span>}
         {(link.likeCount ?? 0) > 0 && (
           <span className="flex items-center gap-1 text-xs text-sec">
             <Icon name="heart" size={13} />
@@ -138,12 +147,13 @@ export function GridCard({ link, index = 0, onRequireAuth }: { link: Link; index
 export function RowCard({ link, trailing }: { link: Link; trailing?: React.ReactNode }) {
   const cat = categoryMeta(link.category);
   const meta = metaLine(link);
+  const author = useAuthor(link);
   return (
     <RouterLink to={`/links/${link.id}`} className="flex items-center gap-3 rounded-[18px] bg-white p-2.5 pr-3.5 shadow-card">
       <IdeaVisual link={link} height={56} iconSize={24} className="w-14 shrink-0 rounded-[14px]" />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[15px] font-bold">{link.title}</span>
-        <span className="truncate text-[13px] text-sec">{[cat.label, meta].filter(Boolean).join(" · ")}</span>
+        <span className="truncate text-[13px] text-sec">{[cat.label, meta, author].filter(Boolean).join(" · ")}</span>
       </span>
       {trailing ?? <Icon name="chevronRight" size={18} className="text-muted" />}
     </RouterLink>
@@ -230,7 +240,8 @@ export function IdeaCard({ link, onRequireAuth }: { link: Link; onRequireAuth?: 
   const at = eventDateMs(link.eventDate);
   const badge = at ? `${cat.label} · ${dayBadge(at).weekday.toLowerCase()} ${dayBadge(at).day}` : cat.label;
   const likes = link.likeCount ?? 0;
-  const meta = [metaLine(link), likes > 0 ? `${likes} j'aime` : ""].filter(Boolean).join(" · ");
+  const author = useAuthor(link);
+  const meta = [metaLine(link), author, likes > 0 ? `${likes} j'aime` : ""].filter(Boolean).join(" · ");
   return (
     <RouterLink
       to={`/links/${link.id}`}

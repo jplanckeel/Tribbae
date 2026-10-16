@@ -45,6 +45,10 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private val _tribe = MutableStateFlow<data.ApiTribe?>(null)
+    /** Tribu de l'utilisateur (nom affiché, membres) ; null hors connexion. */
+    val tribe: StateFlow<data.ApiTribe?> = _tribe.asStateFlow()
+
     private val _communityFolders = MutableStateFlow<List<Folder>>(emptyList())
     val communityFolders: StateFlow<List<Folder>> = _communityFolders.asStateFlow()
 
@@ -153,6 +157,50 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
      */
     private suspend fun resolveImage(url: String): String? =
         previewLink(url)?.image?.takeIf { it.isNotBlank() } ?: ogImageFetcher?.invoke(url)
+
+    /**
+     * Le contenu de ownerId appartient à l'utilisateur ou à un membre de sa tribu
+     * qui a confirmé le partage : il le gère comme le sien.
+     */
+    fun isTribePeer(ownerId: String): Boolean {
+        val me = currentUserId()
+        if (ownerId.isBlank() || ownerId == me) return true
+        return _tribe.value?.members?.any { it.userId == ownerId && it.sharing } == true
+    }
+
+    /**
+     * Action sur la tribu : met à jour la tribu puis resynchronise (idées,
+     * dossiers et enfants partagés changent avec elle). onDone(null) en cas de
+     * succès, sinon un message d'erreur en français.
+     */
+    private fun tribeAction(onDone: (String?) -> Unit, call: suspend (data.AuthenticatedApiClient) -> data.ApiTribe) {
+        val client = authenticatedClient ?: return onDone("Connectez-vous pour gérer votre tribu.")
+        viewModelScope.launch {
+            runCatching { call(client) }
+                .onSuccess { t ->
+                    _tribe.value = t
+                    sessionManager?.let { syncWithBackend(it) }
+                    onDone(null)
+                }
+                .onFailure { onDone(tribeErrorMessage(it.message.orEmpty())) }
+        }
+    }
+
+    fun renameTribe(name: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.renameTribe(name.trim()) }
+    fun addTribeMember(email: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.addTribeMember(email.trim()) }
+    fun removeTribeMember(userId: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.removeTribeMember(userId) }
+    fun setTribeSharing(sharing: Boolean, onDone: (String?) -> Unit) = tribeAction(onDone) { it.setTribeSharing(sharing) }
+
+    private fun tribeErrorMessage(raw: String): String = when {
+        "user not found with this email" in raw -> "Aucun compte Tribbae avec cet email."
+        "already a member of this tribe" in raw -> "Cette personne fait déjà partie de votre tribu."
+        "already belongs to another tribe" in raw -> "Ce compte fait déjà partie d'une autre tribu : la personne doit d'abord la quitter."
+        "tribe is full" in raw -> "La tribu est complète."
+        "only the tribe owner" in raw -> "Seul le créateur de la tribu peut retirer un membre."
+        "name must be 1 to 60" in raw -> "Le nom de la tribu doit faire entre 1 et 60 caractères."
+        "email is required" in raw -> "Saisissez l'email de son compte Tribbae."
+        else -> "Impossible de joindre le serveur, réessayez."
+    }
 
     /** Identifiant de l'utilisateur connecté, ou null. */
     fun currentUserId(): String? = sessionManager?.getUserId()?.takeIf { it.isNotBlank() }
@@ -462,19 +510,57 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
 
-    /** Récupère les images OG manquantes pour les liens existants (sans image manuelle) */
+    private var imageBackfillJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Rattrape l'image des idées qui n'en ont pas : au démarrage et après chaque
+     * synchronisation. Une même idée n'est retentée qu'une fois par jour (les
+     * sites qui bloquent ne doivent pas être sollicités à chaque ouverture) ; le
+     * serveur fait aussi ce rattrapage de son côté.
+     */
     fun fetchMissingImages() {
-        viewModelScope.launch {
+        if (imageBackfillJob?.isActive == true) return
+        imageBackfillJob = viewModelScope.launch {
+            val now = System.currentTimeMillis()
             repository.links.value
-                .filter { it.imageUrl.isBlank() && it.url.isNotBlank() }
+                .filter { it.imageUrl.isBlank() && it.url.isNotBlank() && now - repository.imageCheckedAt(it.id) > IMAGE_RETRY_MS }
+                .take(IMAGE_BACKFILL_BATCH)
                 .forEach { link ->
-                    val imageUrl = resolveImage(link.url)
-                    if (!imageUrl.isNullOrBlank()) {
-                        repository.updateLink(link.copy(imageUrl = imageUrl))
-                        updateFilteredLinks()
-                    }
+                    findAndSaveImage(link)
+                    kotlinx.coroutines.delay(500)
                 }
         }
+    }
+
+    /**
+     * Fiche d'une idée sans image : on tente tout de suite (au plus une fois par
+     * heure pour une même idée) plutôt que d'attendre le prochain rattrapage.
+     */
+    fun ensureImage(linkId: String) {
+        val link = repository.links.value.find { it.id == linkId } ?: return
+        if (link.imageUrl.isNotBlank() || link.url.isBlank()) return
+        if (System.currentTimeMillis() - repository.imageCheckedAt(link.id) < IMAGE_RETRY_ON_OPEN_MS) return
+        viewModelScope.launch { findAndSaveImage(link) }
+    }
+
+    /**
+     * Cherche l'image de la page et l'enregistre. Pour ses propres idées, elle
+     * part aussi au serveur : sans cela, la synchronisation suivante l'effacerait
+     * (le serveur fait foi) et la recherche recommencerait à chaque ouverture.
+     */
+    private suspend fun findAndSaveImage(link: Link): String? {
+        repository.markImageChecked(link.id)
+        val image = resolveImage(link.url)?.takeIf { it.isNotBlank() } ?: return null
+        val fresh = repository.links.value.find { it.id == link.id } ?: return null
+        if (fresh.imageUrl.isNotBlank()) return fresh.imageUrl // choisie entre-temps
+        val mine = fresh.ownerId.isBlank() || fresh.ownerId == currentUserId()
+        if (mine) {
+            updateLink(fresh.copy(imageUrl = image))
+        } else {
+            repository.updateLink(fresh.copy(imageUrl = image))
+            updateFilteredLinks()
+        }
+        return image
     }
 
     private fun updateFilteredLinks() {
@@ -837,8 +923,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         viewModelScope.launch {
             try {
                 _syncStatus.value = "Synchronisation..."
+                runCatching { client.getTribe() }.onSuccess { _tribe.value = it }
                 performSync(client)
                 _syncStatus.value = "Synchronisé"
+                // Les idées arrivées du serveur sans image : on tente de la récupérer
+                fetchMissingImages()
             } catch (e: Exception) {
                 _syncStatus.value = "Erreur: ${e.message}"
             }
@@ -1194,5 +1283,13 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 _syncStatus.value = "Erreur suppression enfant: ${e.message}"
             }
         }
+    }
+
+    private companion object {
+        /** Une même idée sans image n'est retentée qu'une fois par jour… */
+        const val IMAGE_RETRY_MS = 24L * 60 * 60 * 1000
+        /** …ou une fois par heure quand l'utilisateur ouvre sa fiche. */
+        const val IMAGE_RETRY_ON_OPEN_MS = 60L * 60 * 1000
+        const val IMAGE_BACKFILL_BATCH = 30
     }
 }

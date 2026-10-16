@@ -64,6 +64,8 @@ fun LinkDetailScreen(
     commentRepository: CommentRepository? = null,
     viewModel: viewmodel.LinkViewModel? = null
 ) {
+    // Idée sans image : tentative de récupération dès l'ouverture de la fiche
+    LaunchedEffect(link.id) { if (!readOnly && link.imageUrl.isBlank()) viewModel?.ensureImage(link.id) }
     val cat = categoryUi(link.category)
     val scope = rememberCoroutineScope()
     val scroll = rememberScrollState()
@@ -146,9 +148,11 @@ fun LinkDetailScreen(
                         cat.label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = cat.ink,
                         modifier = Modifier.clip(CircleShape).background(cat.bg).padding(horizontal = 12.dp, vertical = 5.dp)
                     )
+                    // Toujours le nom du compte qui a ajouté l'idée, même au sein d'une tribu
+                    val mine = link.ownerId.isBlank() || link.ownerId == myId
                     val by = when {
-                        !readOnly -> "par vous"
-                        link.ownerDisplayName.isNotBlank() -> "par ${link.ownerDisplayName}"
+                        link.ownerDisplayName.isNotBlank() -> "par ${link.ownerDisplayName}" + if (mine) " (vous)" else ""
+                        mine -> "par vous"
                         else -> ""
                     }
                     Text(
@@ -329,12 +333,15 @@ fun LinkDetailScreen(
                     MenuRow(if (link.favorite) Icons.Filled.Star else Icons.Outlined.StarBorder, if (link.favorite) "Retirer des favoris" else "Ajouter aux favoris") {
                         showMenu = false; viewModel?.toggleFavorite(link.id)
                     }
-                    MenuRow(
-                        if (link.visibility == "public") Icons.Outlined.Lock else Icons.Outlined.Public,
-                        if (link.visibility == "public") "Ne plus partager avec la communauté" else "Partager avec la communauté"
-                    ) {
-                        showMenu = false
-                        viewModel?.updateLinkVisibility(link.id, if (link.visibility == "public") "private" else "public")
+                    // Seul l'auteur décide de publier son idée (pas un autre membre de la tribu)
+                    if (link.ownerId.isBlank() || link.ownerId == myId) {
+                        MenuRow(
+                            if (link.visibility == "public") Icons.Outlined.Lock else Icons.Outlined.Public,
+                            if (link.visibility == "public") "Ne plus partager avec la communauté" else "Partager avec la communauté"
+                        ) {
+                            showMenu = false
+                            viewModel?.updateLinkVisibility(link.id, if (link.visibility == "public") "private" else "public")
+                        }
                     }
                 } else if (onSaveToMyList != null) {
                     MenuRow(Icons.Outlined.BookmarkBorder, "Enregistrer dans mes idées") { showMenu = false; showSave = true }

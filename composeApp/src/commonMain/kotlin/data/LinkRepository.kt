@@ -32,6 +32,23 @@ class LinkRepository(private val storage: Storage? = null) {
         }
     }
 
+    private val imageChecks: MutableMap<String, Long> by lazy {
+        storage?.loadImageChecks()?.toMutableMap() ?: mutableMapOf()
+    }
+
+    /** Dernière recherche d'image pour cette idée (ms), 0 si jamais tentée. */
+    fun imageCheckedAt(linkId: String): Long = synchronized(imageChecks) { imageChecks[linkId] ?: 0L }
+
+    fun markImageChecked(linkId: String, at: Long = System.currentTimeMillis()) {
+        synchronized(imageChecks) {
+            imageChecks[linkId] = at
+            // On n'en garde que pour les idées existantes
+            val ids = _links.value.mapTo(HashSet()) { it.id }
+            imageChecks.keys.retainAll(ids + linkId)
+            storage?.saveImageChecks(imageChecks.toMap())
+        }
+    }
+
     fun addLink(link: Link) {
         _links.value = _links.value + link
         storage?.saveLinks(_links.value)

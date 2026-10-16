@@ -48,15 +48,16 @@ const (
 // Scores des sources d'image : une image déclarée pour l'aperçu par le site
 // vaut toujours mieux qu'une image trouvée dans le corps de la page.
 const (
-	scoreOG        = 100
-	scoreTwitter   = 90
-	scoreJSONLD    = 85
-	scoreImageSrc  = 80
-	scoreItemprop  = 75
-	scoreThumbnail = 70
-	scorePoster    = 45
-	scoreBodyImg   = 30
-	scoreTouchIcon = 1 // dernier recours : icône du site
+	scoreOG           = 100
+	scoreTwitter      = 90
+	scoreJSONLD       = 85
+	scoreImageSrc     = 80
+	scoreItemprop     = 75
+	scoreThumbnail    = 70
+	scorePoster       = 45
+	scoreBodyImg      = 30
+	scoreDeclaredLogo = 12
+	scoreTouchIcon    = 1 // dernier recours : icône du site
 )
 
 type imageCandidate struct {
@@ -256,16 +257,22 @@ func (e *extractor) addBody(src string, score int, chrome, content bool) {
 	e.push(u.String(), score)
 }
 
-// add ajoute une image déclarée par le site (meta, JSON-LD…).
+// add ajoute une image déclarée par le site (meta, JSON-LD…). Un logo déclaré
+// comme image de partage (fréquent sur les pages d'accueil) passe derrière les
+// visuels de la page, mais reste un dernier recours.
 func (e *extractor) add(raw string, score int) {
 	if u := e.resolve(raw); u != nil {
+		if strings.Contains(strings.ToLower(u.Path), "logo") {
+			score = scoreDeclaredLogo
+		}
 		e.push(u.String(), score)
 	}
 }
 
 func (e *extractor) push(u string, score int) {
-	// Page de challenge anti-bot (Datadome, Cloudflare…) : son visuel n'a rien à voir
-	if strings.Contains(strings.ToLower(u), "captcha") {
+	// Page de challenge anti-bot (Datadome, Cloudflare…) ou image générique servie
+	// à un visiteur non reconnu (Instagram, Pinterest, Facebook) : sans rapport
+	if strings.Contains(strings.ToLower(u), "captcha") || genericImage.MatchString(u) {
 		return
 	}
 	e.cands = append(e.cands, imageCandidate{url: u, score: score, order: e.order})
@@ -623,6 +630,9 @@ func formatPrice(amount, currency string) string {
 	}
 	return strings.TrimSpace(amount + " " + currency)
 }
+
+// genericImage : visuels génériques des plateformes, à la place de la vraie photo.
+var genericImage = regexp.MustCompile(`static\.cdninstagram\.com/rsrc\.php|s\.pinimg\.com/webapp/|static\.xx\.fbcdn\.net/rsrc\.php`)
 
 var junkHint = regexp.MustCompile(`\b(logo|icon|avatar|sprite|badge|emoji|pixel|spinner|loader|placeholder)`)
 

@@ -119,7 +119,13 @@ export function ComposerProvider({ children }: { children: ReactNode }) {
         }}
       />
       {linkForm && (
-        <LinkFormSheet onClose={() => setLinkForm(null)} initial={linkForm.initial} editing={!!linkForm.link} onSubmit={submitLink} />
+        <LinkFormSheet
+          onClose={() => setLinkForm(null)}
+          initial={linkForm.initial}
+          editing={!!linkForm.link}
+          authorName={linkForm.link && linkForm.link.ownerId !== session?.userId ? linkForm.link.ownerDisplayName ?? "" : undefined}
+          onSubmit={submitLink}
+        />
       )}
       {folderForm && <FolderFormSheet onClose={() => setFolderForm(null)} folder={folderForm.folder} onSubmit={submitFolder} />}
       {ai && (

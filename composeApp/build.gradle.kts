@@ -22,6 +22,8 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.androidx.core.splashscreen)
+            // Analyse HTML des pages liées (images, titre) quand le backend n'est pas joignable
+            implementation(libs.jsoup)
         }
         commonMain.dependencies {
             implementation(libs.compose.ui)

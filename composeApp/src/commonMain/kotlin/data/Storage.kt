@@ -14,4 +14,8 @@ interface Storage {
     fun loadChildren(): List<Child>
     fun saveToken(token: String)
     fun loadToken(): String?
+
+    /** Date (ms) de la dernière recherche d'image par idée : évite de relancer les mêmes sites à chaque ouverture. */
+    fun saveImageChecks(checks: Map<String, Long>) {}
+    fun loadImageChecks(): Map<String, Long> = emptyMap()
 }

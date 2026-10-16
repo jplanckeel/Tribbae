@@ -21,6 +21,9 @@ import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.ChildCare
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -146,7 +149,12 @@ private fun TribeContent(
     val scope = rememberCoroutineScope()
 
     var showFamily by remember { mutableStateOf(false) }
+    var showMembers by remember { mutableStateOf(false) }
+    var showRename by remember { mutableStateOf(false) }
     var showInvite by remember { mutableStateOf(false) }
+    val tribe by viewModel.tribe.collectAsState()
+    var tribeError by remember { mutableStateOf<String?>(null) }
+    var tribeBusy by remember { mutableStateOf(false) }
     var shareFolder by remember { mutableStateOf<data.Folder?>(null) }
     var showFollowing by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
@@ -157,13 +165,19 @@ private fun TribeContent(
     }
 
     val name = displayName?.ifBlank { null } ?: "Moi"
+    // Tribu du compte connecté (sinon : tribu d'un seul membre, nommée d'après lui)
+    val accounts = tribe?.members?.takeIf { m -> m.any { it.userId == userId } }
+        ?: listOf(data.ApiTribeMember(userId = userId.orEmpty(), displayName = name, role = "TRIBE_ROLE_OWNER", sharing = true))
+    val me = accounts.find { it.userId == userId }
+    val tribeName = tribe?.takeIf { t -> t.members.any { it.userId == userId } }?.name?.trim()?.ifEmpty { null } ?: name
+    val myLinks = links.count { it.ownerId.isBlank() || it.ownerId == userId }
+    val myFolders = folders.size
     val likesReceived = links.sumOf { it.likeCount } + folders.sumOf { it.likeCount }
-    val members = remember(folders, children, name) {
-        val seen = mutableSetOf<String>()
+    val members = remember(accounts, children, name) {
         buildList {
-            add(Member("me", name))
-            folders.flatMap { it.collaborators }.forEach { c ->
-                if (seen.add(c.userId)) add(Member(c.userId, c.displayName.ifBlank { c.email.ifBlank { "Membre" } }))
+            accounts.sortedBy { if (it.userId == userId) 0 else 1 }.forEach { m ->
+                val label = if (m.userId == userId) "${m.displayName.ifBlank { name }} (vous)" else m.displayName.ifBlank { m.email.ifBlank { "Membre" } }
+                add(Member(m.userId, label, if (m.sharing) null else "en attente"))
             }
             children.forEach { add(Member("child-${it.id}", it.name, formatAge(it.birthDate))) }
         }
@@ -190,7 +204,13 @@ private fun TribeContent(
 
         Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("La tribu $name", style = display(24.sp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("La tribu $tribeName", style = display(24.sp))
+                    Icon(
+                        Icons.Outlined.Edit, "Renommer la tribu", tint = TextSec,
+                        modifier = Modifier.size(32.dp).clip(CircleShape).clickable { showRename = true }.padding(7.dp)
+                    )
+                }
                 Text("${members.size} membre${if (members.size > 1) "s" else ""}", fontSize = 14.sp, color = TextSec)
             }
 
@@ -201,7 +221,7 @@ private fun TribeContent(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SectionHeader("Les membres", "Gérer") { showFamily = true }
+                SectionHeader("Les membres", "Gérer") { showMembers = true }
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     members.forEachIndexed { i, m ->
                         Column(Modifier.width(70.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -225,6 +245,30 @@ private fun TribeContent(
                 }
             }
 
+            // Nouveau membre : il voit la tribu et choisit d'y verser son propre contenu
+            if (me != null && !me.sharing && accounts.size > 1) {
+                Column(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Soleil).padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text("Bienvenue dans la tribu $tribeName !", style = display(18.sp, FontWeight.Bold))
+                    val what = listOfNotNull(
+                        myLinks.takeIf { it > 0 }?.let { "$it idée${if (it > 1) "s" else ""}" },
+                        children.size.takeIf { it > 0 }?.let { "$it enfant${if (it > 1) "s" else ""}" },
+                    ).joinToString(", ")
+                    Text(
+                        "Vous voyez déjà tout ce que la tribu partage. Partagez aussi votre contenu" +
+                            (if (what.isNotEmpty()) " ($what)" else "") +
+                            " : les autres membres pourront le voir et le modifier. Vos idées restent signées de votre nom.",
+                        fontSize = 14.sp, color = Ecorce2
+                    )
+                    CampButton("Partager avec la tribu", {
+                        tribeBusy = true
+                        viewModel.setTribeSharing(true) { err -> tribeBusy = false; tribeError = err }
+                    }, icon = Icons.Outlined.Check, height = 44.dp)
+                }
+            }
+
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Ecorce).clickable { showInvite = true }.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -235,7 +279,7 @@ private fun TribeContent(
                 }
                 Column(Modifier.weight(1f)) {
                     Text("Inviter dans la tribu", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Sable)
-                    Text("Partagez dossiers et idées en un lien", fontSize = 13.sp, color = BarkSoft)
+                    Text("Partagez toute la tribu avec un proche, par email", fontSize = 13.sp, color = BarkSoft)
                 }
                 Icon(Icons.Outlined.ChevronRight, null, tint = BarkSoft)
             }
@@ -256,9 +300,31 @@ private fun TribeContent(
         ModalBottomSheet(onDismissRequest = { showInvite = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Inviter dans la tribu", style = display(24.sp))
+                var email by remember { mutableStateOf("") }
                 Text(
-                    "Choisissez le dossier à partager : vos proches pourront le consulter par lien ou y ajouter leurs idées.",
-                    fontSize = 15.sp, color = Ecorce2, modifier = Modifier.padding(bottom = 8.dp)
+                    "Votre proche rejoint la tribu et gère tout avec vous : idées, dossiers, enfants et liste de courses.",
+                    fontSize = 15.sp, color = Ecorce2
+                )
+                CampField(
+                    "Email de son compte Tribbae", email, { email = it; tribeError = null },
+                    placeholder = "camille@exemple.fr", icon = Icons.Outlined.Email,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
+                )
+                Text("Ses propres idées ne rejoindront la tribu qu'une fois qu'il l'aura confirmé depuis « Ma tribu ».", fontSize = 12.sp, color = TextSec)
+                tribeError?.let { Text(it, color = Color(0xFF9A3420), fontSize = 14.sp, fontWeight = FontWeight.Medium) }
+                CampButton(if (tribeBusy) "Ajout…" else "Ajouter à la tribu", {
+                    if (email.isBlank()) { tribeError = "Saisissez l'email de son compte Tribbae."; return@CampButton }
+                    tribeBusy = true
+                    viewModel.addTribeMember(email) { err ->
+                        tribeBusy = false
+                        tribeError = err
+                        if (err == null) { email = ""; showInvite = false }
+                    }
+                }, Modifier.fillMaxWidth(), icon = Icons.Outlined.PersonAdd)
+                Text("Ou partager un seul dossier", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec, modifier = Modifier.padding(top = 16.dp))
+                Text(
+                    "Vos proches pourront le consulter par lien ou y ajouter leurs idées, sans accéder au reste de la tribu.",
+                    fontSize = 14.sp, color = TextSec, modifier = Modifier.padding(bottom = 4.dp)
                 )
                 if (folders.isEmpty()) {
                     EmptyBlock(Icons.Filled.CreateNewFolder, "Aucun dossier à partager", "Créez d'abord un dossier dans « Mes idées ».")
@@ -315,6 +381,7 @@ private fun TribeContent(
                         Text("Synchronisé avec tribbae.bananaops.cloud", fontSize = 12.sp, color = TextSec)
                     }
                 }
+                MenuRow(Icons.Outlined.Edit, "Nom de la tribu : $tribeName") { showSettings = false; showRename = true }
                 Text(
                     "Pour modifier votre mot de passe ou supprimer votre compte, écrivez à support@tribbae.com.",
                     fontSize = 14.sp, color = TextSec
@@ -322,6 +389,110 @@ private fun TribeContent(
                 MenuRow(Icons.Outlined.HelpOutline, "Aide & FAQ") { showSettings = false; onFaq() }
                 MenuRow(Icons.Outlined.Logout, "Se déconnecter", danger = true) { showSettings = false; showLogout = true }
             }
+        }
+    }
+
+    if (showRename) {
+        var newName by remember { mutableStateOf(tribeName) }
+        AlertDialog(
+            onDismissRequest = { showRename = false },
+            containerColor = Sable,
+            title = { Text("Nom de la tribu", style = display(20.sp, FontWeight.Bold)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CampField("La tribu…", newName, { newName = it; tribeError = null }, placeholder = "Dupont", maxLength = 60)
+                    Text("Affiché dans l'accueil et pour tous les membres. Vos idées restent signées de votre nom.", fontSize = 13.sp, color = TextSec)
+                    tribeError?.let { Text(it, color = Color(0xFF9A3420), fontSize = 13.sp) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newName.isBlank()) { tribeError = "Donnez un nom à votre tribu."; return@TextButton }
+                    viewModel.renameTribe(newName) { err -> tribeError = err; if (err == null) showRename = false }
+                }) { Text("Enregistrer", color = Terracotta, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { showRename = false; tribeError = null }) { Text("Annuler", color = Ecorce) } }
+        )
+    }
+
+    if (showMembers) {
+        var confirmRemove by remember { mutableStateOf<data.ApiTribeMember?>(null) }
+        var confirmStopSharing by remember { mutableStateOf(false) }
+        val iAmOwner = me?.isOwner == true
+        ModalBottomSheet(onDismissRequest = { showMembers = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Les membres", style = display(24.sp))
+                accounts.forEachIndexed { i, m ->
+                    val self = m.userId == userId
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        val label = m.displayName.ifBlank { m.email.ifBlank { "Membre" } }
+                        InitialAvatar(label, i, 40.dp, 12.dp, 16.sp)
+                        Column(Modifier.weight(1f)) {
+                            Text(label + if (self) " (vous)" else "", fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                listOfNotNull(
+                                    if (m.isOwner) "Créateur" else "Membre",
+                                    if (!m.sharing) "partage de son contenu en attente" else null,
+                                    m.email.takeIf { !self && it.isNotBlank() },
+                                ).joinToString(" · "),
+                                fontSize = 12.sp, color = TextSec, maxLines = 2
+                            )
+                        }
+                        if (accounts.size > 1 && (self || iAmOwner)) {
+                            CampButton(if (self) "Quitter" else "Retirer", { confirmRemove = m }, kind = ButtonKind.Ghost, height = 38.dp)
+                        }
+                    }
+                }
+                tribeError?.let { Text(it, color = Color(0xFF9A3420), fontSize = 14.sp) }
+                CampButton("Inviter un proche", { showMembers = false; showInvite = true }, Modifier.fillMaxWidth(), kind = ButtonKind.Secondary, icon = Icons.Outlined.PersonAdd)
+                CampButton("Les enfants", { showMembers = false; showFamily = true }, Modifier.fillMaxWidth(), kind = ButtonKind.Ghost, icon = Icons.Outlined.ChildCare)
+                if (me?.sharing == true && accounts.size > 1) {
+                    Text(
+                        "Ne plus partager mon contenu", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec,
+                        modifier = Modifier.align(Alignment.CenterHorizontally).clip(RoundedCornerShape(10.dp)).clickable { confirmStopSharing = true }.padding(8.dp)
+                    )
+                }
+            }
+        }
+        confirmRemove?.let { m ->
+            val self = m.userId == userId
+            AlertDialog(
+                onDismissRequest = { confirmRemove = null },
+                containerColor = Sable,
+                title = { Text(if (self) "Quitter la tribu ?" else "Retirer ${m.displayName.ifBlank { m.email }} ?", style = display(20.sp, FontWeight.Bold)) },
+                text = {
+                    Text(
+                        if (self) "Vous ne verrez plus le contenu de la tribu, et le vôtre ne sera plus partagé avec elle."
+                        else "Cette personne ne verra plus le contenu de la tribu, et le sien ne sera plus partagé.",
+                        color = Ecorce2
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmRemove = null
+                        viewModel.removeTribeMember(m.userId) { err -> tribeError = err; if (err == null && self) showMembers = false }
+                    }) { Text(if (self) "Quitter" else "Retirer", color = Terracotta, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = { TextButton(onClick = { confirmRemove = null }) { Text("Annuler", color = Ecorce) } }
+            )
+        }
+        if (confirmStopSharing) {
+            AlertDialog(
+                onDismissRequest = { confirmStopSharing = false },
+                containerColor = Sable,
+                title = { Text("Ne plus partager votre contenu ?", style = display(20.sp, FontWeight.Bold)) },
+                text = { Text("Vos idées, dossiers et enfants ne seront plus visibles des autres membres. Vous continuerez à voir ceux de la tribu.", color = Ecorce2) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmStopSharing = false
+                        viewModel.setTribeSharing(false) { err -> tribeError = err }
+                    }) { Text("Ne plus partager", color = Terracotta, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = { TextButton(onClick = { confirmStopSharing = false }) { Text("Annuler", color = Ecorce) } }
+            )
         }
     }
 

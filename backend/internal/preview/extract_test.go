@@ -238,3 +238,19 @@ func TestCaptchaImagesIgnored(t *testing.T) {
 		t.Errorf("images = %v", m.Images)
 	}
 }
+
+func TestDeclaredLogoRanksBehindPageImages(t *testing.T) {
+	m := extract(t, "https://shop.example/", `<head><meta property="og:image" content="/resources/header/nLogo.png"></head>
+		<body><main><img src="/promo/rentree.jpg" width="800" height="400"></main></body>`)
+	want := []string{"https://shop.example/promo/rentree.jpg", "https://shop.example/resources/header/nLogo.png"}
+	if !reflect.DeepEqual(m.Images, want) {
+		t.Errorf("images = %v, want %v", m.Images, want)
+	}
+}
+
+func TestGenericPlatformImagesIgnored(t *testing.T) {
+	m := extract(t, "https://www.instagram.com/p/x/", `<head><meta property="og:image" content="https://static.cdninstagram.com/rsrc.php/yj/r/f01UdNyJjJj.webp"></head>`)
+	if len(m.Images) != 0 {
+		t.Errorf("images = %v", m.Images)
+	}
+}

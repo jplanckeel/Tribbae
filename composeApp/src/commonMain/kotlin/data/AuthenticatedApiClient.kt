@@ -43,6 +43,30 @@ data class ApiAuthFolder(
     val updatedAt: String = ""
 )
 
+/** Membre d'une tribu (compte). `sharing` : son contenu est partagé avec la tribu. */
+@Serializable
+data class ApiTribeMember(
+    val userId: String = "",
+    val displayName: String = "",
+    val email: String = "",
+    val role: String = "TRIBE_ROLE_MEMBER",
+    val sharing: Boolean = false,
+    val addedAt: Long = 0
+) {
+    val isOwner: Boolean get() = role == "TRIBE_ROLE_OWNER"
+}
+
+/** Tribu : comptes d'une famille qui partagent idées, dossiers et enfants. */
+@Serializable
+data class ApiTribe(
+    val id: String = "",
+    val name: String = "",
+    val members: List<ApiTribeMember> = emptyList()
+)
+
+@Serializable
+private data class ApiTribeResponse(val tribe: ApiTribe = ApiTribe())
+
 @Serializable
 data class ApiLinkListResponse(
     val links: List<ApiAuthLink> = emptyList()
@@ -317,6 +341,28 @@ class AuthenticatedApiClient(
             json.decodeFromString<FavoriteResponse>(response).favorite
         }
     }
+
+    // Tribu
+    suspend fun getTribe(): ApiTribe = request("/v1/tribe", "GET") { json.decodeFromString<ApiTribeResponse>(it).tribe }
+
+    suspend fun renameTribe(name: String): ApiTribe =
+        request("/v1/tribe", "PUT", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject { put("name", kotlinx.serialization.json.JsonPrimitive(name)) })) {
+            json.decodeFromString<ApiTribeResponse>(it).tribe
+        }
+
+    suspend fun addTribeMember(email: String): ApiTribe =
+        request("/v1/tribe/members", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject { put("email", kotlinx.serialization.json.JsonPrimitive(email)) })) {
+            json.decodeFromString<ApiTribeResponse>(it).tribe
+        }
+
+    /** Avec son propre ID : quitter la tribu. */
+    suspend fun removeTribeMember(userId: String): ApiTribe =
+        request("/v1/tribe/members/$userId", "DELETE") { json.decodeFromString<ApiTribeResponse>(it).tribe }
+
+    suspend fun setTribeSharing(sharing: Boolean): ApiTribe =
+        request("/v1/tribe/sharing", "PUT", """{"sharing":$sharing}""") { json.decodeFromString<ApiTribeResponse>(it).tribe }
 
     // Children
     suspend fun listChildren(): ApiChildrenListResponse {

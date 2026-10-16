@@ -31,15 +31,37 @@ const (
 	attemptBudget = 6 * time.Second
 )
 
-// userAgents est essayé dans l'ordre tant que l'aperçu reste incomplet.
-// Beaucoup de sites (e-commerce, réseaux sociaux, pages derrière un anti-bot
-// type Datadome) ne servent leurs balises Open Graph qu'aux robots d'aperçu
-// des messageries, qu'ils laissent passer.
-var userAgents = []string{
-	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-	"WhatsApp/2.24.20.0",
-	"facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+// attempt est une façon de demander la page : un client HTTP et ses en-têtes.
+type attempt struct {
+	name    string
+	client  *http.Client
+	headers map[string]string
 }
+
+var (
+	// Client « navigateur » : empreinte TLS de Chrome (cf. netsafe.NewBrowserClient).
+	// Sans elle, des pare-feu comme celui de Vertbaudet ou d'Etsy refusent la
+	// connexion quel que soit le User-Agent.
+	browserClient = netsafe.NewBrowserClient(8 * time.Second)
+
+	robotHeaders = func(ua string) map[string]string {
+		return map[string]string{
+			"User-Agent":      ua,
+			"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/*;q=0.8,*/*;q=0.5",
+			"Accept-Language": "fr-FR,fr;q=0.9,en;q=0.6",
+		}
+	}
+
+	// attempts sont essayées dans l'ordre tant que l'aperçu reste incomplet.
+	// Beaucoup de sites (e-commerce, réseaux sociaux, pages derrière un anti-bot
+	// type Datadome) ne servent leurs balises Open Graph qu'aux robots d'aperçu
+	// des messageries, qu'ils laissent passer.
+	attempts = []attempt{
+		{"chrome", browserClient, netsafe.ChromeHeaders},
+		{"whatsapp", httpClient, robotHeaders("WhatsApp/2.24.20.0")},
+		{"facebook", httpClient, robotHeaders("facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)")},
+	}
+)
 
 var (
 	httpClient   = netsafe.NewClient(8 * time.Second)
@@ -69,8 +91,8 @@ func Fetch(ctx context.Context, rawURL string) (*Meta, error) {
 
 	var meta *Meta
 	var err error
-	for _, ua := range userAgents {
-		m, fetchErr := fetchMeta(ctx, key, ua)
+	for _, a := range attempts {
+		m, fetchErr := fetchMeta(ctx, key, a)
 		if fetchErr != nil {
 			if meta == nil {
 				err = fetchErr
@@ -192,15 +214,11 @@ func Image(ctx context.Context, rawURL string) string {
 	return m.Image
 }
 
-// fetchMeta télécharge la page avec le User-Agent donné et en extrait l'aperçu.
-func fetchMeta(ctx context.Context, rawURL, ua string) (*Meta, error) {
+// fetchMeta télécharge la page selon la tentative donnée et en extrait l'aperçu.
+func fetchMeta(ctx context.Context, rawURL string, a attempt) (*Meta, error) {
 	ctx, cancel := context.WithTimeout(ctx, attemptBudget)
 	defer cancel()
-	resp, err := netsafe.GetWithHeaders(ctx, httpClient, rawURL, map[string]string{
-		"User-Agent":      ua,
-		"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/*;q=0.8,*/*;q=0.5",
-		"Accept-Language": "fr-FR,fr;q=0.9,en;q=0.6",
-	})
+	resp, err := netsafe.GetWithHeaders(ctx, a.client, rawURL, a.headers)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +287,7 @@ type oEmbed struct {
 
 func fetchOEmbed(ctx context.Context, endpoint string) (*oEmbed, error) {
 	resp, err := netsafe.GetWithHeaders(ctx, httpClient, endpoint, map[string]string{
-		"User-Agent": userAgents[0],
+		"User-Agent": netsafe.ChromeHeaders["User-Agent"],
 		"Accept":     "application/json",
 	})
 	if err != nil {

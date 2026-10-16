@@ -34,6 +34,15 @@ class AndroidStorage(context: Context) : Storage {
         return try { json.decodeFromString(raw) } catch (_: Exception) { emptyList() }
     }
 
+    override fun saveImageChecks(checks: Map<String, Long>) {
+        prefs.edit().putString("image_checks", json.encodeToString(checks)).apply()
+    }
+
+    override fun loadImageChecks(): Map<String, Long> {
+        val raw = prefs.getString("image_checks", null) ?: return emptyMap()
+        return try { json.decodeFromString(raw) } catch (_: Exception) { emptyMap() }
+    }
+
     override fun saveTags(tags: List<String>) {
         prefs.edit().putString("tags", json.encodeToString(tags)).apply()
     }

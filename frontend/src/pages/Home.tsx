@@ -25,7 +25,7 @@ function HomeMobile() {
   const session = useSession();
   const navigate = useNavigate();
   const { openAi } = useComposer();
-  const { links } = useMyData();
+  const { links, tribe } = useMyData();
   const [q, setQ] = useState("");
   const [remindersOpen, setRemindersOpen] = useState(false);
 
@@ -50,7 +50,8 @@ function HomeMobile() {
   };
 
   const event = next[0];
-  const firstName = session?.displayName?.trim();
+  // « La tribu Dupont » : nom choisi pour la tribu, à défaut celui du compte
+  const firstName = tribe?.name?.trim() || session?.displayName?.trim();
 
   return (
     <div className="relative overflow-hidden">
@@ -228,7 +229,7 @@ function HomeDesktop() {
   const session = useSession();
   const navigate = useNavigate();
   const { openAi, newLink } = useComposer();
-  const { links } = useMyData();
+  const { links, tribe } = useMyData();
   const [q, setQ] = useState("");
   const [upcomingOpen, setUpcomingOpen] = useState(false);
   const next = useMemo(() => upcoming(links), [links]);
@@ -246,7 +247,8 @@ function HomeDesktop() {
     e.preventDefault();
     navigate(q.trim() ? `/explorer?q=${encodeURIComponent(q.trim())}` : "/explorer");
   };
-  const firstName = session?.displayName?.trim();
+  // « La tribu Dupont » : nom choisi pour la tribu, à défaut celui du compte
+  const firstName = tribe?.name?.trim() || session?.displayName?.trim();
 
   return (
     <Page className="gap-14 pt-6 pb-4">

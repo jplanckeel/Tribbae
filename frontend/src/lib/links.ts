@@ -62,9 +62,13 @@ export function tagCounts(links: Link[]): [string, number][] {
 }
 
 /** Propriétaire ou collaborateur éditeur du dossier. */
-export function canEditFolder(f: Folder, userId: string | undefined): boolean {
+/**
+ * L'utilisateur peut ajouter ou modifier des idées dans ce dossier : le sien,
+ * celui d'un membre de sa tribu (`peers`), ou un dossier où il est éditeur.
+ */
+export function canEditFolder(f: Folder, userId: string | undefined, peers?: ReadonlySet<string>): boolean {
   if (!userId) return false;
-  if (f.ownerId === userId) return true;
+  if (f.ownerId === userId || peers?.has(f.ownerId)) return true;
   return (f.collaborators ?? []).some((c) => c.userId === userId && c.role === "COLLABORATOR_ROLE_EDITOR");
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
@@ -39,22 +39,26 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   const session = useSession();
   const navigate = useNavigate();
   const { editLink } = useComposer();
-  const { folders, upsertLink, removeLink } = useMyData();
+  const { folders, upsertLink, removeLink, peers, isTribePeer } = useMyData();
   const { toast, confirm } = useFeedback();
   const [menuOpen, setMenuOpen] = useState(false);
   const [liked, setLiked] = useState(!!link.likedByMe);
   const [likes, setLikes] = useState(link.likeCount ?? 0);
-  const [imgBroken, setImgBroken] = useState(false);
+  // Adresse de l'image qui n'a pas chargé : une nouvelle image l'efface d'elle-même
+  const [brokenSrc, setBrokenSrc] = useState<string>();
   const [saving, setSaving] = useState(false);
   const commentsRef = useRef<HTMLElement>(null);
 
   const cat = categoryMeta(link.category);
   const isOwner = !!session && link.ownerId === session.userId;
+  // Idée de l'utilisateur ou d'un membre de sa tribu : il la gère comme la sienne
+  const ourIdea = isOwner || isTribePeer(link.ownerId);
   const folder = folders.find((f) => f.id === link.folderId);
-  const canEdit = isOwner || (!!folder && canEditFolder(folder, session?.userId));
+  const canEdit = ourIdea || (!!folder && canEditFolder(folder, session?.userId, peers));
   const at = eventDateMs(link.eventDate);
   const href = safeHref(link.url);
   const img = safeImage(link.imageUrl);
+  const imgBroken = !!img && brokenSrc === img;
   const comments = useAsync(() => api.comments.list(link.id), [link.id]);
 
   const requireAuth = () => navigate(`/bienvenue?next=/links/${link.id}`);
@@ -63,6 +67,26 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
     onChange(l);
     if (canEdit) upsertLink(l);
   };
+
+  // Idée sans image, ou dont l'image ne charge plus : on cherche celle de la
+  // page et on l'enregistre (une tentative par cas et par visite)
+  const imageTries = useRef(new Set<string>());
+  const findImage = useEffectEvent(async () => {
+    const key = `${link.id}:${imgBroken ? link.imageUrl : ""}`;
+    if (!link.url || imageTries.current.has(key)) return;
+    imageTries.current.add(key);
+    try {
+      const p = await api.links.preview(link.url);
+      const next = [...(p.images ?? []), p.image].find((u) => u && u !== link.imageUrl);
+      if (!next) return;
+      apply(await api.links.update(link.id, { ...toInput(link), imageUrl: next }));
+    } catch {
+      // Page injoignable : le serveur réessaiera de son côté
+    }
+  });
+  useEffect(() => {
+    if (canEdit && href && (!img || imgBroken)) void findImage();
+  }, [link.id, img, imgBroken, canEdit, href]);
 
   const like = async () => {
     if (!session) return requireAuth();
@@ -147,7 +171,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
       {/* Visuel */}
       <div className={`relative h-[300px] overflow-hidden md:h-[360px] md:rounded-xl ${cat.bg}`}>
         {img && !imgBroken ? (
-          <img src={img} alt="" referrerPolicy="no-referrer" onError={() => setImgBroken(true)} className="absolute inset-0 h-full w-full object-cover" />
+          <img src={img} alt="" referrerPolicy="no-referrer" onError={() => setBrokenSrc(img)} className="absolute inset-0 h-full w-full object-cover" />
         ) : (
           <>
             <div aria-hidden="true" className="absolute -bottom-[120px] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-soleil" />
@@ -181,7 +205,8 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${cat.bg} ${cat.ink}`}>{cat.label}</span>
           <span className="text-[13px] text-sec">
-            {link.ownerDisplayName && !isOwner ? `par ${link.ownerDisplayName}` : isOwner ? "par vous" : ""}
+            {/* Toujours le nom du compte qui a ajouté l'idée, même au sein d'une tribu */}
+            {link.ownerDisplayName ? `par ${link.ownerDisplayName}${isOwner ? " (vous)" : ""}` : isOwner ? "par vous" : ""}
             {folder ? <> · dossier <RouterLink to={`/dossiers/${folder.id}`} className="font-semibold text-ecorce underline-offset-2 hover:underline">{folder.name}</RouterLink></> : ""}
           </span>
           {link.favorite && <Icon name="star" size={16} filled className="text-braise" />}
@@ -192,7 +217,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
 
         <h1 className="font-display text-[28px] leading-[1.1] font-extrabold tracking-[-0.6px] md:text-[36px]">{link.title}</h1>
 
-        {!isOwner && link.ownerId && session && <FollowAuthor userId={link.ownerId} name={link.ownerDisplayName} />}
+        {!ourIdea && link.ownerId && session && <FollowAuthor userId={link.ownerId} name={link.ownerDisplayName} />}
 
         {infos.length > 0 && (
           <dl className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
@@ -264,7 +289,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             list={comments.data ?? []}
             loading={comments.loading}
             onChange={(c) => comments.setData(c)}
-            canModerate={isOwner}
+            canModerate={ourIdea}
             onRequireAuth={requireAuth}
           />
         </section>
@@ -314,10 +339,10 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Idée">
           <div className="flex flex-col gap-2">
             {canEdit && <MenuItem icon="pencil" label="Modifier" onClick={() => { setMenuOpen(false); editLink(link, onChange); }} />}
-            {isOwner && <MenuItem icon="star" label={link.favorite ? "Retirer des favoris" : "Ajouter aux favoris"} onClick={toggleFavorite} />}
+            {ourIdea && <MenuItem icon="star" label={link.favorite ? "Retirer des favoris" : "Ajouter aux favoris"} onClick={toggleFavorite} />}
             {!canEdit && <MenuItem icon="bookmark" label="Enregistrer dans mes idées" onClick={() => { setMenuOpen(false); saveCopy(); }} />}
             <MenuItem icon="share" label="Partager le lien" onClick={() => { setMenuOpen(false); share(); }} />
-            {isOwner && <MenuItem icon="trash" label="Supprimer" danger onClick={remove} />}
+            {ourIdea && <MenuItem icon="trash" label="Supprimer" danger onClick={remove} />}
           </div>
         </Sheet>
       )}

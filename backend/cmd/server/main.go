@@ -28,6 +28,7 @@ import (
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/link"
 	"github.com/tribbae/backend/internal/preview"
+	"github.com/tribbae/backend/internal/tribe"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -63,6 +64,11 @@ func main() {
 	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)
 	linkSvc := link.NewService(database.Col("links"), database.Col("folders"))
 	childSvc := child.NewService(database.DB())
+	// Tribu : ses membres partagent idées, dossiers et enfants
+	tribeSvc := tribe.NewService(database.Col("tribes"), database.Col("users"))
+	linkSvc.SetTribePeers(tribeSvc.Peers)
+	folderSvc.SetTribePeers(tribeSvc.Peers)
+	childSvc.SetTribePeers(tribeSvc.Peers)
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
 	commentSvc := comment.NewService(database.Col("comments"), database.Col("links"), database.Col("users"))
 	aiSvc := ai.NewService(ai.Config{
@@ -77,6 +83,8 @@ func main() {
 	})
 	// Télécharge (si besoin) et charge le modèle local sans retarder le démarrage
 	go aiSvc.Warmup(context.Background())
+	// Rattrape en continu l'image des idées qui n'en ont pas (lots de 20 toutes les 10 min)
+	go linkSvc.RunImageBackfill(context.Background(), 10*time.Minute, 20)
 
 	// Handlers (gRPC servers)
 	authH := auth.NewHandler(authSvc)
@@ -86,6 +94,7 @@ func main() {
 	followH := follow.NewHandler(followSvc)
 	commentH := comment.NewHandler(commentSvc, linkSvc.CanView)
 	adminH := admin.NewHandler(authSvc)
+	tribeH := tribe.NewHandler(tribeSvc)
 
 	// Adaptateur pour récupérer le statut premium d'un utilisateur
 	userGetter := &userGetterAdapter{authSvc: authSvc}
@@ -115,6 +124,7 @@ func main() {
 	pb.RegisterFollowServiceServer(grpcServer, followH)
 	pb.RegisterCommentServiceServer(grpcServer, commentH)
 	pb.RegisterAdminServiceServer(grpcServer, adminH)
+	pb.RegisterTribeServiceServer(grpcServer, tribeH)
 	reflection.Register(grpcServer)
 
 	grpcAddr := ":" + cfg.GRPCPort
@@ -165,6 +175,9 @@ func main() {
 	}
 	if err := pb.RegisterAdminServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
 		log.Fatalf("register admin gateway: %v", err)
+	}
+	if err := pb.RegisterTribeServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
+		log.Fatalf("register tribe gateway: %v", err)
 	}
 
 	// Limites de débit par IP sur les routes sensibles (force brute, coût IA, requêtes sortantes)

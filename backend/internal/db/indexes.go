@@ -28,6 +28,15 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── tribes : un compte appartient à au plus une tribu ──────
+		{
+			Collection: "tribes",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "members.user_id", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_tribes_member_unique"),
+			},
+		},
+
 		// ── folders ───────────────────────────────────────────
 		{
 			Collection: "folders",

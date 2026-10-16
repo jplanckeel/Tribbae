@@ -34,7 +34,11 @@ fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null, shared
         }
     }
 
-    ModernMainApp(vm, sharedUrl, sharedTitle, sharedFolderToken, sessionManager, authRepository, followRepository, commentRepository)
+    // Compte connecté : les cartes signent du nom de leur auteur les idées des autres (tribu, communauté)
+    val currentUserId by sessionManager.userId.collectAsState()
+    CompositionLocalProvider(ui.campfire.LocalCurrentUserId provides currentUserId) {
+        ModernMainApp(vm, sharedUrl, sharedTitle, sharedFolderToken, sessionManager, authRepository, followRepository, commentRepository)
+    }
 }
 
 /** Écrans empilés au-dessus des onglets (navigation par état, comme avant). */

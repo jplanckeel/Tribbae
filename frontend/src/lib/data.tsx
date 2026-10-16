@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import * as api from "./api";
 import { useSession } from "./session";
-import type { Child, Folder, Link } from "./types";
+import type { Child, Folder, Link, Tribe } from "./types";
 
-// Données personnelles de l'utilisateur connecté (idées, dossiers, enfants),
+// Données de l'utilisateur connecté et de sa tribu (idées, dossiers, enfants),
 // chargées une fois et partagées par tous les écrans. Les mutations mettent
 // le cache à jour localement pour éviter de tout recharger.
 
@@ -11,6 +11,17 @@ interface MyData {
   links: Link[];
   folders: Folder[];
   children: Child[];
+  /** Tribu de l'utilisateur (nom affiché, membres). */
+  tribe?: Tribe;
+  /**
+   * Comptes dont l'utilisateur voit et modifie le contenu : lui-même et les
+   * membres de sa tribu qui ont confirmé le partage.
+   */
+  peers: ReadonlySet<string>;
+  /** Le contenu de ownerId appartient à l'utilisateur ou à sa tribu. */
+  isTribePeer: (ownerId: string | undefined) => boolean;
+  /** Après une modification de la tribu : idées, dossiers et enfants changent aussi. */
+  setTribe: (t: Tribe) => void;
   loading: boolean;
   error?: Error;
   reload: () => void;
@@ -32,6 +43,7 @@ interface Loaded {
   links: Link[];
   folders: Folder[];
   children: Child[];
+  tribe?: Tribe;
   error?: Error;
 }
 
@@ -47,8 +59,13 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
   useEffect(() => {
     if (!key) return;
     let alive = true;
-    Promise.all([api.links.list(), api.folders.list(), api.children.list().catch(() => [])])
-      .then(([links, folders, children]) => alive && setState({ key, links, folders, children }))
+    Promise.all([
+      api.links.list(),
+      api.folders.list(),
+      api.children.list().catch(() => []),
+      api.tribe.get().catch(() => undefined),
+    ])
+      .then(([links, folders, children, tribe]) => alive && setState({ key, links, folders, children, tribe }))
       .catch((error: Error) => alive && setState((s) => ({ ...s, key, error })));
     return () => {
       alive = false;
@@ -80,16 +97,34 @@ export function DataProvider({ children: node }: { children: ReactNode }) {
     setState((s) => ({ ...s, children }));
   }, []);
 
+  const peers = useMemo(() => {
+    const ids = new Set<string>(userId ? [userId] : []);
+    for (const m of current.tribe?.members ?? []) if (m.sharing) ids.add(m.userId);
+    return ids;
+  }, [current.tribe, userId]);
+  const isTribePeer = useCallback((ownerId: string | undefined) => !!ownerId && peers.has(ownerId), [peers]);
+  const setTribe = useCallback(
+    (t: Tribe) => {
+      setState((s) => ({ ...s, tribe: t }));
+      reload();
+    },
+    [reload],
+  );
+
   const value = useMemo<MyData>(
     () => ({
       links: current.links,
       folders: current.folders,
       children: current.children,
+      tribe: current.tribe,
+      peers,
+      isTribePeer,
+      setTribe,
       loading,
       error: state.key === key ? current.error : undefined,
       reload, upsertLink, removeLink, upsertFolder, removeFolder, reloadChildren,
     }),
-    [current, loading, state.key, key, reload, upsertLink, removeLink, upsertFolder, removeFolder, reloadChildren],
+    [current, peers, isTribePeer, setTribe, loading, state.key, key, reload, upsertLink, removeLink, upsertFolder, removeFolder, reloadChildren],
   );
   return <DataContext.Provider value={value}>{node}</DataContext.Provider>;
 }

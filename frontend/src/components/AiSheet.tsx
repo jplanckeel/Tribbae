@@ -29,7 +29,7 @@ interface Props {
 
 export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSaved }: Props) {
   const session = useSession();
-  const { folders, upsertFolder, upsertLink } = useMyData();
+  const { folders, upsertFolder, upsertLink, peers } = useMyData();
   const { toast, confirm } = useFeedback();
   const [prompt, setPrompt] = useState(initialPrompt ?? "");
   const [ideas, setIdeas] = useState<(AiIdea & { cat: CategoryKey })[]>([]);
@@ -117,7 +117,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
     onClose();
   };
 
-  const writable = folders.filter((f) => canEditFolder(f, session?.userId));
+  const writable = folders.filter((f) => canEditFolder(f, session?.userId, peers));
 
   return (
     <Sheet
