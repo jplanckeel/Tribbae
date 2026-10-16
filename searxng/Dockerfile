@@ -2,25 +2,17 @@ FROM searxng/searxng:latest
 
 USER root
 
-# Copier les fichiers de configuration
-COPY settings.yml /etc/searxng/settings.yml
-COPY limiter.toml /etc/searxng/limiter.toml
+# L'image officielle déclare /etc/searxng comme VOLUME : à chaque redéploiement,
+# docker compose réattache l'ancien volume, dont le settings.yml masquerait celui
+# de l'image. Notre configuration vit donc hors de ce volume, dans /opt/tribbae.
+COPY settings.yml /opt/tribbae/searxng/settings.yml
+COPY limiter.toml /opt/tribbae/searxng/limiter.toml
+RUN chown -R searxng:searxng /opt/tribbae/searxng && \
+    chmod 644 /opt/tribbae/searxng/settings.yml /opt/tribbae/searxng/limiter.toml
 
-# S'assurer que les permissions sont correctes
-RUN chown -R searxng:searxng /etc/searxng && \
-    chmod 644 /etc/searxng/settings.yml && \
-    chmod 644 /etc/searxng/limiter.toml && \
-    ls -la /etc/searxng/ && \
-    echo "Configuration files copied successfully"
-
-# Variables d'environnement pour SearXNG
-ENV SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
-ENV SEARXNG_LIMITER_CFG=/etc/searxng/limiter.toml
+ENV SEARXNG_SETTINGS_PATH=/opt/tribbae/searxng/settings.yml
+ENV SEARXNG_LIMITER_CFG=/opt/tribbae/searxng/limiter.toml
 
 USER searxng
 
-# Exposer le port
 EXPOSE 8080
-
-# Commande par défaut
-CMD ["/usr/local/searxng/dockerfiles/docker-entrypoint.sh"]
