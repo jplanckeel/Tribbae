@@ -26,17 +26,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 import data.Link
 import data.LinkCategory
+import data.LinkPreview
+import data.extractUrl
 import kotlinx.coroutines.launch
 import ui.campfire.*
 import ui.components.TagInputWithAutocomplete
 import viewmodel.LinkViewModel
 import java.util.Calendar
 
+private enum class PreviewStatus { Idle, Loading, Done, Failed }
+
+/** Valeurs remplies par le dernier aperçu : on peut les remplacer si le lien change. */
+private class AutoFilled {
+    var title = ""; var description = ""; var imageUrl = ""; var price = ""
+    var location = ""; var eventDate: Long? = null; var ingredients = ""
+}
+
+// Remplace la valeur si elle est vide ou si elle venait de l'aperçu précédent
+private fun fill(current: String, previousAuto: String, next: String): String =
+    if (next.isNotBlank() && (current.isBlank() || current == previousAuto)) next else current
+
 /**
  * Formulaire d'idée « feu de camp », pour la création comme pour l'édition.
- * Remplit titre / description / image depuis le lien (aperçu côté serveur).
+ * Remplit titre / description / images (et catégorie, ingrédients, prix, lieu,
+ * date quand la page les décrit) depuis le lien, via l'aperçu côté serveur.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -48,6 +65,7 @@ fun IdeaFormScreen(
     initialUrl: String? = null,
     initialCategory: LinkCategory? = null,
     initialFolderId: String? = null,
+    initialTitle: String? = null,
 ) {
     val folders by viewModel.folders.collectAsState()
     val allLinks by viewModel.repository.links.collectAsState()
@@ -55,7 +73,7 @@ fun IdeaFormScreen(
 
     var category by remember { mutableStateOf(existing?.category ?: initialCategory ?: LinkCategory.IDEE) }
     var url by remember { mutableStateOf(existing?.url ?: initialUrl.orEmpty()) }
-    var title by remember { mutableStateOf(existing?.title.orEmpty()) }
+    var title by remember { mutableStateOf(existing?.title ?: initialTitle.orEmpty()) }
     var description by remember { mutableStateOf(existing?.description.orEmpty()) }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl.orEmpty()) }
     var ingredients by remember { mutableStateOf(existing?.ingredients?.joinToString("\n").orEmpty()) }
@@ -71,7 +89,14 @@ fun IdeaFormScreen(
     var more by remember {
         mutableStateOf(existing != null && (ageRange.isNotBlank() || price.isNotBlank() || location.isNotBlank() || rating > 0))
     }
-    var previewing by remember { mutableStateOf(false) }
+    var previewStatus by remember { mutableStateOf(PreviewStatus.Idle) }
+    var previewUrl by remember { mutableStateOf<String?>(null) }
+    var previewImages by remember { mutableStateOf(emptyList<String>()) }
+    var previewSite by remember { mutableStateOf("") }
+    // La catégorie suggérée par la page ne remplace pas un choix explicite
+    var categoryChosen by remember { mutableStateOf(existing != null || (initialCategory != null && initialCategory != LinkCategory.IDEE)) }
+    val autoFilled = remember { AutoFilled() }
+    var requestId by remember { mutableStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }
     var showDate by remember { mutableStateOf(false) }
     var showTime by remember { mutableStateOf(false) }
@@ -81,21 +106,44 @@ fun IdeaFormScreen(
     val knownTags = remember(allLinks) { allLinks.flatMap { it.tags }.distinct() }
     val isDated = category == LinkCategory.EVENEMENT || category == LinkCategory.ACTIVITE || eventDate != null
 
-    fun fetchPreview() {
-        if (url.isBlank() || previewing) return
-        previewing = true
+    fun applyPreview(p: LinkPreview, forUrl: String) {
+        val prev = autoFilled
+        val ingredientsText = p.ingredients.joinToString("\n")
+        title = fill(title, prev.title, p.title)
+        description = fill(description, prev.description, p.description)
+        imageUrl = fill(imageUrl, prev.imageUrl, p.image)
+        price = fill(price, prev.price, p.price)
+        location = fill(location, prev.location, p.location)
+        ingredients = fill(ingredients, prev.ingredients, ingredientsText)
+        val date = p.eventDate.takeIf { it > 0 }
+        if (date != null && (eventDate == null || eventDate == prev.eventDate)) eventDate = date
+        if (!categoryChosen) p.suggestedCategory?.let { category = it }
+        prev.title = p.title; prev.description = p.description; prev.imageUrl = p.image; prev.price = p.price
+        prev.location = p.location; prev.eventDate = date; prev.ingredients = ingredientsText
+        if (p.price.isNotBlank() || p.location.isNotBlank()) more = true
+        previewImages = p.allImages
+        previewSite = p.siteName.ifBlank { runCatching { java.net.URI(forUrl).host.removePrefix("www.") }.getOrDefault("") }
+        previewStatus = PreviewStatus.Done
+    }
+
+    fun fetchPreview(force: Boolean = false) {
+        val target = extractUrl(url) ?: return
+        if (target != url) url = target
+        if (!force && previewUrl == target && previewStatus != PreviewStatus.Failed) return
+        previewUrl = target
+        previewStatus = PreviewStatus.Loading
+        previewImages = emptyList()
+        // Seule la réponse de la dernière requête compte (l'adresse a pu changer)
+        val id = ++requestId
         scope.launch {
-            viewModel.previewLink(url)?.let { p ->
-                if (title.isBlank()) title = p.title
-                if (description.isBlank()) description = p.description
-                if (imageUrl.isBlank()) imageUrl = p.image
-            }
-            previewing = false
+            val p = viewModel.previewLink(target)
+            if (id != requestId) return@launch
+            if (p != null) applyPreview(p, target) else previewStatus = PreviewStatus.Failed
         }
     }
 
-    // Lien partagé depuis une autre application : on tente l'aperçu tout de suite
-    LaunchedEffect(Unit) { if (existing == null && url.isNotBlank() && title.isBlank()) fetchPreview() }
+    // Lien partagé depuis une autre application ou collé dans « Ajouter » : aperçu tout de suite
+    LaunchedEffect(Unit) { if (existing == null && url.isNotBlank()) fetchPreview() }
 
     fun submit() {
         if (title.isBlank()) { error = "Donnez un titre à votre idée."; return }
@@ -139,7 +187,7 @@ fun IdeaFormScreen(
                         val on = c.category == category
                         Row(
                             Modifier.height(38.dp).clip(CircleShape).background(if (on) Ecorce else c.bg)
-                                .clickable(role = Role.RadioButton) { category = c.category }.padding(horizontal = 14.dp),
+                                .clickable(role = Role.RadioButton) { category = c.category; categoryChosen = true }.padding(horizontal = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
@@ -150,17 +198,39 @@ fun IdeaFormScreen(
                 }
             }
 
-            CampField(
-                "Lien (facultatif)", url, { url = it },
-                placeholder = "https://…", icon = Icons.Outlined.Link,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                onFocusLost = { if (title.isBlank()) fetchPreview() },
-                hint = if (previewing) "Récupération du titre et de l'image…" else null
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                CampField(
+                    "Lien (facultatif)", url,
+                    {
+                        // Un lien collé (même entouré de texte) est lu aussitôt
+                        val pasted = it.length - url.length > 8
+                        url = it
+                        if (pasted && extractUrl(it) != null) fetchPreview()
+                    },
+                    placeholder = "https://…", icon = Icons.Outlined.Link,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    onFocusLost = { fetchPreview() }
+                )
+                PreviewStatusRow(previewStatus, previewSite) { fetchPreview(force = true) }
+            }
 
             ImagePickerSection(imageUrl = imageUrl, viewModel = viewModel, onImageSelected = { imageUrl = it })
+            ImageCandidates(
+                candidates = previewImages,
+                selected = imageUrl,
+                onSelect = { imageUrl = it },
+                onBroken = { broken ->
+                    // Image morte ou minuscule : on l'écarte, et on passe à la suivante si elle était choisie
+                    val rest = previewImages - broken
+                    previewImages = rest
+                    if (imageUrl == broken) imageUrl = rest.firstOrNull().orEmpty()
+                }
+            )
 
-            CampField("Titre", title, { title = it; error = null }, placeholder = "Fête de la courge à la ferme")
+            CampField(
+                "Titre", title, { title = it; error = null },
+                placeholder = if (previewStatus == PreviewStatus.Loading) "Récupération du titre…" else "Fête de la courge à la ferme"
+            )
             CampField("Description", description, { description = it }, placeholder = "Ce qu'il faut savoir, ce qu'il faut emporter…", singleLine = false, minLines = 3, maxLength = 5000)
 
             if (category == LinkCategory.RECETTE) {
@@ -255,6 +325,21 @@ fun IdeaFormScreen(
                 }
                 CampSwitch(isPublic, { isPublic = it }, "Partager avec la communauté")
             }
+            // Dans son propre dossier public, une idée est visible de tous même sans être partagée
+            // à la communauté (les idées d'un collaborateur, elles, restent réservées aux membres).
+            val chosenFolder = folders.find { it.id == folderId }
+            val me = viewModel.currentUserId()
+            val inMyPublicFolder = chosenFolder != null && chosenFolder.visibility.uppercase().contains("PUBLIC") &&
+                (me == null || chosenFolder.collaborators.none { it.userId == me })
+            if (inMyPublicFolder && !isPublic) {
+                Row(Modifier.padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Outlined.Visibility, null, tint = TextSec, modifier = Modifier.size(15.dp).padding(top = 1.dp))
+                    Text(
+                        "Le dossier « ${chosenFolder!!.name} » est public : cette idée y sera visible par tous ses visiteurs.",
+                        fontSize = 12.sp, color = TextSec
+                    )
+                }
+            }
 
             if (error != null) {
                 Text(
@@ -339,5 +424,63 @@ private fun DateChip(icon: androidx.compose.ui.graphics.vector.ImageVector, text
     ) {
         Icon(icon, null, tint = TextMuted, modifier = Modifier.size(19.dp))
         Text(text, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = Ecorce)
+    }
+}
+
+/** État de la lecture du lien, sous le champ « Lien ». */
+@Composable
+private fun PreviewStatusRow(status: PreviewStatus, site: String, onRetry: () -> Unit) {
+    when (status) {
+        PreviewStatus.Loading -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            CircularProgressIndicator(Modifier.size(14.dp), color = Terracotta, strokeWidth = 2.dp)
+            Text("Lecture de la page…", fontSize = 12.sp, color = TextSec)
+        }
+        PreviewStatus.Failed -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Impossible de lire cette page : complétez à la main.", fontSize = 12.sp, color = TextSec, modifier = Modifier.weight(1f, fill = false))
+            Text(
+                "Réessayer", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Terracotta,
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onRetry).padding(horizontal = 4.dp, vertical = 2.dp)
+            )
+        }
+        PreviewStatus.Done -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(Icons.Outlined.Check, null, tint = Color(0xFF2F7393), modifier = Modifier.size(14.dp))
+            Text(if (site.isNotBlank()) "Infos récupérées depuis $site" else "Infos récupérées", fontSize = 12.sp, color = TextSec)
+        }
+        PreviewStatus.Idle -> Unit
+    }
+}
+
+/**
+ * Autres images trouvées sur la page, à choisir d'une touche. Les images qui
+ * ne chargent pas ou trop petites (icônes, pixels) sont signalées via onBroken.
+ */
+@Composable
+private fun ImageCandidates(candidates: List<String>, selected: String, onSelect: (String) -> Unit, onBroken: (String) -> Unit) {
+    if (candidates.size < 2 && (candidates.isEmpty() || candidates.first() == selected)) return
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("${candidates.size} images trouvées · touchez pour choisir", fontSize = 12.sp, color = TextSec)
+        Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            candidates.forEachIndexed { i, u ->
+                val on = u == selected
+                Box(
+                    Modifier.size(64.dp).clip(RoundedCornerShape(14.dp)).background(Sable2)
+                        .then(if (on) Modifier.border(3.dp, Terracotta, RoundedCornerShape(14.dp)) else Modifier)
+                        .clickable(role = Role.RadioButton) { onSelect(u) }
+                        .semantics { contentDescription = "Image ${i + 1} sur ${candidates.size}" }
+                ) {
+                    AsyncImage(
+                        model = u,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().padding(if (on) 3.dp else 0.dp).clip(RoundedCornerShape(11.dp)),
+                        onError = { onBroken(u) },
+                        onSuccess = { state ->
+                            val size = state.painter.intrinsicSize
+                            if (size.width > 0f && (size.width < 120f || size.height < 80f)) onBroken(u)
+                        }
+                    )
+                }
+            }
+        }
     }
 }

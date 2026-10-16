@@ -72,7 +72,7 @@ fun NewHomeScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .statusBarsPadding()
-                    .padding(top = 20.dp, bottom = 120.dp),
+                    .padding(top = 20.dp, bottom = ui.components.bottomNavClearance()),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Row(

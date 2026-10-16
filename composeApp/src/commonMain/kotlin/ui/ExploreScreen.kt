@@ -94,7 +94,7 @@ fun ExploreScreen(
         modifier = modifier.fillMaxSize().background(Sable)
     ) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 20.dp, bottom = 120.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 20.dp, bottom = ui.components.bottomNavClearance()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(

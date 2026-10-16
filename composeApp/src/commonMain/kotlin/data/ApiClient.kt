@@ -58,13 +58,33 @@ data class ApiLink(
     val ownerIsAdmin: Boolean = false
 )
 
-/** Aperçu Open Graph d'une page (titre, description, image), cf. GET /v1/links/preview. */
+/**
+ * Aperçu d'une page (GET /v1/links/preview) : titre, description, meilleure
+ * image et tous les candidats (`images`), plus ce que les données schema.org
+ * de la page révèlent (catégorie, ingrédients, prix, lieu, date en ms).
+ */
 @Serializable
 data class LinkPreview(
     val title: String = "",
     val description: String = "",
-    val image: String = ""
-)
+    val image: String = "",
+    val images: List<String> = emptyList(),
+    val siteName: String = "",
+    val category: String = "",
+    val ingredients: List<String> = emptyList(),
+    val price: String = "",
+    val location: String = "",
+    val eventDate: Long = 0
+) {
+    /** Catégorie suggérée, ou null si la page n'en indique pas. */
+    val suggestedCategory: LinkCategory?
+        get() = category.takeIf { it.isNotBlank() }
+            ?.let { runCatching { LinkCategory.valueOf(it.removePrefix("LINK_CATEGORY_")) }.getOrNull() }
+
+    /** Images candidates, la meilleure d'abord. */
+    val allImages: List<String>
+        get() = images.ifEmpty { listOfNotNull(image.takeIf { it.isNotBlank() }) }
+}
 
 @Serializable
 data class SharedFolderResponse(

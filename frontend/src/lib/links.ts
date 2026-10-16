@@ -67,3 +67,28 @@ export function canEditFolder(f: Folder, userId: string | undefined): boolean {
   if (f.ownerId === userId) return true;
   return (f.collaborators ?? []).some((c) => c.userId === userId && c.role === "COLLABORATOR_ROLE_EDITOR");
 }
+
+// Adresse sans schéma : limitée aux extensions courantes pour ne pas prendre
+// « fin.Début » pour un site.
+const BARE_DOMAIN =
+  /(?:^|\s)((?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:fr|com|org|net|eu|be|ch|ca|io|co|uk|de|es|it|info|shop|blog|app)(?:\/[^\s<>"']*)?)(?=$|\s)/i;
+
+/**
+ * Extrait une adresse web d'un texte collé ou partagé (« Regarde ça https://… »)
+ * et complète le schéma s'il manque (« www.site.fr/page »). Undefined si rien.
+ */
+export function extractUrl(text: string | null | undefined): string | undefined {
+  const raw = (text ?? "").trim();
+  if (!raw) return undefined;
+  const found = raw.match(/https?:\/\/[^\s<>"']+/i)?.[0]
+    ?? raw.match(BARE_DOMAIN)?.[1];
+  if (!found) return undefined;
+  // Ponctuation de fin de phrase collée à l'adresse
+  const cleaned = found.replace(/[.,;:!?)\]}»]+$/, "");
+  try {
+    const u = new URL(/^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : undefined;
+  } catch {
+    return undefined;
+  }
+}

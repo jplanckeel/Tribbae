@@ -84,7 +84,9 @@ func (s *Service) accessibleFolderIDs(ctx context.Context, userID string) ([]str
 }
 
 // canAccessLink vérifie si l'utilisateur peut voir un lien : son auteur, tout
-// le monde si le lien est public, sinon les personnes qui voient son dossier.
+// le monde si le lien est public, les membres de son dossier, et les visiteurs
+// d'un dossier public — mais seulement pour les idées du propriétaire du
+// dossier (cf. folderAccess).
 func (s *Service) canAccessLink(ctx context.Context, l *Link, userID string) bool {
 	if userID != "" && l.OwnerID == userID {
 		return true
@@ -92,7 +94,8 @@ func (s *Service) canAccessLink(ctx context.Context, l *Link, userID string) boo
 	if l.Visibility == "public" {
 		return true
 	}
-	return s.canViewFolder(ctx, l.FolderID, userID)
+	member, publicOwner := s.folderAccess(ctx, l.FolderID, userID)
+	return member || (publicOwner != "" && l.OwnerID == publicOwner)
 }
 
 // CanView indique si l'utilisateur (éventuellement anonyme) peut voir le lien.
@@ -108,18 +111,43 @@ func (s *Service) CanView(ctx context.Context, linkID, userID string) bool {
 	return s.canAccessLink(ctx, &l, userID)
 }
 
-// canViewFolder : dossier public, ou utilisateur propriétaire / collaborateur.
-func (s *Service) canViewFolder(ctx context.Context, folderID, userID string) bool {
+// folderAccess décrit l'accès d'un utilisateur à un dossier : member s'il en
+// est propriétaire ou collaborateur ; sinon, si le dossier est public,
+// publicOwner est l'ID de son propriétaire.
+//
+// Rendre un dossier public est la décision de son propriétaire : elle publie
+// ses propres idées, pas celles que ses collaborateurs y ont ajoutées (RGPD :
+// chacun décide seul de publier son contenu). Celles-ci restent réservées aux
+// membres, sauf si leur auteur les a lui-même rendues publiques.
+func (s *Service) folderAccess(ctx context.Context, folderID, userID string) (member bool, publicOwner string) {
 	fid, err := primitive.ObjectIDFromHex(folderID)
 	if err != nil {
-		return false
+		return false, ""
 	}
-	or := bson.A{bson.M{"visibility": "public"}}
+	var f struct {
+		OwnerID       string `bson:"owner_id"`
+		Visibility    string `bson:"visibility"`
+		Collaborators []struct {
+			UserID string `bson:"user_id"`
+		} `bson:"collaborators"`
+	}
+	if err := s.folderCol.FindOne(ctx, bson.M{"_id": fid}).Decode(&f); err != nil {
+		return false, ""
+	}
 	if userID != "" {
-		or = append(or, bson.M{"owner_id": userID}, bson.M{"collaborators.user_id": userID})
+		if f.OwnerID == userID {
+			return true, ""
+		}
+		for _, c := range f.Collaborators {
+			if c.UserID == userID {
+				return true, ""
+			}
+		}
 	}
-	count, _ := s.folderCol.CountDocuments(ctx, bson.M{"_id": fid, "$or": or})
-	return count > 0
+	if f.Visibility == "public" {
+		return false, f.OwnerID
+	}
+	return false, ""
 }
 
 // canEditFolder vérifie si l'utilisateur peut éditer dans un dossier
@@ -189,10 +217,17 @@ func (s *Service) Get(ctx context.Context, linkID, userID string) (*Link, error)
 func (s *Service) List(ctx context.Context, ownerID, folderID string) ([]*Link, error) {
 	if folderID != "" {
 		// Si un dossier est spécifié, retourner ses liens seulement si l'utilisateur y a accès
-		if !s.canViewFolder(ctx, folderID, ownerID) {
+		member, publicOwner := s.folderAccess(ctx, folderID, ownerID)
+		switch {
+		case member:
+			return s.listByFolder(ctx, bson.M{"folder_id": folderID})
+		case publicOwner != "":
+			// Visiteur d'un dossier public : idées du propriétaire, et celles
+			// que leur auteur a lui-même publiées
+			return s.listByFolder(ctx, PublicFolderFilter(folderID, publicOwner))
+		default:
 			return nil, ErrNotFound
 		}
-		return s.listByFolder(ctx, folderID)
 	}
 	// Sinon, retourner les liens propres + ceux des dossiers partagés
 	folderIDs, err := s.accessibleFolderIDs(ctx, ownerID)
@@ -226,8 +261,18 @@ func (s *Service) List(ctx context.Context, ownerID, folderID string) ([]*Link, 
 	return links, nil
 }
 
-func (s *Service) listByFolder(ctx context.Context, folderID string) ([]*Link, error) {
-	cursor, err := s.col.Find(ctx, bson.M{"folder_id": folderID})
+// PublicFolderFilter sélectionne les idées d'un dossier visibles hors de ses
+// membres (dossier public, lien de partage) : celles de son propriétaire et
+// celles que leur auteur a rendues publiques.
+func PublicFolderFilter(folderID, folderOwnerID string) bson.M {
+	return bson.M{"folder_id": folderID, "$or": bson.A{
+		bson.M{"owner_id": folderOwnerID},
+		bson.M{"visibility": "public"},
+	}}
+}
+
+func (s *Service) listByFolder(ctx context.Context, filter bson.M) ([]*Link, error) {
+	cursor, err := s.col.Find(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -265,9 +310,16 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 	if existing.OwnerID != userID && !s.canEditFolder(ctx, existing.FolderID, userID) {
 		return nil, ErrForbidden
 	}
-	// Déplacer le lien vers un autre dossier exige aussi le droit d'y écrire
-	if l.FolderID != "" && l.FolderID != existing.FolderID && !s.canEditFolder(ctx, l.FolderID, userID) {
-		return nil, ErrForbidden
+	// Seul l'auteur peut changer son idée de dossier : la déplacer vers un
+	// dossier public reviendrait à la publier à sa place. Il lui faut aussi le
+	// droit d'écrire dans le dossier de destination.
+	if l.FolderID != existing.FolderID {
+		if existing.OwnerID != userID {
+			return nil, ErrForbidden
+		}
+		if l.FolderID != "" && !s.canEditFolder(ctx, l.FolderID, userID) {
+			return nil, ErrForbidden
+		}
 	}
 	// Seul l'auteur choisit si son lien est publié dans la communauté
 	if existing.OwnerID != userID {

@@ -7,6 +7,7 @@ import (
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
 	"github.com/tribbae/backend/internal/interceptor"
+	"github.com/tribbae/backend/internal/preview"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -115,7 +116,7 @@ func (h *Handler) CreateLink(ctx context.Context, req *pb.CreateLinkRequest) (*p
 	}
 	// Compléter avec les métadonnées Open Graph si aucune image n'est fournie
 	if l.ImageURL == "" && l.URL != "" {
-		if meta, err := scrapeOG(ctx, l.URL); err == nil {
+		if meta, err := preview.Fetch(ctx, l.URL); err == nil {
 			if l.Title == "" && meta.Title != "" {
 				l.Title = meta.Title
 			}

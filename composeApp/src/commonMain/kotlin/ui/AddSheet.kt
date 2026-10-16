@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import data.LinkCategory
+import data.extractUrl
 import ui.campfire.*
 
 /** Ce que l'utilisateur a choisi dans la feuille « Ajouter à la tribu ». */
@@ -42,6 +43,17 @@ sealed class AddChoice {
 fun AddSheet(onDismiss: () -> Unit, onChoice: (AddChoice) -> Unit) {
     val clipboard = LocalClipboardManager.current
     var url by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    // Le formulaire s'ouvre tout de suite : c'est lui qui récupère l'aperçu
+    fun go(text: String): Boolean {
+        val found = extractUrl(text) ?: return false
+        onChoice(AddChoice.FromUrl(found))
+        return true
+    }
+    fun submit() {
+        if (url.isNotBlank() && !go(url)) error = "Cette adresse ne semble pas valide (ex. : marmiton.org/recette…)."
+    }
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = Sable, dragHandle = { SheetHandle() }) {
@@ -55,7 +67,11 @@ fun AddSheet(onDismiss: () -> Unit, onChoice: (AddChoice) -> Unit) {
                 Text("Un lien repéré ?", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
                 Row(
                     Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp)).background(androidx.compose.ui.graphics.Color.White)
-                        .border(2.dp, if (url.isNotBlank()) Terracotta else androidx.compose.ui.graphics.Color(0xFFE6D3C0), RoundedCornerShape(18.dp))
+                        .border(2.dp, when {
+                            error != null -> androidx.compose.ui.graphics.Color(0xFF9A3420)
+                            url.isNotBlank() -> Terracotta
+                            else -> androidx.compose.ui.graphics.Color(0xFFE6D3C0)
+                        }, RoundedCornerShape(18.dp))
                         .padding(start = 16.dp, end = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -65,28 +81,39 @@ fun AddSheet(onDismiss: () -> Unit, onChoice: (AddChoice) -> Unit) {
                         if (url.isEmpty()) Text("Coller l'adresse d'une page", color = TextMuted, fontSize = 15.sp, maxLines = 1)
                         BasicTextField(
                             value = url,
-                            onValueChange = { url = it },
+                            onValueChange = {
+                                // Un lien collé (même entouré de texte) ouvre directement le formulaire
+                                val pasted = it.length - url.length > 8
+                                url = it
+                                error = null
+                                if (pasted) go(it)
+                            },
                             singleLine = true,
                             textStyle = TextStyle(color = Ecorce, fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             cursorBrush = SolidColor(Terracotta),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
-                            keyboardActions = KeyboardActions(onGo = { if (url.isNotBlank()) onChoice(AddChoice.FromUrl(url.trim())) }),
+                            keyboardActions = KeyboardActions(onGo = { submit() }),
                             modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Adresse de la page" }
                         )
                     }
                     if (url.isNotBlank()) {
-                        SmallAction("Ajouter", Terracotta, androidx.compose.ui.graphics.Color.White) { onChoice(AddChoice.FromUrl(url.trim())) }
+                        SmallAction("Ajouter", Terracotta, androidx.compose.ui.graphics.Color.White) { submit() }
                     } else {
                         SmallAction("Coller", Ecorce, Sable) {
                             val text = clipboard.getText()?.text?.trim().orEmpty()
-                            if (text.isNotEmpty()) {
+                            if (!go(text)) {
                                 url = text
-                                if (text.startsWith("http")) onChoice(AddChoice.FromUrl(text))
+                                error = if (text.isEmpty()) "Le presse-papiers est vide." else "Le presse-papiers ne contient pas d'adresse web."
                             }
                         }
                     }
                 }
-                Text("Titre, image et description sont récupérés automatiquement.", fontSize = 12.sp, color = TextSec)
+                Text(
+                    error ?: "Titre, images, et même ingrédients, prix ou date : tout est récupéré automatiquement.",
+                    fontSize = 12.sp,
+                    color = if (error != null) androidx.compose.ui.graphics.Color(0xFF9A3420) else TextSec,
+                    fontWeight = if (error != null) FontWeight.SemiBold else FontWeight.Normal
+                )
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

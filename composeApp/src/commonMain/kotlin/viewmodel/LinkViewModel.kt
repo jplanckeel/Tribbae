@@ -131,10 +131,10 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             reminderScheduler?.invoke(link)
         }
 
-        // Récupère l'image OG en arrière-plan seulement si pas d'image manuelle
+        // Récupère l'image de la page en arrière-plan seulement si pas d'image manuelle
         if (url.isNotBlank() && imageUrl.isBlank()) {
             viewModelScope.launch {
-                val ogUrl = ogImageFetcher?.invoke(url)
+                val ogUrl = resolveImage(url)
                 if (!ogUrl.isNullOrBlank()) {
                     repository.updateLink(link.copy(imageUrl = ogUrl))
                     updateFilteredLinks()
@@ -142,6 +142,17 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             }
         }
     }
+
+    /**
+     * Meilleure image d'une page : le scraper du backend (plus complet : JSON-LD,
+     * lazy-loading, oEmbed, contournement des pages anti-bot) puis, hors ligne
+     * ou sans session, l'extraction locale.
+     */
+    private suspend fun resolveImage(url: String): String? =
+        previewLink(url)?.image?.takeIf { it.isNotBlank() } ?: ogImageFetcher?.invoke(url)
+
+    /** Identifiant de l'utilisateur connecté, ou null. */
+    fun currentUserId(): String? = sessionManager?.getUserId()?.takeIf { it.isNotBlank() }
 
     /** Titre, description et image d'une page web, via le backend. Null si hors ligne ou non connecté. */
     suspend fun previewLink(url: String): data.LinkPreview? {
@@ -444,12 +455,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     /** Récupère les images OG manquantes pour les liens existants (sans image manuelle) */
     fun fetchMissingImages() {
-        val fetcher = ogImageFetcher ?: return
         viewModelScope.launch {
             repository.links.value
                 .filter { it.imageUrl.isBlank() && it.url.isNotBlank() }
                 .forEach { link ->
-                    val imageUrl = fetcher(link.url)
+                    val imageUrl = resolveImage(link.url)
                     if (!imageUrl.isNullOrBlank()) {
                         repository.updateLink(link.copy(imageUrl = imageUrl))
                         updateFilteredLinks()

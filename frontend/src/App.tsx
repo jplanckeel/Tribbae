@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import LinkDetail from "./pages/LinkDetail";
 import MyIdeas from "./pages/MyIdeas";
 import SharedFolder from "./pages/SharedFolder";
+import ShareTarget from "./pages/ShareTarget";
 import Shopping from "./pages/Shopping";
 import Tribe from "./pages/Tribe";
 import Welcome, { Auth } from "./pages/Welcome";
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
       { path: "/courses", element: auth(<Shopping />) },
       { path: "/tribu", element: auth(<Tribe />) },
       { path: "/admin", element: auth(<Admin />) },
+      { path: "/partager", element: auth(<ShareTarget />) },
       // Anciennes URLs (favoris, liens partagés, référencement)
       { path: "/login", element: <Navigate to="/connexion" replace /> },
       { path: "/discover", element: <Navigate to="/explorer?vue=dossiers" replace /> },

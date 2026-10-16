@@ -101,7 +101,7 @@ private fun WelcomeScreen(modifier: Modifier, onRegister: () -> Unit, onLogin: (
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
                 .background(Sable)
-                .padding(start = 24.dp, end = 24.dp, top = 30.dp, bottom = 120.dp),
+                .padding(start = 24.dp, end = 24.dp, top = 30.dp, bottom = ui.components.bottomNavClearance()),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text("Tribbae", style = display(38.sp))
@@ -166,7 +166,7 @@ private fun TribeContent(
         }
     }
 
-    Column(modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = 120.dp)) {
+    Column(modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = ui.components.bottomNavClearance())) {
         // ── Bandeau orange : soleil + tipi ──
         Box(Modifier.fillMaxWidth().background(Braise)) {
             Box(Modifier.align(Alignment.BottomCenter).offset(y = 170.dp).size(360.dp).clip(CircleShape).background(Soleil))

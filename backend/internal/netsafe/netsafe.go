@@ -92,6 +92,12 @@ func NewClient(timeout time.Duration) *http.Client {
 
 // Get effectue un GET sur une URL utilisateur avec le client sécurisé.
 func Get(ctx context.Context, client *http.Client, raw string) (*http.Response, error) {
+	return GetWithHeaders(ctx, client, raw, nil)
+}
+
+// GetWithHeaders est Get avec des en-têtes supplémentaires (ils remplacent
+// les valeurs par défaut, User-Agent compris).
+func GetWithHeaders(ctx context.Context, client *http.Client, raw string, headers map[string]string) (*http.Response, error) {
 	u, err := ValidateURL(raw)
 	if err != nil {
 		return nil, err
@@ -102,6 +108,9 @@ func Get(ctx context.Context, client *http.Client, raw string) (*http.Response, 
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Tribbae/1.0)")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml")
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetch: %w", err)

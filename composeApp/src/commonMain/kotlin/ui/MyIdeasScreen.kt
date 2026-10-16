@@ -62,7 +62,7 @@ fun MyIdeasScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 120.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = ui.components.bottomNavClearance()),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

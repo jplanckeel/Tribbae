@@ -57,6 +57,23 @@ export interface LinkInput {
   visibility?: "private" | "public";
 }
 
+/** Aperçu d'une page web (GET /v1/links/preview) : de quoi pré-remplir une idée. */
+export interface LinkPreview {
+  title: string;
+  description: string;
+  /** Meilleure image ; `images` liste tous les candidats, du meilleur au moins bon. */
+  image: string;
+  images?: string[];
+  siteName?: string;
+  /** Catégorie déduite des données schema.org (recette, événement, livre, produit). */
+  category?: CategoryKey;
+  ingredients?: string[];
+  price?: string;
+  location?: string;
+  /** Timestamp ms. */
+  eventDate?: number;
+}
+
 export interface Collaborator {
   userId: string;
   email?: string;

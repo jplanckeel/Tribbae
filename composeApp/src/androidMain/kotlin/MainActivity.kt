@@ -13,6 +13,7 @@ import data.ImagePickerHelper
 import data.LinkRepository
 import data.NotificationHelper
 import data.OgImageFetcher
+import data.extractUrl
 import viewmodel.LinkViewModel
 
 class MainActivity : ComponentActivity() {
@@ -27,7 +28,7 @@ class MainActivity : ComponentActivity() {
 
         val storage = AndroidStorage(applicationContext)
         val repository = LinkRepository(storage)
-        val sharedUrl = extractSharedUrl(intent)
+        val (sharedUrl, sharedTitle) = extractShared(intent)
         val appContext = applicationContext
 
         setContent {
@@ -56,17 +57,22 @@ class MainActivity : ComponentActivity() {
                 }
             }
             TribbaeTheme {
-                AppModern(vm = viewModel, sharedUrl = sharedUrl)
+                AppModern(vm = viewModel, sharedUrl = sharedUrl, sharedTitle = sharedTitle)
             }
         }
     }
 
-    private fun extractSharedUrl(intent: Intent?): String? {
-        if (intent?.action != Intent.ACTION_SEND) return null
-        if (intent.type != "text/plain") return null
-        val text = intent.getStringExtra(Intent.EXTRA_TEXT) ?: return null
-        // Extraire l'URL du texte partagé (peut contenir du texte autour)
-        val urlRegex = Regex("https?://\\S+")
-        return urlRegex.find(text)?.value ?: text
+    /**
+     * Contenu partagé depuis une autre application : l'adresse (souvent noyée
+     * dans un texte, « Regarde ça https://… ») et, sans adresse, le texte
+     * lui-même qui devient le titre de l'idée.
+     */
+    private fun extractShared(intent: Intent?): Pair<String?, String?> {
+        if (intent?.action != Intent.ACTION_SEND || intent.type != "text/plain") return null to null
+        val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim().orEmpty()
+        val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT)?.trim().orEmpty()
+        val url = extractUrl(text) ?: extractUrl(subject)
+        if (url != null) return url to null
+        return null to (subject.ifBlank { text }.take(300).ifBlank { null })
     }
 }

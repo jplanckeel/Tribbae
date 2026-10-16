@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/tribbae/backend/internal/preview"
 )
 
 // SearchResult représente un résultat de recherche web
@@ -197,7 +199,7 @@ func formatSearchContext(results []SearchResult) string {
 	return sb.String()
 }
 
-// enrichImagesFromOG scrape les OG images en parallèle (max 3, timeout 3s chacun)
+// enrichImagesFromOG récupère l'image des pages en parallèle (max 3, budget global 8s)
 func enrichImagesFromOG(ctx context.Context, ideas []SuggestedLink) {
 	ogCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
@@ -214,7 +216,7 @@ func enrichImagesFromOG(ctx context.Context, ideas []SuggestedLink) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			if img := scrapeOGImage(ogCtx, ideas[idx].URL); img != "" {
+			if img := preview.Image(ogCtx, ideas[idx].URL); img != "" {
 				ideas[idx].ImageURL = img
 			}
 		}(i)

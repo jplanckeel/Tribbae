@@ -1,9 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type DragEvent, type FormEvent, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
 import * as api from "../lib/api";
 import { CATEGORIES } from "../lib/categories";
 import { useMyData } from "../lib/data";
-import { toInput } from "../lib/links";
+import { extractUrl, toInput } from "../lib/links";
 import { useSession } from "../lib/session";
 import type { CategoryKey, Folder, FolderInput, Link, LinkInput } from "../lib/types";
 import AiSheet from "./AiSheet";
@@ -12,7 +12,6 @@ import FolderFormSheet from "./FolderFormSheet";
 import Icon from "./Icon";
 import LinkFormSheet from "./LinkFormSheet";
 import Sheet from "./Sheet";
-import { Spinner } from "./ui";
 
 // Point d'entrée unique pour créer / modifier : feuille « Ajouter à la tribu »,
 // formulaire d'idée, formulaire de dossier et génération IA.
@@ -153,31 +152,27 @@ type Pick =
 
 function AddSheet({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (p: Pick) => void }) {
   const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [dragging, setDragging] = useState(false);
   const canPaste = typeof navigator !== "undefined" && !!navigator.clipboard?.readText;
 
-  const fromUrl = async (raw: string) => {
-    const value = raw.trim();
-    if (!value) return;
-    setLoading(true);
-    let defaults: Partial<LinkInput> = { url: value };
-    try {
-      const p = await api.links.preview(value);
-      defaults = { url: value, title: p.title || "", description: p.description || "", imageUrl: p.image || "" };
-    } catch {
-      // L'aperçu est facultatif : on ouvre quand même le formulaire
-    } finally {
-      setLoading(false);
-    }
+  // Le formulaire s'ouvre tout de suite : c'est lui qui récupère l'aperçu
+  const go = (text: string): boolean => {
+    const found = extractUrl(text);
+    if (!found) return false;
     setUrl("");
-    onPick({ kind: "link", defaults });
+    setError("");
+    onPick({ kind: "link", defaults: { url: found } });
+    return true;
   };
 
   const paste = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      setUrl(text);
-      if (/^https?:\/\//i.test(text.trim())) fromUrl(text);
+      if (!go(text)) {
+        setUrl(text.trim());
+        setError(text.trim() ? "Le presse-papiers ne contient pas d'adresse web." : "Le presse-papiers est vide.");
+      }
     } catch {
       // Permission refusée : l'utilisateur colle à la main
     }
@@ -185,35 +180,52 @@ function AddSheet({ open, onClose, onPick }: { open: boolean; onClose: () => voi
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    fromUrl(url);
+    if (url.trim() && !go(url)) setError("Cette adresse ne semble pas valide (ex. : marmiton.org/recette…).");
+  };
+
+  const drop = (e: DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    go(e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text/plain"));
   };
 
   return (
     <Sheet open={open} onClose={onClose} title="Ajouter à la tribu">
       <div className="flex flex-col gap-[18px]">
-        <form onSubmit={submit} className="flex flex-col gap-2">
+        <form onSubmit={submit} className="flex flex-col gap-2" noValidate>
           <label htmlFor="add-url" className="text-[13px] font-bold text-sec">Un lien repéré ?</label>
-          <div className="flex h-14 items-center gap-2.5 rounded-m border-2 border-line-2 bg-white pr-2 pl-4 text-muted focus-within:border-terracotta">
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={drop}
+            className={`flex h-14 items-center gap-2.5 rounded-m border-2 bg-white pr-2 pl-4 text-muted focus-within:border-terracotta ${dragging ? "border-dashed border-terracotta bg-sable-2" : error ? "border-sortie-ink" : "border-line-2"}`}
+          >
             <Icon name="link" size={20} />
             <input
               id="add-url"
-              type="url"
+              type="text"
               inputMode="url"
               autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              enterKeyHint="go"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Coller l'adresse d'une page"
+              onChange={(e) => { setUrl(e.target.value); setError(""); }}
+              onPaste={(e) => { if (go(e.clipboardData.getData("text"))) e.preventDefault(); }}
+              placeholder={dragging ? "Déposez le lien ici" : "Coller l'adresse d'une page"}
+              aria-invalid={!!error}
+              aria-describedby="add-url-hint"
               className="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-ecorce outline-none placeholder:text-muted"
             />
-            {loading ? (
-              <Spinner size={22} className="mr-2 text-terracotta" />
-            ) : url.trim() ? (
+            {url.trim() ? (
               <button type="submit" className="h-10 rounded-s bg-terracotta px-3 text-[13px] font-bold text-white">Ajouter</button>
             ) : canPaste ? (
               <button type="button" onClick={paste} className="h-10 rounded-s bg-ecorce px-3 text-[13px] font-bold text-sable">Coller</button>
             ) : null}
           </div>
-          <span className="text-xs text-sec">Titre, image et description sont récupérés automatiquement.</span>
+          <span id="add-url-hint" role={error ? "alert" : undefined} className={`text-xs ${error ? "font-semibold text-sortie-ink" : "text-sec"}`}>
+            {error || "Titre, images, et même ingrédients, prix ou date : tout est récupéré automatiquement."}
+          </span>
         </form>
 
         <div className="flex flex-col gap-2.5">

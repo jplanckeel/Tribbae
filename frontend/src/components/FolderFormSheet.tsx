@@ -7,7 +7,7 @@ import { Button, ErrorNote, Field } from "./ui";
 
 const VISIBILITIES: { key: Visibility; label: string; hint: string; icon: IconName }[] = [
   { key: "VISIBILITY_PRIVATE", label: "Privé", hint: "Vous et les membres invités", icon: "lock" },
-  { key: "VISIBILITY_PUBLIC", label: "Public", hint: "Visible dans l'Explorer", icon: "globe" },
+  { key: "VISIBILITY_PUBLIC", label: "Public", hint: "Vos idées du dossier visibles par tous, dans l'Explorer", icon: "globe" },
 ];
 
 const empty: FolderInput = { name: "", icon: "FOLDER", color: "ORANGE", visibility: "VISIBILITY_PRIVATE" };

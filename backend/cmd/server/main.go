@@ -27,6 +27,7 @@ import (
 	"github.com/tribbae/backend/internal/httpx"
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/link"
+	"github.com/tribbae/backend/internal/preview"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -88,7 +89,7 @@ func main() {
 	}
 
 	aiH := ai.NewHandler(aiSvc, userGetter, bearerUser,
-		// Folder creator : crée un dossier communautaire IA
+		// Folder creator : crée un dossier IA (privé)
 		func(ctx context.Context, ownerID, name string) (string, error) {
 			f, err := folderSvc.CreateAiFolder(ctx, ownerID, name)
 			if err != nil {
@@ -187,7 +188,7 @@ func main() {
 	costlyLimiter := httpx.NewRateLimiter(20, time.Minute)
 
 	var handler http.Handler = withSPA(mux)
-	handler = withPreview(link.PreviewHandler(bearerUser), handler)
+	handler = withPreview(preview.Handler(bearerUser), handler)
 	handler = withAI(aiH, handler)
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true}, handler)
 	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true}, handler)

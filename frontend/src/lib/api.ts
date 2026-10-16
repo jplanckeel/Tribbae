@@ -1,6 +1,6 @@
 import { clearSession, getSession } from "./session";
 import type {
-  AdminUser, AiIdea, Child, Comment, Folder, FolderInput, Link, LinkInput, UserProfile, CollaboratorRole,
+  AdminUser, AiIdea, Child, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, UserProfile, CollaboratorRole,
 } from "./types";
 
 const BASE = "/v1";
@@ -84,8 +84,7 @@ export const links = {
       method: "PUT", body: json({ linkId: id, ...data }),
     }).then((r) => r.link),
   delete: (id: string) => request<void>(`/links/${encodeURIComponent(id)}`, { method: "DELETE" }),
-  preview: (url: string) =>
-    request<{ title: string; description: string; image: string }>(`/links/preview${qs({ url })}`),
+  preview: (url: string) => request<LinkPreview>(`/links/preview${qs({ url })}`),
   like: (id: string) =>
     request<{ likeCount?: number }>(`/links/${encodeURIComponent(id)}/like`, { method: "POST", body: "{}" }),
   unlike: (id: string) =>

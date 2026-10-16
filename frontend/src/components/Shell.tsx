@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Navigate, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 import { useSession } from "../lib/session";
 import { ComposerProvider, useComposer } from "./Composer";
@@ -13,10 +13,47 @@ const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/tribu", label: "Ma tribu", icon: "tribe" },
 ];
 
-/** Barre flottante du bas (mobile) : pilule écorce + losange « + » central. */
+/**
+ * Masque la barre quand on fait défiler vers le bas (lecture) et la ramène dès
+ * qu'on remonte, ou en haut de page. L'état est lié à la page : changer
+ * d'écran fait réapparaître la barre.
+ */
+function useHiddenOnScroll(pathname: string) {
+  const [state, setState] = useState({ hidden: false, path: pathname });
+  useEffect(() => {
+    let last = window.scrollY;
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const y = window.scrollY;
+        const delta = y - last;
+        if (Math.abs(delta) < 8 && y > 80) return;
+        last = y;
+        const hidden = y > 80 && delta > 0;
+        setState((s) => (s.hidden === hidden && s.path === window.location.pathname ? s : { hidden, path: window.location.pathname }));
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+  const show = () => setState((s) => (s.hidden ? { ...s, hidden: false } : s));
+  return { hidden: state.hidden && state.path === pathname, show };
+}
+
+/**
+ * Barre flottante du bas (mobile) : pilule écorce + losange « + » central.
+ * Chaque onglet a une place fixe (icône + libellé toujours visibles) : changer
+ * d'onglet ne décale plus les autres.
+ */
 function BottomNav() {
   const { openAdd } = useComposer();
   const { pathname } = useLocation();
+  const { hidden, show } = useHiddenOnScroll(pathname);
   // La fiche d'une idée a sa propre barre d'actions en bas
   if (pathname.startsWith("/links/")) return null;
   const item = (n: (typeof NAV)[number]) => (
@@ -24,39 +61,60 @@ function BottomNav() {
       key={n.to}
       to={n.to}
       end={n.end}
-      aria-label={n.label}
-      className={({ isActive }) =>
-        `flex h-11 items-center justify-center gap-1.5 rounded-2xl text-[13px] font-bold whitespace-nowrap transition-all ${
-          isActive ? "bg-sable px-3.5 text-ecorce" : "w-11 text-bark-mute hover:text-sable"
-        }`
-      }
+      // Toucher l'onglet déjà actif remonte en haut de la page
+      onClick={(e) => {
+        if (e.currentTarget.getAttribute("aria-current") === "page") {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }}
+      className="group flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[20px] outline-offset-[-4px]"
     >
       {({ isActive }) => (
         <>
-          <Icon name={n.icon} size={isActive ? 20 : 22} className={isActive ? "text-terracotta" : ""} />
-          {isActive && <span>{n.label}</span>}
+          <span
+            className={`flex h-[30px] w-12 items-center justify-center rounded-full transition-colors duration-200 ${
+              isActive ? "bg-sable text-terracotta" : "text-bark-mute group-hover:text-sable"
+            }`}
+          >
+            <Icon name={n.icon} size={21} />
+          </span>
+          <span className={`truncate text-[11px] leading-none font-bold transition-colors duration-200 ${isActive ? "text-sable" : "text-bark-mute"}`}>
+            {n.label}
+          </span>
         </>
       )}
     </NavLink>
   );
   return (
-    <nav
-      aria-label="Navigation principale"
-      className="fixed inset-x-4 bottom-[max(20px,env(safe-area-inset-bottom))] z-50 flex h-[68px] items-center justify-around rounded-[26px] bg-ecorce px-1.5 shadow-nav md:hidden"
+    <div
+      onFocusCapture={show}
+      className={`pointer-events-none fixed inset-x-0 bottom-0 z-50 pt-6 pb-[max(20px,env(safe-area-inset-bottom))] transition-transform duration-300 ease-out motion-reduce:transition-none md:hidden ${
+        hidden ? "translate-y-[calc(100%+12px)]" : ""
+      }`}
     >
-      {item(NAV[0])}
-      {item(NAV[1])}
-      <button
-        type="button"
-        onClick={() => openAdd()}
-        aria-label="Ajouter une idée"
-        className="-mt-[30px] flex h-14 w-14 rotate-45 items-center justify-center rounded-[20px] border-4 border-sable bg-terracotta text-white transition-transform active:scale-95"
+      {/* Fondu sable : le contenu qui défile dessous s'efface au lieu d'être coupé net */}
+      <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-sable/0 to-sable/90" />
+      <nav
+        aria-label="Navigation principale"
+        className="pointer-events-auto relative mx-4 flex h-[68px] items-center rounded-[26px] bg-ecorce px-1 shadow-nav"
       >
-        <Icon name="plus" size={24} strokeWidth={2.6} className="-rotate-45" />
-      </button>
-      {item(NAV[2])}
-      {item(NAV[3])}
-    </nav>
+        {item(NAV[0])}
+        {item(NAV[1])}
+        <div className="flex flex-1 justify-center">
+          <button
+            type="button"
+            onClick={() => openAdd()}
+            aria-label="Ajouter une idée"
+            className="-mt-[30px] flex h-14 w-14 rotate-45 items-center justify-center rounded-[20px] border-4 border-sable bg-terracotta text-white transition-transform active:scale-95"
+          >
+            <Icon name="plus" size={24} strokeWidth={2.6} className="-rotate-45" />
+          </button>
+        </div>
+        {item(NAV[2])}
+        {item(NAV[3])}
+      </nav>
+    </div>
   );
 }
 
@@ -127,7 +185,7 @@ export function AppLayout() {
         Aller au contenu
       </a>
       <TopBar />
-      <main id="contenu" className="pb-32 md:pb-16">
+      <main id="contenu" className="pb-[calc(124px+env(safe-area-inset-bottom))] md:pb-16">
         <Outlet />
       </main>
       <BottomNav />

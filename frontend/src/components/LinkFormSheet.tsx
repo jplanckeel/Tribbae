@@ -1,11 +1,11 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type FormEvent, type SyntheticEvent } from "react";
 import * as api from "../lib/api";
 import { CATEGORIES, categoryMeta } from "../lib/categories";
 import { useMyData } from "../lib/data";
-import { safeImage } from "../lib/format";
-import { canEditFolder, tagCounts } from "../lib/links";
+import { hostname, safeImage } from "../lib/format";
+import { canEditFolder, extractUrl, tagCounts } from "../lib/links";
 import { useSession } from "../lib/session";
-import type { CategoryKey, LinkInput } from "../lib/types";
+import type { CategoryKey, LinkInput, LinkPreview } from "../lib/types";
 import Icon from "./Icon";
 import Sheet from "./Sheet";
 import { Button, ErrorNote, Field, Spinner, TextArea, Toggle } from "./ui";
@@ -30,6 +30,23 @@ const fromLocalInput = (v: string) => (v ? new Date(v).getTime() : 0);
 
 const DATED: CategoryKey[] = ["LINK_CATEGORY_EVENEMENT", "LINK_CATEGORY_ACTIVITE"];
 
+type PreviewState = {
+  status: "idle" | "loading" | "done" | "failed";
+  /** Adresse dont l'aperçu est en cours ou affiché. */
+  url?: string;
+  images: string[];
+  site?: string;
+};
+
+/** Valeurs remplies par le dernier aperçu : on peut les remplacer si le lien change. */
+type AutoFilled = Partial<Pick<LinkInput, "title" | "description" | "imageUrl" | "price" | "location" | "eventDate">> & { ingredients?: string };
+
+// Remplace la valeur si elle est vide ou si elle venait de l'aperçu précédent
+function fill<T>(current: T | undefined, previousAuto: T | undefined, next: T | undefined): T | undefined {
+  if (!next) return current;
+  return !current || current === previousAuto ? next : current;
+}
+
 export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: LinkFormProps) {
   const { folders, links } = useMyData();
   const session = useSession();
@@ -39,8 +56,17 @@ export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: L
   // Les champs secondaires sont dépliés s'ils sont déjà renseignés
   const [more, setMore] = useState(!!(initial.ageRange || initial.price || initial.location || initial.eventDate || initial.rating));
   const [saving, setSaving] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
   const [error, setError] = useState("");
+
+  // Aperçu du lien : lancé dès l'ouverture si l'idée arrive avec une adresse
+  const initialUrl = editing ? undefined : extractUrl(initial.url);
+  const [preview, setPreview] = useState<PreviewState>(() =>
+    initialUrl ? { status: "loading", url: initialUrl, images: [] } : { status: "idle", images: [] },
+  );
+  // La catégorie suggérée par la page ne remplace pas un choix explicite
+  const [categoryChosen, setCategoryChosen] = useState(editing || initial.category !== "LINK_CATEGORY_IDEE");
+  const autoFilled = useRef<AutoFilled>({});
+  const requestId = useRef(0);
 
   const set = <K extends keyof LinkInput>(k: K, v: LinkInput[K]) => setForm((f) => ({ ...f, [k]: v }));
   const cat = categoryMeta(form.category);
@@ -48,24 +74,57 @@ export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: L
   const isRecipe = form.category === "LINK_CATEGORY_RECETTE";
   const isDated = DATED.includes(form.category) || !!form.eventDate;
 
-  const fetchPreview = async () => {
-    const url = form.url?.trim();
-    if (!url || form.title.trim()) return;
-    setPreviewing(true);
+  const applyPreview = (p: LinkPreview, url: string) => {
+    const prev = autoFilled.current;
+    const ingredientsText = (p.ingredients ?? []).join("\n");
+    setForm((f) => ({
+      ...f,
+      title: fill(f.title, prev.title, p.title) ?? "",
+      description: fill(f.description, prev.description, p.description),
+      imageUrl: fill(f.imageUrl, prev.imageUrl, p.image),
+      price: fill(f.price, prev.price, p.price),
+      location: fill(f.location, prev.location, p.location),
+      eventDate: fill(f.eventDate, prev.eventDate, p.eventDate),
+      category: !categoryChosen && p.category ? p.category : f.category,
+    }));
+    setIngredients((cur) => fill(cur, prev.ingredients, ingredientsText) ?? "");
+    autoFilled.current = {
+      title: p.title, description: p.description, imageUrl: p.image, price: p.price,
+      location: p.location, eventDate: p.eventDate, ingredients: ingredientsText,
+    };
+    if (p.price || p.location) setMore(true);
+    setPreview({
+      status: "done",
+      url,
+      images: p.images?.length ? p.images : p.image ? [p.image] : [],
+      site: p.siteName || hostname(url),
+    });
+  };
+
+  // Seules les réponses de la dernière requête comptent (l'adresse a pu changer)
+  const loadPreview = async (url: string) => {
+    const id = ++requestId.current;
     try {
       const p = await api.links.preview(url);
-      setForm((f) => ({
-        ...f,
-        title: f.title || p.title || "",
-        description: f.description || p.description || "",
-        imageUrl: f.imageUrl || p.image || "",
-      }));
+      if (id === requestId.current) applyPreview(p, url);
     } catch {
-      // Aperçu facultatif : l'utilisateur complète à la main
-    } finally {
-      setPreviewing(false);
+      if (id === requestId.current) setPreview((s) => ({ ...s, status: "failed" }));
     }
   };
+
+  const startPreview = (raw: string | undefined, force = false) => {
+    const url = extractUrl(raw);
+    if (!url) return;
+    if (url !== form.url) set("url", url);
+    if (!force && preview.url === url && preview.status !== "failed") return;
+    setPreview({ status: "loading", url, images: [] });
+    void loadPreview(url);
+  };
+
+  const loadInitialPreview = useEffectEvent(() => {
+    if (initialUrl) void loadPreview(initialUrl);
+  });
+  useEffect(() => loadInitialPreview(), []);
 
   const addTag = (raw: string) => {
     const t = raw.trim().replace(/^#/, "").toLowerCase();
@@ -96,7 +155,9 @@ export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: L
   };
 
   const editableFolders = folders.filter((f) => canEditFolder(f, session?.userId) || f.id === initial.folderId);
-  const img = safeImage(form.imageUrl);
+  // Dans son propre dossier public, une idée est visible de tous même sans être partagée à la communauté
+  const chosenFolder = folders.find((f) => f.id === form.folderId);
+  const inMyPublicFolder = chosenFolder?.visibility === "VISIBILITY_PUBLIC" && chosenFolder.ownerId === session?.userId;
 
   return (
     <Sheet
@@ -124,7 +185,7 @@ export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: L
                   key={c.key}
                   type="button"
                   aria-pressed={active}
-                  onClick={() => set("category", c.key)}
+                  onClick={() => { set("category", c.key); setCategoryChosen(true); }}
                   className={`flex h-[38px] shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors ${active ? "bg-ecorce text-sable" : `${c.bg} ${c.ink}`}`}
                 >
                   <Icon name={c.icon} size={16} />
@@ -135,31 +196,44 @@ export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: L
           </div>
         </fieldset>
 
-        <Field
-          label="Lien (facultatif)"
-          icon="link"
-          type="url"
-          inputMode="url"
-          placeholder="https://…"
-          value={form.url ?? ""}
-          onChange={(e) => set("url", e.target.value)}
-          onBlur={fetchPreview}
-          hint={previewing ? "Récupération du titre et de l'image…" : undefined}
+        <div className="flex flex-col gap-1.5">
+          <Field
+            label="Lien (facultatif)"
+            icon="link"
+            type="url"
+            inputMode="url"
+            autoCapitalize="off"
+            spellCheck={false}
+            placeholder="https://…"
+            value={form.url ?? ""}
+            onChange={(e) => set("url", e.target.value)}
+            onBlur={() => startPreview(form.url)}
+            onPaste={(e) => {
+              const pasted = e.clipboardData.getData("text");
+              if (extractUrl(pasted)) {
+                e.preventDefault();
+                startPreview(pasted);
+              }
+            }}
+          />
+          <PreviewStatus preview={preview} onRetry={() => startPreview(form.url, true)} />
+        </div>
+
+        <ImageChooser
+          loading={preview.status === "loading"}
+          candidates={preview.images}
+          value={form.imageUrl}
+          onChange={(u) => set("imageUrl", u)}
         />
 
-        <div className="flex gap-3">
-          <div className="min-w-0 flex-1">
-            <Field
-              label="Titre"
-              required
-              maxLength={300}
-              placeholder="Fête de la courge à la ferme"
-              value={form.title}
-              onChange={(e) => set("title", e.target.value)}
-            />
-          </div>
-          {previewing && <Spinner size={22} className="mt-10 text-terracotta" />}
-        </div>
+        <Field
+          label="Titre"
+          required
+          maxLength={300}
+          placeholder={preview.status === "loading" ? "Récupération du titre…" : "Fête de la courge à la ferme"}
+          value={form.title}
+          onChange={(e) => set("title", e.target.value)}
+        />
 
         <TextArea
           label="Description"
@@ -292,10 +366,6 @@ export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: L
           </div>
         )}
 
-        {img && (
-          <img src={img} alt="Aperçu de l'image" referrerPolicy="no-referrer" className="h-36 w-full rounded-l object-cover" />
-        )}
-
         <label className="flex items-center gap-3 rounded-m bg-white px-4 py-3.5 shadow-card">
           <Icon name="globe" size={20} className="text-activite-ic" />
           <span className="flex flex-1 flex-col">
@@ -308,9 +378,122 @@ export default function LinkFormSheet({ onClose, initial, editing, onSubmit }: L
             onChange={(v) => set("visibility", v ? "public" : "private")}
           />
         </label>
+        {inMyPublicFolder && form.visibility !== "public" && (
+          <p role="note" className="-mt-2 flex items-start gap-2 px-1 text-xs text-sec">
+            <Icon name="eye" size={15} className="mt-px shrink-0" />
+            Le dossier « {chosenFolder.name} » est public : cette idée y sera visible par tous ses visiteurs.
+          </p>
+        )}
 
         {error && <ErrorNote>{error}</ErrorNote>}
       </form>
     </Sheet>
+  );
+}
+
+/** État de la lecture du lien, sous le champ « Lien ». */
+function PreviewStatus({ preview, onRetry }: { preview: PreviewState; onRetry: () => void }) {
+  if (preview.status === "loading") {
+    return (
+      <span role="status" className="flex items-center gap-1.5 text-xs text-sec">
+        <Spinner size={14} className="text-terracotta" />
+        Lecture de la page…
+      </span>
+    );
+  }
+  if (preview.status === "failed") {
+    return (
+      <span role="status" className="flex flex-wrap items-center gap-x-2 text-xs text-sec">
+        Impossible de lire cette page : complétez à la main.
+        <button type="button" onClick={onRetry} className="font-bold text-terracotta hover:underline">Réessayer</button>
+      </span>
+    );
+  }
+  if (preview.status === "done") {
+    return (
+      <span role="status" className="flex items-center gap-1.5 text-xs text-sec">
+        <Icon name="check" size={14} className="text-activite-ic" />
+        Infos récupérées{preview.site ? ` depuis ${preview.site}` : ""}
+      </span>
+    );
+  }
+  return null;
+}
+
+/**
+ * Image de l'idée : grande vignette de l'image choisie et, s'il y en a
+ * plusieurs, les autres images trouvées sur la page. Les images qui ne
+ * chargent pas (liens morts, hotlinking refusé) ou trop petites (icônes,
+ * pixels) sont écartées d'office.
+ */
+function ImageChooser({ loading, candidates, value, onChange }: {
+  loading: boolean;
+  candidates: string[];
+  value?: string;
+  onChange: (url: string) => void;
+}) {
+  const [broken, setBroken] = useState<ReadonlySet<string>>(() => new Set());
+  const list = [...new Set([...(safeImage(value) && value ? [value] : []), ...candidates])].filter((u) => !broken.has(u));
+  const selected = value && list.includes(value) ? value : undefined;
+
+  const discard = (u: string) => {
+    setBroken((b) => new Set(b).add(u));
+    if (u === value) {
+      const next = list.find((c) => c !== u);
+      if (next || candidates.includes(u)) onChange(next ?? "");
+    }
+  };
+  const checkSize = (u: string) => (e: SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    if (w > 0 && (w < 120 || h < 80)) discard(u);
+  };
+
+  if (!loading && list.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[13px] font-bold text-sec">Image</span>
+        {list.length > 1 && <span className="text-xs text-sec">{list.length} trouvées · touchez pour choisir</span>}
+      </div>
+      {selected ? (
+        <img
+          key={selected}
+          src={selected}
+          alt="Image de l'idée"
+          referrerPolicy="no-referrer"
+          onError={() => discard(selected)}
+          onLoad={checkSize(selected)}
+          className="h-44 w-full animate-fade-in rounded-l bg-sable-2 object-cover"
+        />
+      ) : loading ? (
+        <div aria-hidden="true" className="h-44 w-full animate-pulse rounded-l bg-sable-2" />
+      ) : null}
+      {(list.length > 1 || (list.length === 1 && !selected)) && (
+        <div role="radiogroup" aria-label="Choisir l'image" className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 py-1 sm:-mx-6 sm:px-6">
+          {list.map((u, i) => (
+            <button
+              key={u}
+              type="button"
+              role="radio"
+              aria-checked={u === value}
+              aria-label={`Image ${i + 1} sur ${list.length}`}
+              onClick={() => onChange(u)}
+              className={`h-16 w-16 shrink-0 overflow-hidden rounded-s bg-sable-2 transition ${u === value ? "ring-[3px] ring-terracotta ring-offset-2 ring-offset-sable" : "opacity-75 hover:opacity-100"}`}
+            >
+              <img
+                src={u}
+                alt=""
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={() => discard(u)}
+                onLoad={checkSize(u)}
+                className="h-full w-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

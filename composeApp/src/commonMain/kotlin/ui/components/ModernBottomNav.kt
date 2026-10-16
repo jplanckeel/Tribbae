@@ -1,7 +1,9 @@
 package ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,6 +18,17 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,76 +59,131 @@ enum class NavDestination {
     PROFILE
 }
 
+/** Hauteur de la pilule et marge sous elle (hors inset système). */
+private val NavBarHeight = 68.dp
+private val NavBarBottomMargin = 20.dp
+
 /**
- * Barre de navigation « feu de camp » : pilule écorce flottante, onglet actif
- * en pastille sable avec libellé, losange terracotta « + » au centre.
+ * Espace à réserver en bas des écrans à onglets pour que rien ne reste caché
+ * sous la barre : pilule + marge + losange qui déborde + barre système
+ * (navigation à 3 boutons ou geste).
  */
 @Composable
-fun ModernBottomNav(
-    currentDestination: NavDestination,
-    onNavigate: (NavDestination) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(start = 16.dp, end = 16.dp, bottom = 20.dp),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp)
-                .shadow(18.dp, RoundedCornerShape(26.dp), spotColor = Ecorce)
-                .clip(RoundedCornerShape(26.dp))
-                .background(Ecorce)
-                .padding(horizontal = 6.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            NavTab(NavDestination.HOME, "Accueil", currentDestination, onNavigate) { tint ->
-                Icon(Icons.Outlined.Home, null, tint = tint, modifier = Modifier.size(21.dp))
-            }
-            NavTab(NavDestination.EXPLORE, "Explorer", currentDestination, onNavigate) { tint ->
-                Icon(Icons.Outlined.Explore, null, tint = tint, modifier = Modifier.size(21.dp))
-            }
-            // Emplacement du losange central
-            Spacer(Modifier.width(56.dp))
-            NavTab(NavDestination.MY_IDEAS, "Mes idées", currentDestination, onNavigate) { tint ->
-                TipiIcon(tint, Modifier.size(21.dp))
-            }
-            NavTab(NavDestination.PROFILE, "Ma tribu", currentDestination, onNavigate) { tint ->
-                Icon(Icons.Outlined.Groups, null, tint = tint, modifier = Modifier.size(22.dp))
-            }
-        }
+fun bottomNavClearance(): Dp =
+    NavBarHeight + NavBarBottomMargin + 28.dp +
+        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
-        // Losange « + » qui déborde au-dessus de la barre
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = (-30).dp)
-                .size(56.dp)
-                .rotate(45f)
-                .clip(RoundedCornerShape(20.dp))
-                .background(Terracotta)
-                .border(4.dp, Sable, RoundedCornerShape(20.dp))
-                .clickable(role = Role.Button) { onNavigate(NavDestination.ADD) }
-                .semantics { contentDescription = "Ajouter une idée" },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(26.dp).rotate(-45f)
-            )
+/**
+ * Masque la barre quand on fait défiler vers le bas (lecture) et la ramène dès
+ * qu'on remonte. À brancher sur le conteneur des écrans via Modifier.nestedScroll.
+ */
+class BottomNavScrollState {
+    var hidden by mutableStateOf(false)
+
+    val connection = object : NestedScrollConnection {
+        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+            if (available.y < -6f) hidden = true
+            else if (available.y > 6f) hidden = false
+            return Offset.Zero
         }
     }
 }
 
 @Composable
-private fun NavTab(
+fun rememberBottomNavScrollState() = remember { BottomNavScrollState() }
+
+/**
+ * Barre de navigation « feu de camp » : pilule écorce flottante, losange
+ * terracotta « + » au centre. Chaque onglet a une place fixe (icône + libellé
+ * toujours visibles) : changer d'onglet ne décale plus les autres.
+ */
+@Composable
+fun ModernBottomNav(
+    currentDestination: NavDestination,
+    onNavigate: (NavDestination) -> Unit,
+    modifier: Modifier = Modifier,
+    hidden: Boolean = false,
+) {
+    val haptic = LocalHapticFeedback.current
+    val navigate: (NavDestination) -> Unit = { d ->
+        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        onNavigate(d)
+    }
+    // Glisse hors de l'écran (hauteur + marge + inset + débord du losange)
+    val slide by animateDpAsState(
+        if (hidden) bottomNavClearance() + 16.dp else 0.dp,
+        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
+        label = "bottomNavSlide"
+    )
+
+    Box(modifier.fillMaxWidth().offset(y = slide), contentAlignment = Alignment.BottomCenter) {
+        // Fondu sable derrière la barre : le contenu qui défile dessous s'efface au lieu d'être coupé net
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(Brush.verticalGradient(listOf(Sable.copy(alpha = 0f), Sable.copy(alpha = 0.92f))))
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = NavBarBottomMargin),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(NavBarHeight)
+                    .shadow(18.dp, RoundedCornerShape(26.dp), spotColor = Ecorce)
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(Ecorce)
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                NavTab(NavDestination.HOME, "Accueil", currentDestination, navigate) { tint ->
+                    Icon(Icons.Outlined.Home, null, tint = tint, modifier = Modifier.size(21.dp))
+                }
+                NavTab(NavDestination.EXPLORE, "Explorer", currentDestination, navigate) { tint ->
+                    Icon(Icons.Outlined.Explore, null, tint = tint, modifier = Modifier.size(21.dp))
+                }
+                // Emplacement du losange central
+                Spacer(Modifier.weight(1f))
+                NavTab(NavDestination.MY_IDEAS, "Mes idées", currentDestination, navigate) { tint ->
+                    TipiIcon(tint, Modifier.size(21.dp))
+                }
+                NavTab(NavDestination.PROFILE, "Ma tribu", currentDestination, navigate) { tint ->
+                    Icon(Icons.Outlined.Groups, null, tint = tint, modifier = Modifier.size(22.dp))
+                }
+            }
+
+            // Losange « + » : comme sur la maquette (margin-top −30 px dans une barre
+            // centrée de 68 px), son bord haut dépasse de 9 dp au-dessus de la barre.
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-9).dp)
+                    .size(56.dp)
+                    .rotate(45f)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Terracotta)
+                    .border(4.dp, Sable, RoundedCornerShape(20.dp))
+                    .clickable(role = Role.Button) { navigate(NavDestination.ADD) }
+                    .semantics { contentDescription = "Ajouter une idée" },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp).rotate(-45f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.NavTab(
     destination: NavDestination,
     label: String,
     current: NavDestination,
@@ -123,25 +191,27 @@ private fun NavTab(
     icon: @Composable (Color) -> Unit
 ) {
     val selected = current == destination
-    Row(
+    val pill by animateColorAsState(if (selected) Sable else Sable.copy(alpha = 0f), tween(200), label = "navPill")
+    val tint by animateColorAsState(if (selected) Terracotta else BarkMute, tween(200), label = "navTint")
+    val text by animateColorAsState(if (selected) Sable else BarkMute, tween(200), label = "navText")
+    Column(
         modifier = Modifier
-            .height(44.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) Sable else Color.Transparent)
+            .weight(1f)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(18.dp))
             .clickable(role = Role.Tab) { onNavigate(destination) }
             .semantics(mergeDescendants = true) {
                 this.selected = selected
                 contentDescription = label
-            }
-            .animateContentSize()
-            .padding(horizontal = if (selected) 14.dp else 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)
     ) {
-        icon(if (selected) Terracotta else BarkMute)
-        AnimatedVisibility(visible = selected) {
-            Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1)
-        }
+        Box(
+            Modifier.size(width = 48.dp, height = 30.dp).clip(RoundedCornerShape(15.dp)).background(pill),
+            contentAlignment = Alignment.Center
+        ) { icon(tint) }
+        Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = text, maxLines = 1)
     }
 }
 

@@ -249,7 +249,13 @@ func (s *Service) GetByShareToken(ctx context.Context, token string) (*Folder, [
 	if err := s.col.FindOne(ctx, bson.M{"share_token": token}).Decode(&f); err != nil {
 		return nil, nil, ErrNotFound
 	}
-	cursor, err := s.linkCol.Find(ctx, bson.M{"folder_id": f.ID.Hex()})
+	// Le lien de partage est la décision du propriétaire : il expose ses idées,
+	// pas celles des collaborateurs (sauf celles que leur auteur a publiées).
+	// Même règle que link.PublicFolderFilter, sans dépendance au package link.
+	cursor, err := s.linkCol.Find(ctx, bson.M{"folder_id": f.ID.Hex(), "$or": bson.A{
+		bson.M{"owner_id": f.OwnerID},
+		bson.M{"visibility": "public"},
+	}})
 	if err != nil {
 		return &f, nil, nil
 	}
@@ -494,7 +500,8 @@ func (s *Service) ListTop(ctx context.Context, limit int32) ([]*Folder, error) {
 	return folders, cursor.All(ctx, &folders)
 }
 
-// CreateAiFolder crée un dossier public pour les idées générées par IA
+// CreateAiFolder crée un dossier pour les idées générées par IA. Il est privé :
+// publier reste un choix explicite de l'utilisateur.
 func (s *Service) CreateAiFolder(ctx context.Context, ownerID, name string) (*Folder, error) {
 	f := &Folder{
 		ID:          primitive.NewObjectID(),
@@ -502,7 +509,7 @@ func (s *Service) CreateAiFolder(ctx context.Context, ownerID, name string) (*Fo
 		Name:        name,
 		Icon:        "sparkles",
 		Color:       "PURPLE",
-		Visibility:  "public",
+		Visibility:  "private",
 		AiGenerated: true,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),

@@ -193,46 +193,6 @@ func buildSearchImageMap(results []SearchResult) map[string]string {
 	return m
 }
 
-func scrapeOGImage(ctx context.Context, rawURL string) string {
-	client := &http.Client{Timeout: 3 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-	if err != nil {
-		return ""
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Tribbae/1.0)")
-	resp, err := client.Do(req)
-	if err != nil {
-		return ""
-	}
-	defer resp.Body.Close()
-
-	limited := io.LimitReader(resp.Body, 32*1024)
-	body, err := io.ReadAll(limited)
-	if err != nil {
-		return ""
-	}
-	s := string(body)
-	idx := strings.Index(s, `og:image`)
-	if idx == -1 {
-		return ""
-	}
-	sub := s[idx:]
-	cIdx := strings.Index(sub, `content="`)
-	if cIdx == -1 {
-		cIdx = strings.Index(sub, `content='`)
-	}
-	if cIdx == -1 {
-		return ""
-	}
-	quote := sub[cIdx+8 : cIdx+9]
-	start := cIdx + 9
-	end := strings.Index(sub[start:], quote)
-	if end == -1 || end > 500 {
-		return ""
-	}
-	return sub[start : start+end]
-}
-
 func extractJSON(s string) string {
 	start := strings.Index(s, "{")
 	if start == -1 {

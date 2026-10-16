@@ -122,7 +122,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                                 Icon(if (pub) Icons.Outlined.Public else Icons.Outlined.Lock, null, tint = Ecorce, modifier = Modifier.size(16.dp))
                                 Text(label, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
                             }
-                            Text(if (pub) "Visible dans l'Explorer" else "Vous et les membres invités", fontSize = 12.sp, color = TextSec)
+                            Text(if (pub) "Vos idées du dossier visibles par tous, dans l'Explorer" else "Vous et les membres invités", fontSize = 12.sp, color = TextSec)
                         }
                     }
                 }

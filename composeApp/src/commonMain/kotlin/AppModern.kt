@@ -1,21 +1,25 @@
 package com.linkkeeper.app
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import data.*
 import ui.*
 import ui.components.ModernBottomNav
 import ui.components.NavDestination
+import ui.components.rememberBottomNavScrollState
 import viewmodel.LinkViewModel
 
 @Composable
-fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null) {
+fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null, sharedTitle: String? = null) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val authRepository = remember { AuthRepository() }
@@ -30,7 +34,7 @@ fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null) {
         }
     }
 
-    ModernMainApp(vm, sharedUrl, sessionManager, authRepository, followRepository, commentRepository)
+    ModernMainApp(vm, sharedUrl, sharedTitle, sessionManager, authRepository, followRepository, commentRepository)
 }
 
 /** Écrans empilés au-dessus des onglets (navigation par état, comme avant). */
@@ -40,6 +44,7 @@ private sealed class Screen {
         val url: String? = null,
         val category: LinkCategory? = null,
         val folderId: String? = null,
+        val title: String? = null,
     ) : Screen()
     data class FolderForm(val existing: Folder? = null) : Screen()
     data class Detail(val link: Link, val public: Boolean = false) : Screen()
@@ -54,6 +59,7 @@ private sealed class Screen {
 private fun ModernMainApp(
     vm: LinkViewModel,
     sharedUrl: String?,
+    sharedTitle: String?,
     sessionManager: SessionManager,
     authRepository: AuthRepository,
     followRepository: FollowRepository,
@@ -61,7 +67,7 @@ private fun ModernMainApp(
 ) {
     var tab by remember { mutableStateOf(NavDestination.HOME) }
     // Pile d'écrans : retour = dépiler
-    val stack = remember { mutableStateListOf<Screen>().apply { if (sharedUrl != null) add(Screen.IdeaForm(url = sharedUrl)) } }
+    val stack = remember { mutableStateListOf<Screen>().apply { if (sharedUrl != null || sharedTitle != null) add(Screen.IdeaForm(url = sharedUrl, title = sharedTitle)) } }
     var showAdd by remember { mutableStateOf(false) }
     var exploreQuery by remember { mutableStateOf("") }
     var exploreCategory by remember { mutableStateOf<LinkCategory?>(null) }
@@ -70,8 +76,10 @@ private fun ModernMainApp(
     val folders by vm.folders.collectAsState()
     val communityLinks by vm.communityLinks.collectAsState()
 
-    fun push(s: Screen) { stack.add(s) }
-    fun pop() { if (stack.isNotEmpty()) stack.removeAt(stack.lastIndex) }
+    // Barre masquée pendant le défilement ; elle réapparaît à chaque changement d'écran
+    val navScroll = rememberBottomNavScrollState()
+    fun push(s: Screen) { stack.add(s); navScroll.hidden = false }
+    fun pop() { if (stack.isNotEmpty()) stack.removeAt(stack.lastIndex); navScroll.hidden = false }
     fun openLink(id: String) { links.find { it.id == id }?.let { push(Screen.Detail(it)) } }
     fun openExplore(query: String = "", category: LinkCategory? = null) {
         exploreQuery = query; exploreCategory = category
@@ -80,10 +88,12 @@ private fun ModernMainApp(
 
     BackHandler(enabled = stack.isNotEmpty()) { pop() }
 
-    Box(Modifier.fillMaxSize().background(ui.Sable)) {
+    Box(Modifier.fillMaxSize().background(ui.Sable).nestedScroll(navScroll.connection)) {
         when (val screen = stack.lastOrNull()) {
             null -> {
-                when (tab) {
+                // Fondu léger entre onglets
+                Crossfade(targetState = tab, animationSpec = tween(180), label = "tabs") { current ->
+                when (current) {
                     NavDestination.HOME, NavDestination.ADD -> NewHomeScreen(
                         links = links,
                         onNavigateToExplore = { openExplore() },
@@ -140,10 +150,15 @@ private fun ModernMainApp(
                         onOpenShopping = { push(Screen.Shopping) },
                     )
                 }
+                }
                 ModernBottomNav(
                     currentDestination = tab,
-                    onNavigate = { d -> if (d == NavDestination.ADD) showAdd = true else tab = d },
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    onNavigate = { d ->
+                        navScroll.hidden = false
+                        if (d == NavDestination.ADD) showAdd = true else tab = d
+                    },
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    hidden = navScroll.hidden
                 )
             }
 
@@ -154,6 +169,7 @@ private fun ModernMainApp(
                 initialUrl = screen.url,
                 initialCategory = screen.category,
                 initialFolderId = screen.folderId,
+                initialTitle = screen.title,
                 onSaved = {
                     pop()
                     // Après une modification, la fiche affichée reprend la version à jour
