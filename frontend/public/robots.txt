@@ -1,13 +1,15 @@
-# https://www.robotstxt.org/robotstxt.html
+# Tribbae — pages publiques : accueil, Explorer, catégories, idées et dossiers publiés.
+# Les moteurs de recherche et les assistants IA (GPTBot, OAI-SearchBot, ClaudeBot,
+# PerplexityBot, Google-Extended…) sont les bienvenus sur ces pages. Les écrans
+# privés sont marqués noindex ; les liens de partage de dossier sont secrets.
 User-agent: *
 Allow: /
-Disallow: /connexion
-Disallow: /bienvenue
+Disallow: /v1/
+Disallow: /share/
 Disallow: /admin
 Disallow: /mes-idees
 Disallow: /tribu
 Disallow: /courses
-Disallow: /share/
+Disallow: /partager
 
-# Sitemap
 Sitemap: https://tribbae.bananaops.cloud/sitemap.xml

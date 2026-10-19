@@ -17,6 +17,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -170,9 +174,11 @@ fun IdeaFormScreen(
         onSaved()
     }
 
-    Box(Modifier.fillMaxSize().background(Sable)) {
+    // Le clavier réduit toute la page (imePadding) : la zone qui défile rétrécit au-dessus
+    // de la barre « Annuler / Ajouter », et le champ en cours de saisie (tags…) reste visible.
+    Column(Modifier.fillMaxSize().background(Sable).imePadding()) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 120.dp),
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -255,7 +261,7 @@ fun IdeaFormScreen(
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Tags", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
-                TagInputWithAutocomplete(tagsList = tags, onTagsChanged = { tags = it }, allAvailableTags = knownTags)
+                TagInputWithAutocomplete(tagsList = tags, onTagsChanged = { tags = it }, allAvailableTags = knownTags, showLabel = false)
             }
 
             Row(
@@ -365,7 +371,7 @@ fun IdeaFormScreen(
         }
 
         Row(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Sable).navigationBarsPadding().imePadding()
+            Modifier.fillMaxWidth().background(Sable).navigationBarsPadding()
                 .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -378,6 +384,9 @@ fun IdeaFormScreen(
         ModalBottomSheet(onDismissRequest = { showFolders = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Dossier", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
+                NewFolderRow(onCreate = { name ->
+                    viewModel.createFolderQuick(name) { id -> folderId = id; showFolders = false }
+                })
                 MenuRow(Icons.Outlined.BookmarkBorder, "Non rangée") { folderId = null; showFolders = false }
                 folders.forEach { f ->
                     MenuRow(folderIconVector(f), f.name, tint = folderSolid(f.color)) { folderId = f.id; showFolders = false }
@@ -426,6 +435,48 @@ fun IdeaFormScreen(
             },
             dismissButton = { TextButton(onClick = { showTime = false }) { Text("Annuler", color = Ecorce) } }
         )
+    }
+}
+
+/** « Nouveau dossier » : se déplie en un champ pour nommer et créer le dossier sans quitter l'idée. */
+@Composable
+private fun NewFolderRow(onCreate: (String) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf("") }
+    var creating by remember { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(open) { if (open) runCatching { focus.requestFocus() } }
+    if (!open) {
+        Row(
+            Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp)).border(ThinBorder, RoundedCornerShape(18.dp))
+                .clickable(role = Role.Button) { open = true }.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(Icons.Outlined.CreateNewFolder, null, tint = Terracotta, modifier = Modifier.size(22.dp))
+            Text("Nouveau dossier", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Terracotta)
+        }
+        return
+    }
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        CampField(
+            "Nom du nouveau dossier", name, { name = it }, Modifier.focusRequester(focus), placeholder = "Vacances d'été, Noël…", maxLength = 80,
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done)
+        )
+        Text("Privé : visible seulement par votre tribu.", fontSize = 12.sp, color = TextSec)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            CampButton("Annuler", { open = false; name = "" }, kind = ButtonKind.Ghost, height = 44.dp)
+            CampButton(
+                if (creating) "Création…" else "Créer et choisir",
+                { creating = true; onCreate(name) },
+                Modifier.weight(1f),
+                enabled = name.isNotBlank() && !creating,
+                height = 44.dp
+            )
+        }
     }
 }
 

@@ -52,11 +52,16 @@ function fill<T>(current: T | undefined, previousAuto: T | undefined, next: T | 
   return !current || current === previousAuto ? next : current;
 }
 
+const NEW_FOLDER = "__new__";
+
 export default function LinkFormSheet({ onClose, initial, editing, authorName, onSubmit }: LinkFormProps) {
-  const { folders, links, peers } = useMyData();
+  const { folders, links, peers, upsertFolder } = useMyData();
   const session = useSession();
   const [form, setForm] = useState<LinkInput>(initial);
   const [tagDraft, setTagDraft] = useState("");
+  // Nom du dossier en cours de création depuis le choix du dossier (null : fermé)
+  const [newFolder, setNewFolder] = useState<string | null>(null);
+  const [creatingFolder, setCreatingFolder] = useState(false);
   const [ingredients, setIngredients] = useState((initial.ingredients ?? []).join("\n"));
   // Les champs secondaires sont dépliés s'ils sont déjà renseignés
   const [more, setMore] = useState(!!(initial.ageRange || initial.price || initial.location || initial.eventDate || initial.rating));
@@ -130,6 +135,23 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
     if (initialUrl) void loadPreview(initialUrl);
   });
   useEffect(() => loadInitialPreview(), []);
+
+  const createFolder = async () => {
+    const name = newFolder?.trim();
+    if (!name || creatingFolder) return;
+    setCreatingFolder(true);
+    setError("");
+    try {
+      const folder = await api.folders.create({ name: name.slice(0, 80), icon: "FOLDER", color: "ORANGE", visibility: "VISIBILITY_PRIVATE" });
+      upsertFolder(folder);
+      set("folderId", folder.id);
+      setNewFolder(null);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setCreatingFolder(false);
+    }
+  };
 
   const addTag = (raw: string) => {
     const t = raw.trim().replace(/^#/, "").toLowerCase();
@@ -262,17 +284,54 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
           <div className="relative">
             <select
               id="f-folder"
-              value={form.folderId ?? ""}
-              onChange={(e) => set("folderId", e.target.value)}
+              value={newFolder !== null ? NEW_FOLDER : (form.folderId ?? "")}
+              onChange={(e) => {
+                if (e.target.value === NEW_FOLDER) return setNewFolder("");
+                setNewFolder(null);
+                set("folderId", e.target.value);
+              }}
               className="h-[52px] w-full appearance-none rounded-m border-[1.5px] border-line-2 bg-white px-4 pr-10 text-[15px] font-medium text-ecorce outline-none focus:border-terracotta"
             >
               <option value="">Non rangée</option>
               {editableFolders.map((f) => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
+              <option value={NEW_FOLDER}>+ Nouveau dossier…</option>
             </select>
             <Icon name="chevronDown" size={18} className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted" />
           </div>
+          {newFolder !== null && (
+            <div className="mt-1 flex flex-col gap-2 rounded-m bg-white p-3">
+              <div className="flex gap-2">
+                <input
+                  autoFocus
+                  aria-label="Nom du nouveau dossier"
+                  value={newFolder}
+                  maxLength={80}
+                  onChange={(e) => setNewFolder(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Entrée crée le dossier, sans enregistrer l'idée
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void createFolder();
+                    } else if (e.key === "Escape") {
+                      e.stopPropagation();
+                      setNewFolder(null);
+                    }
+                  }}
+                  placeholder="Vacances d'été, Noël…"
+                  className="h-11 min-w-0 flex-1 rounded-s border-[1.5px] border-line-2 px-3 text-[15px] font-medium text-ecorce outline-none placeholder:text-muted focus:border-terracotta"
+                />
+                <Button type="button" size="sm" className="h-11" loading={creatingFolder} disabled={!newFolder.trim()} onClick={() => void createFolder()}>
+                  Créer
+                </Button>
+                <Button type="button" size="sm" variant="ghost" className="h-11" onClick={() => setNewFolder(null)}>
+                  Annuler
+                </Button>
+              </div>
+              <p className="text-xs text-sec">Dossier privé : visible seulement par votre tribu.</p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">

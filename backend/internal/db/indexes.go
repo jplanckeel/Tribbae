@@ -110,6 +110,18 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				Options: options.Index().SetName("idx_links_folder_id_created_at"),
 			},
 		},
+		{
+			// Pages publiques et plan du site : idées publiées, par catégorie, récentes d'abord
+			Collection: "links",
+			Model: mongo.IndexModel{
+				Keys: bson.D{
+					{Key: "visibility", Value: 1},
+					{Key: "category", Value: 1},
+					{Key: "updated_at", Value: -1},
+				},
+				Options: options.Index().SetName("idx_links_visibility_category_updated"),
+			},
+		},
 
 		// ── link_likes ────────────────────────────────────────
 		{

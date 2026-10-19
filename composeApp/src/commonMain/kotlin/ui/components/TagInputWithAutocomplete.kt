@@ -30,7 +30,8 @@ fun TagInputWithAutocomplete(
     tagsList: List<String>,
     onTagsChanged: (List<String>) -> Unit,
     allAvailableTags: List<String>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showLabel: Boolean = true
 ) {
     var tagInput by remember { mutableStateOf("") }
 
@@ -57,12 +58,14 @@ fun TagInputWithAutocomplete(
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = "Tags",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF4E3530)
-        )
+        if (showLabel) {
+            Text(
+                text = "Tags",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF4E3530)
+            )
+        }
 
         // Chips des tags sélectionnés
         if (tagsList.isNotEmpty()) {

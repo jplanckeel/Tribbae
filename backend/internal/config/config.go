@@ -10,12 +10,14 @@ import (
 )
 
 type Config struct {
-	MongoURI    string
-	MongoDB     string
-	JWTSecret   string
-	Port        string
-	GRPCPort    string
-	BaseURL     string
+	MongoURI  string
+	MongoDB   string
+	JWTSecret string
+	Port      string
+	GRPCPort  string
+	BaseURL   string
+	// SiteURL : adresse publique du site (adresses canoniques, plan du site, aperçus)
+	SiteURL     string
 	OllamaURL   string
 	OllamaModel string
 	// OllamaKeepAlive : durée de maintien du modèle en mémoire entre deux demandes
@@ -38,6 +40,7 @@ func Load() *Config {
 		Port:      getEnv("PORT", "8080"),
 		GRPCPort:  getEnv("GRPC_PORT", "9090"),
 		BaseURL:   getEnv("BASE_URL", "http://localhost:8080"),
+		SiteURL:   getEnv("SITE_URL", "https://tribbae.bananaops.cloud"),
 		OllamaURL: getEnv("OLLAMA_URL", "http://localhost:11434"),
 		// Petit modèle par défaut : la génération tourne sur le CPU d'un petit VPS
 		OllamaModel:     getEnv("OLLAMA_MODEL", "qwen3:1.7b"),

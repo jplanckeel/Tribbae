@@ -492,25 +492,43 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
      */
     fun saveAiIdeasInNewFolder(ideas: List<AiSuggestedLink>, name: String, onDone: (String) -> Unit = {}) {
         viewModelScope.launch {
-            val local = Folder(
+            val folder = createPrivateFolder(Folder(
                 id = kotlin.random.Random.nextLong().toString(),
                 name = name.take(80).ifBlank { "Idées de l'IA" },
                 icon = FolderIcon.MAGIC, color = FolderColor.PURPLE, visibility = "PRIVATE", aiGenerated = true
-            )
-            val folder = authenticatedClient?.let { client ->
-                runCatching {
-                    client.createFolder(
-                        data.CreateFolderRequest(
-                            name = local.name, icon = local.icon.name, color = local.color.name,
-                            visibility = "VISIBILITY_PRIVATE", bannerUrl = "", tags = emptyList()
-                        )
-                    )
-                }.getOrNull()?.let { local.copy(id = it.id) }
-            } ?: local
-            repository.addFolder(folder)
+            ))
             saveAiIdeas(ideas, folder.id)
             onDone(folder.id)
         }
+    }
+
+    /**
+     * Crée un dossier privé à la volée (depuis le choix du dossier d'une idée)
+     * et renvoie son identifiant : celui du serveur si on est en ligne, pour que
+     * l'idée enregistrée juste après y soit bien rattachée.
+     */
+    fun createFolderQuick(name: String, onDone: (String) -> Unit) {
+        val trimmed = name.trim().take(80)
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            val folder = createPrivateFolder(Folder(id = kotlin.random.Random.nextLong().toString(), name = trimmed, visibility = "PRIVATE"))
+            onDone(folder.id)
+        }
+    }
+
+    private suspend fun createPrivateFolder(local: Folder): Folder {
+        val folder = authenticatedClient?.let { client ->
+            runCatching {
+                client.createFolder(
+                    data.CreateFolderRequest(
+                        name = local.name, icon = local.icon.name, color = local.color.name,
+                        visibility = "VISIBILITY_PRIVATE", bannerUrl = "", tags = emptyList()
+                    )
+                )
+            }.getOrNull()?.let { local.copy(id = it.id) }
+        } ?: local
+        repository.addFolder(folder)
+        return folder
     }
 
     private var imageBackfillJob: kotlinx.coroutines.Job? = null

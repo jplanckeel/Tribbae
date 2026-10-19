@@ -9,6 +9,7 @@ import { categoryBySlug, normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { plural } from "../lib/format";
 import { byRecent, tagCounts } from "../lib/links";
+import Seo from "../components/Seo";
 
 const TABS = [
   { key: "dossiers", label: "Dossiers" },
@@ -42,7 +43,7 @@ export default function MyIdeas() {
     const list = links.filter((l) => normalizeCategory(l.category) === cat.key).sort(byRecent);
     return (
       <Page>
-        <title>{`Mes ${cat.plural.toLowerCase()} · Tribbae`}</title>
+        <Seo title={`Mes ${cat.plural.toLowerCase()} · Tribbae`} noindex />
         <div className="flex items-center gap-3">
           <RouterLink to="/mes-idees" aria-label="Retour à mes idées" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-soft hover:bg-sable-2">
             <Icon name="chevronLeft" size={22} />
@@ -76,7 +77,7 @@ export default function MyIdeas() {
 
   return (
     <Page>
-      <title>Mes idées · Tribbae</title>
+      <Seo title="Mes idées · Tribbae" noindex />
       <div className="flex flex-col gap-0.5">
         <h1 className="font-display text-[32px] font-extrabold tracking-[-0.8px] md:text-[40px]">Mes idées</h1>
         <span className="text-sm text-sec">

@@ -12,10 +12,60 @@ import { Button, Spinner } from "./ui";
 
 const SUGGESTIONS = [
   "10 activités d'intérieur pour un jour de pluie",
-  "Sorties nature autour de Lyon pour des 3–8 ans",
   "Goûters sans sucre ajouté",
   "Cadeaux de Noël pour une ado de 13 ans",
+  "Jeux en plein air pour un anniversaire de 6 ans",
+  "Recettes à cuisiner avec un enfant de 4 ans",
+  "Bricolages avec des rouleaux en carton",
+  "Activités calmes avant le coucher",
+  "Idées de sorties en forêt avec des petits",
+  "Repas rapides pour les soirs de semaine",
+  "Livres pour un enfant qui commence à lire",
+  "Cadeaux faits maison pour la fête des mères",
+  "Jeux de société coopératifs pour les 5–8 ans",
+  "Activités pour occuper les enfants en voiture",
+  "Déco de chambre pour une petite fille de 7 ans",
+  "Expériences scientifiques faciles à la maison",
+  "Idées de pique-nique originales",
+  "Activités manuelles pour Halloween",
+  "Desserts sans four pour l'été",
+  "Cadeaux à moins de 20 € pour un garçon de 10 ans",
+  "Jeux d'eau pour les journées de canicule",
+  "Activités Montessori pour un bébé de 18 mois",
+  "Romans d'aventure pour les 9–12 ans",
+  "Idées de week-end en famille à la campagne",
+  "Recettes de légumes que les enfants aiment",
+  "Chasse au trésor à organiser dans le jardin",
+  "Activités pour les vacances de la Toussaint",
+  "Décorations de Noël à fabriquer ensemble",
+  "Petits-déjeuners équilibrés et gourmands",
+  "Jeux pour apprendre les lettres en s'amusant",
+  "Cadeaux de naissance utiles",
+  "Sorties culturelles pour des ados",
+  "Activités sportives à faire en famille",
+  "Recettes de crêpes et galettes pour la Chandeleur",
+  "Albums jeunesse sur les émotions",
+  "Jeux de rôle pour les 3–5 ans",
+  "Idées pour un anniversaire à la maison",
+  "Plantes faciles à faire pousser avec les enfants",
+  "Activités pour un dimanche après-midi d'hiver",
+  "Goûters d'anniversaire faits maison",
+  "Rituels du soir pour aider à s'endormir",
+  "Idées de cabane à construire",
+  "Cadeaux pour remercier la maîtresse",
 ];
+
+const SHOWN_SUGGESTIONS = 4;
+
+/** Quelques suggestions tirées au hasard. */
+function pickSuggestions(): string[] {
+  const pool = [...SUGGESTIONS];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, SHOWN_SUGGESTIONS);
+}
 
 const NEW_FOLDER = "__new__";
 
@@ -32,6 +82,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
   const { folders, upsertFolder, upsertLink, peers } = useMyData();
   const { toast, confirm } = useFeedback();
   const [prompt, setPrompt] = useState(initialPrompt ?? "");
+  const [suggestions, setSuggestions] = useState(pickSuggestions);
   const [ideas, setIdeas] = useState<(AiIdea & { cat: CategoryKey })[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [target, setTarget] = useState<string>(folderId ?? NEW_FOLDER);
@@ -181,7 +232,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
         </div>
         {!ideas.length && !loading && (
           <div className="flex flex-wrap gap-2">
-            {SUGGESTIONS.map((s) => (
+            {suggestions.map((s) => (
               <button
                 key={s}
                 type="button"
@@ -191,6 +242,14 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
                 {s}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setSuggestions(pickSuggestions())}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-soleil transition-colors hover:bg-white/10"
+            >
+              <Icon name="sparkles" size={14} />
+              D'autres idées
+            </button>
           </div>
         )}
       </form>

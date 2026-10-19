@@ -28,6 +28,7 @@ import (
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/link"
 	"github.com/tribbae/backend/internal/preview"
+	"github.com/tribbae/backend/internal/seo"
 	"github.com/tribbae/backend/internal/tribe"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -177,7 +178,7 @@ func main() {
 	authLimiter := httpx.NewRateLimiter(10, time.Minute)
 	costlyLimiter := httpx.NewRateLimiter(20, time.Minute)
 
-	var handler http.Handler = withSPA(mux)
+	var handler http.Handler = withSPA(mux, cfg.SiteURL, seo.NewSource(linkSvc, folderSvc))
 	handler = withPreview(preview.Handler(bearerUser), handler)
 	handler = withAI(aiH, handler)
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true}, handler)
@@ -236,8 +237,12 @@ func withPreview(preview http.HandlerFunc, next http.Handler) http.Handler {
 
 // withSPA sert les fichiers statiques du frontend depuis /public.
 // Si le fichier n'existe pas, renvoie index.html (SPA fallback).
-func withSPA(apiHandler http.Handler) http.Handler {
-	const staticDir = "/public"
+func withSPA(apiHandler http.Handler, siteURL string, content seo.Source) http.Handler {
+	// STATIC_DIR : pour lancer le serveur hors Docker sur un build local du frontend
+	staticDir := os.Getenv("STATIC_DIR")
+	if staticDir == "" {
+		staticDir = "/public"
+	}
 
 	// Si le dossier n'existe pas, on ne sert que l'API
 	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
@@ -245,13 +250,29 @@ func withSPA(apiHandler http.Handler) http.Handler {
 		return apiHandler
 	}
 
-	log.Println("Serving frontend from /public")
+	log.Printf("Serving frontend from %s", staticDir)
 	fs := http.FileServer(http.Dir(staticDir))
+	// Pages rendues pour les moteurs et assistants IA (en-tête et contenu propres
+	// à chaque adresse), plan du site et llms.txt
+	pages, err := seo.New(siteURL, staticDir, content)
+	if err != nil {
+		log.Fatalf("seo: %v", err)
+	}
+	sitemap, llms := pages.Sitemap(), pages.LLMs()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Les routes API passent directement au handler gRPC-gateway
 		if strings.HasPrefix(r.URL.Path, "/v1/") {
 			apiHandler.ServeHTTP(w, r)
+			return
+		}
+
+		switch r.URL.Path {
+		case "/sitemap.xml":
+			sitemap(w, r)
+			return
+		case "/llms.txt":
+			llms(w, r)
 			return
 		}
 
@@ -263,7 +284,7 @@ func withSPA(apiHandler http.Handler) http.Handler {
 			return
 		}
 
-		// SPA fallback : renvoyer index.html
-		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+		// Application : index.html avec l'en-tête et le contenu de l'adresse
+		pages.ServeHTML(w, r)
 	})
 }

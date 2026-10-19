@@ -15,6 +15,7 @@ import { useSession } from "../lib/session";
 import { shareOrCopy } from "../lib/share";
 import type { Comment, Link } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
+import Seo from "../components/Seo";
 
 export default function LinkDetail() {
   const { id = "" } = useParams();
@@ -166,7 +167,11 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
 
   return (
     <article className="mx-auto max-w-3xl md:px-8 md:pt-8">
-      <title>{`${link.title} · Tribbae`}</title>
+      <Seo
+        title={`${link.title} · ${cat.label} · Tribbae`}
+        description={link.description || `${cat.label} : ${link.title}, sur Tribbae.`}
+        path={`/links/${link.id}`}
+      />
 
       {/* Visuel */}
       <div className={`relative h-[300px] overflow-hidden md:h-[360px] md:rounded-xl ${cat.bg}`}>

@@ -15,6 +15,7 @@ import { byPopularity, byRecent, soonReminders, upcoming } from "../lib/links";
 import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
 import { useDesktop } from "../lib/useMediaQuery";
+import Seo from "../components/Seo";
 
 export default function Home() {
   // Deux mises en page distinctes (maquettes mobile et « Web · Accueil »)
@@ -55,6 +56,11 @@ function HomeMobile() {
 
   return (
     <div className="relative overflow-hidden">
+      <Seo
+        title="Tribbae — Les idées de la famille au même endroit"
+        description="Tribbae rassemble les idées de la famille : sorties, activités, recettes, cadeaux, livres et déco. Rangez-les en dossiers, partagez-les avec votre tribu et piochez dans celles des autres familles."
+        path="/"
+      />
       {/* Motifs du logo : grand soleil, petit rond et croix */}
       <div aria-hidden="true" className="pointer-events-none absolute -top-[110px] -right-[120px] h-[330px] w-[330px] rounded-full bg-soleil md:right-[8%]" />
       <span aria-hidden="true" className="pointer-events-none absolute top-[118px] right-10 h-[9px] w-[9px] rounded-full border-2 border-terracotta md:right-[22%]" />

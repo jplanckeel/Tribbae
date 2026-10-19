@@ -15,6 +15,7 @@ import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
 import { useDesktop } from "../lib/useMediaQuery";
 import type { Folder, Link } from "../lib/types";
+import Seo from "../components/Seo";
 
 const AGES = [
   { key: "0-3", label: "0–3", min: 0, max: 3 },
@@ -162,7 +163,12 @@ export default function Explorer() {
 
   return (
     <>
-      <title>{single ? `${single.plural} en famille · Tribbae` : "Explorer les idées des tribus · Tribbae"}</title>
+      <Seo
+        title={single ? `${single.plural} en famille : les idées des tribus · Tribbae` : "Explorer les idées des familles · Tribbae"}
+        description={single?.intro ?? "Sorties, activités, recettes, cadeaux, livres et déco : les idées et dossiers publiés par les familles de Tribbae, à garder dans vos propres listes."}
+        path={slug && single ? `/category/${single.slug}` : "/explorer"}
+        noindex={params.has("q") || params.has("vue")}
+      />
       {desktop ? <ExplorerDesktop {...props} /> : <ExplorerMobile {...props} />}
     </>
   );

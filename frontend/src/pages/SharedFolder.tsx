@@ -8,6 +8,7 @@ import { categoryMeta, folderColor, folderIcon } from "../lib/categories";
 import { metaLine, plural, safeHref } from "../lib/format";
 import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
+import Seo from "../components/Seo";
 
 /** Dossier ouvert depuis un lien de partage : lisible sans compte. */
 export default function SharedFolder() {
@@ -34,7 +35,7 @@ export default function SharedFolder() {
 
   return (
     <div className="min-h-dvh pb-16">
-      <title>{`${folder.name} · partagé sur Tribbae`}</title>
+      <Seo title={`${folder.name} · partagé sur Tribbae`} noindex />
       <header className="relative overflow-hidden px-5 pt-5 pb-8 md:px-8" style={{ background: color.bg }}>
         <div aria-hidden="true" className="absolute -right-24 -bottom-40 h-80 w-80 rounded-full bg-white/45" />
         <div className="relative mx-auto flex max-w-4xl flex-col gap-6">

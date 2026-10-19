@@ -1,0 +1,96 @@
+[
+  {
+    "title": "Démarrage",
+    "icon": "tipi",
+    "items": [
+      [
+        "Comment créer ma tribu ?",
+        "Depuis l'écran de bienvenue, touchez « Créer ma tribu », puis renseignez un nom, votre email et un mot de passe d'au moins 8 caractères."
+      ],
+      [
+        "Puis-je explorer sans compte ?",
+        "Oui : l'Explorer, les idées et dossiers publics ainsi que les liens de partage sont consultables sans compte. Il en faut un pour enregistrer, aimer ou commenter."
+      ],
+      [
+        "Mes idées sont-elles synchronisées entre le téléphone et le web ?",
+        "Oui, une fois connecté avec le même compte, l'application Android et le site affichent les mêmes idées et dossiers."
+      ]
+    ]
+  },
+  {
+    "title": "Idées & dossiers",
+    "icon": "idee",
+    "items": [
+      [
+        "Comment ajouter une idée ?",
+        "Touchez le losange « + » en bas de l'écran (ou « Ajouter » sur ordinateur). Collez un lien : le titre, l'image et la description sont récupérés automatiquement. Vous pouvez aussi partir d'une catégorie."
+      ],
+      [
+        "Quelles sont les catégories ?",
+        "Activité, Cadeau, Recette, Sortie, Idée, Livre et Déco. Chacune a sa couleur pour être repérée d'un coup d'œil."
+      ],
+      [
+        "Comment ranger mes idées ?",
+        "Dans « Mes idées », créez un dossier (nom, couleur, icône), puis choisissez-le dans le formulaire d'une idée. Les idées sans dossier restent dans « Non rangées »."
+      ],
+      [
+        "À quoi servent les rappels ?",
+        "Donnez une date à une sortie ou une activité et activez « Me le rappeler la veille » : l'application Android vous prévient, et la cloche de l'accueil liste ce qui arrive."
+      ],
+      [
+        "Comment fonctionne la liste de courses ?",
+        "Ajoutez les ingrédients de vos recettes, puis sélectionnez les recettes de la semaine dans « Liste de courses » : les ingrédients sont regroupés et se cochent au fil des rayons."
+      ]
+    ]
+  },
+  {
+    "title": "Partage & communauté",
+    "icon": "tribe",
+    "items": [
+      [
+        "Comment inviter un proche ?",
+        "Ouvrez un dossier puis « Inviter » : créez un lien de partage (lecture sans compte) ou ajoutez un proche par email pour qu'il puisse ajouter ses idées."
+      ],
+      [
+        "Comment rendre une idée publique ?",
+        "Dans le formulaire de l'idée, activez « Partager avec la communauté ». Elle apparaît alors dans l'Explorer. Un dossier peut aussi être rendu public."
+      ],
+      [
+        "Comment garder une idée de la communauté ?",
+        "Sur sa fiche, touchez « Enregistrer dans mes idées » : une copie privée est ajoutée à votre tribu."
+      ],
+      [
+        "Comment suivre une tribu ?",
+        "Sur la fiche d'une idée publique, touchez « Suivre » à côté du nom de la tribu. Retrouvez-les dans « Ma tribu » > « Tribus suivies »."
+      ]
+    ]
+  },
+  {
+    "title": "IA",
+    "icon": "sparkles",
+    "items": [
+      [
+        "Comment fonctionne la génération d'idées ?",
+        "Décrivez ce que vous cherchez (« sorties nature pour des 3–8 ans »). L'IA propose des idées que vous choisissez avant de les ranger dans un dossier. Elle ne consulte pas le web : vérifiez les détails pratiques (horaires, prix) avant de partir."
+      ],
+      [
+        "Est-ce gratuit ?",
+        "Oui, la génération est incluse ; elle demande d'être connecté. Elle peut prendre jusqu'à une minute."
+      ]
+    ]
+  },
+  {
+    "title": "Compte & confidentialité",
+    "icon": "lock",
+    "items": [
+      [
+        "Mes idées privées sont-elles visibles ?",
+        "Non. Seuls vous, les membres de votre tribu et les personnes invitées dans un dossier les voient. Une idée n'apparaît dans l'Explorer que si vous choisissez de la partager. Les échanges sont chiffrés (HTTPS)."
+      ],
+      [
+        "Comment changer mon mot de passe ou supprimer mon compte ?",
+        "Écrivez-nous à support@tribbae.com. La suppression du compte efface définitivement vos données."
+      ]
+    ]
+  }
+]

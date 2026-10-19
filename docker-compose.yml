@@ -26,6 +26,8 @@ services:
       PORT: "8080"
       GRPC_PORT: "9090"
       BASE_URL: ${BASE_URL:-http://backend:8080}
+      # Adresse publique (adresses canoniques, sitemap.xml, llms.txt, aperçus de partage)
+      SITE_URL: ${SITE_URL:-https://tribbae.bananaops.cloud}
       OLLAMA_URL: http://ollama:11434
       # Petit modèle pour un VPS 2 CPU sans GPU (téléchargé automatiquement au démarrage)
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:1.7b}

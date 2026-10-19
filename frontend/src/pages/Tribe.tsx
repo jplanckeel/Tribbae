@@ -13,6 +13,7 @@ import { formatAge, initial, plural } from "../lib/format";
 import { clearSession, useSession } from "../lib/session";
 import type { Child, Folder, Tribe as TribeData, TribeMember } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
+import Seo from "../components/Seo";
 
 interface Member {
   key: string;
@@ -64,7 +65,7 @@ export default function Tribe() {
 
   return (
     <div>
-      <title>Ma tribu · Tribbae</title>
+      <Seo title="Ma tribu · Tribbae" noindex />
       <header className="relative overflow-hidden bg-braise px-5 pt-5 pb-[74px] md:px-8">
         <div aria-hidden="true" className="absolute -bottom-[170px] left-1/2 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-soleil" />
         <div className="relative mx-auto flex max-w-3xl items-center justify-between">

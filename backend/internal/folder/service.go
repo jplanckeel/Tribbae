@@ -594,3 +594,16 @@ func (s *Service) LoadStats(ctx context.Context, folders []*Folder) *Stats {
 	}
 	return st
 }
+
+// ListPublished retourne les dossiers publics, les plus récemment modifiés
+// d'abord (plan du site, pages publiques).
+func (s *Service) ListPublished(ctx context.Context, limit int64) ([]*Folder, error) {
+	opts := options.Find().SetSort(bson.D{{Key: "updated_at", Value: -1}}).SetLimit(limit)
+	cursor, err := s.col.Find(ctx, bson.M{"visibility": "public"}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	folders := []*Folder{}
+	return folders, cursor.All(ctx, &folders)
+}

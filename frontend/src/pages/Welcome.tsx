@@ -7,6 +7,7 @@ import { Button, ErrorNote, Field } from "../components/ui";
 import * as api from "../lib/api";
 import { safeNext } from "../lib/format";
 import { setSession, useSession } from "../lib/session";
+import Seo from "../components/Seo";
 
 export default function Welcome() {
   const session = useSession();
@@ -17,7 +18,7 @@ export default function Welcome() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-[#F7955A] md:flex-row">
-      <title>Tribbae — Les idées de la tribu au même endroit</title>
+      <Seo title="Tribbae — Les idées de la tribu au même endroit" noindex />
       <div className="flex flex-1 items-end justify-center px-2.5 pt-10 md:items-center md:p-12">
         <img
           src={welcome}
@@ -102,7 +103,7 @@ export function Auth() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-braise">
-      <title>{register ? "Créer ma tribu · Tribbae" : "Connexion · Tribbae"}</title>
+      <Seo title={register ? "Créer ma tribu · Tribbae" : "Connexion · Tribbae"} noindex />
       <div className="relative flex h-[200px] shrink-0 items-end justify-center overflow-hidden md:h-[240px]">
         <div aria-hidden="true" className="absolute -bottom-[170px] left-1/2 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-soleil" />
         <RouterLink to="/bienvenue" aria-label="Retour" className="absolute top-5 left-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/60 hover:bg-white/80">

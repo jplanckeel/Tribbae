@@ -15,6 +15,7 @@ import { byRecent, canEditFolder } from "../lib/links";
 import { useSession } from "../lib/session";
 import type { Folder, Link } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
+import Seo from "../components/Seo";
 
 const LOOSE_ID = "non-rangees";
 
@@ -131,7 +132,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
 
   return (
     <div>
-      <title>{`${folder.name} · Tribbae`}</title>
+      <Seo title={`${folder.name} · dossier d'idées · Tribbae`} description={`${folder.name} : un dossier d'idées sur Tribbae.`} path={`/dossiers/${folder.id}`} />
       <header className="relative overflow-hidden px-5 pt-5 pb-8 md:px-8" style={{ background: color.bg }}>
         <div aria-hidden="true" className="absolute -right-24 -bottom-40 h-80 w-80 rounded-full bg-white/45" />
         <div className="relative mx-auto flex max-w-[1200px] flex-col gap-5">

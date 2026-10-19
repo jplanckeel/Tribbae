@@ -7,6 +7,7 @@ import { Button, EmptyState } from "../components/ui";
 import { normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { plural } from "../lib/format";
+import Seo from "../components/Seo";
 
 // Sélection des recettes et ingrédients cochés : conservés sur l'appareil
 const STORE = "tribbae.courses";
@@ -70,7 +71,7 @@ export default function Shopping() {
 
   return (
     <Page className="max-w-3xl">
-      <title>Liste de courses · Tribbae</title>
+      <Seo title="Liste de courses · Tribbae" noindex />
       <div className="flex items-center gap-3">
         <button type="button" onClick={() => navigate(-1)} aria-label="Retour" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-soft hover:bg-sable-2">
           <Icon name="chevronLeft" size={22} />

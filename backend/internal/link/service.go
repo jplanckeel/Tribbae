@@ -666,3 +666,21 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 	}
 	return st
 }
+
+// ListPublished retourne les idées publiées par leur auteur, les plus
+// récemment modifiées d'abord (plan du site, pages publiques). Sans filtre de
+// catégorie si category est vide.
+func (s *Service) ListPublished(ctx context.Context, category string, limit int64) ([]*Link, error) {
+	filter := bson.M{"visibility": "public"}
+	if category != "" {
+		filter["category"] = category
+	}
+	opts := options.Find().SetSort(bson.D{{Key: "updated_at", Value: -1}}).SetLimit(limit)
+	cursor, err := s.col.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+	links := []*Link{}
+	return links, cursor.All(ctx, &links)
+}

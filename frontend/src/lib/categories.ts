@@ -6,6 +6,8 @@ export interface CategoryMeta {
   slug: string;
   label: string;
   plural: string;
+  /** Présentation de la page publique de la catégorie (mêmes textes que backend/internal/seo). */
+  intro: string;
   icon: IconName;
   /** Classes Tailwind : fond pastel, encre (texte), couleur d'icône. */
   bg: string;
@@ -17,13 +19,13 @@ export interface CategoryMeta {
 
 // Ordre d'affichage de la maquette : Activités, Cadeaux, Recettes, Sorties, Idées, Livres, Déco
 export const CATEGORIES: CategoryMeta[] = [
-  { key: "LINK_CATEGORY_ACTIVITE", slug: "activite", label: "Activité", plural: "Activités", icon: "activite", bg: "bg-activite-bg", ink: "text-activite-ink", ic: "text-activite-ic", solid: "#2F7393" },
-  { key: "LINK_CATEGORY_CADEAU", slug: "cadeau", label: "Cadeau", plural: "Cadeaux", icon: "cadeau", bg: "bg-cadeau-bg", ink: "text-cadeau-ink", ic: "text-cadeau-ic", solid: "#C35A1C" },
-  { key: "LINK_CATEGORY_RECETTE", slug: "recette", label: "Recette", plural: "Recettes", icon: "recette", bg: "bg-recette-bg", ink: "text-recette-ink", ic: "text-recette-ic", solid: "#4C7A3C" },
-  { key: "LINK_CATEGORY_EVENEMENT", slug: "sortie", label: "Sortie", plural: "Sorties", icon: "calendar", bg: "bg-sortie-bg", ink: "text-sortie-ink", ic: "text-sortie-ic", solid: "#B2412A" },
-  { key: "LINK_CATEGORY_IDEE", slug: "idee", label: "Idée", plural: "Idées", icon: "idee", bg: "bg-idee-bg", ink: "text-idee-ink", ic: "text-idee-ic", solid: "#9A6510" },
-  { key: "LINK_CATEGORY_LIVRE", slug: "livre", label: "Livre", plural: "Livres", icon: "livre", bg: "bg-livre-bg", ink: "text-livre-ink", ic: "text-livre-ic", solid: "#5E4558" },
-  { key: "LINK_CATEGORY_DECORATION", slug: "deco", label: "Déco", plural: "Déco", icon: "deco", bg: "bg-deco-bg", ink: "text-deco-ink", ic: "text-deco-ic", solid: "#9C3A5C" },
+  { key: "LINK_CATEGORY_ACTIVITE", slug: "activite", label: "Activité", plural: "Activités", intro: "Activités à faire en famille : jeux, bricolages, sorties nature et idées pour occuper les enfants, repérées et partagées par les familles de Tribbae.", icon: "activite", bg: "bg-activite-bg", ink: "text-activite-ink", ic: "text-activite-ic", solid: "#2F7393" },
+  { key: "LINK_CATEGORY_CADEAU", slug: "cadeau", label: "Cadeau", plural: "Cadeaux", intro: "Idées de cadeaux pour enfants, ados et parents : des trouvailles testées et partagées par les familles de Tribbae.", icon: "cadeau", bg: "bg-cadeau-bg", ink: "text-cadeau-ink", ic: "text-cadeau-ic", solid: "#C35A1C" },
+  { key: "LINK_CATEGORY_RECETTE", slug: "recette", label: "Recette", plural: "Recettes", intro: "Recettes faciles à cuisiner en famille et avec les enfants : goûters, repas et desserts partagés par les familles de Tribbae.", icon: "recette", bg: "bg-recette-bg", ink: "text-recette-ink", ic: "text-recette-ic", solid: "#4C7A3C" },
+  { key: "LINK_CATEGORY_EVENEMENT", slug: "sortie", label: "Sortie", plural: "Sorties", intro: "Sorties et événements en famille : spectacles, visites, fêtes et balades repérés par les familles de Tribbae.", icon: "calendar", bg: "bg-sortie-bg", ink: "text-sortie-ink", ic: "text-sortie-ic", solid: "#B2412A" },
+  { key: "LINK_CATEGORY_IDEE", slug: "idee", label: "Idée", plural: "Idées", intro: "Idées pour la vie de famille : astuces, inspirations et bons plans partagés par les familles de Tribbae.", icon: "idee", bg: "bg-idee-bg", ink: "text-idee-ink", ic: "text-idee-ic", solid: "#9A6510" },
+  { key: "LINK_CATEGORY_LIVRE", slug: "livre", label: "Livre", plural: "Livres", intro: "Livres pour enfants et ados : albums, romans et BD recommandés par les familles de Tribbae.", icon: "livre", bg: "bg-livre-bg", ink: "text-livre-ink", ic: "text-livre-ic", solid: "#5E4558" },
+  { key: "LINK_CATEGORY_DECORATION", slug: "deco", label: "Déco", plural: "Déco", intro: "Idées déco pour la maison et la chambre des enfants, partagées par les familles de Tribbae.", icon: "deco", bg: "bg-deco-bg", ink: "text-deco-ink", ic: "text-deco-ic", solid: "#9C3A5C" },
 ];
 
 const BY_KEY = new Map(CATEGORIES.map((c) => [c.key, c]));

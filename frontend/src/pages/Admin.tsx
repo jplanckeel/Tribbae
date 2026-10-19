@@ -9,6 +9,7 @@ import * as api from "../lib/api";
 import { formatLongDate } from "../lib/format";
 import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
+import Seo from "../components/Seo";
 
 export default function Admin() {
   const session = useSession();
@@ -42,7 +43,7 @@ export default function Admin() {
 
   return (
     <Page className="max-w-4xl">
-      <title>Administration · Tribbae</title>
+      <Seo title="Administration · Tribbae" noindex />
       <div className="flex flex-col gap-0.5">
         <h1 className="font-display text-[32px] font-extrabold tracking-[-0.8px]">Administration</h1>
         {users.data && <span className="text-sm text-sec">{users.data.length} comptes · {premium} premium</span>}

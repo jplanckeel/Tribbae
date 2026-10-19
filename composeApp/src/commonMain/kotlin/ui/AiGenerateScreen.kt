@@ -32,10 +32,53 @@ import viewmodel.LinkViewModel
 
 private val SUGGESTIONS = listOf(
     "10 activités d'intérieur pour un jour de pluie",
-    "Sorties nature pour des 3–8 ans",
     "Goûters sans sucre ajouté",
     "Cadeaux de Noël pour une ado de 13 ans",
+    "Jeux en plein air pour un anniversaire de 6 ans",
+    "Recettes à cuisiner avec un enfant de 4 ans",
+    "Bricolages avec des rouleaux en carton",
+    "Activités calmes avant le coucher",
+    "Idées de sorties en forêt avec des petits",
+    "Repas rapides pour les soirs de semaine",
+    "Livres pour un enfant qui commence à lire",
+    "Cadeaux faits maison pour la fête des mères",
+    "Jeux de société coopératifs pour les 5–8 ans",
+    "Activités pour occuper les enfants en voiture",
+    "Déco de chambre pour une petite fille de 7 ans",
+    "Expériences scientifiques faciles à la maison",
+    "Idées de pique-nique originales",
+    "Activités manuelles pour Halloween",
+    "Desserts sans four pour l'été",
+    "Cadeaux à moins de 20 € pour un garçon de 10 ans",
+    "Jeux d'eau pour les journées de canicule",
+    "Activités Montessori pour un bébé de 18 mois",
+    "Romans d'aventure pour les 9–12 ans",
+    "Idées de week-end en famille à la campagne",
+    "Recettes de légumes que les enfants aiment",
+    "Chasse au trésor à organiser dans le jardin",
+    "Activités pour les vacances de la Toussaint",
+    "Décorations de Noël à fabriquer ensemble",
+    "Petits-déjeuners équilibrés et gourmands",
+    "Jeux pour apprendre les lettres en s'amusant",
+    "Cadeaux de naissance utiles",
+    "Sorties culturelles pour des ados",
+    "Activités sportives à faire en famille",
+    "Recettes de crêpes et galettes pour la Chandeleur",
+    "Albums jeunesse sur les émotions",
+    "Jeux de rôle pour les 3–5 ans",
+    "Idées pour un anniversaire à la maison",
+    "Plantes faciles à faire pousser avec les enfants",
+    "Activités pour un dimanche après-midi d'hiver",
+    "Goûters d'anniversaire faits maison",
+    "Rituels du soir pour aider à s'endormir",
+    "Idées de cabane à construire",
+    "Cadeaux pour remercier la maîtresse",
 )
+
+private const val SHOWN_SUGGESTIONS = 4
+
+/** Quelques suggestions tirées au hasard. */
+private fun pickSuggestions(): List<String> = SUGGESTIONS.shuffled().take(SHOWN_SUGGESTIONS)
 
 private fun toCategory(raw: String) =
     runCatching { LinkCategory.valueOf(raw.removePrefix("LINK_CATEGORY_")) }.getOrDefault(LinkCategory.IDEE)
@@ -55,6 +98,7 @@ fun AiGenerateScreen(
     val error by viewModel.aiError.collectAsState()
     val folders by viewModel.folders.collectAsState()
     var prompt by remember { mutableStateOf(initialPrompt) }
+    var suggestions by remember { mutableStateOf(pickSuggestions()) }
     var selected by remember(ideas) { mutableStateOf(ideas.indices.toSet()) }
     val categories = remember(ideas) { mutableStateMapOf<Int, LinkCategory>() }
     var target by remember { mutableStateOf(initialFolderId) } // null = nouveau dossier
@@ -119,12 +163,21 @@ fun AiGenerateScreen(
 
             if (ideas.isEmpty() && !loading) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SUGGESTIONS.forEach { s ->
+                    suggestions.forEach { s ->
                         Text(
                             s, fontSize = 13.sp, color = PruneSoft,
                             modifier = Modifier.clip(CircleShape).border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
                                 .clickable { prompt = s }.padding(horizontal = 12.dp, vertical = 7.dp)
                         )
+                    }
+                    Row(
+                        Modifier.clip(CircleShape).clickable(role = Role.Button) { suggestions = pickSuggestions() }
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.size(14.dp))
+                        Text("D'autres idées", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Soleil)
                     }
                 }
             }
