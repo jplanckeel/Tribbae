@@ -161,14 +161,9 @@ export interface UserProfile {
 export interface AiIdea {
   title: string;
   description: string;
-  url?: string;
-  imageUrl?: string;
   category: CategoryKey;
   tags?: string[];
   ageRange?: string;
-  price?: string;
-  location?: string;
-  ingredients?: string[];
 }
 
 export interface AdminUser {

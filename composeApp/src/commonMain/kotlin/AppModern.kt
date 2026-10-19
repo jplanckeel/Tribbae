@@ -18,8 +18,19 @@ import ui.components.NavDestination
 import ui.components.rememberBottomNavScrollState
 import viewmodel.LinkViewModel
 
+/**
+ * Contenu reçu d'une autre application : lien ou texte partagé, lien de partage
+ * de dossier. `id` distingue deux partages identiques successifs.
+ */
+data class SharedContent(
+    val url: String? = null,
+    val title: String? = null,
+    val folderToken: String? = null,
+    val id: Long = System.nanoTime(),
+)
+
 @Composable
-fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null, sharedTitle: String? = null, sharedFolderToken: String? = null) {
+fun AppModern(vm: LinkViewModel = viewModel(), incoming: SharedContent? = null) {
     val context = LocalContext.current
     val sessionManager = remember { SessionManager(context) }
     val authRepository = remember { AuthRepository() }
@@ -37,7 +48,7 @@ fun AppModern(vm: LinkViewModel = viewModel(), sharedUrl: String? = null, shared
     // Compte connecté : les cartes signent du nom de leur auteur les idées des autres (tribu, communauté)
     val currentUserId by sessionManager.userId.collectAsState()
     CompositionLocalProvider(ui.campfire.LocalCurrentUserId provides currentUserId) {
-        ModernMainApp(vm, sharedUrl, sharedTitle, sharedFolderToken, sessionManager, authRepository, followRepository, commentRepository)
+        ModernMainApp(vm, incoming, sessionManager, authRepository, followRepository, commentRepository)
     }
 }
 
@@ -65,9 +76,7 @@ private sealed class Screen {
 @Composable
 private fun ModernMainApp(
     vm: LinkViewModel,
-    sharedUrl: String?,
-    sharedTitle: String?,
-    sharedFolderToken: String?,
+    incoming: SharedContent?,
     sessionManager: SessionManager,
     authRepository: AuthRepository,
     followRepository: FollowRepository,
@@ -75,11 +84,12 @@ private fun ModernMainApp(
 ) {
     var tab by remember { mutableStateOf(NavDestination.HOME) }
     // Pile d'écrans : retour = dépiler
-    val stack = remember {
-        mutableStateListOf<Screen>().apply {
-            if (sharedUrl != null || sharedTitle != null) add(Screen.IdeaForm(url = sharedUrl, title = sharedTitle))
-            if (sharedFolderToken != null) add(Screen.PublicFolder(shareToken = sharedFolderToken))
-        }
+    val stack = remember { mutableStateListOf<Screen>() }
+    // Partage reçu (au lancement ou app déjà ouverte) : on ouvre l'écran correspondant
+    LaunchedEffect(incoming?.id) {
+        val s = incoming ?: return@LaunchedEffect
+        if (s.url != null || s.title != null) stack.add(Screen.IdeaForm(url = s.url, title = s.title))
+        if (s.folderToken != null) stack.add(Screen.PublicFolder(shareToken = s.folderToken))
     }
     var showAdd by remember { mutableStateOf(false) }
     var exploreQuery by remember { mutableStateOf("") }

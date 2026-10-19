@@ -45,7 +45,7 @@ export default function Admin() {
       <title>Administration · Tribbae</title>
       <div className="flex flex-col gap-0.5">
         <h1 className="font-display text-[32px] font-extrabold tracking-[-0.8px]">Administration</h1>
-        {users.data && <span className="text-sm text-sec">{users.data.length} comptes · {premium} premium (recherche web Gemini pour l'IA)</span>}
+        {users.data && <span className="text-sm text-sec">{users.data.length} comptes · {premium} premium</span>}
       </div>
       <label className="flex h-[52px] items-center gap-2.5 rounded-m bg-white px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
         <Icon name="search" size={20} />

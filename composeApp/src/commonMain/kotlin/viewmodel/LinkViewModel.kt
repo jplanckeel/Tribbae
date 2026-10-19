@@ -71,6 +71,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     /** Fonction pour récupérer l'image OG — injectée côté Android */
     var ogImageFetcher: (suspend (String) -> String?)? = null
+    /** Aperçu (titre, images) lu sur le téléphone, quand le backend ne répond pas. */
+    var localPreview: (suspend (String) -> data.LinkPreview?)? = null
 
     /** Fonction pour planifier un rappel — injectée côté Android */
     var reminderScheduler: ((Link) -> Unit)? = null
@@ -207,9 +209,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     /** Titre, description et image d'une page web, via le backend. Null si hors ligne ou non connecté. */
     suspend fun previewLink(url: String): data.LinkPreview? {
-        val token = sessionManager?.getToken() ?: authToken ?: return null
         val normalized = if ("://" in url) url.trim() else "https://${url.trim()}"
-        return runCatching { apiClient.previewLink(normalized, token) }.getOrNull()
+        val token = sessionManager?.getToken() ?: authToken
+        val remote = token?.let { runCatching { apiClient.previewLink(normalized, it) }.getOrNull() }
+        if (remote != null && (remote.title.isNotBlank() || remote.image.isNotBlank())) return remote
+        // Sans compte, hors ligne ou serveur en échec : lecture de la page sur le téléphone
+        return localPreview?.invoke(normalized) ?: remote
     }
 
     fun deleteLink(id: String) {
@@ -468,16 +473,14 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             } catch (_: Exception) { LinkCategory.IDEE }
             addLink(
                 title = idea.title,
-                url = idea.url,
+                url = "",
                 description = idea.description,
                 category = category,
                 folderId = folderId,
                 tags = idea.tags,
                 ageRange = idea.ageRange,
-                location = idea.location,
-                price = idea.price,
-                imageUrl = idea.imageUrl,
-                ingredients = idea.ingredients
+                location = "",
+                price = ""
             )
         }
     }

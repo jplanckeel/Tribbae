@@ -11,7 +11,7 @@ Tribbae is a family idea-management app (links, recipes, activities, gifts, even
 | Backend | Go + gRPC + grpc-gateway (REST) + MongoDB | `backend/` |
 | Web | React 19 + TypeScript + Vite + Tailwind 4 | `frontend/` |
 | Android | Kotlin Multiplatform + Jetpack Compose (package `com.linkkeeper.app`) | `composeApp/` |
-| Web search for AI | SearXNG (custom Docker image) | `searxng/` |
+| AI | Ollama (local model, Docker) | `backend/internal/ai/` |
 
 **Core rule (from `.kiro/steering/`): every user-facing feature must be implemented on both clients (web + Android).** Docs, comments and UI strings are in French; gRPC error messages are in English.
 
@@ -20,7 +20,7 @@ Tribbae is a family idea-management app (links, recipes, activities, gifts, even
 Task runner is [Task](https://taskfile.dev) (`Taskfile.yml` at the root).
 
 ```bash
-task dev                # SearXNG + Ollama (Docker) + backend + frontend in parallel
+task dev                # Ollama (Docker) + backend + frontend in parallel
 task dev:docker         # Everything via docker-compose.local.yml
 task backend            # go run ./cmd/server — NOTE: loads backend/.env.example, not .env
 task backend:proto      # buf generate (run after editing any .proto)
@@ -56,9 +56,9 @@ CI (`.github/workflows/test.yml`): `go build` + `go vet` + `go test -race` (with
 - Link images: `internal/preview` scrapes pages (Chrome TLS fingerprint via `netsafe.NewBrowserClient`, then WhatsApp/Facebook preview UAs, oEmbed). `link.RunImageBackfill` (started in `main.go`) fills `image_url` for links without one in the background, recording attempts in `image_checked_at` (retry after 7 days); changing a link's URL triggers an immediate retry. Android mirrors the extractor offline in `androidMain/.../data/PageImageExtractor.kt` (jsoup) + `OgImageFetcher.kt`, and both clients fetch an image when an image-less idea is opened.
 
 ### AI generation (`internal/ai`)
-Pipeline: web search — Ollama's web search API (`websearch.go`, when `OLLAMA_API_KEY` is set; not blocked like datacenter IPs) then SearXNG as fallback (`search.go`: 1–2 queries, safesearch; Google/Qwant/Startpage disabled in `searxng/settings.yml` because they 403 VPS IPs); blocked/duplicate domains filtered, max 8 sources → the model writes ideas citing a **source number** under a JSON schema imposed via Ollama `format` / Gemini `responseJsonSchema` (`prompt.go`); it never writes URLs, the server maps the source to its real URL → each idea is enriched from its page via `preview.Fetch` (image, recipe ingredients, price, location). Local model: Ollama on a small CPU VPS (default `qwen3:1.7b`, `think:false` only when the model supports thinking, one generation at a time → `ErrBusy`/429, pulled and warmed at startup). Premium users with `GEMINI_API_KEY`: Gemini writes the ideas (same prompt/schema), falling back to Ollama. Ideas are only returned; clients save the ones the user keeps. Model benchmark on real prompts: `go test -tags aibench -run TestBench ./internal/ai` (see `bench_test.go`).
+Ideas are written by the **local Ollama model only, no web search** (`service.go`, `ollama.go`, `prompt.go`). The model answers under a JSON schema imposed via Ollama `format` (title, description, category, tags, ageRange — no URL nor price, they would be invented); `parseIdeas` normalizes and salvages truncated JSON. Small CPU VPS: default `qwen3:1.7b`, `think:false` only when the model supports thinking, one generation at a time → `ErrBusy`/429, pulled and warmed at startup. Ideas are only returned; clients save the ones the user keeps. Model benchmark on real prompts: `go test -tags aibench -run TestBench ./internal/ai` (see `bench_test.go`).
 
-Config is all env vars, see `backend/internal/config/config.go` (Mongo, JWT, ports, Ollama, SearXNG, Gemini, `ADMIN_PASSWORD`).
+Config is all env vars, see `backend/internal/config/config.go` (Mongo, JWT, ports, Ollama, `ADMIN_PASSWORD`).
 
 ## Clients
 

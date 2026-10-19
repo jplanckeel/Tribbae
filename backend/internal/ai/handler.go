@@ -1,7 +1,6 @@
 package ai
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -10,21 +9,15 @@ import (
 	"unicode/utf8"
 )
 
-// UserGetter indique si un utilisateur est premium.
-type UserGetter interface {
-	GetUser(ctx context.Context, userID string) (isPremium bool, err error)
-}
-
 // Handler sert POST /v1/ai/generate. Les idées sont seulement proposées :
 // c'est le client qui enregistre celles que l'utilisateur garde.
 type Handler struct {
 	svc         *Service
-	userGetter  UserGetter
 	tokenParser func(r *http.Request) (userID string, err error)
 }
 
-func NewHandler(svc *Service, userGetter UserGetter, tokenParser func(r *http.Request) (string, error)) *Handler {
-	return &Handler{svc: svc, userGetter: userGetter, tokenParser: tokenParser}
+func NewHandler(svc *Service, tokenParser func(r *http.Request) (string, error)) *Handler {
+	return &Handler{svc: svc, tokenParser: tokenParser}
 }
 
 const (
@@ -44,7 +37,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// La génération coûte cher (LLM + recherche web) : réservée aux comptes connectés.
+	// La génération coûte cher (modèle de langage) : réservée aux comptes connectés.
 	userID, err := h.tokenParser(r)
 	if err != nil || userID == "" {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"message": "authentication required"})
@@ -66,14 +59,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var isPremium bool
-	if h.userGetter != nil {
-		if premium, err := h.userGetter.GetUser(r.Context(), userID); err == nil {
-			isPremium = premium
-		}
-	}
-
-	result, err := h.svc.Generate(r.Context(), req.Prompt, isPremium)
+	result, err := h.svc.Generate(r.Context(), req.Prompt)
 	switch {
 	case errors.Is(err, ErrBusy):
 		w.Header().Set("Retry-After", "30")

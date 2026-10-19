@@ -22,13 +22,8 @@ type Config struct {
 	OllamaKeepAlive string
 	// OllamaNumThread : threads CPU pour l'inférence (0 = choix d'Ollama)
 	OllamaNumThread int
-	SearxURL        string
-	// OllamaAPIKey : clé ollama.com pour l'API de recherche web (facultative)
-	OllamaAPIKey   string
-	GeminiAPIKey   string
-	GeminiModel    string
-	AdminPassword  string
-	AllowedOrigins []string
+	AdminPassword   string
+	AllowedOrigins  []string
 }
 
 // insecureJWTSecret est la valeur d'exemple de .env.example : elle n'est
@@ -48,10 +43,6 @@ func Load() *Config {
 		OllamaModel:     getEnv("OLLAMA_MODEL", "qwen3:1.7b"),
 		OllamaKeepAlive: getEnv("OLLAMA_KEEP_ALIVE", "30m"),
 		OllamaNumThread: getEnvInt("OLLAMA_NUM_THREAD", 0),
-		SearxURL:        getEnv("SEARXNG_URL", "http://localhost:8888"),
-		OllamaAPIKey:    getEnv("OLLAMA_API_KEY", ""),
-		GeminiAPIKey:    getEnv("GEMINI_API_KEY", ""),
-		GeminiModel:     getEnv("GEMINI_MODEL", "gemini-2.5-flash"),
 		AdminPassword:   os.Getenv("ADMIN_PASSWORD"),
 		AllowedOrigins:  splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
 	}

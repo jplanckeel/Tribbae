@@ -114,7 +114,7 @@ type chatResponse struct {
 }
 
 // generate produit la réponse JSON (conforme au schéma) pour n idées.
-func (o *ollamaClient) generate(ctx context.Context, system, user string, n, sources int) (string, error) {
+func (o *ollamaClient) generate(ctx context.Context, system, user string, n int) (string, error) {
 	thinking, err := o.supportsThinking(ctx)
 	if err != nil {
 		return "", err
@@ -137,7 +137,7 @@ func (o *ollamaClient) generate(ctx context.Context, system, user string, n, sou
 			{"role": "user", "content": user},
 		},
 		"stream":     false,
-		"format":     ideaSchema(n, sources),
+		"format":     ideaSchema(n),
 		"keep_alive": o.keepAlive,
 		"options":    options,
 	}

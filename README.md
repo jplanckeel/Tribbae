@@ -9,18 +9,16 @@ Application familiale de gestion d'idées — liens, recettes, activités, cadea
 | App mobile Android | Kotlin Multiplatform + Jetpack Compose | `composeApp/` |
 | Frontend web | React + TypeScript + Tailwind CSS + Vite | `frontend/` |
 | Backend API | Go + gRPC + grpc-gateway REST + MongoDB | `backend/` |
-| IA | Google Gemini API (génération) + SearXNG (recherche) | `backend/internal/ai/` |
-| Recherche | SearXNG (métamoteur) | `searxng/` |
+| IA | Ollama (modèle local) | `backend/internal/ai/` |
 
 ## Prérequis
 
 - [Go 1.23+](https://go.dev/dl/)
 - [Node.js 20+](https://nodejs.org/)
-- [Docker](https://www.docker.com/) (pour SearXNG)
+- [Docker](https://www.docker.com/) (pour Ollama)
 - [Android Studio](https://developer.android.com/studio) + SDK Android (pour le mobile)
 - [Task](https://taskfile.dev/) — `brew install go-task` ou `go install github.com/go-task/task/v3/cmd/task@latest`
 - [MongoDB](https://www.mongodb.com/) en local ou Atlas
-- [Google Gemini API Key](https://ai.google.dev/) (pour la génération IA)
 
 ## Démarrage rapide
 
@@ -30,19 +28,15 @@ task frontend:install
 
 # Copier et adapter les variables d'environnement
 cp backend/.env.example backend/.env
-# Ajouter votre clé API Gemini dans GEMINI_API_KEY
 
-# Démarrer SearXNG (recherche web pour l'IA)
-task searxng
-
-# Démarrer le backend + frontend
+# Démarrer Ollama + backend + frontend
 task dev
 ```
 
 Accès :
 - Frontend → http://localhost:5173
 - Backend API → http://localhost:8080
-- SearXNG → http://localhost:8888
+- Ollama → http://localhost:11434
 
 ## Commandes
 
@@ -50,10 +44,8 @@ Accès :
 
 | Commande | Description |
 |----------|-------------|
-| `task dev` | Démarre backend + frontend en parallèle |
+| `task dev` | Démarre Ollama + backend + frontend en parallèle |
 | `task dev:stop` | Arrête backend et frontend |
-| `task searxng` | Démarre SearXNG (recherche web) en Docker |
-| `task searxng:stop` | Arrête SearXNG |
 
 ### Backend
 
@@ -110,9 +102,8 @@ Accès :
 
 ### Génération IA (Tribbae+)
 - Génération d'idées par IA locale (Ollama)
-- Modèle optimisé : `qwen2.5:1.5b` (rapide, léger, excellent en français)
+- Petit modèle pour un VPS sans GPU : `qwen3:1.7b` (téléchargé au démarrage)
 - Prompts suggérés : anniversaire, activités, recettes, cadeaux
-- Recherche web intégrée (SearXNG) pour enrichir les suggestions
 - Génération structurée avec métadonnées complètes
 - Badge "Expérimental" sur la fonctionnalité
 
@@ -138,21 +129,10 @@ PORT=8080
 GRPC_PORT=9090
 BASE_URL=http://localhost:8080
 
-# IA - Google Gemini
-GEMINI_API_KEY=your-api-key-here
-GEMINI_MODEL=gemini-2.0-flash-exp
-
-# Recherche web (SearXNG)
-SEARXNG_URL=http://localhost:8888
+# IA - Ollama (modèle local)
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=qwen3:1.7b
 ```
-
-### Obtenir une clé API Gemini
-
-1. Aller sur [Google AI Studio](https://ai.google.dev/)
-2. Créer un projet et générer une clé API
-3. Ajouter la clé dans `backend/.env`
-
-Le modèle `gemini-2.0-flash-exp` est gratuit et performant pour la génération d'idées.
 
 ## Structure du projet
 
@@ -173,9 +153,6 @@ tribbae/
 │       ├── data/     # Modèles, repositories, ApiClient
 │       ├── ui/       # Écrans Compose
 │       └── viewmodel/
-├── searxng/          # Configuration SearXNG (recherche web)
-│   ├── settings.yml
-│   └── Dockerfile
 └── Taskfile.yml
 ```
 
@@ -188,7 +165,6 @@ Le projet inclut des workflows GitHub Actions pour le CI/CD :
 
 Les images Docker sont publiées sur Docker Hub :
 - `jplanckeel/tribbae` : Backend + Frontend
-- `jplanckeel/tribbae-searxng` : SearXNG configuré
 
 Déploiement avec Docker Compose :
 

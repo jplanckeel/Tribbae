@@ -76,10 +76,6 @@ func main() {
 		OllamaModel:     cfg.OllamaModel,
 		OllamaKeepAlive: cfg.OllamaKeepAlive,
 		OllamaNumThread: cfg.OllamaNumThread,
-		SearxURL:        cfg.SearxURL,
-		WebSearchAPIKey: cfg.OllamaAPIKey,
-		GeminiAPIKey:    cfg.GeminiAPIKey,
-		GeminiModel:     cfg.GeminiModel,
 	})
 	// Télécharge (si besoin) et charge le modèle local sans retarder le démarrage
 	go aiSvc.Warmup(context.Background())
@@ -96,9 +92,6 @@ func main() {
 	adminH := admin.NewHandler(authSvc)
 	tribeH := tribe.NewHandler(tribeSvc)
 
-	// Adaptateur pour récupérer le statut premium d'un utilisateur
-	userGetter := &userGetterAdapter{authSvc: authSvc}
-
 	// Extrait le userID du header Authorization pour les routes HTTP hors gateway
 	bearerUser := func(r *http.Request) (string, error) {
 		token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
@@ -108,7 +101,7 @@ func main() {
 		return authSvc.ValidateToken(token)
 	}
 
-	aiH := ai.NewHandler(aiSvc, userGetter, bearerUser)
+	aiH := ai.NewHandler(aiSvc, bearerUser)
 
 	// Serveur gRPC
 	grpcServer := grpc.NewServer(
@@ -273,17 +266,4 @@ func withSPA(apiHandler http.Handler) http.Handler {
 		// SPA fallback : renvoyer index.html
 		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 	})
-}
-
-// userGetterAdapter adapte auth.Service pour l'interface ai.UserGetter
-type userGetterAdapter struct {
-	authSvc *auth.Service
-}
-
-func (u *userGetterAdapter) GetUser(ctx context.Context, userID string) (bool, error) {
-	user, err := u.authSvc.GetUser(ctx, userID)
-	if err != nil {
-		return false, err
-	}
-	return user.IsPremium, nil
 }

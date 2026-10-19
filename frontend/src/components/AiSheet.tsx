@@ -88,14 +88,14 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
           api.links.create({
             title: i.title,
             description: i.description,
-            url: i.url ?? "",
-            imageUrl: i.imageUrl ?? "",
+            url: "",
+            imageUrl: "",
             category: i.cat,
             tags: i.tags ?? [],
             ageRange: i.ageRange ?? "",
-            price: i.price ?? "",
-            location: i.location ?? "",
-            ingredients: i.ingredients ?? [],
+            price: "",
+            location: "",
+            ingredients: [],
             folderId: fid,
             visibility: "private",
           }),
@@ -155,7 +155,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
     >
       <form onSubmit={generate} className="flex flex-col gap-3">
         <label htmlFor="ai-prompt" className="text-sm text-prune-soft">
-          Décrivez ce que vous cherchez : l'IA fouille le web et prépare des idées prêtes à ranger.
+          Décrivez ce que vous cherchez : l'IA prépare des idées prêtes à ranger.
         </label>
         <div className="flex gap-2">
           <textarea
@@ -199,7 +199,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
         <div role="status" className="mt-6 flex flex-col items-center gap-3 rounded-l bg-white/5 px-6 py-10 text-center">
           <Icon name="sparkles" size={32} className="animate-pulse text-soleil" />
           <p className="font-display text-lg font-bold">L'IA prépare vos idées…</p>
-          <p className="text-sm text-prune-soft">Recherche sur le web et rédaction, comptez 20 à 60 secondes.</p>
+          <p className="text-sm text-prune-soft">Rédaction en cours, comptez 20 à 60 secondes.</p>
         </div>
       )}
 
@@ -235,7 +235,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
                       >
                         {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
                       </select>
-                      {[idea.ageRange, idea.price, idea.location].filter(Boolean).map((m) => (
+                      {[idea.ageRange].filter(Boolean).map((m) => (
                         <span key={m} className={`text-xs ${on ? "text-sec" : "text-prune-soft"}`}>· {m}</span>
                       ))}
                     </div>

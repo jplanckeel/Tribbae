@@ -12,6 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import ui.TribbaeTheme
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import data.AndroidStorage
 import data.ImagePickerHelper
@@ -22,9 +23,12 @@ import data.extractUrl
 import viewmodel.LinkViewModel
 
 class MainActivity : ComponentActivity() {
+    /** Contenu reçu d'une autre application (partage, lien de dossier), à ouvrir dans l'app. */
+    private val incoming = mutableStateOf<SharedContent?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Avant super.onCreate : l'écran de lancement repasse ensuite au thème de l'app
-        installLaunchTransition()
+        installLaunchTransition(launchedFromIcon = intent?.action == Intent.ACTION_MAIN)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -35,8 +39,8 @@ class MainActivity : ComponentActivity() {
 
         val storage = AndroidStorage(applicationContext)
         val repository = LinkRepository(storage)
-        val (sharedUrl, sharedTitle) = extractShared(intent)
-        val sharedFolderToken = extractShareToken(intent)
+        // Une seule fois : à la recréation (rotation…), le partage est déjà ouvert
+        if (savedInstanceState == null) incoming.value = parseIncoming(intent)
         val appContext = applicationContext
 
         setContent {
@@ -44,6 +48,11 @@ class MainActivity : ComponentActivity() {
                 LinkViewModel(repository).also {
                     it.authToken = storage.loadToken()
                     it.ogImageFetcher = { url -> OgImageFetcher.fetch(url) }
+                    it.localPreview = { url ->
+                        OgImageFetcher.fetchPreview(url)
+                            ?.takeIf { p -> p.title.isNotBlank() || p.images.isNotEmpty() }
+                            ?.let { p -> data.LinkPreview(title = p.title, image = p.image.orEmpty(), images = p.images) }
+                    }
                     it.reminderScheduler = { link ->
                         if (link.eventDate != null) {
                             NotificationHelper.scheduleReminder(
@@ -65,7 +74,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             TribbaeTheme {
-                AppModern(vm = viewModel, sharedUrl = sharedUrl, sharedTitle = sharedTitle, sharedFolderToken = sharedFolderToken)
+                AppModern(vm = viewModel, incoming = incoming.value)
             }
         }
     }
@@ -75,26 +84,48 @@ class MainActivity : ComponentActivity() {
      * (soleil levant, tipi, fanion) se jouer jusqu'au bout avant de partir ; puis le tipi
      * s'avance vers l'utilisateur pendant que le fond orange s'efface sur l'application.
      */
-    private fun installLaunchTransition() {
+    /** Partage reçu alors que Tribbae est déjà ouvert au premier plan. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        parseIncoming(intent)?.let { incoming.value = it }
+    }
+
+    private fun parseIncoming(intent: Intent?): SharedContent? {
+        val (url, title) = extractShared(intent)
+        val token = extractShareToken(intent)
+        if (url == null && title == null && token == null) return null
+        return SharedContent(url = url, title = title, folderToken = token)
+    }
+
+    private fun installLaunchTransition(launchedFromIcon: Boolean) {
         val splash = installSplashScreen()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        // L'animation du logo ne se joue qu'à l'ouverture depuis l'icône : pour un
+        // partage, on veut le formulaire tout de suite.
+        if (launchedFromIcon && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val start = SystemClock.uptimeMillis()
             splash.setKeepOnScreenCondition { SystemClock.uptimeMillis() - start < ICON_ANIMATION_MS }
         }
         splash.setOnExitAnimationListener { provider ->
-            val icon = provider.iconView
-            icon.animate()
-                .scaleX(1.5f).scaleY(1.5f).alpha(0f)
-                .setDuration(EXIT_MS)
-                .setInterpolator(AccelerateInterpolator())
-                .start()
-            provider.view.animate()
-                .alpha(0f)
-                .setStartDelay(EXIT_MS / 4)
-                .setDuration(EXIT_MS)
-                .setInterpolator(DecelerateInterpolator())
-                .withEndAction { provider.remove() }
-                .start()
+            // Ouverte par une autre application (partage depuis Chrome, Instagram…),
+            // l'app reçoit un écran de lancement SANS icône : provider.iconView lève
+            // alors une NullPointerException (checkNotNull dans androidx). Ne jamais
+            // supposer que l'icône existe, ni laisser l'animation faire planter l'app.
+            val icon = runCatching { provider.iconView }.getOrNull()
+            icon?.animate()
+                ?.scaleX(1.5f)?.scaleY(1.5f)?.alpha(0f)
+                ?.setDuration(EXIT_MS)
+                ?.setInterpolator(AccelerateInterpolator())
+                ?.start()
+            runCatching {
+                provider.view.animate()
+                    .alpha(0f)
+                    .setStartDelay(if (icon != null) EXIT_MS / 4 else 0)
+                    .setDuration(EXIT_MS)
+                    .setInterpolator(DecelerateInterpolator())
+                    .withEndAction { provider.remove() }
+                    .start()
+            }.onFailure { provider.remove() }
         }
     }
 
@@ -115,7 +146,8 @@ class MainActivity : ComponentActivity() {
         val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim().orEmpty()
         val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT)?.trim().orEmpty()
         val url = extractUrl(text) ?: extractUrl(subject)
-        if (url != null) return url to null
+        // Chrome envoie le titre de la page en sujet : il sert de titre à l'idée
+        if (url != null) return url to subject.takeIf { it.isNotBlank() && extractUrl(it) == null }
         return null to (subject.ifBlank { text }.take(300).ifBlank { null })
     }
 

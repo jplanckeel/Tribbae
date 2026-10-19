@@ -19,7 +19,6 @@ services:
     depends_on:
       - mongo
       - ollama
-      - searxng
     environment:
       MONGO_URI: mongodb://mongo:27017
       MONGO_DB: tribbae
@@ -32,14 +31,8 @@ services:
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:1.7b}
       OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
       OLLAMA_NUM_THREAD: ${OLLAMA_NUM_THREAD:-2}
-      SEARXNG_URL: http://searxng:8080
-      # Recherche web via l'API d'Ollama (compte gratuit ollama.com) : pas de blocage
-      # d'IP de datacenter. Vide : SearXNG seul. SearXNG reste le repli dans tous les cas.
-      OLLAMA_API_KEY: ${OLLAMA_API_KEY:-}
       # Compte admin tribbae@bananaops.cloud (≥ 12 caractères). Remplace aussi l'ancien mot de passe par défaut.
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tribbae-backend.rule=Host(`${BACKEND_HOST:-tribbae.bananaops.cloud}`)"
@@ -61,15 +54,6 @@ services:
       OLLAMA_MAX_LOADED_MODELS: "1"
       # Le modèle reste chargé entre deux demandes (évite ~5 s de chargement)
       OLLAMA_KEEP_ALIVE: "30m"
-    networks:
-      - internal
-
-  # ── SearXNG (recherche web) ──────────────────────────────
-  searxng:
-    image: jplanckeel/tribbae-searxng:latest
-    restart: unless-stopped
-    environment:
-      SEARXNG_BASE_URL: http://searxng:8080/
     networks:
       - internal
 

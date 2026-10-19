@@ -73,7 +73,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      # QEMU : l'image SearXNG exécute des RUN, à émuler pour l'architecture non native
+      # QEMU : étapes RUN de l'image finale pour l'architecture non native
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -103,16 +103,3 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/tribbae:${{ steps.version.outputs.VERSION }}
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/tribbae:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/tribbae:buildcache,mode=max
-      
-      - name: Build and push SearXNG image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./searxng
-          file: ./searxng/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/tribbae-searxng:latest
-            ${{ secrets.DOCKER_USERNAME }}/tribbae-searxng:${{ steps.version.outputs.VERSION }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/tribbae-searxng:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/tribbae-searxng:buildcache,mode=max

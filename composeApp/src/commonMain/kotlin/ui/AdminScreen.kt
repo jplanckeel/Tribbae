@@ -128,7 +128,7 @@ fun AdminScreen(
                                 fontSize = 14.sp
                             )
                             Text(
-                                "Recherche IA améliorée avec Google Gemini",
+                                "Statut de soutien, sans avantage pour l'instant",
                                 fontSize = 12.sp,
                                 color = TextSecondary
                             )

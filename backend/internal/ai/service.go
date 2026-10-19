@@ -6,27 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
-	"sync"
 	"time"
 	"unicode/utf8"
-
-	"github.com/tribbae/backend/internal/preview"
 )
 
 // SuggestedLink représente une idée générée par l'IA.
 type SuggestedLink struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
-	URL         string   `json:"url,omitempty"`
-	ImageURL    string   `json:"imageUrl,omitempty"`
 	Category    string   `json:"category"`
 	Tags        []string `json:"tags"`
 	AgeRange    string   `json:"ageRange,omitempty"`
-	Price       string   `json:"price,omitempty"`
-	Location    string   `json:"location,omitempty"`
-	Ingredients []string `json:"ingredients,omitempty"`
 }
 
 type GenerateRequest struct {
@@ -43,13 +34,6 @@ type Config struct {
 	OllamaModel     string
 	OllamaKeepAlive string // durée de maintien en mémoire, ex. "30m"
 	OllamaNumThread int    // 0 : laisser Ollama choisir
-	SearxURL        string
-	// WebSearchAPIKey : clé ollama.com pour l'API de recherche web d'Ollama,
-	// essayée avant SearXNG (vide : SearXNG seul). WebSearchURL : pour les tests.
-	WebSearchAPIKey string
-	WebSearchURL    string
-	GeminiAPIKey    string
-	GeminiModel     string
 }
 
 // ErrBusy : le modèle local traite déjà une demande (un petit CPU n'en mène
@@ -58,17 +42,12 @@ var ErrBusy = errors.New("ai is busy")
 
 const (
 	generateBudget = 100 * time.Second
-	enrichBudget   = 10 * time.Second
-	enrichParallel = 3
 	maxTitleRunes  = 80
 	maxDescRunes   = 300
 )
 
 type Service struct {
-	searxURL  string
-	webSearch *webSearchClient
 	ollama    *ollamaClient
-	gemini    *geminiClient
 	localSlot chan struct{}
 }
 
@@ -82,14 +61,8 @@ func NewService(cfg Config) *Service {
 	if cfg.OllamaKeepAlive == "" {
 		cfg.OllamaKeepAlive = "30m"
 	}
-	if cfg.GeminiModel == "" {
-		cfg.GeminiModel = "gemini-2.5-flash"
-	}
 	return &Service{
-		searxURL:  cfg.SearxURL,
-		webSearch: newWebSearchClient(cfg.WebSearchURL, cfg.WebSearchAPIKey),
 		ollama:    newOllamaClient(cfg.OllamaURL, cfg.OllamaModel, cfg.OllamaKeepAlive, cfg.OllamaNumThread),
-		gemini:    newGeminiClient(cfg.GeminiAPIKey, cfg.GeminiModel),
 		localSlot: make(chan struct{}, 1),
 	}
 }
@@ -111,105 +84,45 @@ func (s *Service) Warmup(ctx context.Context) {
 	log.Printf("ai: ollama still unavailable, giving up warm-up (generation will retry on demand)")
 }
 
-// Generate cherche des sources sur le web puis fait rédiger des idées qui s'y
-// rattachent. Les comptes premium passent par Gemini (repli sur le modèle local).
-func (s *Service) Generate(ctx context.Context, prompt string, isPremium bool) (*GenerateResponse, error) {
+// Generate fait rédiger des idées par le modèle local d'Ollama. Un petit CPU
+// ne mène bien qu'une génération à la fois : une demande concurrente reçoit
+// ErrBusy plutôt que d'attendre.
+func (s *Service) Generate(ctx context.Context, prompt string) (*GenerateResponse, error) {
+	select {
+	case s.localSlot <- struct{}{}:
+		defer func() { <-s.localSlot }()
+	default:
+		return nil, ErrBusy
+	}
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, generateBudget)
 	defer cancel()
 
-	useGemini := isPremium && s.gemini != nil
-	holding := false
-	acquire := func() bool {
-		select {
-		case s.localSlot <- struct{}{}:
-			holding = true
-			return true
-		default:
-			return false
-		}
-	}
-	release := func() {
-		if holding {
-			<-s.localSlot
-			holding = false
-		}
-	}
-	defer release()
-	// Modèle local : on réserve le créneau avant de chercher, pour ne pas lancer
-	// une recherche web qui ne servirait à rien
-	if !useGemini && !acquire() {
-		return nil, ErrBusy
-	}
-
 	n := wantedCount(prompt)
-	sources, provider, err := s.findSources(ctx, prompt)
-	if err != nil {
-		log.Printf("ai: web search failed, generating without sources: %v", err)
-	}
-	searchTook := time.Since(start)
-	system, user := systemPrompt(n), userPrompt(prompt, sources)
-
-	engine, raw := "", ""
-	if useGemini {
-		engine = "gemini"
-		raw, err = s.gemini.generate(ctx, system, user, n, len(sources))
-		if err != nil {
-			log.Printf("ai: gemini failed, falling back to local model: %v", err)
-			raw = ""
-			if !acquire() {
-				return nil, ErrBusy
-			}
-		}
-	}
-	if raw == "" {
-		engine = "ollama"
-		raw, err = s.ollama.generate(ctx, system, user, n, len(sources))
-		if err != nil {
-			return nil, err
-		}
-	}
-	release() // l'enrichissement n'a plus besoin du modèle
-
-	ideas, err := parseIdeas(raw, sources, n)
+	raw, err := s.ollama.generate(ctx, systemPrompt(n), userPrompt(prompt), n)
 	if err != nil {
 		return nil, err
 	}
-	enrichFromPages(ctx, ideas)
-
-	// Pas de contenu de la demande dans les journaux (donnée personnelle)
-	log.Printf("ai: %s generated %d ideas from %d %s sources in %s (search %s)",
-		engine, len(ideas), len(sources), provider, time.Since(start).Round(time.Millisecond), searchTook.Round(time.Millisecond))
-	return &GenerateResponse{Ideas: ideas}, nil
-}
-
-// findSources essaie l'API de recherche d'Ollama (si configurée) puis SearXNG.
-func (s *Service) findSources(ctx context.Context, prompt string) ([]SearchResult, string, error) {
-	if s.webSearch != nil {
-		res, err := s.webSearch.sources(ctx, prompt)
-		if err == nil && len(res) > 0 {
-			return res, "ollama-web", nil
-		}
-		log.Printf("ai: ollama web search gave nothing (%v), falling back to searxng", err)
+	ideas, err := parseIdeas(raw, n)
+	if err != nil {
+		return nil, err
 	}
-	res, err := searxSources(ctx, s.searxURL, prompt)
-	return res, "searxng", err
+	// Pas de contenu de la demande dans les journaux (donnée personnelle)
+	log.Printf("ai: generated %d ideas in %s", len(ideas), time.Since(start).Round(time.Millisecond))
+	return &GenerateResponse{Ideas: ideas}, nil
 }
 
 // rawIdea est une idée telle que décrite par le schéma imposé au modèle.
 type rawIdea struct {
-	Source      int      `json:"source"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Category    string   `json:"category"`
 	Tags        []string `json:"tags"`
 	AgeRange    string   `json:"ageRange"`
-	Price       string   `json:"price"`
 }
 
-// parseIdeas valide et normalise la réponse du modèle. L'adresse de chaque
-// idée vient du résultat web cité : le modèle n'écrit jamais d'URL.
-func parseIdeas(raw string, sources []SearchResult, n int) ([]SuggestedLink, error) {
+// parseIdeas valide et normalise la réponse du modèle.
+func parseIdeas(raw string, n int) ([]SuggestedLink, error) {
 	var out struct {
 		Ideas []rawIdea `json:"ideas"`
 	}
@@ -238,17 +151,6 @@ func parseIdeas(raw string, sources []SearchResult, n int) ([]SuggestedLink, err
 			Tags:        cleanTags(r.Tags),
 			AgeRange:    known(r.AgeRange),
 		}
-		if r.Source >= 1 && r.Source <= len(sources) {
-			src := sources[r.Source-1]
-			idea.URL = src.URL
-			idea.ImageURL = src.ImageURL
-			// Un prix n'est gardé que s'il figure dans la source citée : les petits
-			// modèles complètent volontiers par « Gratuit » ou un montant inventé.
-			// (L'aperçu de la page peut ensuite en fournir un vérifié.)
-			if p := known(r.Price); priceInSource(p, src) {
-				idea.Price = p
-			}
-		}
 		ideas = append(ideas, idea)
 		if len(ideas) == n {
 			break
@@ -258,25 +160,6 @@ func parseIdeas(raw string, sources []SearchResult, n int) ([]SuggestedLink, err
 		return nil, errors.New("model returned no usable idea")
 	}
 	return ideas, nil
-}
-
-var digitsRe = regexp.MustCompile(`\d+(?:[.,]\d+)?`)
-
-// priceInSource vérifie qu'un prix proposé apparaît dans le texte de la source.
-func priceInSource(price string, src SearchResult) bool {
-	if price == "" {
-		return false
-	}
-	text := strings.ToLower(src.Title + " " + src.Content)
-	if nums := digitsRe.FindAllString(price, -1); len(nums) > 0 {
-		for _, n := range nums {
-			if !strings.Contains(text, n) && !strings.Contains(text, strings.ReplaceAll(n, ",", ".")) {
-				return false
-			}
-		}
-		return true
-	}
-	return strings.Contains(strings.ToLower(price), "gratuit") && strings.Contains(text, "gratuit")
 }
 
 // salvageIdeas lit une à une les idées complètes du tableau "ideas", même si
@@ -303,47 +186,6 @@ func salvageIdeas(raw string) []rawIdea {
 		out = append(out, r)
 	}
 	return out
-}
-
-// enrichFromPages complète chaque idée liée à une page avec l'aperçu de cette
-// page : meilleure image, ingrédients d'une recette, prix, lieu, catégorie.
-func enrichFromPages(ctx context.Context, ideas []SuggestedLink) {
-	ctx, cancel := context.WithTimeout(ctx, enrichBudget)
-	defer cancel()
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, enrichParallel)
-	for i := range ideas {
-		if ideas[i].URL == "" {
-			continue
-		}
-		wg.Add(1)
-		go func(idea *SuggestedLink) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			m, err := preview.Fetch(ctx, idea.URL)
-			if err != nil {
-				return
-			}
-			if m.Image != "" {
-				idea.ImageURL = m.Image
-			}
-			// Les données structurées de la page priment sur la supposition du modèle
-			if m.Category != "" {
-				idea.Category = m.Category
-			}
-			if idea.Category == "LINK_CATEGORY_RECETTE" && len(m.Ingredients) > 0 {
-				idea.Ingredients = m.Ingredients
-			}
-			if idea.Price == "" {
-				idea.Price = m.Price
-			}
-			if idea.Location == "" {
-				idea.Location = m.Location
-			}
-		}(&ideas[i])
-	}
-	wg.Wait()
 }
 
 func categoryFor(key string) string {

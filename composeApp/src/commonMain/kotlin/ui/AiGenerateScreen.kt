@@ -90,7 +90,7 @@ fun AiGenerateScreen(
                 Text("Demander à l'IA", style = display(26.sp, color = Sable))
                 CircleIconButton(Icons.Outlined.Close, "Fermer", onBack, background = Color.White.copy(alpha = 0.12f), tint = Sable)
             }
-            Text("Décrivez ce que vous cherchez : l'IA fouille le web et prépare des idées prêtes à ranger.", fontSize = 14.sp, color = PruneSoft)
+            Text("Décrivez ce que vous cherchez : l'IA prépare des idées prêtes à ranger.", fontSize = 14.sp, color = PruneSoft)
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(
@@ -136,7 +136,7 @@ fun AiGenerateScreen(
                 ) {
                     Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.size(32.dp))
                     Text("L'IA prépare vos idées…", style = display(18.sp, FontWeight.Bold, Sable))
-                    Text("Recherche sur le web et rédaction, comptez 20 à 60 secondes.", fontSize = 14.sp, color = PruneSoft)
+                    Text("Rédaction en cours, comptez 20 à 60 secondes.", fontSize = 14.sp, color = PruneSoft)
                 }
             }
 
@@ -183,7 +183,7 @@ fun AiGenerateScreen(
                                     }
                                 }
                             }
-                            val meta = listOf(idea.ageRange, idea.price, idea.location).filter { it.isNotBlank() }.joinToString(" · ")
+                            val meta = idea.ageRange
                             if (meta.isNotEmpty()) Text(meta, fontSize = 12.sp, color = if (on) TextSec else PruneSoft, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }

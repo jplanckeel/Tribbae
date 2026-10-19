@@ -46,22 +46,31 @@ object OgImageFetcher {
     }
 
     /** Images candidates de la page, la meilleure d'abord (vide si rien trouvé). */
-    fun fetchImages(pageUrl: String): List<String> {
+    fun fetchImages(pageUrl: String): List<String> = fetchPage(pageUrl).images
+
+    /** Titre et images de la page, sur le téléphone (hors ligne ou sans compte). */
+    suspend fun fetchPreview(pageUrl: String): PageImages? = withContext(Dispatchers.IO) {
+        runCatching { fetchPage(pageUrl) }.getOrNull()
+    }
+
+    private fun fetchPage(pageUrl: String): PageImages {
         val url = pageUrl.trim()
-        knownThumbnail(url)?.let { return listOf(it) }
+        knownThumbnail(url)?.let { return PageImages("", listOf(it)) }
+        var title = ""
         for (headers in attempts) {
             val page = runCatching { download(url, headers) }.getOrNull() ?: continue
-            if (page.isImage) return listOf(page.finalUrl)
+            if (page.isImage) return PageImages(title, listOf(page.finalUrl))
             val doc = Jsoup.parse(ByteArrayInputStream(page.body), page.charset, page.finalUrl)
             val result = PageImageExtractor.extract(doc, page.finalUrl)
-            if (result.images.isNotEmpty()) return result.images
+            if (title.isEmpty()) title = result.title
+            if (result.images.isNotEmpty()) return PageImages(title, result.images)
             // oEmbed déclaré par la page (vidéos, réseaux)
             doc.selectFirst("link[type=application/json+oembed][href]")?.absUrl("href")
                 ?.takeIf { it.isNotEmpty() }
                 ?.let { oembedThumbnail(it) }
-                ?.let { return listOf(it) }
+                ?.let { return PageImages(title, listOf(it)) }
         }
-        return emptyList()
+        return PageImages(title, emptyList())
     }
 
     private class Page(val finalUrl: String, val body: ByteArray, val charset: String?, val isImage: Boolean)

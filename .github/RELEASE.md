@@ -37,7 +37,6 @@ Chaque tag déclenche :
 1. **Build APK Android** → Ajouté à la release GitHub (`tribbae-{version}.apk`)
 2. **Build Docker images** → Poussées sur Docker Hub avec tags :
    - `jplanckeel/tribbae:latest` et `jplanckeel/tribbae:{version}`
-   - `jplanckeel/tribbae-searxng:latest` et `jplanckeel/tribbae-searxng:{version}`
 
 ## Génération d'un keystore (première fois)
 

@@ -171,53 +171,10 @@ tasks:
     cmds:
       - docker exec tribbae-ollama ollama list
 
-  # ── SearXNG (recherche web) ──────────────────────────────
-  searxng:
-    desc: "Demarrer SearXNG en Docker (moteur de recherche web)"
-    cmds:
-      - |
-        if docker ps -q -f name=tribbae-searxng | grep -q .; then
-          echo "SearXNG deja en cours d'execution"
-        elif docker ps -aq -f name=tribbae-searxng | grep -q .; then
-          echo "Redemarrage du conteneur SearXNG existant..."
-          docker start tribbae-searxng
-        else
-          echo "Build de l'image SearXNG custom..."
-          docker build -t tribbae-searxng-custom ./searxng
-          echo "Creation du conteneur SearXNG..."
-          docker run -d \
-            --name tribbae-searxng \
-            --restart unless-stopped \
-            -p 8888:8080 \
-            -e SEARXNG_BASE_URL=http://localhost:8888/ \
-            tribbae-searxng-custom
-        fi
-      - |
-        echo "Attente du demarrage de SearXNG..."
-        for i in $(seq 1 15); do
-          if curl -sf http://localhost:8888/healthz >/dev/null 2>&1; then
-            echo "SearXNG pret -> http://localhost:8888"
-            break
-          fi
-          sleep 2
-        done
-
-  searxng:stop:
-    desc: "Arreter le conteneur SearXNG"
-    cmds:
-      - docker stop tribbae-searxng
-      - echo "SearXNG arrete"
-
-  searxng:rm:
-    desc: "Supprimer le conteneur SearXNG"
-    cmds:
-      - docker rm -f tribbae-searxng
-      - echo "Conteneur SearXNG supprime"
-
   # ── Dev (tout en un) ─────────────────────────────────────
   dev:
-    desc: "Demarrer tout l'environnement de dev (SearXNG + Ollama + backend + frontend)"
-    deps: [searxng, ollama, dev:backend, dev:frontend]
+    desc: "Demarrer tout l'environnement de dev (Ollama + backend + frontend)"
+    deps: [ollama, dev:backend, dev:frontend]
     cmds:
       - echo "Tous les services sont arretes."
 
@@ -273,36 +230,6 @@ tasks:
     cmds:
       - docker buildx build --builder tribbae --platform {{.PLATFORMS}} -t jplanckeel/tribbae:{{.TAG}} -f Dockerfile --push .
       - docker buildx imagetools inspect jplanckeel/tribbae:{{.TAG}} | grep -E "Platform|Name:"
-
-  docker:build:searxng:
-    desc: "Build local de l'image SearXNG custom"
-    vars:
-      TAG: '{{.TAG | default "latest"}}'
-      PLATFORM: '{{.PLATFORM | default ""}}'
-    cmds:
-      - docker buildx build {{if .PLATFORM}}--platform {{.PLATFORM}}{{end}} --load -t jplanckeel/tribbae-searxng:{{.TAG}} -f searxng/Dockerfile ./searxng
-      - echo "jplanckeel/tribbae-searxng:{{.TAG}} built"
-
-  docker:push:searxng:
-    desc: "Build et push l'image SearXNG custom pour amd64 + arm64"
-    deps: [docker:builder]
-    vars:
-      TAG: '{{.TAG | default "latest"}}'
-      PLATFORMS: '{{.PLATFORMS | default "linux/amd64,linux/arm64"}}'
-    cmds:
-      - docker buildx build --builder tribbae --platform {{.PLATFORMS}} -t jplanckeel/tribbae-searxng:{{.TAG}} -f searxng/Dockerfile --push ./searxng
-      - docker buildx imagetools inspect jplanckeel/tribbae-searxng:{{.TAG}} | grep -E "Platform|Name:"
-
-  docker:push:all:
-    desc: "Build et push toutes les images (Tribbae + SearXNG) pour amd64 + arm64"
-    vars:
-      TAG: '{{.TAG | default "latest"}}'
-    cmds:
-      - task: docker:push
-        vars: {TAG: "{{.TAG}}"}
-      - task: docker:push:searxng
-        vars: {TAG: "{{.TAG}}"}
-      - echo "Toutes les images ont été poussées avec le tag {{.TAG}}"
 
   # ── Seed data ────────────────────────────────────────────
   seed:
