@@ -24,6 +24,7 @@ interface Member {
 export default function Tribe() {
   const session = useSession()!;
   const navigate = useNavigate();
+  const { toast } = useFeedback();
   const { links, folders, children, upsertFolder, tribe, setTribe } = useMyData();
   const [nameOpen, setNameOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
@@ -62,12 +63,27 @@ export default function Tribe() {
     clearSession();
     navigate("/bienvenue", { replace: true });
   };
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportData = async () => {
+    setExporting(true);
+    try {
+      await api.account.exportData();
+      toast("Vos données sont téléchargées");
+    } catch (err) {
+      toast((err as Error).message, "error");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div>
       <Seo title="Ma tribu · Tribbae" noindex />
-      <header className="relative overflow-hidden bg-braise px-5 pt-5 pb-[74px] md:px-8">
-        <div aria-hidden="true" className="absolute -bottom-[170px] left-1/2 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-soleil" />
+      {/* Comme l'app : sur mobile, un grand bandeau orange dont le soleil déborde
+          derrière le nom de la tribu et les compteurs */}
+      <header className="relative h-[312px] bg-braise px-5 pt-5 md:h-auto md:overflow-hidden md:px-8 md:pb-[74px]">
+        <div aria-hidden="true" className="absolute top-[120px] left-1/2 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-soleil md:top-auto md:-bottom-[170px]" />
         <div className="relative mx-auto flex max-w-3xl items-center justify-between">
           <h1 className="font-display text-[26px] font-extrabold text-ecorce">Ma tribu</h1>
           <button
@@ -79,7 +95,7 @@ export default function Tribe() {
             <Icon name="settings" size={21} />
           </button>
         </div>
-        <svg aria-hidden="true" width="120" height="104" viewBox="0 0 48 42" className="absolute bottom-0 left-1/2 -translate-x-1/2">
+        <svg aria-hidden="true" viewBox="0 0 48 42" className="absolute top-[70px] left-1/2 h-24 w-[110px] -translate-x-1/2 md:top-auto md:bottom-0 md:h-[104px] md:w-[120px]">
           <path d="M20 1l6 9M28 1l-6 9" stroke="#3A211B" strokeWidth="1.8" strokeLinecap="round" />
           <path d="M24 7L44 41H4z" fill="#D45A43" stroke="#3A211B" strokeWidth="1.8" strokeLinejoin="round" />
           <path d="M24 22l11 19H13z" fill="#5E4558" stroke="#3A211B" strokeWidth="1.8" strokeLinejoin="round" />
@@ -88,7 +104,7 @@ export default function Tribe() {
         </svg>
       </header>
 
-      <div className="mx-auto flex max-w-3xl flex-col gap-[18px] px-5 pt-[18px] md:px-8">
+      <div className="relative mx-auto flex max-w-3xl flex-col gap-[18px] px-5 pt-[18px] md:mt-0 md:px-8">
         <div className="flex flex-col gap-0.5 text-center">
           <span className="flex items-center justify-center gap-1.5">
             <span className="font-display text-2xl font-extrabold">La tribu {tribeName}</span>
@@ -165,11 +181,13 @@ export default function Tribe() {
           <ListRow icon="heart" label="Tribus suivies" value={following.data ? String(following.data.length) : undefined} onClick={() => setFollowingOpen(true)} />
           <ListRow icon="cart" label="Liste de courses" to="/courses" />
           <ListRow icon="help" label="Aide & FAQ" to="/aide" />
+          <ListRow icon="lock" label="Confidentialité & mes données" to="/confidentialite" />
           {session.isAdmin && <ListRow icon="crown" label="Administration" to="/admin" />}
           <ListRow icon="logout" label="Se déconnecter" onClick={logout} last />
         </nav>
       </div>
 
+      {deleteOpen && <DeleteAccountSheet onClose={() => setDeleteOpen(false)} />}
       <ChildrenSheet open={kidsOpen} onClose={() => setKidsOpen(false)} list={children} />
       {nameOpen && <TribeNameSheet current={tribeName} onClose={() => setNameOpen(false)} onSaved={setTribe} />}
       <MembersSheet
@@ -200,9 +218,9 @@ export default function Tribe() {
                       setInviteOpen(false);
                       setShareFolder(f);
                     }}
-                    className="flex w-full items-center gap-3 rounded-m bg-white p-3 text-left hover:bg-sable-2"
+                    className="flex w-full items-center gap-3 rounded-medium bg-white p-3 text-left hover:bg-sable-2"
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-s text-white" style={{ background: c.solid }}>
+                    <span className="flex h-10 w-10 items-center justify-center rounded-small text-white" style={{ background: c.solid }}>
                       <Icon name={folderIcon(f.icon)} size={20} />
                     </span>
                     <span className="flex-1 font-bold">{f.name}</span>
@@ -240,7 +258,7 @@ export default function Tribe() {
               const [bg, ink] = AVATAR_COLORS[i % AVATAR_COLORS.length];
               return (
                 <li key={u.id} className="flex items-center gap-3 px-3.5 py-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-s font-display font-extrabold" style={{ background: bg, color: ink }}>{initial(u.displayName)}</span>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-small font-display font-extrabold" style={{ background: bg, color: ink }}>{initial(u.displayName)}</span>
                   <span className="flex flex-1 flex-col">
                     <span className="font-bold">{u.displayName || "Tribu"}</span>
                     <span className="text-xs text-sec">{plural(u.followerCount ?? 0, "abonné", "abonnés")}</span>
@@ -257,8 +275,8 @@ export default function Tribe() {
 
       <Sheet open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Paramètres">
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 rounded-m bg-white p-3.5">
-            <span className="flex h-12 w-12 items-center justify-center rounded-m bg-braise font-display text-xl font-extrabold">{initial(session.displayName)}</span>
+          <div className="flex items-center gap-3 rounded-medium bg-white p-3.5">
+            <span className="flex h-12 w-12 items-center justify-center rounded-medium bg-braise font-display text-xl font-extrabold">{initial(session.displayName)}</span>
             <span className="flex flex-col">
               <span className="font-bold">{session.displayName}</span>
               <span className="text-xs text-sec">{session.isAdmin ? "Administrateur" : "Membre"}</span>
@@ -267,7 +285,7 @@ export default function Tribe() {
           <button
             type="button"
             onClick={() => { setSettingsOpen(false); setNameOpen(true); }}
-            className="flex items-center gap-3 rounded-m bg-white p-3.5 text-left hover:bg-sable-2"
+            className="flex items-center gap-3 rounded-medium bg-white p-3.5 text-left hover:bg-sable-2"
           >
             <Icon name="tipi" size={20} className="text-terracotta" />
             <span className="flex flex-1 flex-col">
@@ -276,8 +294,21 @@ export default function Tribe() {
             </span>
             <Icon name="pencil" size={17} className="text-sec" />
           </button>
+          <section aria-labelledby="my-data" className="flex flex-col gap-2 rounded-medium bg-white p-3.5">
+            <h3 id="my-data" className="font-bold">Mes données</h3>
+            <p className="text-sm text-sec">
+              Récupérez tout ce que Tribbae conserve sur vous, ou supprimez votre compte. Détails dans la{" "}
+              <RouterLink to="/confidentialite" className="font-semibold text-terracotta">politique de confidentialité</RouterLink>.
+            </p>
+            <Button variant="ghost" size="sm" icon="send" loading={exporting} onClick={() => void exportData()}>
+              Télécharger mes données
+            </Button>
+            <Button variant="danger" size="sm" icon="trash" onClick={() => { setSettingsOpen(false); setDeleteOpen(true); }}>
+              Supprimer mon compte
+            </Button>
+          </section>
           <p className="text-sm text-sec">
-            Pour modifier votre mot de passe ou supprimer votre compte, écrivez-nous à{" "}
+            Pour modifier votre mot de passe, écrivez-nous à{" "}
             <a href="mailto:support@tribbae.com" className="font-semibold text-terracotta">support@tribbae.com</a>.
           </p>
           <Button variant="danger" icon="logout" onClick={logout}>Se déconnecter</Button>
@@ -395,7 +426,7 @@ function ChildrenSheet({ open, onClose, list }: { open: boolean; onClose: () => 
             const [bg, ink] = AVATAR_COLORS[(i + 2) % AVATAR_COLORS.length];
             return (
               <li key={c.id} className="flex items-center gap-3 px-3.5 py-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-s font-display font-extrabold" style={{ background: bg, color: ink }}>{initial(c.name)}</span>
+                <span className="flex h-10 w-10 items-center justify-center rounded-small font-display font-extrabold" style={{ background: bg, color: ink }}>{initial(c.name)}</span>
                 <span className="flex flex-1 flex-col">
                   <span className="font-bold">{c.name}</span>
                   <span className="text-xs text-sec">{formatAge(c.birthDate)}</span>
@@ -412,7 +443,7 @@ function ChildrenSheet({ open, onClose, list }: { open: boolean; onClose: () => 
         </ul>
       )}
       {editing ? (
-        <form onSubmit={save} className="flex flex-col gap-3 rounded-l bg-sable-2/60 p-4">
+        <form onSubmit={save} className="flex flex-col gap-3 rounded-large bg-sable-2/60 p-4">
           <Field label="Prénom" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} autoFocus />
           <Field label="Date de naissance" type="date" value={birth} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setBirth(e.target.value)} />
           {error && <ErrorNote>{error}</ErrorNote>}
@@ -589,7 +620,7 @@ function MembersSheet({ open, onClose, accounts, meId, onChange, onKids, onInvit
           const name = m.displayName || m.email || "Membre";
           return (
             <li key={m.userId} className="flex items-center gap-3 px-3.5 py-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-s font-display font-extrabold" style={{ background: bg, color: ink }}>{initial(name)}</span>
+              <span className="flex h-10 w-10 items-center justify-center rounded-small font-display font-extrabold" style={{ background: bg, color: ink }}>{initial(name)}</span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-bold">{name}{self && " (vous)"}</span>
                 <span className="truncate text-xs text-sec">
@@ -613,6 +644,67 @@ function MembersSheet({ open, onClose, accounts, meId, onChange, onKids, onInvit
           </button>
         )}
       </div>
+    </Sheet>
+  );
+}
+
+/**
+ * Suppression définitive du compte (RGPD, droit à l'effacement) : on dit ce qui
+ * disparaît et ce qui reste aux autres, puis on demande le mot de passe.
+ */
+function DeleteAccountSheet({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const { toast } = useFeedback();
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!password) return;
+    setBusy(true);
+    setError("");
+    try {
+      await api.account.delete(password);
+      clearSession();
+      navigate("/bienvenue", { replace: true });
+      toast("Votre compte et vos données ont été supprimés");
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Sheet open onClose={onClose} title="Supprimer mon compte">
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2 rounded-medium bg-white p-3.5 text-[15px]">
+          <p className="font-bold">Seront définitivement effacés :</p>
+          <ul className="list-disc space-y-1 pl-5 text-ecorce-2">
+            <li>votre compte (nom, email, mot de passe) ;</li>
+            <li>vos idées et vos dossiers, y compris ceux partagés avec la communauté ;</li>
+            <li>les profils de vos enfants ;</li>
+            <li>vos commentaires, « j'aime » et abonnements.</li>
+          </ul>
+          <p className="text-sm text-sec">
+            Les idées que vos proches ont ajoutées dans vos dossiers leur restent. Si vous avez créé la tribu, elle revient au membre le plus ancien.
+          </p>
+        </div>
+        <p className="text-sm text-sec">Pensez à télécharger vos données avant, depuis les paramètres : cette action est irréversible.</p>
+        <Field
+          label="Mot de passe"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          icon="lock"
+        />
+        {error && <ErrorNote>{error}</ErrorNote>}
+        <Button type="submit" variant="danger" icon="trash" loading={busy} disabled={!password}>
+          Supprimer définitivement
+        </Button>
+        <Button type="button" variant="ghost" onClick={onClose}>Annuler</Button>
+      </form>
     </Sheet>
   );
 }

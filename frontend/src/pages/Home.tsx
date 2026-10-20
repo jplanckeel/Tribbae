@@ -91,7 +91,7 @@ function HomeMobile() {
         </div>
 
         <form onSubmit={search} role="search" className="flex max-w-2xl gap-2">
-          <label className="flex h-[52px] flex-1 items-center gap-2.5 rounded-m bg-white px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
+          <label className="flex h-[52px] flex-1 items-center gap-2.5 rounded-medium bg-white px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
             <Icon name="search" size={20} />
             <span className="sr-only">Rechercher une idée</span>
             <input
@@ -107,7 +107,7 @@ function HomeMobile() {
             onClick={() => openAi({ prompt: q.trim() || undefined })}
             aria-label="Générer des idées avec l'IA"
             title="Générer des idées avec l'IA"
-            className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-m bg-prune text-soleil transition-colors hover:bg-[#4d3848]"
+            className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-medium bg-prune text-soleil transition-colors hover:bg-[#4d3848]"
           >
             <Icon name="sparkles" size={22} />
           </button>
@@ -115,7 +115,7 @@ function HomeMobile() {
 
         {session ? (
           event ? (
-            <RouterLink to={`/links/${event.id}`} className="flex max-w-2xl items-center gap-3.5 rounded-l bg-ecorce p-3.5 transition-transform hover:-translate-y-0.5">
+            <RouterLink to={`/links/${event.id}`} className="flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-3.5 transition-transform hover:-translate-y-0.5">
               <span className="flex h-16 w-[58px] shrink-0 flex-col items-center justify-center rounded-2xl bg-braise text-ecorce">
                 <span className="text-[11px] font-bold tracking-[0.6px] uppercase">{dayBadge(event.at).weekday}</span>
                 <span className="font-display text-[26px] leading-none font-extrabold">{dayBadge(event.at).day}</span>
@@ -162,7 +162,7 @@ function HomeMobile() {
           />
           {community.loading ? (
             <Rail>
-              {[0, 1, 2].map((i) => <div key={i} className="h-[190px] w-[210px] shrink-0 animate-pulse rounded-l bg-sable-2" />)}
+              {[0, 1, 2].map((i) => <div key={i} className="h-[190px] w-[210px] shrink-0 animate-pulse rounded-large bg-sable-2" />)}
             </Rail>
           ) : popular.length ? (
             <Rail>{popular.map((l) => <RailCard key={l.id} link={l} />)}</Rail>
@@ -425,7 +425,7 @@ function NoEventCard() {
     <button
       type="button"
       onClick={() => newLink({ category: "LINK_CATEGORY_EVENEMENT" })}
-      className="flex max-w-2xl items-center gap-3.5 rounded-l border-2 border-dashed border-dash p-3.5 text-left transition-colors hover:bg-sable-2/60"
+      className="flex max-w-2xl items-center gap-3.5 rounded-large border-2 border-dashed border-dash p-3.5 text-left transition-colors hover:bg-sable-2/60"
     >
       <span className="flex h-16 w-[58px] shrink-0 items-center justify-center rounded-2xl bg-sortie-bg text-sortie-ic">
         <Icon name="calendar" size={26} />
@@ -441,7 +441,7 @@ function NoEventCard() {
 
 function JoinCard() {
   return (
-    <RouterLink to="/bienvenue" className="flex max-w-2xl items-center gap-3.5 rounded-l bg-ecorce p-4 text-sable transition-transform hover:-translate-y-0.5">
+    <RouterLink to="/bienvenue" className="flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-4 text-sable transition-transform hover:-translate-y-0.5">
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-braise text-ecorce">
         <Icon name="tribe" size={24} />
       </span>

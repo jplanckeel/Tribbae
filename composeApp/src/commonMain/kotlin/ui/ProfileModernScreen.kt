@@ -24,6 +24,9 @@ import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.DeleteForever
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -159,6 +162,26 @@ private fun TribeContent(
     var showFollowing by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showLogout by remember { mutableStateOf(false) }
+    var showDelete by remember { mutableStateOf(false) }
+    var dataMessage by remember { mutableStateOf<String?>(null) }
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    // Export RGPD : l'utilisateur choisit où enregistrer le fichier JSON
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val data = viewModel.exportAccount()
+            dataMessage = if (data == null) "Impossible de récupérer vos données, réessayez."
+            else runCatching {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { it.write(data.toByteArray()) }
+                }
+                "Vos données sont enregistrées."
+            }.getOrElse { "Impossible d'enregistrer le fichier." }
+        }
+    }
 
     LaunchedEffect(userId) {
         userId?.let { id -> followRepository.getFollowing(id).onSuccess { following = it } }
@@ -288,6 +311,7 @@ private fun TribeContent(
                 ListRow(Icons.Outlined.FavoriteBorder, "Tribus suivies", following?.size?.toString()) { showFollowing = true }
                 ListRow(Icons.Outlined.ShoppingCart, "Liste de courses", onClick = onOpenShopping)
                 ListRow(Icons.Outlined.HelpOutline, "Aide & FAQ", onClick = onFaq)
+                ListRow(Icons.Outlined.Lock, "Confidentialité & mes données") { uriHandler.openUri(PRIVACY_URL) }
                 if (sessionManager.isAdmin()) ListRow(Icons.Outlined.AdminPanelSettings, "Administration", onClick = onOpenAdmin)
                 ListRow(Icons.Outlined.Logout, "Se déconnecter", last = true) { showLogout = true }
             }
@@ -382,8 +406,15 @@ private fun TribeContent(
                     }
                 }
                 MenuRow(Icons.Outlined.Edit, "Nom de la tribu : $tribeName") { showSettings = false; showRename = true }
+                Text("Mes données", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
+                MenuRow(Icons.Outlined.Download, "Télécharger mes données") {
+                    exportLauncher.launch("tribbae-mes-donnees-${java.time.LocalDate.now()}.json")
+                }
+                MenuRow(Icons.Outlined.Lock, "Politique de confidentialité") { uriHandler.openUri(PRIVACY_URL) }
+                MenuRow(Icons.Outlined.DeleteForever, "Supprimer mon compte", danger = true) { showSettings = false; showDelete = true }
+                dataMessage?.let { Text(it, fontSize = 13.sp, color = TextSec) }
                 Text(
-                    "Pour modifier votre mot de passe ou supprimer votre compte, écrivez à support@tribbae.com.",
+                    "Pour modifier votre mot de passe, écrivez à support@tribbae.com.",
                     fontSize = 14.sp, color = TextSec
                 )
                 MenuRow(Icons.Outlined.HelpOutline, "Aide & FAQ") { showSettings = false; onFaq() }
@@ -501,15 +532,71 @@ private fun TribeContent(
             onDismissRequest = { showLogout = false },
             containerColor = Sable,
             title = { Text("Se déconnecter ?", style = display(20.sp, FontWeight.Bold)) },
-            text = { Text("Vos idées restent sur cet appareil et sur votre compte.", color = Ecorce2) },
+            text = { Text("Vos idées restent sur votre compte. Elles sont retirées de cet appareil jusqu'à votre prochaine connexion.", color = Ecorce2) },
             confirmButton = {
-                TextButton(onClick = { sessionManager.clearSession(); showLogout = false }) {
+                TextButton(onClick = { viewModel.signOut(); showLogout = false }) {
                     Text("Se déconnecter", color = Terracotta, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = { TextButton(onClick = { showLogout = false }) { Text("Annuler", color = Ecorce) } }
         )
     }
+
+    if (showDelete) DeleteAccountDialog(viewModel, onDismiss = { showDelete = false })
+}
+
+/** Politique de confidentialité, publiée sur le site. */
+private const val PRIVACY_URL = "https://tribbae.bananaops.cloud/confidentialite"
+
+/**
+ * Suppression définitive du compte (RGPD, droit à l'effacement) : ce qui
+ * disparaît, ce qui reste aux autres, puis confirmation par mot de passe.
+ */
+@Composable
+private fun DeleteAccountDialog(viewModel: LinkViewModel, onDismiss: () -> Unit) {
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = { if (!busy) onDismiss() },
+        containerColor = Sable,
+        title = { Text("Supprimer mon compte ?", style = display(20.sp, FontWeight.Bold)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "Seront définitivement effacés : votre compte, vos idées et dossiers (y compris ceux partagés avec la communauté), " +
+                        "les profils de vos enfants, vos commentaires, « j'aime » et abonnements.",
+                    color = Ecorce2, fontSize = 14.sp
+                )
+                Text(
+                    "Les idées que vos proches ont ajoutées dans vos dossiers leur restent. Si vous avez créé la tribu, elle revient au membre le plus ancien. " +
+                        "Pensez à télécharger vos données avant : c'est irréversible.",
+                    color = TextSec, fontSize = 13.sp
+                )
+                OutlinedTextField(
+                    value = password, onValueChange = { password = it; error = null },
+                    label = { Text("Mot de passe") }, singleLine = true,
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                error?.let { Text(it, color = Color(0xFF9A3420), fontSize = 13.sp, fontWeight = FontWeight.Medium) }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = password.isNotEmpty() && !busy,
+                onClick = {
+                    busy = true
+                    viewModel.deleteAccount(password) { err ->
+                        busy = false
+                        if (err == null) onDismiss() else error = err
+                    }
+                }
+            ) { Text(if (busy) "Suppression…" else "Supprimer définitivement", color = Color(0xFF9A3420), fontWeight = FontWeight.Bold) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("Annuler", color = Ecorce) } }
+    )
 }
 
 @Composable
@@ -673,6 +760,14 @@ private fun SimpleAuthDialog(
                     }
                 }
 
+                if (!isLoginMode) {
+                    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+                    Text(
+                        "Vos idées restent privées tant que vous ne les partagez pas. Ce que nous conservons et comment supprimer votre compte : politique de confidentialité.",
+                        fontSize = 12.sp, color = Color(0xFF6B5047),
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { uri.openUri(PRIVACY_URL) }.padding(4.dp)
+                    )
+                }
                 Button(
                     onClick = {
                         scope.launch {

@@ -81,12 +81,13 @@ export function folderColor(key: string | undefined): FolderColorMeta {
 }
 
 export const FOLDER_ICONS: { key: string; icon: IconName; label: string }[] = [
-  { key: "FOLDER", icon: "tipi", label: "Tipi" },
+  { key: "FOLDER", icon: "folder", label: "Dossier" },
   { key: "STAR", icon: "star", label: "Étoile" },
   { key: "HEART", icon: "heart", label: "Cœur" },
   { key: "HOME", icon: "home", label: "Maison" },
   { key: "TRAVEL", icon: "compass", label: "Voyage" },
   { key: "MOUNTAIN", icon: "landscape", label: "Nature" },
+  { key: "BEACH", icon: "beach", label: "Plage" },
   { key: "PARTY", icon: "cadeau", label: "Fête" },
   { key: "RESTAURANT", icon: "recette", label: "Repas" },
   { key: "SPORTS", icon: "activite", label: "Sport" },
@@ -98,13 +99,13 @@ export const FOLDER_ICONS: { key: string; icon: IconName; label: string }[] = [
 ];
 
 const LEGACY_FOLDER_ICONS: Record<string, IconName> = {
-  sparkles: "sparkle", CAMPING: "tipi", PARK: "landscape", BEACH: "landscape", FOREST: "landscape",
+  sparkles: "sparkle", CAMPING: "tipi", PARK: "landscape", FOREST: "landscape",
   CAKE: "recette", COFFEE: "recette", GAMES: "activite", MUSIC: "deco", MOVIE: "deco",
   WORK: "livre", BOOKMARK: "bookmark", ROCKET: "sparkle", PIRATE: "compass", CANDLE: "idee", PETS: "heart",
 };
 
 export function folderIcon(key: string | undefined): IconName {
-  return FOLDER_ICONS.find((i) => i.key === key)?.icon ?? LEGACY_FOLDER_ICONS[key ?? ""] ?? "tipi";
+  return FOLDER_ICONS.find((i) => i.key === key)?.icon ?? LEGACY_FOLDER_ICONS[key ?? ""] ?? "folder";
 }
 
 // Couleurs d'avatars (fond, encre), dans l'ordre de la maquette « Ma tribu »

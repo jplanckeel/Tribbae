@@ -72,6 +72,7 @@ fun IdeaFormScreen(
     initialTitle: String? = null,
 ) {
     val folders by viewModel.folders.collectAsState()
+    val kids by viewModel.children.collectAsState()
     val allLinks by viewModel.repository.links.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -91,7 +92,7 @@ fun IdeaFormScreen(
     var rating by remember { mutableStateOf(existing?.rating ?: 0) }
     var isPublic by remember { mutableStateOf(existing?.visibility == "public") }
     var more by remember {
-        mutableStateOf(existing != null && (ageRange.isNotBlank() || price.isNotBlank() || location.isNotBlank() || rating > 0))
+        mutableStateOf(existing != null && (price.isNotBlank() || location.isNotBlank() || rating > 0))
     }
     var previewStatus by remember { mutableStateOf(PreviewStatus.Idle) }
     var previewUrl by remember { mutableStateOf<String?>(null) }
@@ -264,17 +265,18 @@ fun IdeaFormScreen(
                 TagInputWithAutocomplete(tagsList = tags, onTagsChanged = { tags = it }, allAvailableTags = knownTags, showLabel = false)
             }
 
+            AgePicker(ageRange, { ageRange = it }, kids)
+
             Row(
                 Modifier.clip(RoundedCornerShape(10.dp)).clickable { more = !more }.padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(if (more) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, tint = Terracotta)
-                Text(if (more) "Moins de détails" else "Âge, prix, lieu, note…", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta)
+                Text(if (more) "Moins de détails" else "Prix, lieu, note…", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta)
             }
 
             if (more) {
-                CampField("Âge", ageRange, { ageRange = it }, placeholder = "3–10 ans", icon = Icons.Outlined.Person, maxLength = 200)
                 CampField("Prix", price, { price = it }, placeholder = "Gratuit, 6 € / enfant…", icon = Icons.Outlined.Euro, maxLength = 200)
                 CampField("Lieu", location, { location = it }, placeholder = "Ferme des Saules", icon = Icons.Outlined.Place, maxLength = 200)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

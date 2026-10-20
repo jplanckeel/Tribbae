@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { AiCard, FolderCard, GridCard, IdeaCard, ListCard } from "../components/cards";
 import { useComposer } from "../components/Composer";
@@ -10,7 +10,7 @@ import * as api from "../lib/api";
 import { CATEGORIES, categoryBySlug, normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { ageInMonths, eventDateMs, matchesAge, matchesQuery, priceValue } from "../lib/format";
-import { byPopularity, byRecent } from "../lib/links";
+import { byPopularity, byRecent, byRotation } from "../lib/links";
 import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
 import { useDesktop } from "../lib/useMediaQuery";
@@ -50,7 +50,7 @@ interface Filters {
   ages: string[];
   budget?: BudgetKey;
   weekend: boolean;
-  sort: "popular" | "recent";
+  sort: "une" | "popular" | "recent";
 }
 
 /** Filtres hors catégorie (les compteurs par catégorie en dépendent). */
@@ -86,7 +86,7 @@ export default function Explorer() {
     ages: (params.get("age") ?? "").split(",").filter(Boolean),
     budget: BUDGETS.find((b) => b.key === params.get("budget"))?.key,
     weekend: params.get("quand") === "weekend",
-    sort: params.get("tri") === "recent" ? "recent" : "popular",
+    sort: params.get("tri") === "recent" ? "recent" : params.get("tri") === "aimees" ? "popular" : "une",
   };
 
   const update = (patch: Record<string, string | undefined>) => {
@@ -134,13 +134,12 @@ export default function Explorer() {
     for (const l of pool) m.set(normalizeCategory(l.category), (m.get(normalizeCategory(l.category)) ?? 0) + 1);
     return m;
   }, [pool]);
-  const list = useMemo(
-    () =>
-      pool
-        .filter((l) => !filters.cats.length || filters.cats.includes(normalizeCategory(l.category)))
-        .sort(filters.sort === "recent" ? byRecent : byPopularity),
-    [pool, params], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const list = useMemo(() => {
+    const shown = pool.filter((l) => !filters.cats.length || filters.cats.includes(normalizeCategory(l.category)));
+    // « À la une » par défaut : un ordre qui change toutes les 6 heures
+    if (filters.sort === "une") return byRotation(shown);
+    return shown.sort(filters.sort === "recent" ? byRecent : byPopularity);
+  }, [pool, params]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const single = filters.cats.length === 1 ? CATEGORIES.find((c) => c.key === filters.cats[0]) : undefined;
   const props: LayoutProps = {
@@ -201,7 +200,7 @@ function ViewTabs({ view, update, className = "" }: Pick<LayoutProps, "view" | "
           role="tab"
           aria-selected={view === v}
           onClick={() => update({ vue: v === "dossiers" ? "dossiers" : undefined })}
-          className={`rounded-s text-sm transition-colors ${view === v ? "bg-white font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec"}`}
+          className={`rounded-small text-sm transition-colors ${view === v ? "bg-white font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec"}`}
         >
           {v === "idees" ? "Idées" : "Dossiers"}
         </button>
@@ -259,7 +258,7 @@ function ExplorerMobile(p: LayoutProps) {
   const session = useSession();
   const { children } = useMyData();
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const activeFilters = filters.ages.length + (filters.budget ? 1 : 0) + (filters.sort === "recent" ? 1 : 0);
+  const activeFilters = filters.ages.length + (filters.budget ? 1 : 0) + (filters.sort !== "une" ? 1 : 0);
   // Carte « IA » glissée dans la mosaïque
   const aiSlot = Math.min(3, p.list.length);
 
@@ -284,7 +283,7 @@ function ExplorerMobile(p: LayoutProps) {
         )}
       </div>
 
-      <SearchBox {...p} className="h-[52px] shrink-0 rounded-m text-[15px] shadow-card" />
+      <SearchBox {...p} className="h-[52px] shrink-0 rounded-medium text-[15px] shadow-card" />
       <ViewTabs {...p} />
 
       {view === "dossiers" ? (
@@ -332,14 +331,20 @@ function ExplorerMobile(p: LayoutProps) {
               {p.list.length === 0 ? (
                 <NoResult onAi={p.onAi} />
               ) : (
-                <div className="columns-2 gap-3">
-                  {p.list.map((l, i) => (
-                    <Fragment key={l.id}>
-                      {i === aiSlot && <AiPromo onClick={p.onAi} />}
-                      <GridCard link={l} index={i} onRequireAuth={p.onRequireAuth} />
-                    </Fragment>
+                // Comme l'app : deux colonnes remplies en alternance (1 à gauche,
+                // 2 à droite…), la carte IA en 4e position
+                <div className="flex gap-3">
+                  {[0, 1].map((col) => (
+                    <div key={col} className="flex min-w-0 flex-1 flex-col">
+                      {[...p.list.slice(0, aiSlot), null, ...p.list.slice(aiSlot)].map((l, i) =>
+                        i % 2 !== col ? null : l ? (
+                          <GridCard key={l.id} link={l} index={i} onRequireAuth={p.onRequireAuth} />
+                        ) : (
+                          <AiPromo key="ai" onClick={p.onAi} />
+                        ),
+                      )}
+                    </div>
                   ))}
-                  {aiSlot === p.list.length && <AiPromo onClick={p.onAi} />}
                 </div>
               )}
             </>
@@ -351,8 +356,9 @@ function ExplorerMobile(p: LayoutProps) {
         <div className="flex flex-col gap-5">
           <fieldset>
             <legend className="mb-2 text-[13px] font-bold text-sec">Trier par</legend>
-            <div className="flex gap-2">
-              <Chip active={filters.sort === "popular"} onClick={() => update({ tri: undefined })}>Les plus aimées</Chip>
+            <div className="flex flex-wrap gap-2">
+              <Chip active={filters.sort === "une"} onClick={() => update({ tri: undefined })}>À la une</Chip>
+              <Chip active={filters.sort === "popular"} onClick={() => update({ tri: "aimees" })}>Les plus aimées</Chip>
               <Chip active={filters.sort === "recent"} onClick={() => update({ tri: "recent" })}>Les plus récentes</Chip>
             </div>
           </fieldset>
@@ -400,7 +406,7 @@ function AiPromo({ onClick }: { onClick: () => void }) {
     <div className="mb-3 flex break-inside-avoid flex-col gap-2.5 rounded-[20px] bg-prune p-3.5 text-sable">
       <Icon name="sparkles" size={26} className="text-soleil" />
       <span className="font-display text-base leading-tight font-bold">Pas d'idée ? L'IA prépare un dossier sur mesure.</span>
-      <button type="button" onClick={onClick} className="self-start rounded-s bg-soleil px-3 py-2 text-[13px] font-bold text-ecorce transition-colors hover:bg-white">
+      <button type="button" onClick={onClick} className="self-start rounded-small bg-soleil px-3 py-2 text-[13px] font-bold text-ecorce transition-colors hover:bg-white">
         Essayer
       </button>
     </div>
@@ -525,9 +531,10 @@ function ExplorerDesktop(p: LayoutProps) {
                 Trier par
                 <select
                   value={filters.sort}
-                  onChange={(e) => update({ tri: e.target.value === "recent" ? "recent" : undefined })}
+                  onChange={(e) => update({ tri: e.target.value === "recent" ? "recent" : e.target.value === "popular" ? "aimees" : undefined })}
                   className="h-10 rounded-xl border-[1.5px] border-line-2 bg-white px-2.5 text-sm font-semibold text-ecorce outline-none focus:border-terracotta"
                 >
+                  <option value="une">À la une</option>
                   <option value="popular">Les plus aimées</option>
                   <option value="recent">Les plus récentes</option>
                 </select>

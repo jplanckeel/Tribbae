@@ -1,4 +1,4 @@
-rootProject.name = "LinkKeeper"
+rootProject.name = "Tribbae"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {

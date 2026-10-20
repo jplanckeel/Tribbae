@@ -1,13 +1,14 @@
 package com.linkkeeper.app
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.key
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -83,6 +84,11 @@ private fun ModernMainApp(
     commentRepository: CommentRepository
 ) {
     var tab by remember { mutableStateOf(NavDestination.HOME) }
+    // Onglets déjà ouverts : gardés en mémoire (voir keptHidden)
+    val visitedTabs = remember { mutableStateListOf(NavDestination.HOME) }
+    // Idées de la communauté (accueil, Explorer) : rechargées en revenant sur
+    // l'onglet seulement si elles datent, pas à chaque visite
+    LaunchedEffect(tab) { if (tab == NavDestination.HOME || tab == NavDestination.EXPLORE) vm.refreshCommunityIfStale() }
     // Pile d'écrans : retour = dépiler
     val stack = remember { mutableStateListOf<Screen>() }
     // Partage reçu (au lancement ou app déjà ouverte) : on ouvre l'écran correspondant
@@ -116,11 +122,17 @@ private fun ModernMainApp(
     BackHandler(enabled = stack.isNotEmpty()) { pop() }
 
     Box(Modifier.fillMaxSize().background(ui.Sable).nestedScroll(navScroll.connection)) {
-        when (val screen = stack.lastOrNull()) {
-            null -> {
-                // Fondu léger entre onglets
-                Crossfade(targetState = tab, animationSpec = tween(180), label = "tabs") { current ->
-                when (current) {
+        val top = stack.lastOrNull()
+        val current = if (tab == NavDestination.ADD) NavDestination.HOME else tab
+        LaunchedEffect(current) { if (current !in visitedTabs) visitedTabs.add(current) }
+        // Onglets : chacun est composé à sa première visite puis gardé, simplement
+        // masqué quand un autre onglet ou écran est devant. Y revenir est instantané
+        // et conserve le défilement (avant, l'écran était reconstruit à chaque fois).
+        Box(Modifier.fillMaxSize().keptHidden(top != null)) {
+            NavDestination.entries.filter { it == current || it in visitedTabs }.forEach { t ->
+                key(t) {
+                Box(Modifier.fillMaxSize().keptHidden(t != current)) {
+                when (t) {
                     NavDestination.HOME, NavDestination.ADD -> NewHomeScreen(
                         links = links,
                         onNavigateToExplore = { openExplore() },
@@ -136,7 +148,6 @@ private fun ModernMainApp(
                         onNavigateToTribe = { tab = NavDestination.PROFILE },
                     )
                     NavDestination.EXPLORE -> {
-                        LaunchedEffect(Unit) { vm.loadCommunityLinks() }
                         ExploreScreen(
                             links = communityLinks,
                             onNavigateBack = { tab = NavDestination.HOME },
@@ -180,6 +191,8 @@ private fun ModernMainApp(
                     )
                 }
                 }
+                }
+            }
                 ModernBottomNav(
                     currentDestination = tab,
                     onNavigate = { d ->
@@ -189,8 +202,9 @@ private fun ModernMainApp(
                     modifier = Modifier.align(Alignment.BottomCenter),
                     hidden = navScroll.hidden
                 )
-            }
+        }
 
+        if (top != null) when (val screen: Screen = top) {
             is Screen.IdeaForm -> IdeaFormScreen(
                 viewModel = vm,
                 onBack = ::pop,
@@ -311,3 +325,15 @@ private fun ModernMainApp(
         }
     }
 }
+
+/**
+ * Garde un contenu composé (état, défilement, images chargées) sans le placer :
+ * il n'est ni dessiné, ni touchable, ni lu par TalkBack, et ne coûte rien tant
+ * qu'il ne change pas.
+ */
+private fun Modifier.keptHidden(hidden: Boolean): Modifier =
+    if (!hidden) this
+    else this.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(placeable.width, placeable.height) {}
+    }.clearAndSetSemantics {}

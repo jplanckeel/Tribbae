@@ -91,12 +91,13 @@ func Limit(rl *RateLimiter, paths map[string]bool, next http.Handler) http.Handl
 
 // contentSecurityPolicy n'autorise que les ressources servies par l'application ;
 // les images peuvent venir de n'importe quel site https (aperçus des liens).
+// Exception : la mesure d'audience Umami (script et envoi des visites).
 const contentSecurityPolicy = "default-src 'self'; " +
-	"script-src 'self'; " +
+	"script-src 'self' https://cloud.umami.is; " +
 	"style-src 'self' 'unsafe-inline'; " +
 	"img-src 'self' https: data: blob:; " +
 	"font-src 'self'; " +
-	"connect-src 'self'; " +
+	"connect-src 'self' https://gateway.umami.is; " +
 	"object-src 'none'; " +
 	"base-uri 'self'; " +
 	"form-action 'self'; " +

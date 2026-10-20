@@ -67,23 +67,7 @@ fun formatAge(birth: Long): String {
     return if (m < 24) "$m mois" else "${m / 12} ans"
 }
 
-/** Tranche d'âge [min, max] en années depuis un texte libre (« 3–10 ans », « 18 mois », « 6+ »). */
-fun parseAgeRange(text: String): Pair<Float, Float>? {
-    val lower = text.lowercase()
-    val nums = Regex("\\d+(?:[.,]\\d+)?").findAll(lower).map { it.value.replace(',', '.').toFloat() }.toList()
-    if (nums.isEmpty()) return null
-    val factor = if ("mois" in lower && "an" !in lower) 1f / 12 else 1f
-    val min = nums.first() * factor
-    val open = nums.size == 1 && Regex("\\+|dès|des |à partir|plus").containsMatchIn(lower)
-    val max = when {
-        nums.size > 1 -> nums.last() * factor
-        open -> 99f
-        else -> min
-    }
-    return minOf(min, max) to maxOf(min, max)
-}
+/** Tranche d'âge [min, max] en années (voir data.AgeRanges). */
+fun parseAgeRange(text: String): Pair<Float, Float>? = data.AgeRanges.parse(text)
 
-fun matchesAge(text: String, min: Float, max: Float): Boolean {
-    val r = parseAgeRange(text) ?: return false
-    return r.first <= max && r.second >= min
-}
+fun matchesAge(text: String, min: Float, max: Float): Boolean = data.AgeRanges.matches(text, min, max)

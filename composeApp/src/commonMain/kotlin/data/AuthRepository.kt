@@ -31,7 +31,7 @@ data class AuthResponse(
     val isAdmin: Boolean = false
 )
 
-class AuthRepository(private val baseUrl: String = "https://tribbae.bananaops.cloud") {
+class AuthRepository(private val baseUrl: String = Backend.url) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     suspend fun login(email: String, password: String): AuthResponse =

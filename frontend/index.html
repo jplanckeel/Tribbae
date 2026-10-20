@@ -29,6 +29,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Tribbae" />
 
+    <!--
+      Mesure d'audience Umami, sans cookie (cf. /confidentialite). analytics.js
+      retire d'abord les jetons de partage et les titres d'idées des envois.
+      data-domains : rien n'est mesuré hors du site de production (dev, tests).
+      Refus : localStorage « umami.disabled » (bouton de la page Confidentialité).
+    -->
+    <script src="/analytics.js"></script>
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="21e9ec31-09f2-4302-ae1e-25bba5b347b6"
+      data-domains="tribbae.bananaops.cloud"
+      data-before-send="tribbaeUmamiBeforeSend"
+      data-exclude-search="true"
+      data-exclude-hash="true"
+      data-do-not-track="true"
+    ></script>
+
     <style>
       /* Contenu rendu par le serveur, visible le temps que l'application démarre
          (et seul visible pour les robots qui n'exécutent pas le JavaScript) */

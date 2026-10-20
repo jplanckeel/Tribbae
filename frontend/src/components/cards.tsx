@@ -97,7 +97,7 @@ export function RailCard({ link }: { link: Link }) {
   return (
     <RouterLink
       to={`/links/${link.id}`}
-      className="w-[210px] shrink-0 snap-start overflow-hidden rounded-l bg-white shadow-card transition-transform hover:-translate-y-0.5"
+      className="w-[210px] shrink-0 snap-start overflow-hidden rounded-large bg-white shadow-card transition-transform hover:-translate-y-0.5"
     >
       <div className="relative">
         <IdeaVisual link={link} height={120} />
@@ -164,7 +164,7 @@ export function RowCard({ link, trailing }: { link: Link; trailing?: React.React
 export function CategoryTile({ cat, count, to }: { cat: CategoryMeta; count?: number; to: string }) {
   return (
     <RouterLink to={to} className="group flex w-[76px] shrink-0 snap-start flex-col items-center gap-1.5">
-      <span className={`flex h-16 w-16 items-center justify-center rounded-l transition-transform group-hover:-translate-y-0.5 ${cat.bg} ${cat.ic}`}>
+      <span className={`flex h-16 w-16 items-center justify-center rounded-large transition-transform group-hover:-translate-y-0.5 ${cat.bg} ${cat.ic}`}>
         <Icon name={cat.icon} size={28} />
       </span>
       <span className="text-[13px] font-semibold">{cat.plural}</span>
@@ -195,7 +195,7 @@ export function FolderCard({ folder, count, showOwner }: { folder: Folder; count
   return (
     <RouterLink
       to={`/dossiers/${folder.id}`}
-      className="relative flex flex-col gap-3.5 overflow-hidden rounded-l bg-white p-3.5 shadow-card transition-transform hover:-translate-y-0.5"
+      className="relative flex flex-col gap-3.5 overflow-hidden rounded-large bg-white p-3.5 shadow-card transition-transform hover:-translate-y-0.5"
     >
       <span aria-hidden="true" className="absolute -top-3.5 -right-3.5 h-16 w-16 rounded-full" style={{ background: color.bg }} />
       <span className="relative flex h-11 w-11 items-center justify-center rounded-[14px] text-white" style={{ background: color.solid }}>

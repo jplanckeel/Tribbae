@@ -204,7 +204,7 @@ function AddSheet({ open, onClose, onPick }: { open: boolean; onClose: () => voi
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
             onDrop={drop}
-            className={`flex h-14 items-center gap-2.5 rounded-m border-2 bg-white pr-2 pl-4 text-muted focus-within:border-terracotta ${dragging ? "border-dashed border-terracotta bg-sable-2" : error ? "border-sortie-ink" : "border-line-2"}`}
+            className={`flex h-14 items-center gap-2.5 rounded-medium border-2 bg-white pr-2 pl-4 text-muted focus-within:border-terracotta ${dragging ? "border-dashed border-terracotta bg-sable-2" : error ? "border-sortie-ink" : "border-line-2"}`}
           >
             <Icon name="link" size={20} />
             <input
@@ -224,9 +224,9 @@ function AddSheet({ open, onClose, onPick }: { open: boolean; onClose: () => voi
               className="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-ecorce outline-none placeholder:text-muted"
             />
             {url.trim() ? (
-              <button type="submit" className="h-10 rounded-s bg-terracotta px-3 text-[13px] font-bold text-white">Ajouter</button>
+              <button type="submit" className="h-10 rounded-small bg-terracotta px-3 text-[13px] font-bold text-white">Ajouter</button>
             ) : canPaste ? (
-              <button type="button" onClick={paste} className="h-10 rounded-s bg-ecorce px-3 text-[13px] font-bold text-sable">Coller</button>
+              <button type="button" onClick={paste} className="h-10 rounded-small bg-ecorce px-3 text-[13px] font-bold text-sable">Coller</button>
             ) : null}
           </div>
           <span id="add-url-hint" role={error ? "alert" : undefined} className={`text-xs ${error ? "font-semibold text-sortie-ink" : "text-sec"}`}>
@@ -242,7 +242,7 @@ function AddSheet({ open, onClose, onPick }: { open: boolean; onClose: () => voi
                 key={c.key}
                 type="button"
                 onClick={() => onPick({ kind: "link", defaults: { category: c.key as CategoryKey } })}
-                className={`flex h-[78px] flex-col items-center justify-center gap-1.5 rounded-m text-xs font-semibold transition-transform hover:-translate-y-0.5 ${c.bg} ${c.ink}`}
+                className={`flex h-[78px] flex-col items-center justify-center gap-1.5 rounded-medium text-xs font-semibold transition-transform hover:-translate-y-0.5 ${c.bg} ${c.ink}`}
               >
                 <Icon name={c.icon} size={22} className={c.ic} />
                 {c.label}
@@ -251,7 +251,7 @@ function AddSheet({ open, onClose, onPick }: { open: boolean; onClose: () => voi
             <button
               type="button"
               onClick={() => onPick({ kind: "folder" })}
-              className="flex h-[78px] flex-col items-center justify-center gap-1.5 rounded-m border-2 border-dashed border-dash text-xs font-semibold text-sec transition-colors hover:bg-sable-2"
+              className="flex h-[78px] flex-col items-center justify-center gap-1.5 rounded-medium border-2 border-dashed border-dash text-xs font-semibold text-sec transition-colors hover:bg-sable-2"
             >
               <Icon name="tipi" size={22} className="text-terracotta" />
               Dossier
@@ -262,9 +262,9 @@ function AddSheet({ open, onClose, onPick }: { open: boolean; onClose: () => voi
         <button
           type="button"
           onClick={() => onPick({ kind: "ai" })}
-          className="flex items-center gap-3.5 rounded-l bg-prune p-4 text-left text-sable transition-colors hover:bg-[#4d3848]"
+          className="flex items-center gap-3.5 rounded-large bg-prune p-4 text-left text-sable transition-colors hover:bg-[#4d3848]"
         >
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-m bg-soleil text-prune">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-medium bg-soleil text-prune">
             <Icon name="sparkles" size={24} />
           </span>
           <span className="flex flex-1 flex-col gap-0.5">

@@ -28,7 +28,7 @@ export default function Faq() {
             <Icon name={s.icon} size={20} className="text-terracotta" />
             {s.title}
           </h2>
-          <div className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-l bg-white">
+          <div className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-large bg-white">
             {s.items.map(([q, a]) => (
               <details key={q} className="group">
                 <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 text-[15px] font-semibold [&::-webkit-details-marker]:hidden">

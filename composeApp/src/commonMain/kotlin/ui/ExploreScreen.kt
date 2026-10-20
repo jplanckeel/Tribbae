@@ -29,7 +29,38 @@ import data.Link
 import data.LinkCategory
 import ui.campfire.*
 
-private enum class Sort(val label: String) { POPULAR("Les plus aimées"), RECENT("Les plus récentes"), RATED("Les mieux notées") }
+private enum class Sort(val label: String) { FEATURED("À la une"), POPULAR("Les plus aimées"), RECENT("Les plus récentes"), RATED("Les mieux notées") }
+
+/** Taille d'un lot de cartes de l'Explorer. */
+private const val PAGE = 24
+
+/** Durée d'une « une » : l'ordre de l'Explorer change toutes les 6 heures. */
+private const val ROTATION_MS = 6 * 3600 * 1000L
+
+/** FNV-1a 32 bits, identique au web (frontend/src/lib/links.ts). */
+private fun fnv1a(s: String): Long {
+    var h = 0x811c9dc5L
+    for (b in s.toByteArray(Charsets.UTF_8)) {
+        h = h xor (b.toLong() and 0xff)
+        h = (h * 0x01000193L) and 0xffffffffL
+    }
+    return h
+}
+
+/**
+ * Score « À la une » pour la période de 6 h en cours : tirage pondéré
+ * u^(1/poids), le même pour tous les utilisateurs et sur le web. Les idées
+ * aimées et récentes remontent plus souvent, mais chacune a sa chance.
+ */
+internal fun rotationScore(id: String, likeCount: Int, createdAt: String, now: Long = System.currentTimeMillis()): Double {
+    val period = Math.floorDiv(now, ROTATION_MS)
+    val u = (fnv1a("$id:$period") + 0.5) / 4294967296.0
+    val created = runCatching { java.time.OffsetDateTime.parse(createdAt).toInstant().toEpochMilli() }.getOrNull()
+    val ageDays = created?.let { (now - it) / 86_400_000.0 } ?: Double.POSITIVE_INFINITY
+    val fresh = if (ageDays < 14) 2 else if (ageDays < 60) 1 else 0
+    val weight = 1 + kotlin.math.ln1p(likeCount.coerceAtLeast(0).toDouble()) + fresh
+    return Math.pow(u, 1 / weight)
+}
 
 private data class AgeBand(val key: String, val label: String, val min: Float, val max: Float)
 
@@ -66,7 +97,7 @@ fun ExploreScreen(
     var minRating by remember { mutableStateOf(0) }
     // Budget max en euros : null = peu importe, 0 = gratuit (même filtre que le web)
     var budget by remember { mutableStateOf<Int?>(null) }
-    var sort by remember { mutableStateOf(Sort.POPULAR) }
+    var sort by remember { mutableStateOf(Sort.FEATURED) }
     var showFilters by remember { mutableStateOf(false) }
     // État « j'aime » optimiste, par idée
     val likes = remember { mutableStateMapOf<String, Pair<Boolean, Int>>() }
@@ -89,13 +120,24 @@ fun ExploreScreen(
                 budget.let { max -> max == null || priceValue(l.price)?.let { if (max == 0) it == 0.0 else it < max } == true }
         }.let { f ->
             when (sort) {
+                Sort.FEATURED -> {
+                    val now = System.currentTimeMillis()
+                    f.sortedByDescending { rotationScore(it.id, it.likeCount, it.createdAt, now) }
+                }
                 Sort.POPULAR -> f.sortedByDescending { it.likeCount }
                 Sort.RECENT -> f.sortedByDescending { it.createdAt.ifEmpty { it.updatedAt } }
                 Sort.RATED -> f.sortedWith(compareByDescending<Link> { it.rating }.thenByDescending { it.likeCount })
             }
         }
     }
-    val activeFilters = ages.size + tags.size + (if (minRating > 0) 1 else 0) + (if (budget != null) 1 else 0) + (if (sort != Sort.POPULAR) 1 else 0)
+    // Cartes construites par lots : toutes d'un coup (jusqu'à 700 idées avec
+    // image) rendaient l'arrivée sur l'Explorer lente. Le lot suivant est ajouté
+    // à l'approche du bas de la page.
+    val scroll = rememberScrollState()
+    var shown by remember(list) { mutableStateOf(PAGE) }
+    val nearBottom by remember { derivedStateOf { scroll.maxValue - scroll.value < 1500 } }
+    LaunchedEffect(nearBottom, shown, list.size) { if (nearBottom && shown < list.size) shown += PAGE }
+    val activeFilters = ages.size + tags.size + (if (minRating > 0) 1 else 0) + (if (budget != null) 1 else 0) + (if (sort != Sort.FEATURED) 1 else 0)
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -103,7 +145,7 @@ fun ExploreScreen(
         modifier = modifier.fillMaxSize().background(Sable)
     ) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 20.dp, bottom = ui.components.bottomNavClearance()),
+            Modifier.fillMaxSize().verticalScroll(scroll).statusBarsPadding().padding(top = 20.dp, bottom = ui.components.bottomNavClearance()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(
@@ -186,7 +228,7 @@ fun ExploreScreen(
                 } else {
                     // La carte IA s'insère en 4e position, comme sur la maquette
                     val slot = minOf(3, list.size)
-                    val items: List<Link?> = list.take(slot) + listOf(null) + list.drop(slot)
+                    val items: List<Link?> = (list.take(slot) + listOf(null) + list.drop(slot)).take(shown + 1)
                     TwoColumnMosaic(items) { l, i ->
                         if (l == null) {
                             AiPromoCard(onNavigateToAI)
@@ -254,7 +296,7 @@ fun ExploreScreen(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     CampButton("Réinitialiser", {
-                        ages = emptySet(); tags = emptySet(); minRating = 0; budget = null; sort = Sort.POPULAR
+                        ages = emptySet(); tags = emptySet(); minRating = 0; budget = null; sort = Sort.FEATURED
                     }, Modifier.weight(1f), kind = ButtonKind.Ghost)
                     CampButton("Voir ${list.size} idées", { showFilters = false }, Modifier.weight(1f), kind = ButtonKind.Dark)
                 }

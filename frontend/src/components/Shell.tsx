@@ -189,7 +189,8 @@ function Footer() {
   return (
     <footer className="hidden border-t border-line px-6 py-6 text-center text-sm text-sec md:block">
       Tribbae — les idées de la tribu, au même endroit ·{" "}
-      <NavLink to="/aide" className="font-semibold text-terracotta hover:text-terracotta-dark">Aide</NavLink>
+      <NavLink to="/aide" className="font-semibold text-terracotta hover:text-terracotta-dark">Aide</NavLink> ·{" "}
+      <NavLink to="/confidentialite" className="font-semibold text-terracotta hover:text-terracotta-dark">Confidentialité</NavLink>
     </footer>
   );
 }
@@ -202,7 +203,7 @@ export function AppLayout() {
       <div className="flex min-h-dvh flex-col">
         <a
           href="#contenu"
-          className="sr-only z-[80] rounded-s bg-ecorce px-4 py-2 font-bold text-sable focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+          className="sr-only z-[80] rounded-small bg-ecorce px-4 py-2 font-bold text-sable focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
         >
           Aller au contenu
         </a>

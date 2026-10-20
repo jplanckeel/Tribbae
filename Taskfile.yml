@@ -41,7 +41,8 @@ tasks:
   logs:
     desc: "Afficher les logs de l'application"
     cmds:
-      - adb logcat -s LinkKeeper:* AndroidRuntime:E
+      # Logs du processus de l'app (lancée au préalable), plantages compris
+      - adb logcat --pid=$(adb shell pidof -s com.linkkeeper.app)
 
   check:
     desc: "Vérifier le code (lint, tests)"

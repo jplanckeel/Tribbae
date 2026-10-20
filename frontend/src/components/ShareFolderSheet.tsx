@@ -84,7 +84,7 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
             Toute personne qui a le lien peut consulter ce dossier, même sans compte.
           </p>
           {token ? (
-            <div className="flex items-center gap-2 rounded-m bg-white p-2 pl-4 shadow-card">
+            <div className="flex items-center gap-2 rounded-medium bg-white p-2 pl-4 shadow-card">
               <input
                 readOnly
                 aria-label="Lien de partage"
@@ -110,7 +110,7 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
                 const name = c.displayName || c.email || "Membre";
                 return (
                   <li key={c.userId} className="flex items-center gap-3 px-3.5 py-3">
-                    <Avatar name={name} color={bg} ink={ink} size={36} rounded="rounded-s" />
+                    <Avatar name={name} color={bg} ink={ink} size={36} rounded="rounded-small" />
                     <span className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate text-sm font-bold">{name}</span>
                       <span className="text-xs text-sec">{c.role === "COLLABORATOR_ROLE_EDITOR" ? "Peut ajouter des idées" : "Lecture seule"}</span>
@@ -152,7 +152,7 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
                   role="radio"
                   aria-checked={role === k}
                   onClick={() => setRole(k)}
-                  className={`h-11 rounded-s text-sm font-semibold transition-colors ${role === k ? "bg-ecorce text-sable" : "bg-sable-2 text-sec"}`}
+                  className={`h-11 rounded-small text-sm font-semibold transition-colors ${role === k ? "bg-ecorce text-sable" : "bg-sable-2 text-sec"}`}
                 >
                   {label}
                 </button>

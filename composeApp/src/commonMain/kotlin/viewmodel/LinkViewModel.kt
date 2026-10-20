@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
 
 class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewModel() {
     val folders: StateFlow<List<Folder>> = repository.folders
@@ -202,6 +205,38 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         "name must be 1 to 60" in raw -> "Le nom de la tribu doit faire entre 1 et 60 caractères."
         "email is required" in raw -> "Saisissez l'email de son compte Tribbae."
         else -> "Impossible de joindre le serveur, réessayez."
+    }
+
+    /**
+     * Déconnexion : la session ET les données du compte gardées sur le téléphone
+     * (idées, dossiers, enfants) sont effacées, pour qu'un autre utilisateur de
+     * l'appareil ne les voie pas.
+     */
+    fun signOut() {
+        repository.clearAll()
+        _tribe.value = null
+        sessionManager?.clearSession()
+    }
+
+    /** Export RGPD de toutes les données du compte (JSON), ou null en cas d'échec. */
+    suspend fun exportAccount(): String? = authenticatedClient?.let { runCatching { it.exportAccount() }.getOrNull() }
+
+    /** Suppression définitive du compte, puis déconnexion. onDone(null) si réussi, sinon le message d'erreur. */
+    fun deleteAccount(password: String, onDone: (String?) -> Unit) {
+        val client = authenticatedClient ?: return onDone("Connectez-vous pour supprimer votre compte.")
+        viewModelScope.launch {
+            runCatching { client.deleteAccount(password) }
+                .onSuccess { signOut(); onDone(null) }
+                .onFailure { e ->
+                    val raw = e.message.orEmpty()
+                    onDone(when {
+                        "wrong password" in raw -> "Mot de passe incorrect."
+                        "(429)" in raw -> "Trop de tentatives, réessayez dans une minute."
+                        "deletion failed" in raw -> "La suppression n'a pas abouti. Réessayez : elle reprendra là où elle s'est arrêtée."
+                        else -> "Impossible de joindre le serveur, réessayez."
+                    })
+                }
+        }
     }
 
     /** Identifiant de l'utilisateur connecté, ou null. */
@@ -869,43 +904,36 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
 
+    private var communityLoadedAt = 0L
+    private var communityLoading = false
+
+    /** Recharge les idées de la communauté si elles ont plus de 5 minutes (ou jamais chargées). */
+    fun refreshCommunityIfStale(maxAgeMs: Long = 5 * 60_000L) {
+        if (!communityLoading && System.currentTimeMillis() - communityLoadedAt > maxAgeMs) loadCommunityLinks()
+    }
+
     /** Charge les liens publics de la communauté depuis l'API publique (sans auth) */
     fun loadCommunityLinks() {
+        communityLoading = true
         viewModelScope.launch {
             _isRefreshing.value = true
             try {
-                val response = apiClient.listCommunityLinks(limit = 100)
-                _communityLinks.value = response.links.map { apiLink ->
-                    val category = try {
-                        LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
-                    } catch (_: Exception) { LinkCategory.IDEE }
-                    Link(
-                        id = apiLink.id,
-                        title = apiLink.title,
-                        url = apiLink.url,
-                        description = apiLink.description,
-                        category = category,
-                        tags = apiLink.tags,
-                        ageRange = apiLink.ageRange,
-                        location = apiLink.location,
-                        price = apiLink.price,
-                        imageUrl = apiLink.imageUrl,
-                        eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
-                        rating = apiLink.rating,
-                        ingredients = apiLink.ingredients,
-                        likeCount = apiLink.likeCount,
-                        likedByMe = apiLink.likedByMe,
-                        ownerId = apiLink.ownerId,
-                        ownerDisplayName = apiLink.ownerDisplayName,
-                        ownerIsAdmin = apiLink.ownerIsAdmin,
-                        visibility = "public"
-                    )
+                // Comme le web : jusqu'à 100 idées par catégorie (l'API plafonne à 100 par
+                // appel), avec le jeton pour savoir lesquelles on a déjà aimées
+                val token = sessionManager?.getToken() ?: authToken
+                val lists = coroutineScope {
+                    LinkCategory.entries.map { c ->
+                        async { runCatching { apiClient.listCommunityLinks("LINK_CATEGORY_${c.name}", 100, token).links }.getOrDefault(emptyList()) }
+                    }.awaitAll()
                 }
+                _communityLinks.value = lists.flatten().distinctBy { it.id }.map { it.toLink().copy(visibility = "public") }
+                communityLoadedAt = System.currentTimeMillis()
                 println("DEBUG: Loaded ${_communityLinks.value.size} community links")
             } catch (e: Exception) {
                 println("ERROR: Failed to load community links - ${e.message}")
             } finally {
                 _isRefreshing.value = false
+                communityLoading = false
             }
         }
     }

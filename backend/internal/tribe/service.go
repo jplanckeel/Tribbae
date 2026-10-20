@@ -320,3 +320,13 @@ func (s *Service) Users(ctx context.Context, ids []string) map[string]userDoc {
 	}
 	return out
 }
+
+// Leave retire userID de sa tribu (suppression du compte). Sans tribu
+// enregistrée, il n'y a rien à faire.
+func (s *Service) Leave(ctx context.Context, userID string) error {
+	_, err := s.RemoveMember(ctx, userID, userID)
+	if errors.Is(err, ErrNotMember) {
+		return nil
+	}
+	return err
+}

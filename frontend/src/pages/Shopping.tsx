@@ -127,7 +127,7 @@ export default function Shopping() {
                   </button>
                 )}
               </div>
-              <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-l bg-white">
+              <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-large bg-white">
                 {items.map(([k, it]) => {
                   const done = state.checked.includes(k);
                   return (

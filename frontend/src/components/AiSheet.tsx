@@ -185,7 +185,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
               <select
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
-                className="h-11 min-w-0 flex-1 rounded-s border-0 bg-white/10 px-3 font-semibold text-sable outline-none focus:ring-2 focus:ring-soleil"
+                className="h-11 min-w-0 flex-1 rounded-small border-0 bg-white/10 px-3 font-semibold text-sable outline-none focus:ring-2 focus:ring-soleil"
               >
                 <option value={NEW_FOLDER} className="text-ecorce">Nouveau dossier « {prompt.trim().slice(0, 30)} »</option>
                 {writable.map((f) => <option key={f.id} value={f.id} className="text-ecorce">{f.name}</option>)}
@@ -195,7 +195,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
               type="button"
               onClick={save}
               disabled={saving || selected.size === 0}
-              className="flex h-[52px] items-center justify-center gap-2 rounded-m bg-soleil px-5 font-bold text-ecorce transition-colors hover:bg-white disabled:opacity-55"
+              className="flex h-[52px] items-center justify-center gap-2 rounded-medium bg-soleil px-5 font-bold text-ecorce transition-colors hover:bg-white disabled:opacity-55"
             >
               {saving ? <Spinner size={18} /> : <Icon name="check" size={18} />}
               Garder {selected.size} idée{selected.size > 1 ? "s" : ""}
@@ -219,13 +219,13 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
               if (e.key === "Enter" && !e.shiftKey) generate(e);
             }}
             placeholder="« 10 activités d'intérieur pour un jour de pluie »"
-            className="min-h-[56px] flex-1 resize-none rounded-m bg-white/10 px-4 py-3 text-[15px] text-sable outline-none placeholder:text-white/45 focus:ring-2 focus:ring-soleil"
+            className="min-h-[56px] flex-1 resize-none rounded-medium bg-white/10 px-4 py-3 text-[15px] text-sable outline-none placeholder:text-white/45 focus:ring-2 focus:ring-soleil"
           />
           <button
             type="submit"
             disabled={!prompt.trim() || loading}
             aria-label="Générer des idées"
-            className="flex w-14 shrink-0 items-center justify-center rounded-m bg-soleil text-prune transition-colors hover:bg-white disabled:opacity-50"
+            className="flex w-14 shrink-0 items-center justify-center rounded-medium bg-soleil text-prune transition-colors hover:bg-white disabled:opacity-50"
           >
             {loading ? <Spinner size={22} /> : <Icon name="sparkles" size={24} />}
           </button>
@@ -255,14 +255,14 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
       </form>
 
       {loading && (
-        <div role="status" className="mt-6 flex flex-col items-center gap-3 rounded-l bg-white/5 px-6 py-10 text-center">
+        <div role="status" className="mt-6 flex flex-col items-center gap-3 rounded-large bg-white/5 px-6 py-10 text-center">
           <Icon name="sparkles" size={32} className="animate-pulse text-soleil" />
           <p className="font-display text-lg font-bold">L'IA prépare vos idées…</p>
           <p className="text-sm text-prune-soft">Rédaction en cours, comptez 20 à 60 secondes.</p>
         </div>
       )}
 
-      {error && <p role="alert" className="mt-4 rounded-s bg-white/10 px-4 py-3 text-sm font-medium text-soleil">{error}</p>}
+      {error && <p role="alert" className="mt-4 rounded-small bg-white/10 px-4 py-3 text-sm font-medium text-soleil">{error}</p>}
 
       {ideas.length > 0 && (
         <ul className="mt-5 flex flex-col gap-2.5">
@@ -270,7 +270,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialPrompt, onSa
             const cat = categoryMeta(idea.cat);
             const on = selected.has(i);
             return (
-              <li key={i} className={`rounded-l p-3.5 transition-colors ${on ? "bg-white text-ecorce" : "bg-white/5 text-sable"}`}>
+              <li key={i} className={`rounded-large p-3.5 transition-colors ${on ? "bg-white text-ecorce" : "bg-white/5 text-sable"}`}>
                 <div className="flex items-start gap-3">
                   <button
                     type="button"

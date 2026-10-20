@@ -41,7 +41,7 @@ export default function SharedFolder() {
         <div className="relative mx-auto flex max-w-4xl flex-col gap-6">
           <RouterLink to="/" aria-label="Tribbae"><Logo /></RouterLink>
           <div className="flex items-end gap-4">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-l text-white" style={{ background: color.solid }}>
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-large text-white" style={{ background: color.solid }}>
               <Icon name={folderIcon(folder.icon)} size={30} />
             </span>
             <div className="flex flex-col gap-1">
@@ -65,7 +65,7 @@ export default function SharedFolder() {
               const href = safeHref(l.url);
               const meta = metaLine(l);
               return (
-                <li key={l.id} className="flex flex-col overflow-hidden rounded-l bg-white shadow-card">
+                <li key={l.id} className="flex flex-col overflow-hidden rounded-large bg-white shadow-card">
                   <IdeaVisual link={l} height={130} />
                   <div className="flex flex-1 flex-col gap-1.5 p-4">
                     <span className={`self-start rounded-full px-2.5 py-0.5 text-xs font-bold ${cat.bg} ${cat.ink}`}>{cat.label}</span>
@@ -84,12 +84,12 @@ export default function SharedFolder() {
           </ul>
         )}
 
-        <div className="mt-6 flex flex-col items-center gap-3 rounded-l bg-ecorce p-6 text-center text-sable">
+        <div className="mt-6 flex flex-col items-center gap-3 rounded-large bg-ecorce p-6 text-center text-sable">
           <span className="font-display text-xl font-bold">Rangez aussi les idées de votre tribu</span>
           <span className="text-sm text-bark-soft">Sorties, recettes, cadeaux, activités : tout au même endroit, à partager en un lien.</span>
           <RouterLink
             to={session ? "/" : "/bienvenue"}
-            className="mt-1 flex h-12 items-center rounded-m bg-terracotta px-5 font-bold text-white hover:bg-terracotta-dark"
+            className="mt-1 flex h-12 items-center rounded-medium bg-terracotta px-5 font-bold text-white hover:bg-terracotta-dark"
           >
             {session ? "Ouvrir Tribbae" : "Créer ma tribu"}
           </RouterLink>

@@ -171,7 +171,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
             </div>
           </div>
           <div className="flex items-end gap-4">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-l text-white shadow-soft" style={{ background: color.solid }}>
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-large text-white shadow-soft" style={{ background: color.solid }}>
               <Icon name={folderIcon(folder.icon)} size={30} />
             </span>
             <div className="flex min-w-0 flex-col gap-1">

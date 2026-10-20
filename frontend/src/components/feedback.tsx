@@ -59,7 +59,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
             <div
               key={t.id}
               role={t.tone === "error" ? "alert" : "status"}
-              className={`flex animate-pop items-center gap-2 rounded-m px-4 py-3 text-sm font-semibold shadow-nav ${t.tone === "error" ? "bg-sortie-ink text-white" : "bg-ecorce text-sable"}`}
+              className={`flex animate-pop items-center gap-2 rounded-medium px-4 py-3 text-sm font-semibold shadow-nav ${t.tone === "error" ? "bg-sortie-ink text-white" : "bg-ecorce text-sable"}`}
             >
               <Icon name={t.tone === "error" ? "close" : "check"} size={18} />
               {t.text}

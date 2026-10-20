@@ -65,7 +65,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
         <div className="flex items-center gap-3">
           <span
             aria-hidden="true"
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-m text-white transition-colors"
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-medium text-white transition-colors"
             style={{ background: color.solid }}
           >
             <Icon name={FOLDER_ICONS.find((i) => i.key === form.icon)?.icon ?? "tipi"} size={26} />
@@ -112,7 +112,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                   title={i.label}
                   aria-pressed={active}
                   onClick={() => setForm({ ...form, icon: i.key })}
-                  className={`flex aspect-square items-center justify-center rounded-s transition-colors ${active ? "text-white" : "bg-white text-ecorce hover:bg-sable-2"}`}
+                  className={`flex aspect-square items-center justify-center rounded-small transition-colors ${active ? "text-white" : "bg-white text-ecorce hover:bg-sable-2"}`}
                   style={active ? { background: color.solid } : undefined}
                 >
                   <Icon name={i.icon} size={20} />
@@ -133,7 +133,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setForm({ ...form, visibility: v.key })}
-                  className={`flex flex-col items-start gap-1 rounded-m border-2 p-3 text-left transition-colors ${active ? "border-ecorce bg-white" : "border-transparent bg-sable-2"}`}
+                  className={`flex flex-col items-start gap-1 rounded-medium border-2 p-3 text-left transition-colors ${active ? "border-ecorce bg-white" : "border-transparent bg-sable-2"}`}
                 >
                   <span className="flex items-center gap-1.5 text-sm font-bold"><Icon name={v.icon} size={16} />{v.label}</span>
                   <span className="text-xs text-sec">{v.hint}</span>

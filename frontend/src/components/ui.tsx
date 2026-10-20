@@ -24,7 +24,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   { variant = "primary", size = "md", icon, loading, block, className = "", children, disabled, ...rest },
   ref,
 ) {
-  const sizing = size === "md" ? "h-[52px] px-5 rounded-m text-[15px]" : "h-10 px-3.5 rounded-s text-[13px]";
+  const sizing = size === "md" ? "h-[52px] px-5 rounded-medium text-[15px]" : "h-10 px-3.5 rounded-small text-[13px]";
   return (
     <button
       ref={ref}
@@ -78,7 +78,7 @@ export const Field = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
     return (
       <div className="flex flex-col gap-1.5">
         <label htmlFor={fid} className="text-[13px] font-bold text-sec">{label}</label>
-        <div className="flex h-[52px] items-center gap-2.5 rounded-m border-[1.5px] border-line-2 bg-white px-4 text-muted focus-within:border-terracotta">
+        <div className="flex h-[52px] items-center gap-2.5 rounded-medium border-[1.5px] border-line-2 bg-white px-4 text-muted focus-within:border-terracotta">
           {icon && <Icon name={icon} size={19} />}
           <input
             ref={ref}
@@ -100,7 +100,7 @@ export function TextArea({ label, id, ...rest }: TextareaHTMLAttributes<HTMLText
       <label htmlFor={fid} className="text-[13px] font-bold text-sec">{label}</label>
       <textarea
         id={fid}
-        className="min-h-[96px] resize-y rounded-m border-[1.5px] border-line-2 bg-white px-4 py-3 text-[15px] text-ecorce outline-none placeholder:text-muted focus:border-terracotta"
+        className="min-h-[96px] resize-y rounded-medium border-[1.5px] border-line-2 bg-white px-4 py-3 text-[15px] text-ecorce outline-none placeholder:text-muted focus:border-terracotta"
         {...rest}
       />
     </div>
@@ -151,7 +151,7 @@ export function SectionTitle({ title, action }: { title: string; action?: ReactN
 
 export function EmptyState({ icon, title, text, action }: { icon: IconName; title: string; text?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-l border-2 border-dashed border-dash px-6 py-10 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-large border-2 border-dashed border-dash px-6 py-10 text-center">
       <span className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-sable-2 text-terracotta">
         <Icon name={icon} size={26} />
       </span>
@@ -164,7 +164,7 @@ export function EmptyState({ icon, title, text, action }: { icon: IconName; titl
 
 export function ErrorNote({ children }: { children: ReactNode }) {
   return (
-    <p role="alert" className="rounded-s bg-sortie-bg px-4 py-2.5 text-sm font-medium text-sortie-ink">
+    <p role="alert" className="rounded-small bg-sortie-bg px-4 py-2.5 text-sm font-medium text-sortie-ink">
       {children}
     </p>
   );
@@ -190,7 +190,7 @@ export function MenuItem({ icon, label, onClick, danger }: { icon: IconName; lab
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-14 items-center gap-3 rounded-m bg-white px-4 text-left text-[15px] font-semibold transition-colors hover:bg-sable-2 ${danger ? "text-sortie-ink" : ""}`}
+      className={`flex h-14 items-center gap-3 rounded-medium bg-white px-4 text-left text-[15px] font-semibold transition-colors hover:bg-sable-2 ${danger ? "text-sortie-ink" : ""}`}
     >
       <Icon name={icon} size={20} />
       {label}

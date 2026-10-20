@@ -27,6 +27,8 @@ class MainActivity : ComponentActivity() {
     private val incoming = mutableStateOf<SharedContent?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Build de dev visant un backend local (vide : production)
+        if (BuildConfig.API_URL.isNotBlank()) data.Backend.url = BuildConfig.API_URL
         // Avant super.onCreate : l'écran de lancement repasse ensuite au thème de l'app
         installLaunchTransition(launchedFromIcon = intent?.action == Intent.ACTION_MAIN)
         super.onCreate(savedInstanceState)

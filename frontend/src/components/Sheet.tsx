@@ -91,7 +91,7 @@ export default function Sheet({ open, onClose, title, children, tone = "sable", 
           />
         </div>
         <div className="overflow-y-auto px-5 pt-3 pb-6 sm:px-6">{children}</div>
-        {footer && <div className="border-t border-line px-5 py-4 pb-safe sm:px-6">{footer}</div>}
+        {footer && <div className="border-t border-line px-5 pt-4 pb-safe sm:px-6">{footer}</div>}
       </div>
     </div>,
     document.body,

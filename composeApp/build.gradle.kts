@@ -61,9 +61,18 @@ android {
         }
     }
     
+    buildFeatures {
+        buildConfig = true
+    }
     buildTypes {
+        getByName("debug") {
+            // Backend visé par une build de dev : -Ptribbae.apiUrl=http://10.0.2.2:8080
+            val apiUrl = (project.findProperty("tribbae.apiUrl") as String?) ?: ""
+            buildConfigField("String", "API_URL", "\"$apiUrl\"")
+        }
         getByName("release") {
             isMinifyEnabled = false
+            buildConfigField("String", "API_URL", "\"\"")
         }
     }
     

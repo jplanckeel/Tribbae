@@ -79,7 +79,9 @@ data class ApiLink(
     val likedByMe: Boolean = false,
     val ownerDisplayName: String = "",
     val ownerIsAdmin: Boolean = false,
-    val visibility: String = ""
+    val visibility: String = "",
+    val createdAt: String = "",
+    val updatedAt: String = ""
 ) {
     /** Idée en lecture (communauté, dossier public, lien de partage). */
     fun toLink(): Link = Link(
@@ -102,7 +104,9 @@ data class ApiLink(
         ownerId = ownerId,
         ownerDisplayName = ownerDisplayName,
         ownerIsAdmin = ownerIsAdmin,
-        visibility = visibility.ifBlank { "private" }
+        visibility = visibility.ifBlank { "private" },
+        createdAt = createdAt,
+        updatedAt = updatedAt
     )
 }
 
@@ -140,7 +144,7 @@ data class SharedFolderResponse(
     val links: List<ApiLink> = emptyList()
 )
 
-class ApiClient(private val baseUrl: String = "https://tribbae.bananaops.cloud") {
+class ApiClient(private val baseUrl: String = Backend.url) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     private suspend fun get(path: String, token: String? = null): String = withContext(Dispatchers.IO) {
@@ -178,12 +182,13 @@ class ApiClient(private val baseUrl: String = "https://tribbae.bananaops.cloud")
         return json.decodeFromString(body)
     }
 
-    suspend fun listCommunityLinks(category: String = "", limit: Int = 50): ApiLinksResponse {
+    /** Jeton facultatif : il renseigne likedByMe. */
+    suspend fun listCommunityLinks(category: String = "", limit: Int = 50, token: String? = null): ApiLinksResponse {
         val params = mutableListOf<String>()
         if (category.isNotBlank()) params += "category=$category"
         if (limit > 0) params += "limit=$limit"
         val qs = if (params.isNotEmpty()) "?${params.joinToString("&")}" else ""
-        val body = get("/v1/community/links$qs")
+        val body = get("/v1/community/links$qs", token)
         return json.decodeFromString(body)
     }
 

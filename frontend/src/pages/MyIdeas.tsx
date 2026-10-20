@@ -99,7 +99,7 @@ export default function MyIdeas() {
             role="tab"
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`rounded-s text-sm transition-colors ${tab === t.key ? "bg-white font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec hover:text-ecorce"}`}
+            className={`rounded-small text-sm transition-colors ${tab === t.key ? "bg-white font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec hover:text-ecorce"}`}
           >
             {t.label}
           </button>
@@ -109,7 +109,7 @@ export default function MyIdeas() {
       {tab === "dossiers" && (
         <>
           <RouterLink to="/courses" className="flex items-center gap-3 rounded-[18px] bg-white px-3.5 py-3 shadow-card transition-transform hover:-translate-y-0.5 md:max-w-md">
-            <span className="flex h-10 w-10 items-center justify-center rounded-s bg-recette-bg text-recette-ic">
+            <span className="flex h-10 w-10 items-center justify-center rounded-small bg-recette-bg text-recette-ic">
               <Icon name="cart" size={20} />
             </span>
             <span className="flex flex-1 flex-col">
@@ -126,7 +126,7 @@ export default function MyIdeas() {
             {loose.length > 0 && (
               <RouterLink
                 to="/dossiers/non-rangees"
-                className="relative flex flex-col gap-3.5 overflow-hidden rounded-l bg-white p-3.5 shadow-card transition-transform hover:-translate-y-0.5"
+                className="relative flex flex-col gap-3.5 overflow-hidden rounded-large bg-white p-3.5 shadow-card transition-transform hover:-translate-y-0.5"
               >
                 <span aria-hidden="true" className="absolute -top-3.5 -right-3.5 h-16 w-16 rounded-full bg-sable-2" />
                 <span className="relative flex h-11 w-11 items-center justify-center rounded-[14px] bg-sec text-white">
@@ -141,7 +141,7 @@ export default function MyIdeas() {
             <button
               type="button"
               onClick={newFolder}
-              className="flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-l border-2 border-dashed border-dash text-sm font-bold text-sec transition-colors hover:bg-sable-2/60"
+              className="flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-large border-2 border-dashed border-dash text-sm font-bold text-sec transition-colors hover:bg-sable-2/60"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-sable-2 text-terracotta">
                 <Icon name="plus" size={22} />

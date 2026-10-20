@@ -24,7 +24,7 @@ data class AiGenerateResponse(
     val ideas: List<AiSuggestedLink> = emptyList()
 )
 
-class AiRepository(private val baseUrl: String = "https://tribbae.bananaops.cloud") {
+class AiRepository(private val baseUrl: String = Backend.url) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     suspend fun generateIdeas(prompt: String, token: String): AiGenerateResponse =

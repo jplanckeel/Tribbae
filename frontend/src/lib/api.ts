@@ -33,6 +33,8 @@ function frenchMessage(status: number, message: string): string {
   if (/only the tribe owner/i.test(message)) return "Seul le créateur de la tribu peut retirer un membre.";
   if (/name must be 1 to 60/i.test(message)) return "Le nom de la tribu doit faire entre 1 et 60 caractères.";
   if (/url must be/i.test(message)) return "Le lien doit être une adresse web (https://…).";
+  if (/wrong password/i.test(message)) return "Mot de passe incorrect.";
+  if (/account deletion failed/i.test(message)) return "La suppression n'a pas abouti. Réessayez : elle reprendra là où elle s'est arrêtée.";
   if (status >= 500) return "Le serveur a rencontré un problème, réessayez.";
   return message || "Une erreur est survenue.";
 }
@@ -195,4 +197,28 @@ export const admin = {
   listUsers: () => request<{ users?: AdminUser[] }>("/admin/users").then((r) => r.users ?? []),
   setPremium: (userId: string, isPremium: boolean) =>
     request(`/admin/users/${encodeURIComponent(userId)}/premium`, { method: "PUT", body: json({ isPremium }) }),
+};
+
+/** Droits RGPD sur son compte : export de ses données, suppression définitive. */
+export const account = {
+  /** Télécharge toutes ses données dans un fichier JSON. */
+  async exportData(): Promise<void> {
+    const session = getSession();
+    let res: Response;
+    try {
+      res = await fetch(`${BASE}/account/export`, { headers: session ? { Authorization: `Bearer ${session.token}` } : {} });
+    } catch {
+      throw new ApiError("Connexion impossible. Vérifiez votre réseau.", 0);
+    }
+    if (!res.ok) throw new ApiError(frenchMessage(res.status, ""), res.status);
+    const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? "tribbae-mes-donnees.json";
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  },
+  /** Supprime définitivement le compte (mot de passe exigé). */
+  delete: (password: string) => request<{ deleted: boolean }>("/account/delete", { method: "POST", body: json({ password }) }),
 };

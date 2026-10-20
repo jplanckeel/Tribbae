@@ -6,6 +6,7 @@ import { hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, tagCounts } from "../lib/links";
 import { useSession } from "../lib/session";
 import type { CategoryKey, LinkInput, LinkPreview } from "../lib/types";
+import AgePicker from "./AgePicker";
 import Icon from "./Icon";
 import Sheet from "./Sheet";
 import { Button, ErrorNote, Field, Spinner, TextArea, Toggle } from "./ui";
@@ -55,7 +56,7 @@ function fill<T>(current: T | undefined, previousAuto: T | undefined, next: T | 
 const NEW_FOLDER = "__new__";
 
 export default function LinkFormSheet({ onClose, initial, editing, authorName, onSubmit }: LinkFormProps) {
-  const { folders, links, peers, upsertFolder } = useMyData();
+  const { folders, links, peers, upsertFolder, children } = useMyData();
   const session = useSession();
   const [form, setForm] = useState<LinkInput>(initial);
   const [tagDraft, setTagDraft] = useState("");
@@ -64,7 +65,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [ingredients, setIngredients] = useState((initial.ingredients ?? []).join("\n"));
   // Les champs secondaires sont dépliés s'ils sont déjà renseignés
-  const [more, setMore] = useState(!!(initial.ageRange || initial.price || initial.location || initial.eventDate || initial.rating));
+  const [more, setMore] = useState(!!(initial.price || initial.location || initial.eventDate || initial.rating));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -290,7 +291,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
                 setNewFolder(null);
                 set("folderId", e.target.value);
               }}
-              className="h-[52px] w-full appearance-none rounded-m border-[1.5px] border-line-2 bg-white px-4 pr-10 text-[15px] font-medium text-ecorce outline-none focus:border-terracotta"
+              className="h-[52px] w-full appearance-none rounded-medium border-[1.5px] border-line-2 bg-white px-4 pr-10 text-[15px] font-medium text-ecorce outline-none focus:border-terracotta"
             >
               <option value="">Non rangée</option>
               {editableFolders.map((f) => (
@@ -301,7 +302,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             <Icon name="chevronDown" size={18} className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted" />
           </div>
           {newFolder !== null && (
-            <div className="mt-1 flex flex-col gap-2 rounded-m bg-white p-3">
+            <div className="mt-1 flex flex-col gap-2 rounded-medium bg-white p-3">
               <div className="flex gap-2">
                 <input
                   autoFocus
@@ -320,7 +321,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
                     }
                   }}
                   placeholder="Vacances d'été, Noël…"
-                  className="h-11 min-w-0 flex-1 rounded-s border-[1.5px] border-line-2 px-3 text-[15px] font-medium text-ecorce outline-none placeholder:text-muted focus:border-terracotta"
+                  className="h-11 min-w-0 flex-1 rounded-small border-[1.5px] border-line-2 px-3 text-[15px] font-medium text-ecorce outline-none placeholder:text-muted focus:border-terracotta"
                 />
                 <Button type="button" size="sm" className="h-11" loading={creatingFolder} disabled={!newFolder.trim()} onClick={() => void createFolder()}>
                   Créer
@@ -336,7 +337,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="f-tags" className="text-[13px] font-bold text-sec">Tags</label>
-          <div className="flex min-h-[52px] flex-wrap items-center gap-1.5 rounded-m border-[1.5px] border-line-2 bg-white px-3 py-2 focus-within:border-terracotta">
+          <div className="flex min-h-[52px] flex-wrap items-center gap-1.5 rounded-medium border-[1.5px] border-line-2 bg-white px-3 py-2 focus-within:border-terracotta">
             {(form.tags ?? []).map((t) => (
               <span key={t} className="flex items-center gap-1 rounded-[10px] bg-sable-2 py-1 pr-1 pl-2.5 text-[13px] text-sec">
                 #{t}
@@ -373,6 +374,8 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
           </div>
         </div>
 
+        <AgePicker value={form.ageRange ?? ""} onChange={(v) => set("ageRange", v)} kids={children} />
+
         <button
           type="button"
           onClick={() => setMore((m) => !m)}
@@ -380,14 +383,13 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
           className="flex items-center gap-2 self-start text-sm font-bold text-terracotta"
         >
           <Icon name="chevronDown" size={18} className={`transition-transform ${more ? "rotate-180" : ""}`} />
-          {more ? "Moins de détails" : "Âge, prix, lieu, date…"}
+          {more ? "Moins de détails" : "Prix, lieu, date…"}
         </button>
 
         {(more || isDated) && (
           <div className="grid gap-4 sm:grid-cols-2">
             {more && (
               <>
-                <Field label="Âge" icon="person" placeholder="3–10 ans" maxLength={200} value={form.ageRange ?? ""} onChange={(e) => set("ageRange", e.target.value)} />
                 <Field label="Prix" icon="euro" placeholder="Gratuit, 6 € / enfant…" maxLength={200} value={form.price ?? ""} onChange={(e) => set("price", e.target.value)} />
                 <Field label="Lieu" icon="pin" placeholder="Ferme des Saules" maxLength={200} value={form.location ?? ""} onChange={(e) => set("location", e.target.value)} />
                 <Field label="Image (adresse web)" icon="landscape" type="url" placeholder="https://…" value={form.imageUrl ?? ""} onChange={(e) => set("imageUrl", e.target.value)} />
@@ -401,7 +403,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
               onChange={(e) => set("eventDate", fromLocalInput(e.target.value))}
             />
             {!!form.eventDate && (
-              <label className="flex items-center gap-3 self-end rounded-m bg-soleil px-3.5 py-3">
+              <label className="flex items-center gap-3 self-end rounded-medium bg-soleil px-3.5 py-3">
                 <Icon name="bell" size={20} />
                 <span className="flex-1 text-sm font-semibold">Me le rappeler la veille</span>
                 <Toggle label="Rappel la veille" checked={!!form.reminderEnabled} onChange={(v) => set("reminderEnabled", v)} />
@@ -419,7 +421,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
                       aria-checked={form.rating === n}
                       aria-label={`${n} sur 5`}
                       onClick={() => set("rating", form.rating === n ? 0 : n)}
-                      className="flex h-10 w-10 items-center justify-center rounded-s text-braise hover:bg-sable-2"
+                      className="flex h-10 w-10 items-center justify-center rounded-small text-braise hover:bg-sable-2"
                     >
                       <Icon name="star" size={24} filled={(form.rating ?? 0) >= n} />
                     </button>
@@ -431,7 +433,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
         )}
 
         {authorName === undefined ? (
-          <label className="flex items-center gap-3 rounded-m bg-white px-4 py-3.5 shadow-card">
+          <label className="flex items-center gap-3 rounded-medium bg-white px-4 py-3.5 shadow-card">
             <Icon name="globe" size={20} className="text-activite-ic" />
             <span className="flex flex-1 flex-col">
               <span className="text-sm font-bold">Partager avec la communauté</span>
@@ -444,7 +446,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             />
           </label>
         ) : (
-          <p role="note" className="flex items-start gap-2 rounded-m bg-white px-4 py-3 text-xs text-sec">
+          <p role="note" className="flex items-start gap-2 rounded-medium bg-white px-4 py-3 text-xs text-sec">
             <Icon name="lock" size={15} className="mt-px shrink-0" />
             Idée de {authorName || "un membre de la tribu"} : seul son auteur peut la partager avec la communauté.
           </p>
@@ -535,10 +537,10 @@ function ImageChooser({ loading, candidates, value, onChange }: {
           referrerPolicy="no-referrer"
           onError={() => discard(selected)}
           onLoad={checkSize(selected)}
-          className="h-44 w-full animate-fade-in rounded-l bg-sable-2 object-cover"
+          className="h-44 w-full animate-fade-in rounded-large bg-sable-2 object-cover"
         />
       ) : loading ? (
-        <div aria-hidden="true" className="h-44 w-full animate-pulse rounded-l bg-sable-2" />
+        <div aria-hidden="true" className="h-44 w-full animate-pulse rounded-large bg-sable-2" />
       ) : null}
       {(list.length > 1 || (list.length === 1 && !selected)) && (
         <div role="radiogroup" aria-label="Choisir l'image" className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 py-1 sm:-mx-6 sm:px-6">
@@ -550,7 +552,7 @@ function ImageChooser({ loading, candidates, value, onChange }: {
               aria-checked={u === value}
               aria-label={`Image ${i + 1} sur ${list.length}`}
               onClick={() => onChange(u)}
-              className={`h-16 w-16 shrink-0 overflow-hidden rounded-s bg-sable-2 transition ${u === value ? "ring-[3px] ring-terracotta ring-offset-2 ring-offset-sable" : "opacity-75 hover:opacity-100"}`}
+              className={`h-16 w-16 shrink-0 overflow-hidden rounded-small bg-sable-2 transition ${u === value ? "ring-[3px] ring-terracotta ring-offset-2 ring-offset-sable" : "opacity-75 hover:opacity-100"}`}
             >
               <img
                 src={u}

@@ -506,7 +506,7 @@ func (s *Service) ToggleFavorite(ctx context.Context, linkID, ownerID string) (b
 	return newFavorite, nil
 }
 
-// ListCommunity retourne tous les liens avec visibility="public"
+// ListCommunity retourne les idées publiées (visibility="public"), d'une catégorie ou de toutes
 func (s *Service) ListCommunity(ctx context.Context, category string, limit int32) ([]*Link, error) {
 	if limit <= 0 {
 		limit = 6
@@ -520,7 +520,9 @@ func (s *Service) ListCommunity(ctx context.Context, category string, limit int3
 		filter["category"] = category
 	}
 
-	opts := options.Find().SetLimit(int64(limit))
+	// Les plus récemment modifiées d'abord : au-delà de la limite, ce sont les
+	// plus anciennes qui sortent (l'ordre affiché est choisi par les clients)
+	opts := options.Find().SetSort(bson.D{{Key: "updated_at", Value: -1}}).SetLimit(int64(limit))
 	linkCursor, err := s.col.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err

@@ -54,6 +54,41 @@ export const byPopularity = (a: Link, b: Link) => (b.likeCount ?? 0) - (a.likeCo
 export const byRecent = (a: { createdAt?: string }, b: { createdAt?: string }) =>
   (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
 
+/** Durée d'une « une » de l'Explorer : l'ordre change toutes les 6 heures. */
+export const ROTATION_MS = 6 * 3600 * 1000;
+const DAY_MS = 24 * 3600 * 1000;
+
+/** FNV-1a 32 bits : même résultat que l'app Android (rotationScore dans ExploreScreen.kt). */
+function fnv1a(s: string): number {
+  let h = 0x811c9dc5;
+  for (const b of new TextEncoder().encode(s)) {
+    h ^= b;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h >>> 0;
+}
+
+/**
+ * Score « À la une » d'une idée pour la période en cours : tirage pondéré
+ * (Efraimidis-Spirakis, u^(1/poids)), le même pour tout le monde pendant 6 h.
+ * Les idées aimées et récentes remontent plus souvent, mais chacune a sa
+ * chance d'être en tête ; à la période suivante, l'ordre est rebattu.
+ */
+export function rotationScore(l: { id: string; likeCount?: number; createdAt?: string }, now = Date.now()): number {
+  const period = Math.floor(now / ROTATION_MS);
+  const u = (fnv1a(`${l.id}:${period}`) + 0.5) / 4294967296; // ]0, 1[
+  const ageDays = l.createdAt ? (now - Date.parse(l.createdAt)) / DAY_MS : Infinity;
+  const fresh = ageDays < 14 ? 2 : ageDays < 60 ? 1 : 0;
+  const weight = 1 + Math.log1p(Math.max(0, l.likeCount ?? 0)) + fresh;
+  return Math.pow(u, 1 / weight);
+}
+
+/** Trie « À la une » (copie) : ordre stable pendant la période, rebattu à la suivante. */
+export function byRotation<T extends { id: string; likeCount?: number; createdAt?: string }>(list: T[], now = Date.now()): T[] {
+  const score = new Map(list.map((l) => [l.id, rotationScore(l, now)]));
+  return [...list].sort((a, b) => score.get(b.id)! - score.get(a.id)!);
+}
+
 /** Comptage des tags, du plus utilisé au moins utilisé. */
 export function tagCounts(links: Link[]): [string, number][] {
   const m = new Map<string, number>();

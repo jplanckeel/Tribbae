@@ -36,13 +36,13 @@ export default function Welcome() {
         <div className="mt-2 flex flex-col gap-2.5">
           <RouterLink
             to={`/connexion?mode=inscription${suffix}`}
-            className="flex h-14 items-center justify-center rounded-m bg-terracotta text-base font-bold text-white transition-colors hover:bg-terracotta-dark"
+            className="flex h-14 items-center justify-center rounded-medium bg-terracotta text-base font-bold text-white transition-colors hover:bg-terracotta-dark"
           >
             Créer ma tribu
           </RouterLink>
           <RouterLink
             to={next ? `/connexion?next=${encodeURIComponent(next)}` : "/connexion"}
-            className="flex h-14 items-center justify-center rounded-m border-2 border-ecorce text-base font-bold transition-colors hover:bg-ecorce/5"
+            className="flex h-14 items-center justify-center rounded-medium border-2 border-ecorce text-base font-bold transition-colors hover:bg-ecorce/5"
           >
             J'ai déjà un compte
           </RouterLink>
@@ -160,13 +160,21 @@ export function Auth() {
               onClick={() => setShowPwd((v) => !v)}
               aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
               aria-pressed={showPwd}
-              className="absolute top-[34px] right-2 flex h-10 w-10 items-center justify-center rounded-s text-muted hover:text-ecorce"
+              className="absolute top-[34px] right-2 flex h-10 w-10 items-center justify-center rounded-small text-muted hover:text-ecorce"
             >
               <Icon name="eye" size={20} />
             </button>
           </div>
 
           {error && <ErrorNote>{error}</ErrorNote>}
+
+          {register && (
+            <p className="text-center text-[13px] text-sec">
+              Vos idées restent privées tant que vous ne les partagez pas. Pour savoir ce que nous conservons et comment
+              supprimer votre compte, lisez la{" "}
+              <RouterLink to="/confidentialite" className="font-semibold text-terracotta">politique de confidentialité</RouterLink>.
+            </p>
+          )}
 
           <Button type="submit" loading={busy} block className="!h-14 text-base" disabled={!email || !password || (register && !name.trim())}>
             {register ? "Créer ma tribu" : "Se connecter"}

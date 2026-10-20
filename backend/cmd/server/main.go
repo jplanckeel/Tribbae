@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/tribbae/backend/internal/account"
 	"github.com/tribbae/backend/internal/admin"
 	"github.com/tribbae/backend/internal/ai"
 	"github.com/tribbae/backend/internal/auth"
@@ -103,6 +104,8 @@ func main() {
 	}
 
 	aiH := ai.NewHandler(aiSvc, bearerUser)
+	// Droits RGPD : export des données et suppression du compte
+	accountH := account.NewHandler(account.NewService(database.DB(), tribeSvc), authSvc, bearerUser)
 
 	// Serveur gRPC
 	grpcServer := grpc.NewServer(
@@ -181,8 +184,9 @@ func main() {
 	var handler http.Handler = withSPA(mux, cfg.SiteURL, seo.NewSource(linkSvc, folderSvc))
 	handler = withPreview(preview.Handler(bearerUser), handler)
 	handler = withAI(aiH, handler)
+	handler = withAccount(accountH, handler)
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true}, handler)
-	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true}, handler)
+	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, account.DeletePath: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
 	handler = httpx.CORS(cfg.AllowedOrigins, handler)
 	handler = httpx.SecurityHeaders(handler)
@@ -219,6 +223,16 @@ func withAI(aiH http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/ai/generate" && r.Method == http.MethodPost {
 			aiH.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func withAccount(accountH http.Handler, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == account.ExportPath || r.URL.Path == account.DeletePath {
+			accountH.ServeHTTP(w, r)
 			return
 		}
 		next.ServeHTTP(w, r)

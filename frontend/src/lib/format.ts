@@ -67,28 +67,8 @@ export function formatAge(birthDate: Child["birthDate"]): string {
   return `${Math.floor(m / 12)} ans`;
 }
 
-/**
- * Extrait une tranche d'âge [min, max] en années depuis un texte libre
- * ("3–10 ans", "18 mois", "6+", "dès 4 ans"). null si rien d'exploitable.
- */
-export function parseAgeRange(text: string | undefined): [number, number] | null {
-  if (!text) return null;
-  const lower = text.toLowerCase();
-  const nums = [...lower.matchAll(/\d+(?:[.,]\d+)?/g)].map((m) => parseFloat(m[0].replace(",", ".")));
-  if (nums.length === 0) return null;
-  const factor = lower.includes("mois") && !lower.includes("an") ? 1 / 12 : 1;
-  const min = nums[0] * factor;
-  const openEnded = nums.length === 1 && /\+|dès|des |à partir|plus/.test(lower);
-  const max = nums.length > 1 ? nums[nums.length - 1] * factor : openEnded ? 99 : min;
-  return [Math.min(min, max), Math.max(min, max)];
-}
-
-/** Vrai si la tranche d'âge de l'idée chevauche la tranche [min, max] (années). */
-export function matchesAge(text: string | undefined, min: number, max: number): boolean {
-  const r = parseAgeRange(text);
-  if (!r) return false;
-  return r[0] <= max && r[1] >= min;
-}
+// Tranches d'âge : voir lib/age.ts
+export { matchesAge, parseAgeRange } from "./age";
 
 export function initial(name: string | undefined): string {
   return (name?.trim().charAt(0) || "?").toUpperCase();

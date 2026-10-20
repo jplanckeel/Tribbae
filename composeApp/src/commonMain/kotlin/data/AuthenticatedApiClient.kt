@@ -178,7 +178,7 @@ data class UpdateLinkRequest(
 )
 
 class AuthenticatedApiClient(
-    private val baseUrl: String = "https://tribbae.bananaops.cloud",
+    private val baseUrl: String = Backend.url,
     private val sessionManager: SessionManager
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -340,6 +340,16 @@ class AuthenticatedApiClient(
             data class FavoriteResponse(val favorite: Boolean = false)
             json.decodeFromString<FavoriteResponse>(response).favorite
         }
+    }
+
+    // Droits RGPD sur le compte
+    /** Toutes les données du compte, en JSON (export complet). */
+    suspend fun exportAccount(): String = request("/v1/account/export", "GET") { it }
+
+    /** Suppression définitive du compte ; le mot de passe est exigé. */
+    suspend fun deleteAccount(password: String) {
+        request("/v1/account/delete", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject { put("password", kotlinx.serialization.json.JsonPrimitive(password)) })) { it }
     }
 
     // Tribu

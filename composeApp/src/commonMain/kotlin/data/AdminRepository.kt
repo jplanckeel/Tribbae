@@ -36,7 +36,7 @@ data class UpdateUserPremiumResponse(
 )
 
 class AdminRepository(
-    private val baseUrl: String = "https://tribbae.bananaops.cloud",
+    private val baseUrl: String = Backend.url,
     private val tokenProvider: () -> String?
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }

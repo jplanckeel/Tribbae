@@ -72,6 +72,8 @@ func (h *Handler) page(ctx context.Context, path string, query url.Values) (*Pag
 		return h.shared(ctx, strings.TrimPrefix(path, "/share/"))
 	case path == "/aide":
 		return h.help(), nil
+	case path == "/confidentialite":
+		return privacy(), nil
 	}
 	if title, ok := private[path]; ok {
 		return &Page{Status: http.StatusOK, Title: title + " · " + siteName, Description: siteDescription, NoIndex: true, H1: title}, nil
@@ -343,3 +345,14 @@ func safeURL(raw string) string {
 }
 
 func absoluteImage(raw string) string { return safeURL(raw) }
+
+func privacy() *Page {
+	return &Page{
+		Status: http.StatusOK, Title: "Confidentialité & données personnelles · " + siteName,
+		Description: "Quelles données Tribbae conserve, pourquoi, qui les voit, combien de temps, et comment les télécharger ou supprimer votre compte.",
+		Path:        "/confidentialite",
+		Breadcrumb:  []Crumb{{"Accueil", "/"}, {"Confidentialité", "/confidentialite"}},
+		H1:          "Confidentialité",
+		Intro:       "Vos idées sont privées par défaut, rien n'est vendu ni utilisé pour de la publicité, aucun cookie n'est déposé, et vous pouvez à tout moment télécharger vos données ou supprimer votre compte.",
+	}
+}

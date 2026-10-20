@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -129,7 +130,41 @@ func (s *Service) ValidateToken(tokenStr string) (string, error) {
 	if !ok {
 		return "", errors.New("invalid subject")
 	}
+	// Un compte supprimé (RGPD) ne doit plus rien pouvoir faire, même avec un
+	// jeton encore valide : sinon il recréerait des données orphelines.
+	if !s.exists(userID) {
+		return "", errors.New("account no longer exists")
+	}
 	return userID, nil
+}
+
+func (s *Service) exists(userID string) bool {
+	id, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	n, err := s.col.CountDocuments(ctx, bson.M{"_id": id}, options.Count().SetLimit(1))
+	return err == nil && n > 0
+}
+
+// CheckPassword vérifie le mot de passe d'un compte connecté, avant une
+// action irréversible (suppression du compte).
+func (s *Service) CheckPassword(ctx context.Context, userID, password string) error {
+	id, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return ErrInvalidCredentials
+	}
+	var user User
+	if err := s.col.FindOne(ctx, bson.M{"_id": id}).Decode(&user); err != nil {
+		_ = bcrypt.CompareHashAndPassword(dummyHash, []byte(password))
+		return ErrInvalidCredentials
+	}
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
+		return ErrInvalidCredentials
+	}
+	return nil
 }
 
 func (s *Service) generateToken(userID string) (string, error) {
