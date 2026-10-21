@@ -117,7 +117,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         eventDate: Long? = null, reminderEnabled: Boolean = false, rating: Int = 0,
         imageUrl: String = "", ingredients: List<String> = emptyList(),
         visibility: String = "private"
-    ) {
+    ): Link {
         val ownerDisplayName = sessionManager?.getDisplayName() ?: ""
         val link = Link(
             id = kotlin.random.Random.nextLong().toString(),
@@ -153,6 +153,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 }
             }
         }
+        return link
     }
 
     /**

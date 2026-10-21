@@ -11,6 +11,10 @@ interface SheetProps {
   tone?: "sable" | "prune";
   wide?: boolean;
   footer?: ReactNode;
+  /** En-tête personnalisé à la place du titre (le titre reste lu par les lecteurs d'écran). */
+  header?: ReactNode;
+  /** Hauteur fixe (parcours en plusieurs étapes : la feuille ne saute pas d'une étape à l'autre). */
+  tall?: boolean;
 }
 
 // Pile des feuilles ouvertes : seule celle du dessus réagit au clavier.
@@ -20,7 +24,7 @@ const stack: object[] = [];
  * Feuille modale : glisse du bas sur mobile, fenêtre centrée sur grand écran.
  * Gère Échap, le clic sur le fond, le blocage du défilement et le focus.
  */
-export default function Sheet({ open, onClose, title, children, tone = "sable", wide, footer }: SheetProps) {
+export default function Sheet({ open, onClose, title, children, tone = "sable", wide, footer, header, tall }: SheetProps) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const close = useEffectEvent(() => onClose());
@@ -75,9 +79,15 @@ export default function Sheet({ open, onClose, title, children, tone = "sable", 
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`relative flex max-h-[92dvh] w-full flex-col rounded-t-[30px] shadow-sheet outline-none animate-sheet-up sm:rounded-[30px] ${wide ? "sm:max-w-2xl" : "sm:max-w-lg"} ${surface}`}
+        className={`relative flex max-h-[92dvh] w-full flex-col rounded-t-[30px] shadow-sheet outline-none animate-sheet-up sm:rounded-[30px] ${wide ? "sm:max-w-2xl" : "sm:max-w-lg"} ${tall ? "h-[min(720px,92dvh)]" : ""} ${surface}`}
       >
         <span aria-hidden="true" className={`mx-auto mt-2.5 h-[5px] w-11 rounded-full sm:hidden ${tone === "prune" ? "bg-white/25" : "bg-dash"}`} />
+        {header ? (
+          <>
+            <h2 id={titleId} className="sr-only">{title}</h2>
+            {header}
+          </>
+        ) : (
         <div className="flex items-center justify-between gap-3 px-5 pt-3 pb-1 sm:px-6 sm:pt-5">
           <h2 id={titleId} className="font-display text-2xl font-extrabold tracking-[-0.4px]">{title}</h2>
           <IconButton
@@ -90,7 +100,8 @@ export default function Sheet({ open, onClose, title, children, tone = "sable", 
             className={tone === "prune" ? "bg-white/10 hover:bg-white/20" : "bg-sable-2 hover:bg-line"}
           />
         </div>
-        <div className="overflow-y-auto px-5 pt-3 pb-6 sm:px-6">{children}</div>
+        )}
+        <div className={`overflow-y-auto px-5 pt-3 pb-6 sm:px-6 ${tall ? "flex-1" : ""}`}>{children}</div>
         {footer && <div className="border-t border-line px-5 pt-4 pb-safe sm:px-6">{footer}</div>}
       </div>
     </div>,

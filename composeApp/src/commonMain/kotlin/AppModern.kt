@@ -450,16 +450,16 @@ private fun ModernMainApp(
         LaunchedEffect(nav.isRunning, stack.size) { if (!nav.isRunning && stack.lastOrNull() !is Screen.Detail) backProgress = 0f }
 
         if (showAdd) {
-            AddSheet(onDismiss = { showAdd = false }) { choice ->
-                showAdd = false
-                val folderId = (stack.lastOrNull() as? Screen.FolderDetail)?.folder?.id
-                when (choice) {
-                    is AddChoice.FromUrl -> push(Screen.IdeaForm(url = choice.url, folderId = folderId))
-                    is AddChoice.FromCategory -> push(Screen.IdeaForm(category = choice.category, folderId = folderId))
-                    AddChoice.Folder -> push(Screen.FolderForm())
-                    AddChoice.Ai -> push(Screen.Ai(folderId = folderId))
-                }
-            }
+            val folderId = (stack.lastOrNull() as? Screen.FolderDetail)?.folder?.id
+            AddFlowSheet(
+                viewModel = vm,
+                presetFolderId = folderId,
+                onDismiss = { showAdd = false },
+                onAi = { showAdd = false; push(Screen.Ai(folderId = folderId)) },
+                onMore = { d -> showAdd = false; push(Screen.IdeaForm(url = d.url, category = d.category, folderId = d.folderId, title = d.title)) },
+                onNewFolder = { showAdd = false; push(Screen.FolderForm()) },
+                onOpenLink = { id -> showAdd = false; openLink(id) },
+            )
         }
     }
 }
