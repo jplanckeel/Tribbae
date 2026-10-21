@@ -122,6 +122,17 @@ export interface Folder {
   aiGenerated?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  /** Personnalisation (voir lib/folderStyle.ts). */
+  description?: string;
+  cover?: string;
+  illustration?: string;
+  /** Date clé, timestamp ms (sérialisé en chaîne par grpc-gateway). */
+  keyDate?: string | number;
+  keyDateType?: string;
+  childIds?: string[];
+  viewMode?: string;
+  sort?: string;
+  pinned?: boolean;
 }
 
 export interface FolderInput {
@@ -131,6 +142,17 @@ export interface FolderInput {
   visibility: Visibility;
   bannerUrl?: string;
   tags?: string[];
+  // Personnalisation : à renvoyer en entier lors d'une modification (voir folderInput)
+  description?: string;
+  cover?: string;
+  illustration?: string;
+  /** Timestamp ms, 0 = aucune date clé. */
+  keyDate?: number;
+  keyDateType?: string;
+  childIds?: string[];
+  viewMode?: string;
+  sort?: string;
+  pinned?: boolean;
 }
 
 export interface Child {

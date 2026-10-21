@@ -1,6 +1,7 @@
 package ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -17,9 +18,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import data.Child
 import data.Folder
+import data.FolderStyle
 import data.Link
 import data.LinkCategory
 import ui.campfire.*
@@ -39,7 +43,10 @@ fun FolderDetailScreen(
     onAddIdea: () -> Unit = {},
     onAi: () -> Unit = {},
 ) {
-    val items = remember(links, folder.id) { links.filter { it.folderId == folder.id }.sortedByDescending { it.createdAt.ifEmpty { it.updatedAt } } }
+    val items = remember(links, folder.id, folder.sort) {
+        FolderStyle.sortLinks(links.filter { it.folderId == folder.id }, folder.sort, CategoryOrder.map { it.category })
+    }
+    val children = viewModel?.children?.collectAsState()?.value.orEmpty()
     var showMenu by remember { mutableStateOf(false) }
     var showShare by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
@@ -56,6 +63,8 @@ fun FolderDetailScreen(
         solid = folderSolid(folder.color),
         icon = folderIconVector(folder),
         onBack = onBack,
+        folder = folder,
+        children = children,
         actions = {
             if (viewModel != null) CircleIconButton(Icons.Outlined.PersonAdd, "Inviter et partager", { showShare = true }, background = Color.White.copy(alpha = 0.9f))
             CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = Color.White.copy(alpha = 0.9f))
@@ -72,6 +81,7 @@ fun FolderDetailScreen(
         buttons = {
             CampButton("Ajouter une idée", onAddIdea, icon = Icons.Outlined.Add, height = 40.dp)
             CampButton("Compléter avec l'IA", onAi, kind = ButtonKind.Ai, icon = Icons.Outlined.AutoAwesome, height = 40.dp)
+            CampButton("Personnaliser", onEdit, kind = ButtonKind.Ghost, icon = Icons.Outlined.Edit, height = 40.dp)
         },
         links = items,
         emptyTitle = "Ce dossier attend ses premières idées",
@@ -84,7 +94,13 @@ fun FolderDetailScreen(
         ModalBottomSheet(onDismissRequest = { showMenu = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Dossier", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
-                MenuRow(Icons.Outlined.Edit, "Modifier le nom, la couleur…") { showMenu = false; onEdit() }
+                MenuRow(Icons.Outlined.Edit, "Personnaliser") { showMenu = false; onEdit() }
+                if (viewModel != null) {
+                    MenuRow(Icons.Outlined.PushPin, if (folder.pinned) "Désépingler de Mes idées" else "Épingler en haut de Mes idées") {
+                        showMenu = false
+                        viewModel.updateFolder(folder.copy(pinned = !folder.pinned))
+                    }
+                }
                 if (viewModel != null) MenuRow(Icons.Outlined.PersonAdd, "Inviter et partager") { showMenu = false; showShare = true }
                 MenuRow(Icons.Outlined.Delete, "Supprimer le dossier", danger = true) { showMenu = false; showDelete = true }
             }
@@ -156,6 +172,7 @@ fun PublicFolderScreen(
         solid = folderSolid(f.color),
         icon = folderIconVector(f),
         onBack = onBack,
+        folder = f,
         extra = {
             if (f.aiGenerated) Tag("IA", Prune, Sable, Icons.Outlined.AutoAwesome)
             if (shareToken != null) Tag("Partagé avec vous", Color.White, Ecorce, Icons.Outlined.Link)
@@ -173,7 +190,7 @@ fun PublicFolderScreen(
                 )
             }
         },
-        links = list,
+        links = remember(list, f.sort) { FolderStyle.sortLinks(list, f.sort, CategoryOrder.map { it.category }) },
         emptyTitle = when {
             failed -> "Impossible de charger ce dossier"
             items == null -> "Chargement…"
@@ -225,6 +242,8 @@ private fun CollectionScaffold(
     solid: Color,
     icon: ImageVector,
     onBack: () -> Unit,
+    folder: Folder? = null,
+    children: List<Child> = emptyList(),
     actions: @Composable RowScope.() -> Unit = {},
     extra: @Composable () -> Unit = {},
     buttons: @Composable () -> Unit,
@@ -235,6 +254,56 @@ private fun CollectionScaffold(
     onFavorite: ((Link) -> Unit)?,
 ) {
     Column(Modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = 40.dp)) {
+        if (folder != null) {
+            // Dossier : bannière (maquette « Bannières illustrées »), icône à cheval
+            val cd = FolderStyle.countdown(folder)
+            Box(Modifier.fillMaxWidth().height(184.dp)) {
+                FolderCover(folder, links)
+                Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = Color.White.copy(alpha = 0.9f))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), content = actions)
+                }
+                if (cd != null) {
+                    val vac = folder.keyDateType == "vacances"
+                    Text(
+                        cd.label, color = if (vac) Sable else Color.White, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 40.dp)
+                            .clip(RoundedCornerShape(10.dp)).background(if (vac) Ecorce else solid).padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
+            }
+            Column(
+                Modifier.pullUp(28.dp).background(Sable, RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)).padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(
+                        Modifier.pullUp(20.dp).size(64.dp).clip(RoundedCornerShape(20.dp)).background(Sable).padding(4.dp)
+                            .clip(RoundedCornerShape(16.dp)).background(solid),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(icon, null, tint = Color.White, modifier = Modifier.size(30.dp))
+                    }
+                    val kids = folder.childIds.mapNotNull { id -> children.find { it.id == id } }
+                    if (kids.isNotEmpty()) {
+                        Row(Modifier.padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Pour", fontSize = 12.sp, color = TextSec)
+                            ChildAvatars(folder, children, ring = Sable)
+                            Text(kids.joinToString(", ") { it.name }, fontSize = 12.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(title, style = display(28.sp))
+                    if (folder.description.isNotBlank()) Text(folder.description, fontSize = 15.sp, color = Ecorce2)
+                    Text(subtitle, fontSize = 14.sp, color = TextSec)
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { extra() }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { buttons() }
+                Ideas(links, folder.viewMode, emptyTitle, emptyText, onLinkClick, onFavorite)
+            }
+            return@Column
+        }
         Box(Modifier.fillMaxWidth().background(bg)) {
             Box(Modifier.align(Alignment.BottomEnd).offset(x = 96.dp, y = 160.dp).size(320.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.45f)))
             Column(Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -259,13 +328,66 @@ private fun CollectionScaffold(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { buttons() }
-            if (links.isEmpty()) {
-                EmptyBlock(Icons.Outlined.Cottage, emptyTitle, emptyText)
-            } else {
-                TwoColumnMosaic(links) { l, i ->
-                    MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.favorite, onLike = onFavorite?.let { fav -> { fav(l) } })
+            Ideas(links, "grid", emptyTitle, emptyText, onLinkClick, onFavorite)
+        }
+    }
+}
+
+/** Idées d'un dossier dans la vue choisie : grille (mosaïque de cartes), liste ou mosaïque de photos. */
+@Composable
+private fun Ideas(
+    links: List<Link>,
+    viewMode: String,
+    emptyTitle: String,
+    emptyText: String?,
+    onLinkClick: (String) -> Unit,
+    onFavorite: ((Link) -> Unit)?,
+) {
+    if (links.isEmpty()) {
+        EmptyBlock(Icons.Outlined.Cottage, emptyTitle, emptyText)
+        return
+    }
+    when (viewMode) {
+        "list" -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            links.forEach { l -> RowCard(l, onClick = { onLinkClick(l.id) }) }
+        }
+        "mosaic" -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Par trois : une grande tuile et deux petites empilées, en alternant les côtés
+            links.chunked(3).forEachIndexed { row, group ->
+                Row(Modifier.fillMaxWidth().height(276.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    val big: @Composable RowScope.() -> Unit = { MosaicTile(group[0], true, { onLinkClick(group[0].id) }, Modifier.weight(1f).fillMaxHeight()) }
+                    val small: @Composable RowScope.() -> Unit = {
+                        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            group.drop(1).forEach { l -> MosaicTile(l, false, { onLinkClick(l.id) }, Modifier.fillMaxWidth().weight(1f)) }
+                            if (group.size < 3) Spacer(Modifier.weight((3 - group.size).toFloat()))
+                        }
+                    }
+                    if (row % 2 == 0) { big(); small() } else { small(); big() }
                 }
             }
+        }
+        else -> TwoColumnMosaic(links) { l, i ->
+            MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.favorite, onLike = onFavorite?.let { fav -> { fav(l) } })
+        }
+    }
+}
+
+/** Tuile de la vue « Mosaïque » : visuel plein, catégorie, titre en surimpression. */
+@Composable
+private fun MosaicTile(link: Link, large: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    val cat = categoryUi(link.category)
+    Box(modifier.card(RoundedCornerShape(20.dp)).clickable(onClick = onClick)) {
+        IdeaVisual(link, 400.dp, Modifier.fillMaxSize(), iconSize = if (large) 56.dp else 36.dp)
+        Text(
+            cat.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = cat.tint,
+            modifier = Modifier.padding(10.dp).clip(CircleShape).background(Color.White).padding(horizontal = 10.dp, vertical = 4.dp)
+        )
+        Box(
+            Modifier.align(Alignment.BottomStart).fillMaxWidth()
+                .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, Color(0xC72A1612))))
+                .padding(start = 12.dp, end = 12.dp, top = 28.dp, bottom = 10.dp)
+        ) {
+            Text(link.title, style = display(if (large) 17.sp else 14.sp, FontWeight.Bold, Color.White), maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
     }
 }

@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { AvatarStack, GridCard } from "../components/cards";
+import { AvatarStack, GridCard, MosaicTile, RowCard } from "../components/cards";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
+import { FolderCover, FolderGlyph } from "../components/FolderCover";
 import Icon from "../components/Icon";
 import ShareFolderSheet from "../components/ShareFolderSheet";
 import Sheet from "../components/Sheet";
-import { Button, EmptyState, ErrorNote, MenuItem, PageSpinner } from "../components/ui";
+import { Avatar, Button, EmptyState, ErrorNote, MenuItem, PageSpinner } from "../components/ui";
 import * as api from "../lib/api";
-import { folderColor, folderIcon } from "../lib/categories";
+import { CATEGORIES, folderColor } from "../lib/categories";
+import { countdown, folderInput, keyDateOf, sortFolderLinks, useFolderChildren } from "../lib/folderStyle";
 import { useMyData } from "../lib/data";
 import { plural } from "../lib/format";
 import { byRecent, canEditFolder } from "../lib/links";
@@ -49,7 +51,7 @@ function RemoteFolder({ id }: { id: string }) {
   return (
     <FolderView
       folder={folder}
-      links={[...links].sort(byRecent)}
+      links={links}
       onFolder={(f) => res.setData((prev) => [f, prev?.[1] ?? links])}
     />
   );
@@ -74,14 +76,17 @@ function FolderView({ folder, links, virtual, onFolder }: {
   const isOwner = !virtual && !!session && folder.ownerId === session.userId;
   const canEdit = virtual || canEditFolder(folder, session?.userId, peers);
   const color = folderColor(folder.color);
+  const cd = countdown(keyDateOf(folder), folder.keyDateType);
+  const kids = useFolderChildren(folder);
   // Les idées créées depuis la feuille d'ajout arrivent dans le cache global : on les fusionne
   const shown = useMemo(() => {
     if (virtual) return links;
     const ids = new Set(links.map((l) => l.id));
     const extra = mine.filter((l) => l.folderId === folder.id && !ids.has(l.id));
     const fresh = new Map(mine.map((l) => [l.id, l]));
-    return [...extra, ...links.map((l) => fresh.get(l.id) ?? l)].filter((l) => !fresh.has(l.id) || fresh.get(l.id)!.folderId === folder.id);
-  }, [links, mine, folder.id, virtual]);
+    const merged = [...extra, ...links.map((l) => fresh.get(l.id) ?? l)].filter((l) => !fresh.has(l.id) || fresh.get(l.id)!.folderId === folder.id);
+    return sortFolderLinks(merged, folder.sort, CATEGORIES.map((c) => c.key));
+  }, [links, mine, folder.id, folder.sort, virtual]);
 
   const setFolder = (f: Folder) => {
     onFolder?.(f);
@@ -99,6 +104,17 @@ function FolderView({ folder, links, virtual, onFolder }: {
     } catch {
       setLiked(!next);
       setLikes((n) => n + (next ? -1 : 1));
+    }
+  };
+
+  const togglePin = async () => {
+    setMenuOpen(false);
+    try {
+      const saved = await api.folders.update(folder.id, { ...folderInput(folder), pinned: !folder.pinned });
+      setFolder(saved);
+      toast(saved.pinned ? "Épinglé en haut de Mes idées" : "Dossier désépinglé");
+    } catch (e) {
+      toast((e as Error).message, "error");
     }
   };
 
@@ -133,10 +149,14 @@ function FolderView({ folder, links, virtual, onFolder }: {
   return (
     <div>
       <Seo title={`${folder.name} · dossier d'idées · Tribbae`} description={`${folder.name} : un dossier d'idées sur Tribbae.`} path={`/dossiers/${folder.id}`} />
-      <header className="relative overflow-hidden px-5 pt-5 pb-8 md:px-8" style={{ background: color.bg }}>
-        <div aria-hidden="true" className="absolute -right-24 -bottom-40 h-80 w-80 rounded-full bg-white/45" />
-        <div className="relative mx-auto flex max-w-[1200px] flex-col gap-5">
-          <div className="flex items-center justify-between">
+      <header className="relative">
+        <div className="relative h-[184px] overflow-hidden md:h-[240px]" style={{ background: color.bg }}>
+          {virtual ? (
+            <div aria-hidden="true" className="absolute -right-24 -bottom-40 h-80 w-80 rounded-full bg-white/45" />
+          ) : (
+            <FolderCover folder={folder} links={shown} />
+          )}
+          <div className="relative mx-auto flex max-w-[1200px] items-center justify-between px-5 pt-5 md:px-8">
             <button
               type="button"
               onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/mes-idees"))}
@@ -170,27 +190,50 @@ function FolderView({ folder, links, virtual, onFolder }: {
               )}
             </div>
           </div>
-          <div className="flex items-end gap-4">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-large text-white shadow-soft" style={{ background: color.solid }}>
-              <Icon name={folderIcon(folder.icon)} size={30} />
+          {cd && (
+            <span
+              className="absolute right-5 bottom-10 rounded-[10px] px-2.5 py-[5px] text-xs font-extrabold md:right-[max(2rem,calc((100%-1200px)/2+2rem))]"
+              style={folder.keyDateType === "vacances" ? { background: "#3A211B", color: "#FBF3E7" } : { background: color.solid, color: "#FFFFFF" }}
+            >
+              {cd.label}
             </span>
-            <div className="flex min-w-0 flex-col gap-1">
-              <h1 className="font-display text-[28px] leading-[1.05] font-extrabold tracking-[-0.6px] md:text-[36px]">{folder.name}</h1>
-              <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ecorce-2">
-                <span>{plural(shown.length, "idée", "idées")}</span>
-                <span aria-hidden="true">·</span>
-                <span>{visibilityLabel}</span>
-                {!isOwner && folder.ownerDisplayName && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span>par {folder.ownerDisplayName}</span>
-                  </>
-                )}
-                {folder.aiGenerated && (
-                  <span className="flex items-center gap-1 rounded-lg bg-prune px-2 py-0.5 text-xs font-semibold text-sable"><Icon name="sparkle" size={12} />IA</span>
-                )}
+          )}
+        </div>
+
+        <div className="relative mx-auto -mt-7 flex max-w-[1200px] flex-col gap-3 rounded-t-xl bg-sable px-5 pt-0 md:px-8">
+          <div className="flex items-end gap-4">
+            <span className="-mt-5 flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] border-4 border-sable text-white" style={{ background: virtual ? "#6B5047" : color.solid }}>
+              {virtual ? <Icon name="bookmark" size={30} /> : <FolderGlyph icon={folder.icon} size={30} />}
+            </span>
+            {kids.length > 0 && (
+              <span className="mb-1 flex items-center gap-1.5 text-xs text-sec">
+                Pour
+                <span className="flex">
+                  {kids.map(({ child, colors: [bg, ink] }, i) => (
+                    <Avatar key={child.id} name={child.name} color={bg} ink={ink} size={26} className={`border-2 border-sable ${i ? "-ml-2" : ""}`} />
+                  ))}
+                </span>
+                {kids.map((k) => k.child.name).join(", ")}
               </span>
-            </div>
+            )}
+          </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <h1 className="font-display text-[28px] leading-[1.05] font-extrabold tracking-[-0.6px] md:text-[36px]">{folder.name}</h1>
+            {folder.description && <p className="text-[15px] text-ecorce-2">{folder.description}</p>}
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-sec">
+              <span>{plural(shown.length, "idée", "idées")}</span>
+              <span aria-hidden="true">·</span>
+              <span>{visibilityLabel}</span>
+              {!isOwner && folder.ownerDisplayName && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>par {folder.ownerDisplayName}</span>
+                </>
+              )}
+              {folder.aiGenerated && (
+                <span className="flex items-center gap-1 rounded-lg bg-prune px-2 py-0.5 text-xs font-semibold text-sable"><Icon name="sparkle" size={12} />IA</span>
+              )}
+            </span>
           </div>
           {collaborators.length > 0 && (
             <button type="button" onClick={() => isOwner && setShareOpen(true)} className="self-start" disabled={!isOwner}>
@@ -203,7 +246,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
         </div>
       </header>
 
-      <div className="relative mx-auto -mt-4 flex max-w-[1200px] flex-col gap-5 rounded-t-xl bg-sable px-5 pt-5 md:px-8">
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-5 px-5 pt-5 md:px-8">
         {canEdit && (
           <div className="flex flex-wrap gap-2">
             <Button icon="plus" size="sm" onClick={() => (virtual ? newLink() : openAdd({ folderId: folder.id }))}>Ajouter une idée</Button>
@@ -212,12 +255,27 @@ function FolderView({ folder, links, virtual, onFolder }: {
                 Compléter avec l'IA
               </Button>
             )}
+            {!virtual && (
+              <Button variant="ghost" icon="pencil" size="sm" onClick={() => editFolder(folder, setFolder)}>
+                Personnaliser
+              </Button>
+            )}
           </div>
         )}
         {shown.length ? (
-          <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
-            {shown.map((l, i) => <GridCard key={l.id} link={l} index={i} />)}
-          </div>
+          folder.viewMode === "list" ? (
+            <div className="grid gap-2.5 md:grid-cols-2">
+              {shown.map((l) => <RowCard key={l.id} link={l} />)}
+            </div>
+          ) : folder.viewMode === "mosaic" ? (
+            <div className="grid auto-rows-[132px] grid-flow-dense grid-cols-2 gap-3 md:auto-rows-[160px] md:grid-cols-3 lg:grid-cols-4">
+              {shown.map((l, i) => <MosaicTile key={l.id} link={l} large={i % 3 === 0} />)}
+            </div>
+          ) : (
+            <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
+              {shown.map((l, i) => <GridCard key={l.id} link={l} index={i} />)}
+            </div>
+          )
         ) : (
           <EmptyState icon="tipi" title="Ce dossier attend ses premières idées" text={canEdit ? "Ajoutez un lien, une recette, une sortie… ou laissez l'IA le remplir." : undefined} />
         )}
@@ -233,7 +291,8 @@ function FolderView({ folder, links, virtual, onFolder }: {
           {shareOpen && <ShareFolderSheet onClose={() => setShareOpen(false)} folder={folder} onChange={setFolder} />}
           <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Dossier">
             <div className="flex flex-col gap-2">
-              <MenuItem icon="pencil" label="Modifier le nom, la couleur…" onClick={() => { setMenuOpen(false); editFolder(folder, setFolder); }} />
+              <MenuItem icon="pencil" label="Personnaliser" onClick={() => { setMenuOpen(false); editFolder(folder, setFolder); }} />
+              <MenuItem icon="pin" label={folder.pinned ? "Désépingler de Mes idées" : "Épingler en haut de Mes idées"} onClick={togglePin} />
               <MenuItem icon="personPlus" label="Inviter et partager" onClick={() => { setMenuOpen(false); setShareOpen(true); }} />
               <MenuItem icon="trash" label="Supprimer le dossier" danger onClick={remove} />
             </div>

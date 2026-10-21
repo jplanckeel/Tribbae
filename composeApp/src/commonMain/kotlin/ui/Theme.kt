@@ -63,16 +63,18 @@ val CategoryPalettes = mapOf(
 // Couleur pleine par catégorie (icônes, pastilles)
 val CategoryColors = CategoryPalettes.mapValues { it.value.icon }
 
-// Couleurs de dossiers — mêmes teintes que FOLDER_COLORS côté web
+// Couleurs de dossiers (encre) — mêmes teintes que FOLDER_COLORS côté web ;
+// fonds et teintes secondaires dans ui/campfire/Campfire.kt (folderBg, folderMid)
 val FolderColors = mapOf(
-    "BLUE" to Color(0xFF2F7393),
-    "GREEN" to Color(0xFF4C7A3C),
-    "ORANGE" to Color(0xFFC35A1C),
+    "ORANGE" to Color(0xFFA04812),
+    "RED" to Color(0xFF9A3420),
+    "YELLOW" to Color(0xFF85560C),
+    "GREEN" to Color(0xFF3E6630),
+    "TEAL" to Color(0xFF1F6B60),
+    "BLUE" to Color(0xFF235C77),
     "PURPLE" to Color(0xFF5E4558),
-    "RED" to Color(0xFFB2412A),
-    "TEAL" to Color(0xFF2F7A6E),
     "PINK" to Color(0xFF9C3A5C),
-    "YELLOW" to Color(0xFF9A6510),
+    "SABLE" to Color(0xFF6B5047),
 )
 
 private val TribbaeColors = lightColorScheme(

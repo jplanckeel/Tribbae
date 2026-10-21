@@ -42,6 +42,7 @@ type Folder struct {
 	AiGenerated   bool                `bson:"ai_generated"`
 	CreatedAt     time.Time           `bson:"created_at"`
 	UpdatedAt     time.Time           `bson:"updated_at"`
+	Style         `bson:",inline"`
 }
 
 type Service struct {
@@ -112,9 +113,12 @@ func sanitizeFolder(name, bannerURL string, tags []string) (string, string, []st
 	return name, bannerURL, clean, nil
 }
 
-func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibility, bannerURL string, tags []string) (*Folder, error) {
+func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibility, bannerURL string, tags []string, style Style) (*Folder, error) {
 	name, bannerURL, tags, err := sanitizeFolder(name, bannerURL, tags)
 	if err != nil {
+		return nil, err
+	}
+	if style, err = sanitizeStyle(style); err != nil {
 		return nil, err
 	}
 	f := &Folder{
@@ -126,6 +130,7 @@ func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibi
 		BannerURL:  bannerURL,
 		Tags:       tags,
 		Visibility: visibility,
+		Style:      style,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
@@ -173,7 +178,7 @@ func (s *Service) List(ctx context.Context, ownerID string) ([]*Folder, error) {
 	return folders, cursor.All(ctx, &folders)
 }
 
-func (s *Service) Update(ctx context.Context, folderID, userID, name, icon, color, visibility, bannerURL string, tags []string) (*Folder, error) {
+func (s *Service) Update(ctx context.Context, folderID, userID, name, icon, color, visibility, bannerURL string, tags []string, patch StylePatch) (*Folder, error) {
 	name, bannerURL, tags, err := sanitizeFolder(name, bannerURL, tags)
 	if err != nil {
 		return nil, err
@@ -198,10 +203,14 @@ func (s *Service) Update(ctx context.Context, folderID, userID, name, icon, colo
 	if existing.OwnerID != userID {
 		visibility = existing.Visibility
 	}
-	update := bson.M{"$set": bson.M{
-		"name": name, "icon": icon, "color": color,
-		"visibility": visibility, "banner_url": bannerURL, "tags": tags, "updated_at": time.Now(),
-	}}
+	style, err := sanitizeStyle(patch.apply(existing.Style))
+	if err != nil {
+		return nil, err
+	}
+	set := style.setDoc()
+	set["name"], set["icon"], set["color"] = name, icon, color
+	set["visibility"], set["banner_url"], set["tags"], set["updated_at"] = visibility, bannerURL, tags, time.Now()
+	update := bson.M{"$set": set}
 	if _, err := s.col.UpdateOne(ctx, bson.M{"_id": id}, update); err != nil {
 		return nil, err
 	}

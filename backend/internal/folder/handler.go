@@ -86,7 +86,7 @@ func (h *Handler) toProto(ctx context.Context, f *Folder, st *Stats) *pb.Folder 
 	}
 
 	owner := st.Owners[f.OwnerID]
-	return &pb.Folder{
+	pf := &pb.Folder{
 		Id:               f.ID.Hex(),
 		OwnerId:          f.OwnerID,
 		Name:             f.Name,
@@ -105,7 +105,21 @@ func (h *Handler) toProto(ctx context.Context, f *Folder, st *Stats) *pb.Folder 
 		LikedByMe:        likedByMe,
 		AiGenerated:      f.AiGenerated,
 		OwnerIsAdmin:     owner.IsAdmin,
+		Description:      f.Description,
+		Cover:            f.Cover,
+		Illustration:     f.Illustration,
+		ViewMode:         f.ViewMode,
+		Sort:             f.Sort,
 	}
+	// Date clé, enfants concernés et épinglage restent dans la famille
+	// (et chez les collaborateurs invités) : pas pour un visiteur d'un dossier public.
+	if isOwner || isCollaborator || h.svc.IsPeer(ctx, viewerID, f.OwnerID) {
+		pf.KeyDate = f.KeyDate
+		pf.KeyDateType = f.KeyDateType
+		pf.ChildIds = f.ChildIDs
+		pf.Pinned = f.Pinned
+	}
+	return pf
 }
 
 func (h *Handler) one(ctx context.Context, f *Folder) *pb.Folder {
@@ -150,7 +164,11 @@ func (h *Handler) CreateFolder(ctx context.Context, req *pb.CreateFolderRequest)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
-	f, err := h.svc.Create(ctx, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility), req.BannerUrl, req.Tags)
+	f, err := h.svc.Create(ctx, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility), req.BannerUrl, req.Tags, Style{
+		Description: req.Description, Cover: req.Cover, Illustration: req.Illustration,
+		KeyDate: req.KeyDate, KeyDateType: req.KeyDateType, ChildIDs: req.ChildIds,
+		ViewMode: req.ViewMode, Sort: req.Sort, Pinned: req.Pinned,
+	})
 	if err != nil {
 		return nil, toStatus("create folder", err)
 	}
@@ -185,11 +203,23 @@ func (h *Handler) UpdateFolder(ctx context.Context, req *pb.UpdateFolderRequest)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
-	f, err := h.svc.Update(ctx, req.FolderId, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility), req.BannerUrl, req.Tags)
+	f, err := h.svc.Update(ctx, req.FolderId, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility), req.BannerUrl, req.Tags, stylePatch(req))
 	if err != nil {
 		return nil, toStatus("update folder", err)
 	}
 	return &pb.UpdateFolderResponse{Folder: h.one(ctx, f)}, nil
+}
+
+func stylePatch(req *pb.UpdateFolderRequest) StylePatch {
+	p := StylePatch{
+		Description: req.Description, Cover: req.Cover, Illustration: req.Illustration,
+		KeyDate: req.KeyDate, KeyDateType: req.KeyDateType,
+		ViewMode: req.ViewMode, Sort: req.Sort, Pinned: req.Pinned,
+	}
+	if req.SetChildIds {
+		p.ChildIDs = &req.ChildIds
+	}
+	return p
 }
 
 func (h *Handler) DeleteFolder(ctx context.Context, req *pb.DeleteFolderRequest) (*pb.DeleteFolderResponse, error) {

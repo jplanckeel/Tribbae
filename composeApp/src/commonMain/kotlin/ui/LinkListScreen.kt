@@ -502,42 +502,8 @@ fun categoryIcon(category: LinkCategory): ImageVector = when (category) {
     LinkCategory.DECORATION -> Icons.Default.Palette
 }
 
-fun folderIconVector(folder: data.Folder): ImageVector = when (folder.icon) {
-    data.FolderIcon.FOLDER -> Icons.Default.Folder
-    data.FolderIcon.STAR -> Icons.Default.Star
-    data.FolderIcon.HEART -> Icons.Default.Favorite
-    data.FolderIcon.BOOKMARK -> Icons.Default.Bookmark
-    data.FolderIcon.HOME -> Icons.Default.Home
-    data.FolderIcon.WORK -> Icons.Default.Work
-    data.FolderIcon.TRAVEL -> Icons.Default.Flight
-    data.FolderIcon.SHOPPING -> Icons.Default.ShoppingCart
-    // Nature / Outdoor
-    data.FolderIcon.CAMPING -> Icons.Default.Cabin
-    data.FolderIcon.PARK -> Icons.Default.Park
-    data.FolderIcon.BEACH -> Icons.Default.BeachAccess
-    data.FolderIcon.MOUNTAIN -> Icons.Default.Landscape
-    data.FolderIcon.FOREST -> Icons.Default.Forest
-    // Activités
-    data.FolderIcon.SPORTS -> Icons.Default.SportsSoccer
-    data.FolderIcon.MUSIC -> Icons.Default.MusicNote
-    data.FolderIcon.GAMES -> Icons.Default.SportsEsports
-    data.FolderIcon.PALETTE -> Icons.Default.Palette
-    data.FolderIcon.MOVIE -> Icons.Default.Movie
-    // Nourriture
-    data.FolderIcon.RESTAURANT -> Icons.Default.Restaurant
-    data.FolderIcon.CAKE -> Icons.Default.Cake
-    data.FolderIcon.COFFEE -> Icons.Default.Coffee
-    // Ambiance
-    data.FolderIcon.CANDLE -> Icons.Default.LocalFireDepartment
-    data.FolderIcon.PIRATE -> Icons.Default.Sailing
-    data.FolderIcon.MAGIC -> Icons.Default.AutoAwesome
-    data.FolderIcon.PARTY -> Icons.Default.Celebration
-    data.FolderIcon.ROCKET -> Icons.Default.RocketLaunch
-    // Famille
-    data.FolderIcon.BABY -> Icons.Default.ChildCare
-    data.FolderIcon.PETS -> Icons.Default.Pets
-    data.FolderIcon.SCHOOL -> Icons.Default.School
-}
+/** Icône d'un dossier : même tracé que sur le web (ui/campfire/FolderCover.kt). */
+fun folderIconVector(folder: data.Folder): ImageVector = ui.campfire.folderGlyph(folder.icon)
 
 @Composable
 fun StarRating(

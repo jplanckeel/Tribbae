@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link as RouterLink, useSearchParams } from "react-router";
-import { FolderCard, GridCard, RowCard } from "../components/cards";
+import { FolderCard, GridCard, PinnedFolderCard, RowCard } from "../components/cards";
 import { useComposer } from "../components/Composer";
 import Icon from "../components/Icon";
 import { Page } from "../components/Shell";
@@ -8,8 +8,27 @@ import { Button, EmptyState, ErrorNote, PageSpinner } from "../components/ui";
 import { categoryBySlug, normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { plural } from "../lib/format";
+import { countdown, keyDateOf } from "../lib/folderStyle";
 import { byRecent, tagCounts } from "../lib/links";
+import type { Folder } from "../lib/types";
 import Seo from "../components/Seo";
+
+const FOLDER_SORTS = [
+  { key: "recent", label: "Récents" },
+  { key: "date", label: "Date clé" },
+  { key: "name", label: "A → Z" },
+] as const;
+type FolderSort = (typeof FOLDER_SORTS)[number]["key"];
+
+function sortFolders(list: Folder[], sort: FolderSort): Folder[] {
+  if (sort === "name") return [...list].sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  if (sort === "date") {
+    // Prochaine date clé d'abord, puis les dossiers sans date
+    const days = (f: Folder) => countdown(keyDateOf(f), f.keyDateType)?.days ?? Infinity;
+    return [...list].sort((a, b) => days(a) - days(b) || (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+  }
+  return [...list].sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+}
 
 const TABS = [
   { key: "dossiers", label: "Dossiers" },
@@ -24,6 +43,7 @@ export default function MyIdeas() {
   const tab = TABS.find((t) => t.key === params.get("vue"))?.key ?? "dossiers";
   const cat = categoryBySlug(params.get("cat") ?? undefined);
   const tag = params.get("tag") ?? "";
+  const [folderSort, setFolderSort] = useState<FolderSort>("recent");
 
   const setTab = (key: string) => setParams(key === "dossiers" ? {} : { vue: key }, { replace: true });
 
@@ -33,6 +53,10 @@ export default function MyIdeas() {
     return m;
   }, [links]);
   const loose = links.filter((l) => !l.folderId);
+  const pinned = folders.filter((f) => f.pinned);
+  const others = sortFolders(folders.filter((f) => !f.pinned), folderSort);
+  const tagTotal = useMemo(() => tagCounts(links).length, [links]);
+  const tabCounts: Record<string, number> = { dossiers: folders.length, favoris: links.filter((l) => l.favorite).length, tags: tagTotal };
   const recipes = links.filter((l) => normalizeCategory(l.category) === "LINK_CATEGORY_RECETTE" && l.ingredients?.length);
   const ingredientCount = new Set(recipes.flatMap((r) => r.ingredients!.map((i) => i.trim().toLowerCase()))).size;
 
@@ -81,7 +105,7 @@ export default function MyIdeas() {
       <div className="flex flex-col gap-0.5">
         <h1 className="font-display text-[32px] font-extrabold tracking-[-0.8px] md:text-[40px]">Mes idées</h1>
         <span className="text-sm text-sec">
-          {plural(links.length, "idée rangée", "idées rangées")} dans {plural(folders.length, "dossier", "dossiers")}
+          {[plural(links.length, "idée", "idées"), plural(folders.length, "dossier", "dossiers"), plural(tagTotal, "tag", "tags")].join(" · ")}
         </span>
       </div>
 
@@ -99,9 +123,11 @@ export default function MyIdeas() {
             role="tab"
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`rounded-small text-sm transition-colors ${tab === t.key ? "bg-white font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec hover:text-ecorce"}`}
+            className={`flex items-center justify-center gap-1.5 rounded-small text-sm transition-colors ${tab === t.key ? "bg-white font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec hover:text-ecorce"}`}
           >
+            {t.key === "dossiers" && <Icon name="tipi" size={17} className={tab === t.key ? "text-terracotta" : ""} />}
             {t.label}
+            {tabCounts[t.key] > 0 && <span className="text-xs font-semibold text-muted">{tabCounts[t.key]}</span>}
           </button>
         ))}
       </div>
@@ -121,8 +147,34 @@ export default function MyIdeas() {
             <Icon name="chevronRight" size={20} className="text-muted" />
           </RouterLink>
 
+          {pinned.length > 0 && (
+            <section aria-labelledby="pinned-title" className="flex flex-col gap-3">
+              <h2 id="pinned-title" className="flex items-center gap-1.5 text-xs font-extrabold tracking-[0.8px] text-sec uppercase">
+                <PinGlyph />Épinglés
+              </h2>
+              <div className="grid gap-3.5 md:grid-cols-2">
+                {pinned.map((f) => <PinnedFolderCard key={f.id} folder={f} count={counts.get(f.id) ?? f.linkCount} />)}
+              </div>
+            </section>
+          )}
+
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-extrabold tracking-[0.8px] text-sec uppercase">Tous les dossiers</h2>
+            <label className="flex items-center gap-1 text-[13px] font-semibold text-sec">
+              <span className="sr-only">Trier les dossiers</span>
+              <select
+                value={folderSort}
+                onChange={(e) => setFolderSort(e.target.value as FolderSort)}
+                className="cursor-pointer appearance-none bg-transparent pr-1 text-right font-semibold outline-none focus-visible:underline"
+              >
+                {FOLDER_SORTS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+              </select>
+              <Icon name="chevronDown" size={14} />
+            </label>
+          </div>
+
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {folders.map((f) => <FolderCard key={f.id} folder={f} count={counts.get(f.id) ?? f.linkCount} />)}
+            {others.map((f) => <FolderCard key={f.id} folder={f} count={counts.get(f.id) ?? f.linkCount} />)}
             {loose.length > 0 && (
               <RouterLink
                 to="/dossiers/non-rangees"
@@ -155,6 +207,15 @@ export default function MyIdeas() {
       {tab === "favoris" && <Favorites />}
       {tab === "tags" && <Tags selected={tag} onSelect={(t) => setParams(t ? { vue: "tags", tag: t } : { vue: "tags" }, { replace: true })} />}
     </Page>
+  );
+}
+
+/** Punaise « Épinglés » (maquette Mes idées). */
+function PinGlyph({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="icon text-terracotta">
+      <path d="M9 4h6l-1 6 3 3H7l3-3z M12 13v7" />
+    </svg>
   );
 }
 

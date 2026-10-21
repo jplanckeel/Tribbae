@@ -90,15 +90,36 @@ fun categoryUi(c: LinkCategory): CategoryUi = CategoryOrder.first { it.category 
 /** Fond pastel / couleur pleine d'un dossier (mêmes teintes que le web). */
 fun folderSolid(c: FolderColor): Color = FolderColors[c.name] ?: Terracotta
 fun folderBg(c: FolderColor): Color = when (c) {
-    FolderColor.BLUE -> Color(0xFFDCEDF3)
-    FolderColor.GREEN -> Color(0xFFE2EDD9)
     FolderColor.ORANGE -> Color(0xFFFCE3D0)
-    FolderColor.PURPLE -> Color(0xFFECE1EA)
     FolderColor.RED -> Color(0xFFF8DCD3)
-    FolderColor.TEAL -> Color(0xFFD7ECE8)
-    FolderColor.PINK -> Color(0xFFF7DDE6)
     FolderColor.YELLOW -> Color(0xFFFBEACB)
+    FolderColor.GREEN -> Color(0xFFE2EDD9)
+    FolderColor.TEAL -> Color(0xFFD5ECE8)
+    FolderColor.BLUE -> Color(0xFFDCEDF3)
+    FolderColor.PURPLE -> Color(0xFFECE1EA)
+    FolderColor.PINK -> Color(0xFFF7DDE6)
+    FolderColor.SABLE -> Color(0xFFF1E3D1)
 }
+
+/** Teinte secondaire (motifs des couvertures, dessins teintés, onglet des cartes). */
+fun folderMid(c: FolderColor): Color = when (c) {
+    FolderColor.ORANGE -> Color(0xFFF8CDAE)
+    FolderColor.RED -> Color(0xFFF2C1B2)
+    FolderColor.YELLOW -> Color(0xFFF6DAA3)
+    FolderColor.GREEN -> Color(0xFFCCE0BE)
+    FolderColor.TEAL -> Color(0xFFB5DDD6)
+    FolderColor.BLUE -> Color(0xFFBFE0EC)
+    FolderColor.PURPLE -> Color(0xFFDCC8D8)
+    FolderColor.PINK -> Color(0xFFEFC3D3)
+    FolderColor.SABLE -> Color(0xFFE6D3C0)
+}
+
+/** Libellés des couleurs (maquette « Personnaliser un dossier »). */
+val FolderColorLabels = mapOf(
+    FolderColor.ORANGE to "Orange", FolderColor.RED to "Corail", FolderColor.YELLOW to "Miel",
+    FolderColor.GREEN to "Vert", FolderColor.TEAL to "Sarcelle", FolderColor.BLUE to "Bleu",
+    FolderColor.PURPLE to "Prune", FolderColor.PINK to "Rose", FolderColor.SABLE to "Sable",
+)
 
 // Couleurs d'avatars (fond, encre) de la maquette « Ma tribu »
 val AvatarColors = listOf(
@@ -612,33 +633,6 @@ fun AvatarStack(names: List<String>, label: String? = null) {
             }
         }
         if (label != null) Text(label, fontSize = 12.sp, color = TextSec, modifier = Modifier.offset(x = (-8 * (names.size.coerceAtMost(3) - 1) + 6).dp))
-    }
-}
-
-@Composable
-fun FolderCard(folder: Folder, count: Int, onClick: () -> Unit, modifier: Modifier = Modifier, ownerLabel: String? = null) {
-    val solid = folderSolid(folder.color)
-    Box(modifier.card().clickable(onClick = onClick)) {
-        Box(Modifier.align(Alignment.TopEnd).offset(x = 14.dp, y = (-14).dp).size(64.dp).clip(CircleShape).background(folderBg(folder.color)))
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(solid), contentAlignment = Alignment.Center) {
-                Icon(folderIconVector(folder), null, tint = Color.White, modifier = Modifier.size(22.dp))
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(folder.name, style = display(16.sp, FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(
-                    "$count idée${if (count > 1) "s" else ""}" + (ownerLabel?.let { " · $it" } ?: ""),
-                    fontSize = 13.sp, color = TextSec
-                )
-            }
-            when {
-                folder.collaborators.isNotEmpty() ->
-                    AvatarStack(listOf(folder.ownerDisplayName.ifEmpty { "Moi" }) + folder.collaborators.map { it.displayName.ifEmpty { it.email } }, "partagé")
-                folder.aiGenerated -> Tag("IA", Prune, Sable, Icons.Outlined.AutoAwesome)
-                folder.visibility.uppercase().contains("PUBLIC") -> Tag("Public", Color(0xFFDCEDF3), Color(0xFF235C77), Icons.Outlined.Public)
-                else -> Tag("Privé", Sable2, TextSec)
-            }
-        }
     }
 }
 

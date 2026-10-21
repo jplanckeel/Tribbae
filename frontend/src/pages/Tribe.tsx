@@ -2,12 +2,13 @@ import { useMemo, useState, type FormEvent } from "react";
 import { Link as RouterLink, useNavigate } from "react-router";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
+import { FolderGlyph } from "../components/FolderCover";
 import Icon, { type IconName } from "../components/Icon";
 import ShareFolderSheet from "../components/ShareFolderSheet";
 import Sheet from "../components/Sheet";
 import { Button, EmptyState, ErrorNote, Field, SectionTitle, Spinner } from "../components/ui";
 import * as api from "../lib/api";
-import { AVATAR_COLORS, folderColor, folderIcon } from "../lib/categories";
+import { AVATAR_COLORS, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { formatAge, initial, plural } from "../lib/format";
 import { clearSession, useSession } from "../lib/session";
@@ -221,7 +222,7 @@ export default function Tribe() {
                     className="flex w-full items-center gap-3 rounded-medium bg-white p-3 text-left hover:bg-sable-2"
                   >
                     <span className="flex h-10 w-10 items-center justify-center rounded-small text-white" style={{ background: c.solid }}>
-                      <Icon name={folderIcon(f.icon)} size={20} />
+                      <FolderGlyph icon={f.icon} size={20} />
                     </span>
                     <span className="flex-1 font-bold">{f.name}</span>
                     <span className="text-xs text-sec">{plural(f.collaborators?.length ?? 0, "membre", "membres")}</span>

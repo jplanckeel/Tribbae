@@ -1,10 +1,11 @@
 import { Link as RouterLink, useParams } from "react-router";
 import { IdeaVisual } from "../components/cards";
+import { FolderGlyph } from "../components/FolderCover";
 import Icon from "../components/Icon";
 import Logo from "../components/Logo";
 import { EmptyState, PageSpinner } from "../components/ui";
 import * as api from "../lib/api";
-import { categoryMeta, folderColor, folderIcon } from "../lib/categories";
+import { categoryMeta, folderColor } from "../lib/categories";
 import { metaLine, plural, safeHref } from "../lib/format";
 import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
@@ -42,7 +43,7 @@ export default function SharedFolder() {
           <RouterLink to="/" aria-label="Tribbae"><Logo /></RouterLink>
           <div className="flex items-end gap-4">
             <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-large text-white" style={{ background: color.solid }}>
-              <Icon name={folderIcon(folder.icon)} size={30} />
+              <FolderGlyph icon={folder.icon} size={30} />
             </span>
             <div className="flex flex-col gap-1">
               <span className="text-sm font-semibold text-ecorce-2">

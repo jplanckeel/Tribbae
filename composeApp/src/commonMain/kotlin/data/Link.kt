@@ -26,7 +26,17 @@ data class Folder(
     val likedByMe: Boolean = false,
     val aiGenerated: Boolean = false,
     val collaborators: List<Collaborator> = emptyList(),
-    val updatedAt: String = ""
+    val updatedAt: String = "",
+    // Personnalisation (ui/campfire/FolderStyle.kt, même logique que frontend/src/lib/folderStyle.ts)
+    val description: String = "",
+    val cover: String = "",            // "" (auto) | illu | uni | tipis | pois | rayures | photo
+    val illustration: String = "",     // "" = choisie selon le nom / la date clé
+    val keyDate: Long = 0,             // ms, 0 = aucune date clé
+    val keyDateType: String = "",      // anniv | vacances | event
+    val childIds: List<String> = emptyList(),
+    val viewMode: String = "",         // grid | list | mosaic
+    val sort: String = "",             // recent | date | category
+    val pinned: Boolean = false,
 )
 
 @Serializable
@@ -85,7 +95,7 @@ enum class FolderIcon {
 }
 
 @Serializable
-enum class FolderColor { BLUE, GREEN, ORANGE, PURPLE, RED, TEAL, PINK, YELLOW }
+enum class FolderColor { ORANGE, RED, YELLOW, GREEN, TEAL, BLUE, PURPLE, PINK, SABLE }
 
 @Serializable
 data class Child(

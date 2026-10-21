@@ -109,7 +109,8 @@ export const folders = {
     request<{ folder: Folder }>("/folders", { method: "POST", body: json(data) }).then((r) => r.folder),
   update: (id: string, data: FolderInput) =>
     request<{ folder: Folder }>(`/folders/${encodeURIComponent(id)}`, {
-      method: "PUT", body: json({ folderId: id, ...data }),
+      // setChildIds : la liste vide efface bien « Pour qui »
+      method: "PUT", body: json({ folderId: id, ...data, setChildIds: true }),
     }).then((r) => r.folder),
   delete: (id: string) => request<void>(`/folders/${encodeURIComponent(id)}`, { method: "DELETE" }),
   share: (id: string) =>

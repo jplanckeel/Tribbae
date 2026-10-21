@@ -48,6 +48,16 @@ message Folder {
   string banner_url = 16;
   repeated string tags = 17;
   bool owner_is_admin = 18;
+  // Personnalisation (écran « Personnaliser »)
+  string description = 19;        // « un petit mot », ex. « Pour ses 10 ans »
+  string cover = 20;              // "" (auto) | illu | uni | tipis | pois | rayures | photo
+  string illustration = 21;       // dessin de la couverture "illu" ; "" = choisi selon le nom / la date clé
+  int64 key_date = 22;            // date clé (ms), 0 = aucune
+  string key_date_type = 23;      // anniv | vacances | event
+  repeated string child_ids = 24; // « Pour qui » : enfants de la tribu
+  string view_mode = 25;          // grid | list | mosaic
+  string sort = 26;               // recent | date | category
+  bool pinned = 27;               // épinglé en haut de « Mes idées »
 }
 
 message CreateFolderRequest {
@@ -57,6 +67,15 @@ message CreateFolderRequest {
   Visibility visibility = 4;
   string banner_url = 5;
   repeated string tags = 6;
+  string description = 7;
+  string cover = 8;
+  string illustration = 9;
+  int64 key_date = 10;
+  string key_date_type = 11;
+  repeated string child_ids = 12;
+  string view_mode = 13;
+  string sort = 14;
+  bool pinned = 15;
 }
 
 message CreateFolderResponse {
@@ -85,6 +104,18 @@ message UpdateFolderRequest {
   Visibility visibility = 5;
   string banner_url = 6;
   repeated string tags = 7;
+  // Personnalisation : facultatifs pour qu'un client plus ancien qui ne les
+  // envoie pas ne les efface pas.
+  optional string description = 8;
+  optional string cover = 9;
+  optional string illustration = 10;
+  optional int64 key_date = 11;
+  optional string key_date_type = 12;
+  repeated string child_ids = 13;   // pris en compte seulement si set_child_ids
+  bool set_child_ids = 14;
+  optional string view_mode = 15;
+  optional string sort = 16;
+  optional bool pinned = 17;
 }
 
 message UpdateFolderResponse {

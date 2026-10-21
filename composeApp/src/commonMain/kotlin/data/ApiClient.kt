@@ -37,7 +37,12 @@ data class ApiFolder(
     val likedByMe: Boolean = false,
     val aiGenerated: Boolean = false,
     val tags: List<String> = emptyList(),
-    val bannerUrl: String = ""
+    val bannerUrl: String = "",
+    val description: String = "",
+    val cover: String = "",
+    val illustration: String = "",
+    val viewMode: String = "",
+    val sort: String = "",
 ) {
     /** Dossier affichable (dossier d'un autre membre : communauté ou lien de partage). */
     fun toFolder(): Folder = Folder(
@@ -54,6 +59,11 @@ data class ApiFolder(
         likeCount = likeCount,
         likedByMe = likedByMe,
         aiGenerated = aiGenerated,
+        description = description,
+        cover = cover,
+        illustration = illustration,
+        viewMode = viewMode,
+        sort = sort,
     )
 }
 

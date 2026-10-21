@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link as RouterLink } from "react-router";
 import * as api from "../lib/api";
-import { AVATAR_COLORS, categoryMeta, folderColor, folderIcon, type CategoryMeta } from "../lib/categories";
+import { AVATAR_COLORS, categoryMeta, folderColor, type CategoryMeta } from "../lib/categories";
+import { countdown, keyDateOf, useFolderChildren } from "../lib/folderStyle";
 import { dayBadge, eventDateMs, metaLine, plural, safeImage } from "../lib/format";
 import { useSession } from "../lib/session";
 import type { Folder, Link } from "../lib/types";
+import { FolderCover, FolderGlyph } from "./FolderCover";
 import Icon from "./Icon";
 import { Avatar } from "./ui";
 
@@ -16,7 +18,7 @@ function useAuthor(link: Link): string {
 
 /** Visuel d'une idée : photo si disponible, sinon fond pastel + icône de catégorie. */
 export function IdeaVisual({ link, height, iconSize = 46, className = "" }: {
-  link: Link; height: number; iconSize?: number; className?: string;
+  link: Link; height?: number; iconSize?: number; className?: string;
 }) {
   const cat = categoryMeta(link.category);
   const img = safeImage(link.imageUrl);
@@ -143,6 +145,23 @@ export function GridCard({ link, index = 0, onRequireAuth }: { link: Link; index
   );
 }
 
+/** Tuile de la vue « Mosaïque » d'un dossier : visuel plein, titre en surimpression. */
+export function MosaicTile({ link, large }: { link: Link; large?: boolean }) {
+  const cat = categoryMeta(link.category);
+  return (
+    <RouterLink
+      to={`/links/${link.id}`}
+      className={`group relative block overflow-hidden rounded-[20px] shadow-card transition-transform hover:-translate-y-0.5 ${large ? "row-span-2" : ""}`}
+    >
+      <IdeaVisual link={link} iconSize={large ? 56 : 36} className="h-full" />
+      <CategoryBadge cat={cat} />
+      <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(42,22,18,0.78)] to-transparent px-3 pt-8 pb-2.5">
+        <span className={`line-clamp-2 font-display leading-tight font-bold text-white ${large ? "text-[17px]" : "text-sm"}`}>{link.title}</span>
+      </span>
+    </RouterLink>
+  );
+}
+
 /** Ligne compacte (listes, résultats). */
 export function RowCard({ link, trailing }: { link: Link; trailing?: React.ReactNode }) {
   const cat = categoryMeta(link.category);
@@ -186,47 +205,107 @@ export function AvatarStack({ names, label }: { names: string[]; label?: string 
   );
 }
 
-/** Carte dossier (Mes idées, communauté). */
+/** Compte à rebours d'un dossier, s'il a une date clé à venir. */
+function useCountdown(folder: Folder) {
+  return countdown(keyDateOf(folder), folder.keyDateType);
+}
+
+/** Avatars des enfants « Pour qui » d'un dossier. */
+function ChildAvatars({ folder, size = 26 }: { folder: Folder; size?: number }) {
+  const kids = useFolderChildren(folder);
+  if (!kids.length) return null;
+  return (
+    <span className="flex" aria-label={`Pour ${kids.map((k) => k.child.name).join(", ")}`}>
+      {kids.slice(0, 3).map(({ child, colors: [bg, ink] }, i) => (
+        <Avatar key={child.id} name={child.name} color={bg} ink={ink} size={size} className={`border-2 border-white ${i ? "-ml-2" : ""}`} />
+      ))}
+      {kids.length > 3 && <Avatar name={`+${kids.length - 3}`} color="#F28C38" size={size} className="-ml-2 border-2 border-white" />}
+    </span>
+  );
+}
+
+/** « 12 idées · privé », « 23 idées · avec Camille », « par Léa »… */
+function folderMeta(folder: Folder, n: number, showOwner?: boolean): string {
+  const collaborators = folder.collaborators ?? [];
+  const who = showOwner && folder.ownerDisplayName
+    ? `par ${folder.ownerDisplayName}`
+    : collaborators.length
+      ? `avec ${collaborators[0].displayName || collaborators[0].email || "un proche"}${collaborators.length > 1 ? ` +${collaborators.length - 1}` : ""}`
+      : folder.visibility === "VISIBILITY_PUBLIC" ? "public" : (folder.childIds?.length ? "" : "privé");
+  return [plural(n, "idée", "idées"), who].filter(Boolean).join(" · ");
+}
+
+/**
+ * Carte dossier « intercalaire » (maquette « Mes idées ») : onglet, bannière,
+ * compte à rebours, icône à cheval, nom et méta. Sert aussi pour la communauté.
+ */
 export function FolderCard({ folder, count, showOwner }: { folder: Folder; count?: number; showOwner?: boolean }) {
   const color = folderColor(folder.color);
   const n = count ?? folder.linkCount ?? 0;
-  const collaborators = folder.collaborators ?? [];
-  const vis = folder.visibility;
+  const cd = useCountdown(folder);
   return (
-    <RouterLink
-      to={`/dossiers/${folder.id}`}
-      className="relative flex flex-col gap-3.5 overflow-hidden rounded-large bg-white p-3.5 shadow-card transition-transform hover:-translate-y-0.5"
-    >
-      <span aria-hidden="true" className="absolute -top-3.5 -right-3.5 h-16 w-16 rounded-full" style={{ background: color.bg }} />
-      <span className="relative flex h-11 w-11 items-center justify-center rounded-[14px] text-white" style={{ background: color.solid }}>
-        <Icon name={folderIcon(folder.icon)} size={22} />
-      </span>
-      <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="line-clamp-2 font-display text-base leading-tight font-bold">{folder.name}</span>
-        <span className="text-[13px] text-sec">
-          {plural(n, "idée", "idées")}
-          {showOwner && folder.ownerDisplayName ? ` · ${folder.ownerDisplayName}` : ""}
-        </span>
-      </span>
-      <span className="mt-auto flex flex-wrap items-center gap-1.5">
-        {collaborators.length > 0 ? (
-          <AvatarStack names={[folder.ownerDisplayName || "Moi", ...collaborators.map((c) => c.displayName || c.email || "?")]} label="partagé" />
-        ) : folder.aiGenerated ? (
-          <span className="flex items-center gap-1 rounded-lg bg-prune px-2 py-1 text-xs font-semibold text-sable">
-            <Icon name="sparkle" size={12} />IA
+    <RouterLink to={`/dossiers/${folder.id}`} className="group relative block pt-2.5 transition-transform hover:-translate-y-0.5">
+      <span aria-hidden="true" className="absolute top-0 left-0 h-[22px] w-[58px] rounded-t-[10px] rounded-tr-[12px]" style={{ background: color.mid }} />
+      <div className="relative overflow-hidden rounded-[20px] rounded-tl-none bg-white shadow-card">
+        <div className="relative h-16 overflow-hidden">
+          <FolderCover folder={folder} />
+          {cd && (
+            <span className="absolute top-2 right-2 rounded-lg px-[7px] py-[3px] text-[11px] font-extrabold text-white" style={{ background: color.solid }}>
+              {cd.label}
+            </span>
+          )}
+          {folder.aiGenerated && !cd && (
+            <span className="absolute top-2 right-2 flex items-center gap-1 rounded-lg bg-prune px-[7px] py-[3px] text-[11px] font-bold text-sable">
+              <Icon name="sparkle" size={11} />IA
+            </span>
+          )}
+        </div>
+        <div className="relative -mt-[18px] flex flex-col gap-2 px-3 pb-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-[13px] border-[3px] border-white text-white" style={{ background: color.solid }}>
+            <FolderGlyph icon={folder.icon} size={20} />
           </span>
-        ) : vis === "VISIBILITY_PUBLIC" ? (
-          <span className="flex items-center gap-1 rounded-lg bg-activite-bg px-2 py-1 text-xs font-semibold text-activite-ink">
-            <Icon name="globe" size={12} />Public
+          <span className="flex min-w-0 flex-col">
+            <span className="line-clamp-2 font-display text-[15px] leading-tight font-bold">{folder.name}</span>
+            <span className="flex items-center gap-1 text-xs text-sec">
+              {folderMeta(folder, n, showOwner)}
+              {!showOwner && <ChildAvatars folder={folder} size={16} />}
+            </span>
           </span>
-        ) : showOwner ? (
-          (folder.likeCount ?? 0) > 0 && (
-            <span className="flex items-center gap-1 text-xs text-sec"><Icon name="heart" size={13} />{folder.likeCount}</span>
-          )
-        ) : (
-          <span className="rounded-lg bg-sable-2 px-2 py-1 text-xs font-semibold text-sec">Privé</span>
+        </div>
+      </div>
+    </RouterLink>
+  );
+}
+
+/** Grande carte d'un dossier épinglé en haut de « Mes idées ». */
+export function PinnedFolderCard({ folder, count }: { folder: Folder; count?: number }) {
+  const color = folderColor(folder.color);
+  const n = count ?? folder.linkCount ?? 0;
+  const cd = useCountdown(folder);
+  const sub = [folder.description, plural(n, "idée", "idées")].filter(Boolean).join(" · ");
+  return (
+    <RouterLink to={`/dossiers/${folder.id}`} className="relative block overflow-hidden rounded-[24px] bg-white shadow-card transition-transform hover:-translate-y-0.5">
+      <div className="relative h-24 overflow-hidden">
+        <FolderCover folder={folder} />
+        {cd && (
+          <span
+            className="absolute top-3 left-3 rounded-[10px] px-2.5 py-[5px] text-xs font-extrabold"
+            style={folder.keyDateType === "vacances" ? { background: "#3A211B", color: "#FBF3E7" } : { background: color.solid, color: "#FFFFFF" }}
+          >
+            {cd.label}
+          </span>
         )}
-      </span>
+      </div>
+      <div className="relative -mt-[22px] flex items-center gap-3 px-3.5 pb-3.5">
+        <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[17px] border-[3px] border-white text-white" style={{ background: color.solid }}>
+          <FolderGlyph icon={folder.icon} size={25} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 pt-[22px]">
+          <span className="truncate font-display text-lg font-extrabold">{folder.name}</span>
+          <span className="truncate text-[13px] text-sec">{sub}</span>
+        </span>
+        <span className="pt-[22px]"><ChildAvatars folder={folder} /></span>
+      </div>
     </RouterLink>
   );
 }
@@ -280,15 +359,10 @@ export function ListCard({ folder }: { folder: Folder }) {
       className="overflow-hidden rounded-[24px] bg-white shadow-card transition-transform hover:-translate-y-0.5"
     >
       <div className="relative h-[130px] overflow-hidden" style={{ background: color.bg }}>
-        {banner ? (
+        {banner && !folder.cover ? (
           <img src={banner} alt="" loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />
         ) : (
-          <>
-            <span aria-hidden="true" className="absolute -right-[30px] -bottom-[60px] h-40 w-40 rounded-full opacity-20" style={{ background: color.solid }} />
-            <span className="absolute bottom-[18px] left-[22px]" style={{ color: color.solid }}>
-              <Icon name={folderIcon(folder.icon)} size={54} />
-            </span>
-          </>
+          <FolderCover folder={folder} />
         )}
         {folder.aiGenerated && (
           <span className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-prune px-2 py-1 text-xs font-semibold text-sable">

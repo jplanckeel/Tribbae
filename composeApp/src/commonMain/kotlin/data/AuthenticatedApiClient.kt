@@ -40,7 +40,16 @@ data class ApiAuthFolder(
     val tags: List<String> = emptyList(),
     val likeCount: Int = 0,
     val collaborators: List<ApiCollaborator> = emptyList(),
-    val updatedAt: String = ""
+    val updatedAt: String = "",
+    val description: String = "",
+    val cover: String = "",
+    val illustration: String = "",
+    val keyDate: Long = 0,
+    val keyDateType: String = "",
+    val childIds: List<String> = emptyList(),
+    val viewMode: String = "",
+    val sort: String = "",
+    val pinned: Boolean = false,
 )
 
 /** Membre d'une tribu (compte). `sharing` : son contenu est partagé avec la tribu. */
@@ -107,9 +116,22 @@ data class CreateFolderRequest(
     val color: String = "ORANGE",
     val visibility: String = "PRIVATE",
     val bannerUrl: String = "",
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val description: String = "",
+    val cover: String = "",
+    val illustration: String = "",
+    val keyDate: Long = 0,
+    val keyDateType: String = "",
+    val childIds: List<String> = emptyList(),
+    val viewMode: String = "",
+    val sort: String = "",
+    val pinned: Boolean = false,
 )
 
+/**
+ * Personnalisation sans valeurs par défaut : toujours envoyée (le JSON n'écrit
+ * pas les valeurs par défaut, et le serveur garde un champ absent).
+ */
 @Serializable
 data class UpdateFolderRequest(
     val folderId: String,
@@ -118,7 +140,17 @@ data class UpdateFolderRequest(
     val color: String = "ORANGE",
     val visibility: String = "PRIVATE",
     val bannerUrl: String = "",
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val description: String,
+    val cover: String,
+    val illustration: String,
+    val keyDate: Long,
+    val keyDateType: String,
+    val childIds: List<String>,
+    val setChildIds: Boolean,
+    val viewMode: String,
+    val sort: String,
+    val pinned: Boolean,
 )
 
 @Serializable

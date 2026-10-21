@@ -51,6 +51,12 @@ fun MyIdeasScreen(
     val loose = remember(links, folderIds) { links.filter { it.folderId == null || it.folderId !in folderIds } }
     val recipes = remember(links) { links.filter { it.category == LinkCategory.RECETTE && it.ingredients.isNotEmpty() } }
     val ingredientCount = remember(recipes) { recipes.flatMap { r -> r.ingredients.map { it.trim().lowercase() } }.toSet().size }
+    val children by viewModel.children.collectAsState()
+    var folderSort by rememberSaveable { mutableStateOf("recent") }
+    val pinned = remember(folders) { folders.filter { it.pinned } }
+    val others = remember(folders, folderSort) { sortFolders(folders.filter { !it.pinned }, folderSort) }
+    val tagTotal = remember(links) { links.flatMap { it.tags }.toSet().size }
+    val favTotal = remember(links) { links.count { it.favorite } }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -68,12 +74,15 @@ fun MyIdeasScreen(
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text("Mes idées", style = display(32.sp))
                 Text(
-                    "${links.size} idée${if (links.size > 1) "s" else ""} rangée${if (links.size > 1) "s" else ""} dans ${folders.size} dossier${if (folders.size > 1) "s" else ""}",
+                    "${links.size} idée${if (links.size > 1) "s" else ""} · ${folders.size} dossier${if (folders.size > 1) "s" else ""} · $tagTotal tag${if (tagTotal > 1) "s" else ""}",
                     fontSize = 14.sp, color = TextSec
                 )
             }
 
-            SegmentedTabs(listOf("Dossiers", "Favoris", "Tags"), tab, { tab = it }, Modifier.fillMaxWidth())
+            SegmentedTabs(
+                listOf(Triple("Dossiers", folders.size, 0), Triple("Favoris", favTotal, 1), Triple("Tags", tagTotal, 2)).map { (l, n, _) -> if (n > 0) "$l $n" else l },
+                tab, { tab = it }, Modifier.fillMaxWidth()
+            )
 
             when (tab) {
                 0 -> {
@@ -97,10 +106,37 @@ fun MyIdeasScreen(
                         Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
                     }
 
+                    if (pinned.isNotEmpty()) {
+                        SectionLabel("Épinglés", Icons.Outlined.PushPin)
+                        pinned.forEach { f -> PinnedFolderCard(f, counts[f.id] ?: f.linkCount, { onFolderClick(f) }, children) }
+                    }
+
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        SectionLabel("Tous les dossiers")
+                        Box {
+                            var open by remember { mutableStateOf(false) }
+                            Row(
+                                Modifier.clip(RoundedCornerShape(8.dp)).clickable(role = Role.DropdownList) { open = true }.padding(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(FOLDER_SORTS.first { it.first == folderSort }.second, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextSec)
+                                Icon(Icons.Outlined.ExpandMore, "Trier les dossiers", tint = TextSec, modifier = Modifier.size(16.dp))
+                            }
+                            DropdownMenu(open, { open = false }, containerColor = Color.White) {
+                                FOLDER_SORTS.forEach { (k, label) ->
+                                    DropdownMenuItem(
+                                        text = { Text(label, fontWeight = if (k == folderSort) FontWeight.Bold else FontWeight.Normal, color = Ecorce) },
+                                        onClick = { folderSort = k; open = false }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     // Grille 2 colonnes : dossiers, « Non rangées », puis « Nouveau dossier »
                     val tiles: List<@Composable (Modifier) -> Unit> = buildList {
-                        folders.forEach { f ->
-                            add { m -> FolderCard(f, counts[f.id] ?: f.linkCount, { onFolderClick(f) }, m) }
+                        others.forEach { f ->
+                            add { m -> FolderCard(f, counts[f.id] ?: f.linkCount, { onFolderClick(f) }, m, children = children) }
                         }
                         if (loose.isNotEmpty()) add { m -> LooseCard(loose.size, onOpenLoose, m) }
                         add { m -> DashedAddTile("Nouveau dossier", onAddFolderClick, m) }
@@ -158,6 +194,23 @@ fun MyIdeasScreen(
                 }
             }
         }
+    }
+}
+
+private val FOLDER_SORTS = listOf("recent" to "Récents", "date" to "Date clé", "name" to "A → Z")
+
+private fun sortFolders(list: List<Folder>, sort: String): List<Folder> = when (sort) {
+    "name" -> list.sortedBy { it.name.lowercase() }
+    // Prochaine date clé d'abord, puis les dossiers sans date
+    "date" -> list.sortedWith(compareBy<Folder> { data.FolderStyle.countdown(it)?.days ?: Int.MAX_VALUE }.thenByDescending { it.updatedAt })
+    else -> list.sortedByDescending { it.updatedAt }
+}
+
+@Composable
+private fun SectionLabel(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector? = null) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (icon != null) Icon(icon, null, tint = Terracotta, modifier = Modifier.size(14.dp))
+        Text(text.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp, color = TextSec)
     }
 }
 

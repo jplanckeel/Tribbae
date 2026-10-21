@@ -289,11 +289,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     fun getLinksWithDate(): List<Link> =
         repository.links.value.filter { it.eventDate != null }.sortedBy { it.eventDate }
 
-    fun addFolder(name: String, icon: FolderIcon, color: FolderColor, visibility: String = "PRIVATE") {
-        val folder = Folder(
-            id = kotlin.random.Random.nextLong().toString(),
-            name = name, icon = icon, color = color, visibility = visibility
-        )
+    fun addFolder(name: String, icon: FolderIcon, color: FolderColor, visibility: String = "PRIVATE") =
+        addFolder(Folder(id = "", name = name, icon = icon, color = color, visibility = visibility))
+
+    /** Nouveau dossier (id local remplacé par celui du serveur après synchro). */
+    fun addFolder(draft: Folder) {
+        val folder = draft.copy(id = kotlin.random.Random.nextLong().toString())
         repository.addFolder(folder)
         
         // Sauvegarder sur le backend si authentifié
@@ -1139,7 +1140,16 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                         else -> "VISIBILITY_PRIVATE"
                     },
                     bannerUrl = folder.bannerUrl,
-                    tags = folder.tags
+                    tags = folder.tags,
+                    description = folder.description,
+                    cover = folder.cover,
+                    illustration = folder.illustration,
+                    keyDate = folder.keyDate,
+                    keyDateType = folder.keyDateType,
+                    childIds = folder.childIds,
+                    viewMode = folder.viewMode,
+                    sort = folder.sort,
+                    pinned = folder.pinned,
                 )
                 val savedFolder = client.createFolder(req)
                 // Mettre à jour l'ID local avec l'ID du backend
@@ -1212,7 +1222,17 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                         else -> "VISIBILITY_PRIVATE"
                     },
                     bannerUrl = folder.bannerUrl,
-                    tags = folder.tags
+                    tags = folder.tags,
+                    description = folder.description,
+                    cover = folder.cover,
+                    illustration = folder.illustration,
+                    keyDate = folder.keyDate,
+                    keyDateType = folder.keyDateType,
+                    childIds = folder.childIds,
+                    setChildIds = true,
+                    viewMode = folder.viewMode,
+                    sort = folder.sort,
+                    pinned = folder.pinned,
                 )
                 client.updateFolder(folder.id, req)
             } catch (e: Exception) {
@@ -1288,7 +1308,16 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     role = c.role
                 )
             },
-            updatedAt = apiFolder.updatedAt
+            updatedAt = apiFolder.updatedAt,
+            description = apiFolder.description,
+            cover = apiFolder.cover,
+            illustration = apiFolder.illustration,
+            keyDate = apiFolder.keyDate,
+            keyDateType = apiFolder.keyDateType,
+            childIds = apiFolder.childIds,
+            viewMode = apiFolder.viewMode,
+            sort = apiFolder.sort,
+            pinned = apiFolder.pinned,
         )
     }
     
