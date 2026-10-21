@@ -1,26 +1,33 @@
 import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
-import { Link as RouterLink, useNavigate, useParams } from "react-router";
+import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-router";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
+import { FolderGlyph } from "../components/FolderCover";
 import Icon, { type IconName } from "../components/Icon";
 import { TipiMark } from "../components/Logo";
 import Sheet from "../components/Sheet";
 import { Avatar, Button, EmptyState, MenuItem, PageSpinner, Spinner, Toggle } from "../components/ui";
 import * as api from "../lib/api";
-import { AVATAR_COLORS, categoryMeta } from "../lib/categories";
+import { AVATAR_COLORS, categoryMeta, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { eventDateMs, formatShortDate, formatTime, hostname, safeHref, safeImage } from "../lib/format";
 import { canEditFolder, copyInput, toInput } from "../lib/links";
 import { useSession } from "../lib/session";
 import { shareOrCopy } from "../lib/share";
 import type { Comment, Link } from "../lib/types";
+import { pushLink, useIdeaMorphTarget } from "../lib/transitions";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
 
 export default function LinkDetail() {
   const { id = "" } = useParams();
   const res = useAsync(() => api.links.get(id), [id]);
-  if (res.loading) return <PageSpinner />;
+  const { links } = useMyData();
+  const state = useLocation().state as { preview?: Link } | null;
+  // Idée déjà connue (cache, carte d'origine) : affichée tout de suite pendant le
+  // chargement, pour que la carte puisse devenir la fiche sans écran d'attente
+  const known = links.find((l) => l.id === id) ?? (state?.preview?.id === id ? state.preview : undefined);
+  if (res.loading) return known ? <Detail link={known} onChange={() => {}} /> : <PageSpinner />;
   if (res.error || !res.data) {
     return (
       <div className="mx-auto max-w-md px-5 pt-16">
@@ -37,6 +44,7 @@ export default function LinkDetail() {
 }
 
 function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void }) {
+  const morph = useIdeaMorphTarget(link.id);
   const session = useSession();
   const navigate = useNavigate();
   const { editLink } = useComposer();
@@ -174,7 +182,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
       />
 
       {/* Visuel */}
-      <div className={`relative h-[300px] overflow-hidden md:h-[360px] md:rounded-xl ${cat.bg}`}>
+      <div className={`relative h-[300px] overflow-hidden md:h-[360px] md:rounded-xl ${cat.bg}`} style={morph.visualStyle}>
         {img && !imgBroken ? (
           <img src={img} alt="" referrerPolicy="no-referrer" onError={() => setBrokenSrc(img)} className="absolute inset-0 h-full w-full object-cover" />
         ) : (
@@ -183,7 +191,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             <span className="absolute bottom-6 left-1/2 -translate-x-1/2"><TipiMark size={140} /></span>
           </>
         )}
-        <div className="absolute inset-x-4 top-4 flex justify-between">
+        <div className="vt-pop absolute inset-x-4 top-4 flex justify-between">
           <button
             type="button"
             onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
@@ -206,13 +214,13 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
       </div>
 
       {/* Contenu */}
-      <div className="relative -mt-7 flex flex-col gap-4 rounded-t-xl bg-sable px-5 pt-[22px] pb-32 md:px-0 md:pb-12">
+      <div className="vt-rise relative -mt-7 flex flex-col gap-4 rounded-t-xl bg-sable px-5 pt-[22px] pb-32 md:px-0 md:pb-12">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${cat.bg} ${cat.ink}`}>{cat.label}</span>
           <span className="text-[13px] text-sec">
             {/* Toujours le nom du compte qui a ajouté l'idée, même au sein d'une tribu */}
             {link.ownerDisplayName ? `par ${link.ownerDisplayName}${isOwner ? " (vous)" : ""}` : isOwner ? "par vous" : ""}
-            {folder ? <> · dossier <RouterLink to={`/dossiers/${folder.id}`} className="font-semibold text-ecorce underline-offset-2 hover:underline">{folder.name}</RouterLink></> : ""}
+            {folder ? <> · dossier <RouterLink to={`/dossiers/${folder.id}`} {...pushLink(link.id)} className="font-semibold text-ecorce underline-offset-2 hover:underline">{folder.name}</RouterLink></> : ""}
           </span>
           {link.favorite && <Icon name="star" size={16} filled className="text-braise" />}
           {link.visibility === "public" && (
@@ -220,7 +228,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
           )}
         </div>
 
-        <h1 className="font-display text-[28px] leading-[1.1] font-extrabold tracking-[-0.6px] md:text-[36px]">{link.title}</h1>
+        <h1 className="self-start font-display text-[28px] leading-[1.1] font-extrabold tracking-[-0.6px] md:text-[36px]" style={morph.titleStyle}>{link.title}</h1>
 
         {!ourIdea && link.ownerId && session && <FollowAuthor userId={link.ownerId} name={link.ownerDisplayName} />}
 
@@ -253,6 +261,19 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         )}
 
         {link.description && <p className="text-[15px] leading-relaxed whitespace-pre-line text-ecorce-2">{link.description}</p>}
+
+        {folder && (
+          <RouterLink to={`/dossiers/${folder.id}`} {...pushLink(link.id)} className="flex items-center gap-3 rounded-[18px] bg-white px-3.5 py-3 transition-transform active:scale-[0.97]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[13px]" style={{ background: folderColor(folder.color).bg, color: folderColor(folder.color).solid }}>
+              <FolderGlyph icon={folder.icon} size={20} />
+            </span>
+            <span className="flex flex-1 flex-col">
+              <span className="text-xs text-sec">Rangée dans</span>
+              <span className="text-[15px] font-bold">{folder.name}</span>
+            </span>
+            <Icon name="chevronRight" size={20} className="text-muted" />
+          </RouterLink>
+        )}
 
         {!!link.ingredients?.length && (
           <section className="flex flex-col gap-2.5 rounded-large bg-white p-4">
@@ -301,7 +322,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
       </div>
 
       {/* Barre d'actions */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-sable/95 px-5 pt-3.5 pb-[max(26px,env(safe-area-inset-bottom))] backdrop-blur-md md:sticky md:mt-0 md:rounded-t-xl md:px-0 md:pb-4">
+      <div className="vt-cta fixed inset-x-0 bottom-0 z-40 border-t border-line bg-sable/95 px-5 pt-3.5 pb-[max(26px,env(safe-area-inset-bottom))] backdrop-blur-md md:sticky md:mt-0 md:rounded-t-xl md:px-0 md:pb-4">
         <div className="mx-auto flex max-w-3xl gap-2.5">
           <button
             type="button"

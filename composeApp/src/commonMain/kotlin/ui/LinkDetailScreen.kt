@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -62,8 +63,11 @@ fun LinkDetailScreen(
     followRepository: FollowRepository? = null,
     sessionManager: SessionManager? = null,
     commentRepository: CommentRepository? = null,
-    viewModel: viewmodel.LinkViewModel? = null
+    viewModel: viewmodel.LinkViewModel? = null,
+    onOpenFolder: ((data.Folder) -> Unit)? = null,
 ) {
+    // Ouverture depuis une carte : les infos et la barre arrivent après l'en-tête
+    val openProgress = LocalOpenProgress.current
     // Idée sans image : tentative de récupération dès l'ouverture de la fiche
     LaunchedEffect(link.id) { if (!readOnly && link.imageUrl.isBlank()) viewModel?.ensureImage(link.id) }
     val cat = categoryUi(link.category)
@@ -137,6 +141,11 @@ fun LinkDetailScreen(
             // ── Contenu ──
             Column(
                 Modifier
+                    .graphicsLayer {
+                        val p = lateProgress(openProgress())
+                        alpha = p
+                        translationY = (1f - EaseSoft.transform(p)) * 24.dp.toPx()
+                    }
                     .offset(y = (-28).dp)
                     .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                     .background(Sable)
@@ -222,6 +231,24 @@ fun LinkDetailScreen(
                     Text(link.description, fontSize = 15.sp, lineHeight = 22.sp, color = Ecorce2)
                 }
 
+                if (folder != null && onOpenFolder != null) {
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White)
+                            .clickable(role = Role.Button) { onOpenFolder(folder) }.padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(folderBg(folder.color)), contentAlignment = Alignment.Center) {
+                            Icon(folderIconVector(folder), null, tint = folderSolid(folder.color), modifier = Modifier.size(20.dp))
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text("Rangée dans", fontSize = 12.sp, color = TextSec)
+                            Text(folder.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                    }
+                }
+
                 if (link.ingredients.isNotEmpty()) {
                     val rc = categoryUi(data.LinkCategory.RECETTE)
                     Column(
@@ -293,6 +320,11 @@ fun LinkDetailScreen(
         Row(
             Modifier
                 .align(Alignment.BottomCenter)
+                .graphicsLayer {
+                    val p = lateProgress(openProgress())
+                    alpha = p
+                    translationY = (1f - p) * 40.dp.toPx()
+                }
                 .fillMaxWidth()
                 .background(Sable)
                 .drawBehind { drawLine(Line, androidx.compose.ui.geometry.Offset(0f, 0f), androidx.compose.ui.geometry.Offset(size.width, 0f), 1.dp.toPx()) }

@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { Navigate, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 import { useSession } from "../lib/session";
+import { tabLink, trackLocation } from "../lib/transitions";
 import { ComposerProvider, useComposer } from "./Composer";
 import Icon, { type IconName } from "./Icon";
 import Logo from "./Logo";
@@ -55,17 +56,21 @@ function BottomNav() {
   const { hidden, show } = useHiddenOnScroll(pathname);
   // La fiche d'une idée a sa propre barre d'actions en bas
   if (pathname.startsWith("/links/")) return null;
+  const current = tabOf(pathname);
   const item = (n: (typeof NAV)[number]) => (
     <NavLink
       key={n.to}
       to={n.to}
       end={n.end}
+      viewTransition={tabLink(NAV.indexOf(n), current).viewTransition}
       // Toucher l'onglet déjà actif remonte en haut de la page
       onClick={(e) => {
         if (e.currentTarget.getAttribute("aria-current") === "page") {
           e.preventDefault();
           window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
         }
+        tabLink(NAV.indexOf(n), current).onClick();
       }}
       className="group flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[20px] outline-offset-[-4px]"
     >
@@ -96,6 +101,7 @@ function BottomNav() {
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-sable/0 to-sable/90" />
       <nav
         aria-label="Navigation principale"
+        style={{ viewTransitionName: "bottom-nav" }}
         className="pointer-events-auto relative mx-4 flex h-[68px] items-center rounded-[26px] bg-ecorce px-1 shadow-nav"
       >
         {item(NAV[0])}
@@ -120,6 +126,7 @@ function BottomNav() {
 /** En-tête des grands écrans (maquette « Web · Accueil »). */
 function TopBar() {
   const session = useSession();
+  const current = tabOf(useLocation().pathname);
   const { openAdd } = useComposer();
   const initial = (session?.displayName?.trim() || "?").charAt(0).toUpperCase();
   return (
@@ -134,6 +141,7 @@ function TopBar() {
               key={n.to}
               to={n.to}
               end={n.end}
+              {...tabLink(NAV.indexOf(n), current)}
               className={({ isActive }) =>
                 `rounded-[14px] px-4 py-2.5 text-[15px] transition-colors ${
                   isActive ? "bg-ecorce font-bold text-sable" : "font-semibold text-ecorce hover:bg-sable-2"
@@ -195,6 +203,26 @@ function Footer() {
   );
 }
 
+/** Onglet de la barre (0 à 3) d'un chemin, ou -1 hors des onglets. */
+function tabOf(pathname: string): number {
+  if (pathname === "/") return 0;
+  if (pathname.startsWith("/explorer") || pathname.startsWith("/category/")) return 1;
+  if (pathname.startsWith("/mes-idees")) return 2;
+  if (pathname.startsWith("/tribu")) return 3;
+  return -1;
+}
+
+/**
+ * Suit les changements d'écran pour les transitions (lib/transitions.ts) :
+ * ouvrir une idée, creuser vers un dossier et changer d'onglet passent tous par
+ * les View Transitions, animées hors du rendu de la page (plus de saccades).
+ */
+function ScreenTransitions({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  useLayoutEffect(() => trackLocation(location.state), [location.key, location.state]);
+  return <>{children}</>;
+}
+
 /** Mise en page des écrans principaux. */
 export function AppLayout() {
   return (
@@ -211,7 +239,9 @@ export function AppLayout() {
           <DesktopSun />
           <TopBar />
           <main id="contenu" className="relative pb-[calc(124px+env(safe-area-inset-bottom))] md:pb-16">
-            <Outlet />
+            <ScreenTransitions>
+              <Outlet />
+            </ScreenTransitions>
           </main>
         </div>
         <Footer />

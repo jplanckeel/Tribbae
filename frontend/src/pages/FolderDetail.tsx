@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { AvatarStack, GridCard, MosaicTile, RowCard } from "../components/cards";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
@@ -76,6 +76,9 @@ function FolderView({ folder, links, virtual, onFolder }: {
   const isOwner = !virtual && !!session && folder.ownerId === session.userId;
   const canEdit = virtual || canEditFolder(folder, session?.userId, peers);
   const color = folderColor(folder.color);
+  // Ouvert depuis la fiche d'une idée : elle est surlignée pour garder le fil
+  const from = (useLocation().state as { from?: string } | null)?.from;
+  const mark = (id: string) => (id === from ? color.solid : undefined);
   const cd = countdown(keyDateOf(folder), folder.keyDateType);
   const kids = useFolderChildren(folder);
   // Les idées créées depuis la feuille d'ajout arrivent dans le cache global : on les fusionne
@@ -265,15 +268,15 @@ function FolderView({ folder, links, virtual, onFolder }: {
         {shown.length ? (
           folder.viewMode === "list" ? (
             <div className="grid gap-2.5 md:grid-cols-2">
-              {shown.map((l) => <RowCard key={l.id} link={l} />)}
+              {shown.map((l) => <RowCard key={l.id} link={l} highlight={mark(l.id)} />)}
             </div>
           ) : folder.viewMode === "mosaic" ? (
             <div className="grid auto-rows-[132px] grid-flow-dense grid-cols-2 gap-3 md:auto-rows-[160px] md:grid-cols-3 lg:grid-cols-4">
-              {shown.map((l, i) => <MosaicTile key={l.id} link={l} large={i % 3 === 0} />)}
+              {shown.map((l, i) => <MosaicTile key={l.id} link={l} large={i % 3 === 0} highlight={mark(l.id)} />)}
             </div>
           ) : (
             <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
-              {shown.map((l, i) => <GridCard key={l.id} link={l} index={i} />)}
+              {shown.map((l, i) => <GridCard key={l.id} link={l} index={i} highlight={mark(l.id)} />)}
             </div>
           )
         ) : (

@@ -3,12 +3,17 @@ import { Link as RouterLink } from "react-router";
 import * as api from "../lib/api";
 import { AVATAR_COLORS, categoryMeta, folderColor, type CategoryMeta } from "../lib/categories";
 import { countdown, keyDateOf, useFolderChildren } from "../lib/folderStyle";
+import { useIdeaMorph } from "../lib/transitions";
 import { dayBadge, eventDateMs, metaLine, plural, safeImage } from "../lib/format";
 import { useSession } from "../lib/session";
 import type { Folder, Link } from "../lib/types";
 import { FolderCover, FolderGlyph } from "./FolderCover";
 import Icon from "./Icon";
 import { Avatar } from "./ui";
+
+/** Contour de l'idée d'où l'on vient (dossier ouvert depuis sa fiche). */
+const highlightStyle = (color?: string): React.CSSProperties | undefined =>
+  color ? { outline: `2px solid ${color}`, outlineOffset: 2 } : undefined;
 
 /** « par Camille » pour l'idée d'un autre compte (tribu, communauté), sinon "". */
 function useAuthor(link: Link): string {
@@ -17,14 +22,14 @@ function useAuthor(link: Link): string {
 }
 
 /** Visuel d'une idée : photo si disponible, sinon fond pastel + icône de catégorie. */
-export function IdeaVisual({ link, height, iconSize = 46, className = "" }: {
-  link: Link; height?: number; iconSize?: number; className?: string;
+export function IdeaVisual({ link, height, iconSize = 46, className = "", style }: {
+  link: Link; height?: number; iconSize?: number; className?: string; style?: React.CSSProperties;
 }) {
   const cat = categoryMeta(link.category);
   const img = safeImage(link.imageUrl);
   const [broken, setBroken] = useState(false);
   return (
-    <div className={`relative flex items-center justify-center overflow-hidden ${cat.bg} ${cat.ic} ${className}`} style={{ height }}>
+    <div className={`relative flex items-center justify-center overflow-hidden ${cat.bg} ${cat.ic} ${className}`} style={{ height, ...style }}>
       {img && !broken ? (
         <img
           src={img}
@@ -96,17 +101,19 @@ export function RailCard({ link }: { link: Link }) {
   const cat = categoryMeta(link.category);
   const author = useAuthor(link);
   const meta = [metaLine(link), author].filter(Boolean).join(" · ");
+  const morph = useIdeaMorph(link);
   return (
     <RouterLink
       to={`/links/${link.id}`}
+      {...morph.linkProps}
       className="w-[210px] shrink-0 snap-start overflow-hidden rounded-large bg-white shadow-card transition-transform hover:-translate-y-0.5"
     >
       <div className="relative">
-        <IdeaVisual link={link} height={120} />
+        <IdeaVisual link={link} height={120} style={morph.visualStyle} />
         <CategoryBadge cat={cat} />
       </div>
       <div className="flex flex-col gap-1 px-3.5 pt-3 pb-3.5">
-        <span className="line-clamp-2 font-display text-base leading-tight font-bold">{link.title}</span>
+        <span className="line-clamp-2 font-display text-base leading-tight font-bold" style={morph.titleStyle}>{link.title}</span>
         {meta && <span className="text-[13px] text-sec">{meta}</span>}
       </div>
     </RouterLink>
@@ -117,21 +124,24 @@ export function RailCard({ link }: { link: Link }) {
 const MOSAIC = [150, 110, 100, 120, 140, 96];
 
 /** Carte de la mosaïque (Explorer, favoris, dossiers). */
-export function GridCard({ link, index = 0, onRequireAuth }: { link: Link; index?: number; onRequireAuth?: () => void }) {
+export function GridCard({ link, index = 0, onRequireAuth, highlight }: { link: Link; index?: number; onRequireAuth?: () => void; highlight?: string }) {
   const cat = categoryMeta(link.category);
   const meta = metaLine(link) || cat.label;
   const author = useAuthor(link);
+  const morph = useIdeaMorph(link);
   return (
     <RouterLink
       to={`/links/${link.id}`}
+      {...morph.linkProps}
+      style={highlightStyle(highlight)}
       className="mb-3 block break-inside-avoid overflow-hidden rounded-[20px] bg-white shadow-card transition-transform hover:-translate-y-0.5"
     >
       <div className="relative">
-        <IdeaVisual link={link} height={MOSAIC[index % MOSAIC.length]} iconSize={40} />
+        <IdeaVisual link={link} height={MOSAIC[index % MOSAIC.length]} iconSize={40} style={morph.visualStyle} />
         <LikeButton link={link} onRequireAuth={onRequireAuth} className="absolute top-2 right-2" />
       </div>
       <div className="flex flex-col gap-1 px-3 pt-2.5 pb-3">
-        <span className="line-clamp-3 font-display text-[15px] leading-tight font-bold">{link.title}</span>
+        <span className="line-clamp-3 font-display text-[15px] leading-tight font-bold" style={morph.titleStyle}>{link.title}</span>
         <span className="text-xs text-sec">{meta}</span>
         {author && <span className="truncate text-xs text-sec">{author}</span>}
         {(link.likeCount ?? 0) > 0 && (
@@ -146,32 +156,37 @@ export function GridCard({ link, index = 0, onRequireAuth }: { link: Link; index
 }
 
 /** Tuile de la vue « Mosaïque » d'un dossier : visuel plein, titre en surimpression. */
-export function MosaicTile({ link, large }: { link: Link; large?: boolean }) {
+export function MosaicTile({ link, large, highlight }: { link: Link; large?: boolean; highlight?: string }) {
   const cat = categoryMeta(link.category);
+  const morph = useIdeaMorph(link);
   return (
     <RouterLink
       to={`/links/${link.id}`}
+      {...morph.linkProps}
+      style={highlightStyle(highlight)}
       className={`group relative block overflow-hidden rounded-[20px] shadow-card transition-transform hover:-translate-y-0.5 ${large ? "row-span-2" : ""}`}
     >
-      <IdeaVisual link={link} iconSize={large ? 56 : 36} className="h-full" />
+      <IdeaVisual link={link} iconSize={large ? 56 : 36} className="h-full" style={morph.visualStyle} />
       <CategoryBadge cat={cat} />
       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(42,22,18,0.78)] to-transparent px-3 pt-8 pb-2.5">
-        <span className={`line-clamp-2 font-display leading-tight font-bold text-white ${large ? "text-[17px]" : "text-sm"}`}>{link.title}</span>
+        <span className={`line-clamp-2 font-display leading-tight font-bold text-white ${large ? "text-[17px]" : "text-sm"}`} style={morph.titleStyle}>{link.title}</span>
       </span>
     </RouterLink>
   );
 }
 
 /** Ligne compacte (listes, résultats). */
-export function RowCard({ link, trailing }: { link: Link; trailing?: React.ReactNode }) {
+export function RowCard({ link, trailing, highlight }: { link: Link; trailing?: React.ReactNode; highlight?: string }) {
   const cat = categoryMeta(link.category);
   const meta = metaLine(link);
   const author = useAuthor(link);
+  const morph = useIdeaMorph(link);
   return (
-    <RouterLink to={`/links/${link.id}`} className="flex items-center gap-3 rounded-[18px] bg-white p-2.5 pr-3.5 shadow-card">
-      <IdeaVisual link={link} height={56} iconSize={24} className="w-14 shrink-0 rounded-[14px]" />
+    <RouterLink to={`/links/${link.id}`} {...morph.linkProps}
+      style={highlightStyle(highlight)} className="flex items-center gap-3 rounded-[18px] bg-white p-2.5 pr-3.5 shadow-card">
+      <IdeaVisual link={link} height={56} iconSize={24} className="w-14 shrink-0 rounded-[14px]" style={morph.visualStyle} />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[15px] font-bold">{link.title}</span>
+        <span className="truncate text-[15px] font-bold" style={morph.titleStyle}>{link.title}</span>
         <span className="truncate text-[13px] text-sec">{[cat.label, meta, author].filter(Boolean).join(" · ")}</span>
       </span>
       {trailing ?? <Icon name="chevronRight" size={18} className="text-muted" />}
@@ -321,18 +336,20 @@ export function IdeaCard({ link, onRequireAuth }: { link: Link; onRequireAuth?: 
   const likes = link.likeCount ?? 0;
   const author = useAuthor(link);
   const meta = [metaLine(link), author, likes > 0 ? `${likes} j'aime` : ""].filter(Boolean).join(" · ");
+  const morph = useIdeaMorph(link);
   return (
     <RouterLink
       to={`/links/${link.id}`}
+      {...morph.linkProps}
       className="group overflow-hidden rounded-[22px] bg-white shadow-card transition-transform hover:-translate-y-0.5"
     >
       <div className="relative">
-        <IdeaVisual link={link} height={160} iconSize={56} />
+        <IdeaVisual link={link} height={160} iconSize={56} style={morph.visualStyle} />
         <span className={`absolute top-3 left-3 rounded-full bg-white px-2.5 py-[5px] text-xs font-bold ${cat.ink}`}>{badge}</span>
         <LikeButton link={link} onRequireAuth={onRequireAuth} className="absolute top-2.5 right-2.5" />
       </div>
       <div className="flex flex-col gap-1.5 px-4 pt-3.5 pb-4">
-        <span className="line-clamp-2 font-display text-[17px] leading-[1.2] font-bold">{link.title}</span>
+        <span className="line-clamp-2 font-display text-[17px] leading-[1.2] font-bold" style={morph.titleStyle}>{link.title}</span>
         {meta && <span className="text-sm text-sec">{meta}</span>}
       </div>
     </RouterLink>

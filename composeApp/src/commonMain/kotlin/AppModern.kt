@@ -1,6 +1,33 @@
 package com.linkkeeper.app
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.shape.GenericShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
+import androidx.compose.runtime.withFrameNanos
+import kotlin.coroutines.cancellation.CancellationException
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -53,6 +80,9 @@ fun AppModern(vm: LinkViewModel = viewModel(), incoming: SharedContent? = null) 
     }
 }
 
+/** Écran du haut de la pile et sa profondeur (0 = onglets). */
+private data class StackEntry(val depth: Int, val screen: Screen?)
+
 /** Écrans empilés au-dessus des onglets (navigation par état, comme avant). */
 private sealed class Screen {
     data class IdeaForm(
@@ -63,8 +93,10 @@ private sealed class Screen {
         val title: String? = null,
     ) : Screen()
     data class FolderForm(val existing: Folder? = null) : Screen()
-    data class Detail(val link: Link, val public: Boolean = false) : Screen()
-    data class FolderDetail(val folder: Folder) : Screen()
+    /** `origin` : visuel de la carte touchée, d'où la fiche s'ouvre (et où elle revient). */
+    data class Detail(val link: Link, val public: Boolean = false, val origin: Rect? = CardOrigins[link.id]) : Screen()
+    /** `fromLinkId` : idée d'où l'on a « creusé » vers ce dossier, surlignée. */
+    data class FolderDetail(val folder: Folder, val fromLinkId: String? = null) : Screen()
     data class Category(val category: LinkCategory?) : Screen()
     data class Ai(val folderId: String? = null, val prompt: String = "") : Screen()
     object Shopping : Screen()
@@ -119,19 +151,70 @@ private fun ModernMainApp(
         stack.clear(); tab = NavDestination.EXPLORE
     }
 
-    BackHandler(enabled = stack.isNotEmpty()) { pop() }
+    BackHandler(enabled = stack.isNotEmpty() && stack.lastOrNull() !is Screen.Detail) { pop() }
+    // Fiche d'une idée : retour prédictif (Android 14+) — en glissant depuis le bord,
+    // la fiche rétrécit à 92 % et arrondit ses coins avant de repartir vers sa carte
+    var backProgress by remember { mutableFloatStateOf(0f) }
+    PredictiveBackHandler(enabled = stack.lastOrNull() is Screen.Detail) { events ->
+        try {
+            events.collect { backProgress = it.progress }
+            pop()
+        } catch (e: CancellationException) {
+            backProgress = 0f
+            throw e
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(ui.Sable).nestedScroll(navScroll.connection)) {
         val top = stack.lastOrNull()
         val current = if (tab == NavDestination.ADD) NavDestination.HOME else tab
         LaunchedEffect(current) { if (current !in visitedTabs) visitedTabs.add(current) }
+        // Changer d'onglet : fondu + 26 dp dans le sens de l'onglet choisi.
+        // L'état de départ est fixé pendant la composition (pas dans l'effet) : la
+        // première image du nouvel onglet est déjà décalée, sans saut à sa place finale.
+        var tabFrom by remember { mutableStateOf(current) }
+        val tabDir = remember(current) { if (current.ordinal >= tabFrom.ordinal) 1f else -1f }
+        val tabEnter = remember(current) { Animatable(if (current == tabFrom) 1f else 0f) }
+        LaunchedEffect(current) {
+            tabFrom = current
+            if (tabEnter.value < 1f) {
+                // Laisse passer l'image où l'onglet se compose (première visite) avant d'animer
+                withFrameNanos { }
+                tabEnter.animateTo(1f, tween(TAB_MS, easing = EaseSoft))
+            }
+        }
+
+        // Pile d'écrans animée : la fiche sort de sa carte, les autres pages arrivent par la droite
+        val nav = updateTransition(StackEntry(stack.size, top), label = "pile")
+        val covering = nav.targetState.screen ?: nav.currentState.screen
+        val heroCover = covering is Screen.Detail && covering.origin != null &&
+            (nav.targetState.depth <= 1 && nav.currentState.depth <= 1)
+        val baseCover by nav.animateFloat(
+            transitionSpec = { tween(if (heroCover) HERO_MS else PUSH_MS, easing = EaseSoft) }, label = "onglets"
+        ) { if (it.screen == null) 0f else 1f }
         // Onglets : chacun est composé à sa première visite puis gardé, simplement
         // masqué quand un autre onglet ou écran est devant. Y revenir est instantané
         // et conserve le défilement (avant, l'écran était reconstruit à chaque fois).
-        Box(Modifier.fillMaxSize().keptHidden(top != null)) {
+        Box(
+            Modifier.fillMaxSize()
+                // Masqués seulement une fois entièrement recouverts (pas pendant l'ouverture d'un écran)
+                .keptHidden(nav.currentState.screen != null && nav.targetState.screen != null)
+                .graphicsLayer { if (!heroCover) translationX = -0.3f * size.width * baseCover }
+                .drawWithContent {
+                    drawContent()
+                    if (baseCover > 0f) drawRect(Color(0xFF2A1612), alpha = (if (heroCover) 0.25f else 0.35f) * baseCover)
+                }
+        ) {
             NavDestination.entries.filter { it == current || it in visitedTabs }.forEach { t ->
                 key(t) {
-                Box(Modifier.fillMaxSize().keptHidden(t != current)) {
+                Box(
+                    Modifier.fillMaxSize().keptHidden(t != current).graphicsLayer {
+                        if (t == current && tabEnter.value < 1f) {
+                            alpha = tabEnter.value
+                            translationX = (1f - tabEnter.value) * tabDir * 26.dp.toPx()
+                        }
+                    }
+                ) {
                 when (t) {
                     NavDestination.HOME, NavDestination.ADD -> NewHomeScreen(
                         links = links,
@@ -199,12 +282,13 @@ private fun ModernMainApp(
                         navScroll.hidden = false
                         if (d == NavDestination.ADD) showAdd = true else tab = d
                     },
-                    modifier = Modifier.align(Alignment.BottomCenter),
+                    // La barre descend quand une fiche s'ouvre depuis sa carte
+                    modifier = Modifier.align(Alignment.BottomCenter).graphicsLayer { if (heroCover) translationY = baseCover * 130.dp.toPx() },
                     hidden = navScroll.hidden
                 )
         }
 
-        if (top != null) when (val screen: Screen = top) {
+        val screenContent: @Composable (Screen) -> Unit = { screen -> when (screen) {
             is Screen.IdeaForm -> IdeaFormScreen(
                 viewModel = vm,
                 onBack = ::pop,
@@ -243,7 +327,8 @@ private fun ModernMainApp(
                     followRepository = followRepository,
                     sessionManager = sessionManager,
                     commentRepository = commentRepository,
-                    viewModel = vm
+                    viewModel = vm,
+                    onOpenFolder = { f -> push(Screen.FolderDetail(f, fromLinkId = fresh.id)) },
                 )
             }
 
@@ -260,6 +345,7 @@ private fun ModernMainApp(
                     viewModel = vm,
                     onAddIdea = { push(Screen.IdeaForm(folderId = fresh.id)) },
                     onAi = { push(Screen.Ai(folderId = fresh.id, prompt = fresh.name)) },
+                    highlightLinkId = screen.fromLinkId,
                 )
             }
 
@@ -309,7 +395,59 @@ private fun ModernMainApp(
                 modifier = Modifier.fillMaxSize().statusBarsPadding(),
                 onBack = ::pop
             )
+        } }
+
+        nav.AnimatedContent(
+            transitionSpec = {
+                val forward = targetState.depth > initialState.depth
+                val heroIn = forward && (targetState.screen as? Screen.Detail)?.origin != null
+                val heroOut = !forward && (initialState.screen as? Screen.Detail)?.origin != null
+                val slide = tween<IntOffset>(PUSH_MS, easing = EaseSoft)
+                when {
+                    // La fiche grandit depuis sa carte (ou y revient) : animée dans son contenu
+                    heroIn -> EnterTransition.None togetherWith ExitTransition.KeepUntilTransitionsFinished
+                    heroOut -> (EnterTransition.None togetherWith ExitTransition.KeepUntilTransitionsFinished).apply { targetContentZIndex = -1f }
+                    // Creuser : la page arrive par la droite, la précédente recule de 30 %
+                    forward -> slideInHorizontally(slide) { it } togetherWith slideOutHorizontally(slide) { -(it * 0.3f).toInt() }
+                    else -> (slideInHorizontally(slide) { -(it * 0.3f).toInt() } togetherWith slideOutHorizontally(slide) { it })
+                        .apply { targetContentZIndex = -1f }
+                }.using(SizeTransform(clip = false))
+            },
+            contentKey = { "${it.depth}:${it.screen?.let { s -> s::class.simpleName }}" },
+        ) { entry ->
+            val screen = entry.screen ?: return@AnimatedContent Box(Modifier.fillMaxSize())
+            val other = if (nav.targetState.depth == entry.depth) nav.currentState else nav.targetState
+            val lower = entry.depth < other.depth
+            val hero = (screen as? Screen.Detail)?.origin?.takeIf { lower.not() }
+            // Page recouverte : elle s'assombrit (voile plus léger sous une fiche qui s'ouvre)
+            val dim by transition.animateFloat(transitionSpec = { tween(PUSH_MS, easing = EaseSoft) }, label = "voile") {
+                if (it == EnterExitState.Visible || !lower) 0f else if ((other.screen as? Screen.Detail)?.origin != null) 0.25f else 0.35f
+            }
+            val open by transition.animateFloat(transitionSpec = { tween(HERO_MS, easing = EaseHero) }, label = "ouverture") {
+                if (it == EnterExitState.Visible || hero == null) 1f else 0f
+            }
+            val back = if (screen is Screen.Detail && entry.depth == stack.size) backProgress else 0f
+            Box(
+                Modifier.fillMaxSize()
+                    .graphicsLayer {
+                        if (back > 0f) {
+                            val s = 1f - 0.08f * back
+                            scaleX = s; scaleY = s
+                            shape = RoundedCornerShape(32.dp * back)
+                            clip = true
+                        }
+                    }
+                    .then(if (hero != null) Modifier.heroFrom(hero) { open } else Modifier)
+                    .drawWithContent {
+                        drawContent()
+                        if (dim > 0f) drawRect(Color(0xFF2A1612), alpha = dim)
+                    }
+            ) {
+                CompositionLocalProvider(LocalOpenProgress provides { open }) { screenContent(screen) }
+            }
         }
+        // Une fois la fiche refermée, le retour prédictif repart de zéro
+        LaunchedEffect(nav.isRunning, stack.size) { if (!nav.isRunning && stack.lastOrNull() !is Screen.Detail) backProgress = 0f }
 
         if (showAdd) {
             AddSheet(onDismiss = { showAdd = false }) { choice ->
@@ -324,6 +462,27 @@ private fun ModernMainApp(
             }
         }
     }
+}
+
+/**
+ * Ouverture d'une fiche depuis sa carte (« container transform ») : la fiche,
+ * mise à l'échelle de la carte, grandit jusqu'au plein écran depuis `origin`
+ * (coordonnées de la fenêtre) en arrondissant puis redressant ses coins.
+ * `progress` : 0 = carte, 1 = fiche.
+ */
+private fun Modifier.heroFrom(origin: Rect, progress: () -> Float): Modifier = graphicsLayer {
+    val t = progress()
+    if (t >= 1f || size.width <= 0f) return@graphicsLayer
+    val s = lerp(origin.width / size.width, 1f, t)
+    transformOrigin = TransformOrigin(0f, 0f)
+    scaleX = s; scaleY = s
+    translationX = lerp(origin.left, 0f, t)
+    translationY = lerp(origin.top, 0f, t)
+    val visible = (lerp(origin.height, size.height, t) / s).coerceAtMost(size.height)
+    val radius = lerp(22.dp.toPx(), 0f, t.coerceIn(0f, 1f)) / s
+    shape = GenericShape { sz, _ -> addRoundRect(RoundRect(0f, 0f, sz.width, visible, CornerRadius(radius))) }
+    clip = true
+    alpha = (t / 0.15f).coerceIn(0f, 1f)
 }
 
 /**

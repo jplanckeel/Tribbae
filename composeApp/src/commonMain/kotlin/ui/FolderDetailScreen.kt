@@ -1,6 +1,7 @@
 package ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -42,6 +43,7 @@ fun FolderDetailScreen(
     viewModel: viewmodel.LinkViewModel? = null,
     onAddIdea: () -> Unit = {},
     onAi: () -> Unit = {},
+    highlightLinkId: String? = null,
 ) {
     val items = remember(links, folder.id, folder.sort) {
         FolderStyle.sortLinks(links.filter { it.folderId == folder.id }, folder.sort, CategoryOrder.map { it.category })
@@ -65,6 +67,7 @@ fun FolderDetailScreen(
         onBack = onBack,
         folder = folder,
         children = children,
+        highlight = highlightLinkId,
         actions = {
             if (viewModel != null) CircleIconButton(Icons.Outlined.PersonAdd, "Inviter et partager", { showShare = true }, background = Color.White.copy(alpha = 0.9f))
             CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = Color.White.copy(alpha = 0.9f))
@@ -244,6 +247,7 @@ private fun CollectionScaffold(
     onBack: () -> Unit,
     folder: Folder? = null,
     children: List<Child> = emptyList(),
+    highlight: String? = null,
     actions: @Composable RowScope.() -> Unit = {},
     extra: @Composable () -> Unit = {},
     buttons: @Composable () -> Unit,
@@ -300,7 +304,7 @@ private fun CollectionScaffold(
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { extra() }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { buttons() }
-                Ideas(links, folder.viewMode, emptyTitle, emptyText, onLinkClick, onFavorite)
+                Ideas(links, folder.viewMode, emptyTitle, emptyText, onLinkClick, onFavorite, highlight, solid)
             }
             return@Column
         }
@@ -342,23 +346,28 @@ private fun Ideas(
     emptyText: String?,
     onLinkClick: (String) -> Unit,
     onFavorite: ((Link) -> Unit)?,
+    highlight: String? = null,
+    highlightColor: Color = Terracotta,
 ) {
+    // Idée d'où l'on vient (dossier ouvert depuis sa fiche) : surlignée pour garder le fil
+    fun Modifier.mark(l: Link, radius: Int = 22): Modifier =
+        if (l.id == highlight) border(2.dp, highlightColor, RoundedCornerShape((radius + 3).dp)).padding(3.dp) else this
     if (links.isEmpty()) {
         EmptyBlock(Icons.Outlined.Cottage, emptyTitle, emptyText)
         return
     }
     when (viewMode) {
         "list" -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            links.forEach { l -> RowCard(l, onClick = { onLinkClick(l.id) }) }
+            links.forEach { l -> Box(Modifier.mark(l, 18)) { RowCard(l, onClick = { onLinkClick(l.id) }) } }
         }
         "mosaic" -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // Par trois : une grande tuile et deux petites empilées, en alternant les côtés
             links.chunked(3).forEachIndexed { row, group ->
                 Row(Modifier.fillMaxWidth().height(276.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    val big: @Composable RowScope.() -> Unit = { MosaicTile(group[0], true, { onLinkClick(group[0].id) }, Modifier.weight(1f).fillMaxHeight()) }
+                    val big: @Composable RowScope.() -> Unit = { MosaicTile(group[0], true, { onLinkClick(group[0].id) }, Modifier.weight(1f).fillMaxHeight().mark(group[0], 20)) }
                     val small: @Composable RowScope.() -> Unit = {
                         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            group.drop(1).forEach { l -> MosaicTile(l, false, { onLinkClick(l.id) }, Modifier.fillMaxWidth().weight(1f)) }
+                            group.drop(1).forEach { l -> MosaicTile(l, false, { onLinkClick(l.id) }, Modifier.fillMaxWidth().weight(1f).mark(l, 20)) }
                             if (group.size < 3) Spacer(Modifier.weight((3 - group.size).toFloat()))
                         }
                     }
@@ -367,7 +376,9 @@ private fun Ideas(
             }
         }
         else -> TwoColumnMosaic(links) { l, i ->
-            MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.favorite, onLike = onFavorite?.let { fav -> { fav(l) } })
+            Box(Modifier.mark(l, 20)) {
+                MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.favorite, onLike = onFavorite?.let { fav -> { fav(l) } })
+            }
         }
     }
 }

@@ -450,7 +450,7 @@ fun EmptyBlock(icon: ImageVector, title: String, text: String? = null, action: (
 fun IdeaVisual(link: Link, height: Dp, modifier: Modifier = Modifier, iconSize: Dp = 46.dp) {
     val cat = categoryUi(link.category)
     var failed by remember(link.imageUrl) { mutableStateOf(false) }
-    Box(modifier.fillMaxWidth().height(height).background(cat.bg), contentAlignment = Alignment.Center) {
+    Box(modifier.fillMaxWidth().height(height).cardOrigin(link.id).background(cat.bg), contentAlignment = Alignment.Center) {
         if (link.imageUrl.isNotBlank() && !failed) {
             AsyncImage(
                 model = link.imageUrl,
