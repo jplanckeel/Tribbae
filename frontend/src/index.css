@@ -254,3 +254,14 @@
   .add-enter, .add-up, .add-pop, .add-fill, .add-wave, .add-guess, .add-shim, .add-fly, .add-bump, .add-sun, .add-spark, .add-late, .add-later { animation: none !important; }
   .add-fly, .add-spark { display: none; }
 }
+
+/* Cœur qui vient d'être aimé (maquette « Animations utiles ») : 40 % → 125 % → 100 % */
+.like-pop { display: inline-flex; animation: like-pop 0.575s both; }
+@keyframes like-pop {
+  0% { transform: scale(0.4); animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+  67% { transform: scale(1.25); animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .like-pop { animation: none; }
+}

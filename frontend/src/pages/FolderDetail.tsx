@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
-import { AvatarStack, GridCard, MosaicTile, RowCard } from "../components/cards";
+import { AvatarStack, GridCard, LikeHeart, MosaicTile, RowCard } from "../components/cards";
+import { likeFeedback } from "../lib/feedback";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
 import { FolderCover, FolderGlyph } from "../components/FolderCover";
@@ -99,6 +100,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
   const like = async () => {
     if (!session) return navigate(`/bienvenue?next=/dossiers/${folder.id}`);
     const next = !liked;
+    if (next) likeFeedback();
     setLiked(next);
     setLikes((n) => n + (next ? 1 : -1));
     try {
@@ -182,7 +184,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
                   aria-label={`J'aime ce dossier (${likes})`}
                   className="flex h-11 items-center gap-1.5 rounded-full bg-white/90 px-3.5 font-bold text-terracotta hover:bg-white"
                 >
-                  <Icon name="heart" size={20} filled={liked} />
+                  <LikeHeart liked={liked} size={20} />
                   {likes}
                 </button>
               )}

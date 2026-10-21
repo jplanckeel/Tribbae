@@ -38,6 +38,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -266,6 +273,7 @@ fun CampButton(
     trailingIcon: ImageVector? = null,
     enabled: Boolean = true,
     height: Dp = 52.dp,
+    iconModifier: Modifier = Modifier,
 ) {
     val (bg, fg) = when (kind) {
         ButtonKind.Primary -> Terracotta to Color.White
@@ -293,7 +301,7 @@ fun CampButton(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
     ) {
-        if (icon != null) Icon(icon, null, tint = fg, modifier = Modifier.size(20.dp))
+        if (icon != null) Icon(icon, null, tint = fg, modifier = iconModifier.size(20.dp))
         Text(text, color = fg, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1)
         if (trailingIcon != null) Icon(trailingIcon, null, tint = fg, modifier = Modifier.size(20.dp))
     }
@@ -533,7 +541,7 @@ fun MosaicCard(link: Link, index: Int, onClick: () -> Unit, liked: Boolean, onLi
                         .semantics { contentDescription = if (liked) "Je n'aime plus" else "J'aime" },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null, tint = Terracotta, modifier = Modifier.size(16.dp))
+                    Icon(if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null, tint = Terracotta, modifier = Modifier.likePop(liked).size(16.dp))
                 }
             }
         }
@@ -682,6 +690,28 @@ fun Modifier.dashedBorder(color: Color, radius: Dp): Modifier =
     }
 
 // ── Divers ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Cœur qui vient d'être aimé (maquette « Animations utiles », glisser pour
+ * agir) : il part de 40 %, grossit à 125 % puis se pose, avec une petite
+ * vibration. Rien à l'affichage initial ni quand on retire le j'aime.
+ */
+@Composable
+fun Modifier.likePop(liked: Boolean): Modifier {
+    val scale = remember { Animatable(1f) }
+    val haptic = LocalHapticFeedback.current
+    var previous by remember { mutableStateOf(liked) }
+    LaunchedEffect(liked) {
+        val turnedOn = liked && !previous
+        previous = liked
+        if (!turnedOn) return@LaunchedEffect
+        haptic.performHapticFeedback(HapticFeedbackType.ToggleOn)
+        scale.snapTo(0.4f)
+        scale.animateTo(1.25f, tween(385, easing = FastOutSlowInEasing))
+        scale.animateTo(1f, tween(190, easing = FastOutSlowInEasing))
+    }
+    return graphicsLayer { scaleX = scale.value; scaleY = scale.value }
+}
 
 /** Ligne horizontale défilante qui déborde à droite (rails de l'accueil). */
 @Composable

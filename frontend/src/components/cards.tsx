@@ -3,6 +3,7 @@ import { Link as RouterLink } from "react-router";
 import * as api from "../lib/api";
 import { AVATAR_COLORS, categoryMeta, folderColor, type CategoryMeta } from "../lib/categories";
 import { countdown, keyDateOf, useFolderChildren } from "../lib/folderStyle";
+import { likeFeedback } from "../lib/feedback";
 import { useIdeaMorph } from "../lib/transitions";
 import { dayBadge, eventDateMs, metaLine, plural, safeImage } from "../lib/format";
 import { useSession } from "../lib/session";
@@ -55,6 +56,22 @@ function CategoryBadge({ cat }: { cat: CategoryMeta }) {
 }
 
 /** Bouton « J'aime » posé sur une carte. Gère l'état optimiste. */
+/**
+ * Cœur d'un bouton j'aime : quand on vient d'aimer, il part de 40 %, grossit
+ * à 125 % puis se pose (maquette « Animations utiles »). Comme Modifier.likePop
+ * côté Android.
+ */
+export function LikeHeart({ liked, size }: { liked: boolean; size: number }) {
+  const [seen, setSeen] = useState({ liked, n: 0 });
+  // Ajusté pendant le rendu : l'animation ne joue qu'au passage à « aimé »
+  if (liked !== seen.liked) setSeen({ liked, n: liked ? seen.n + 1 : seen.n });
+  return (
+    <span key={seen.n} className={liked && seen.n > 0 ? "like-pop" : "inline-flex"}>
+      <Icon name="heart" size={size} filled={liked} />
+    </span>
+  );
+}
+
 export function LikeButton({ link, className = "", onRequireAuth }: {
   link: Link; className?: string; onRequireAuth?: () => void;
 }) {
@@ -70,6 +87,7 @@ export function LikeButton({ link, className = "", onRequireAuth }: {
     if (busy) return;
     setBusy(true);
     const next = !liked;
+    if (next) likeFeedback();
     setLiked(next);
     setCount((c) => c + (next ? 1 : -1));
     try {
@@ -91,7 +109,7 @@ export function LikeButton({ link, className = "", onRequireAuth }: {
       aria-label={liked ? `Je n'aime plus (${count})` : `J'aime (${count})`}
       className={`flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white/90 text-terracotta backdrop-blur-sm transition-transform active:scale-90 ${className}`}
     >
-      <Icon name="heart" size={16} filled={liked} />
+      <LikeHeart liked={liked} size={16} />
     </button>
   );
 }

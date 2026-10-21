@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
 import { Link as RouterLink, useLocation, useNavigate, useParams } from "react-router";
+import { LikeHeart } from "../components/cards";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
 import { FolderGlyph } from "../components/FolderCover";
@@ -10,6 +11,7 @@ import { Avatar, Button, EmptyState, MenuItem, PageSpinner, Spinner, Toggle } fr
 import * as api from "../lib/api";
 import { AVATAR_COLORS, categoryMeta, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
+import { likeFeedback } from "../lib/feedback";
 import { eventDateMs, formatShortDate, formatTime, hostname, safeHref, safeImage } from "../lib/format";
 import { canEditFolder, copyInput, toInput } from "../lib/links";
 import { useSession } from "../lib/session";
@@ -100,6 +102,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   const like = async () => {
     if (!session) return requireAuth();
     const next = !liked;
+    if (next) likeFeedback();
     setLiked(next);
     setLikes((n) => n + (next ? 1 : -1));
     try {
@@ -331,7 +334,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             aria-label={`J'aime, ${likes}`}
             className="flex h-[54px] items-center gap-1.5 rounded-medium border-[1.5px] border-line-2 bg-white px-4 font-bold text-terracotta transition-colors hover:bg-sable-2"
           >
-            <Icon name="heart" size={20} filled={liked} />
+            <LikeHeart liked={liked} size={20} />
             {likes}
           </button>
           <button

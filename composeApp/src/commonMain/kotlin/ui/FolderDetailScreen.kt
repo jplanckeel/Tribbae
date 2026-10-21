@@ -189,7 +189,8 @@ fun PublicFolderScreen(
                     { viewModel.toggleFolderLike(f.id, liked) { l, c -> liked = l; likeCount = c } },
                     kind = if (liked) ButtonKind.Dark else ButtonKind.Ghost,
                     icon = if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    height = 40.dp
+                    height = 40.dp,
+                    iconModifier = Modifier.likePop(liked),
                 )
             }
         },

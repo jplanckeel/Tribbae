@@ -334,7 +334,8 @@ fun LinkDetailScreen(
         ) {
             ActionChip(
                 if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, "$likeCount", Terracotta,
-                if (liked) "Je n'aime plus, $likeCount" else "J'aime, $likeCount"
+                if (liked) "Je n'aime plus, $likeCount" else "J'aime, $likeCount",
+                iconModifier = Modifier.likePop(liked),
             ) {
                 if (viewModel == null || !isLoggedIn) return@ActionChip
                 val was = liked
@@ -434,7 +435,7 @@ private fun InfoTile(icon: ImageVector, label: String, value: String, tint: Colo
 }
 
 @Composable
-private fun ActionChip(icon: ImageVector, text: String, tint: Color, label: String, onClick: () -> Unit) {
+private fun ActionChip(icon: ImageVector, text: String, tint: Color, label: String, iconModifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(
         Modifier
             .height(54.dp)
@@ -447,7 +448,7 @@ private fun ActionChip(icon: ImageVector, text: String, tint: Color, label: Stri
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
+        Icon(icon, null, tint = tint, modifier = iconModifier.size(20.dp))
         Text(text, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = tint)
     }
 }
