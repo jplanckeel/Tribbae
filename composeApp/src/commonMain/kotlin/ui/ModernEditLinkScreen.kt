@@ -68,7 +68,7 @@ fun ModernEditLinkScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF9FAFB)),
+                .background(Color(0xFFFBF3E7)),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -80,7 +80,7 @@ fun ModernEditLinkScreen(
                         .size(80.dp)
                         .background(
                             brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFFFF6B35), Color(0xFFF97316))
+                                colors = listOf(Color(0xFFF28C38), Color(0xFFC8492C))
                             ),
                             shape = CircleShape
                         ),
@@ -97,12 +97,12 @@ fun ModernEditLinkScreen(
                     text = "Idée modifiée ! ✨",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF111827)
+                    color = Color(0xFF3A211B)
                 )
                 Text(
                     text = "Vos modifications ont été sauvegardées.",
                     fontSize = 14.sp,
-                    color = Color(0xFF6B7280)
+                    color = Color(0xFF6B5047)
                 )
             }
         }
@@ -110,7 +110,7 @@ fun ModernEditLinkScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF9FAFB)
+        containerColor = Color(0xFFFBF3E7)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -134,14 +134,14 @@ fun ModernEditLinkScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF3F4F6))
+                            .background(Color(0xFFF1E3D1))
                             .clickable(onClick = onBack),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Retour",
-                            tint = Color(0xFF6B7280),
+                            tint = Color(0xFF6B5047),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -149,7 +149,7 @@ fun ModernEditLinkScreen(
                         text = "Modifier l'idée",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
+                        color = Color(0xFF3A211B)
                     )
                 }
             }
@@ -175,7 +175,7 @@ fun ModernEditLinkScreen(
                         text = "Titre *",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     OutlinedTextField(
                         value = title,
@@ -186,8 +186,8 @@ fun ModernEditLinkScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFFF97316),
-                            unfocusedBorderColor = Color(0xFFF3F4F6)
+                            focusedBorderColor = Color(0xFFC8492C),
+                            unfocusedBorderColor = Color(0xFFF1E3D1)
                         )
                     )
                 }
@@ -198,7 +198,7 @@ fun ModernEditLinkScreen(
                         text = "Catégorie *",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -252,7 +252,7 @@ fun ModernEditLinkScreen(
                         text = "Description",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     OutlinedTextField(
                         value = description,
@@ -265,8 +265,8 @@ fun ModernEditLinkScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFFF97316),
-                            unfocusedBorderColor = Color(0xFFF3F4F6)
+                            focusedBorderColor = Color(0xFFC8492C),
+                            unfocusedBorderColor = Color(0xFFF1E3D1)
                         )
                     )
                 }
@@ -277,7 +277,7 @@ fun ModernEditLinkScreen(
                         text = "Lien URL",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     OutlinedTextField(
                         value = url,
@@ -288,8 +288,8 @@ fun ModernEditLinkScreen(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFFF97316),
-                            unfocusedBorderColor = Color(0xFFF3F4F6)
+                            focusedBorderColor = Color(0xFFC8492C),
+                            unfocusedBorderColor = Color(0xFFF1E3D1)
                         )
                     )
                 }
@@ -311,7 +311,7 @@ fun ModernEditLinkScreen(
                         text = "Dossier",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     
                     val folders by viewModel.folders.collectAsState()
@@ -323,7 +323,7 @@ fun ModernEditLinkScreen(
                         color = Color.White,
                         border = androidx.compose.foundation.BorderStroke(
                             width = 1.dp,
-                            color = Color(0xFFF3F4F6)
+                            color = Color(0xFFF1E3D1)
                         )
                     ) {
                         Row(
@@ -340,19 +340,19 @@ fun ModernEditLinkScreen(
                                 Icon(
                                     imageVector = if (selectedFolder != null) Icons.Filled.Folder else Icons.Filled.FolderOpen,
                                     contentDescription = null,
-                                    tint = if (selectedFolder != null) Color(0xFFF97316) else Color(0xFF9CA3AF),
+                                    tint = if (selectedFolder != null) Color(0xFFC8492C) else Color(0xFF8A6F64),
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
                                     text = selectedFolder?.name ?: "Mes idées (sans dossier)",
                                     fontSize = 14.sp,
-                                    color = if (selectedFolder != null) Color(0xFF111827) else Color(0xFF9CA3AF)
+                                    color = if (selectedFolder != null) Color(0xFF3A211B) else Color(0xFF8A6F64)
                                 )
                             }
                             Icon(
                                 imageVector = Icons.Filled.ArrowDropDown,
                                 contentDescription = null,
-                                tint = Color(0xFF9CA3AF)
+                                tint = Color(0xFF8A6F64)
                             )
                         }
                         
@@ -370,7 +370,7 @@ fun ModernEditLinkScreen(
                                         Icon(
                                             imageVector = Icons.Filled.FolderOpen,
                                             contentDescription = null,
-                                            tint = Color(0xFF9CA3AF),
+                                            tint = Color(0xFF8A6F64),
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Text("Mes idées (sans dossier)", fontSize = 14.sp)
@@ -397,7 +397,7 @@ fun ModernEditLinkScreen(
                                             Icon(
                                                 imageVector = Icons.Filled.Folder,
                                                 contentDescription = null,
-                                                tint = Color(0xFFF97316),
+                                                tint = Color(0xFFC8492C),
                                                 modifier = Modifier.size(20.dp)
                                             )
                                             Text(folder.name, fontSize = 14.sp)
@@ -428,7 +428,7 @@ fun ModernEditLinkScreen(
                             text = "Informations complémentaires",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF374151)
+                            color = Color(0xFF4E3530)
                         )
                         
                         // Prix
@@ -441,17 +441,17 @@ fun ModernEditLinkScreen(
                                 Icon(
                                     imageVector = Icons.Filled.Euro,
                                     contentDescription = null,
-                                    tint = Color(0xFF9CA3AF),
+                                    tint = Color(0xFF8A6F64),
                                     modifier = Modifier.size(18.dp)
                                 )
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFF9FAFB),
-                                unfocusedContainerColor = Color(0xFFF9FAFB),
-                                focusedBorderColor = Color(0xFFF97316),
-                                unfocusedBorderColor = Color(0xFFE5E7EB)
+                                focusedContainerColor = Color(0xFFFBF3E7),
+                                unfocusedContainerColor = Color(0xFFFBF3E7),
+                                focusedBorderColor = Color(0xFFC8492C),
+                                unfocusedBorderColor = Color(0xFFEADBC8)
                             )
                         )
                         
@@ -465,17 +465,17 @@ fun ModernEditLinkScreen(
                                 Icon(
                                     imageVector = Icons.Filled.ChildCare,
                                     contentDescription = null,
-                                    tint = Color(0xFF9CA3AF),
+                                    tint = Color(0xFF8A6F64),
                                     modifier = Modifier.size(18.dp)
                                 )
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFF9FAFB),
-                                unfocusedContainerColor = Color(0xFFF9FAFB),
-                                focusedBorderColor = Color(0xFFF97316),
-                                unfocusedBorderColor = Color(0xFFE5E7EB)
+                                focusedContainerColor = Color(0xFFFBF3E7),
+                                unfocusedContainerColor = Color(0xFFFBF3E7),
+                                focusedBorderColor = Color(0xFFC8492C),
+                                unfocusedBorderColor = Color(0xFFEADBC8)
                             )
                         )
                         
@@ -492,7 +492,7 @@ fun ModernEditLinkScreen(
                                 text = "Note",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = Color(0xFF6B7280)
+                                color = Color(0xFF6B5047)
                             )
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -502,7 +502,7 @@ fun ModernEditLinkScreen(
                                     Icon(
                                         imageVector = if (star <= rating) Icons.Filled.Star else Icons.Filled.StarBorder,
                                         contentDescription = "Note $star étoiles",
-                                        tint = if (star <= rating) Color(0xFFFBBF24) else Color(0xFFD1D5DB),
+                                        tint = if (star <= rating) Color(0xFFF28C38) else Color(0xFFD9C2AE),
                                         modifier = Modifier
                                             .size(32.dp)
                                             .clickable { rating = star }
@@ -510,7 +510,7 @@ fun ModernEditLinkScreen(
                                 }
                                 if (rating > 0) {
                                     TextButton(onClick = { rating = 0 }) {
-                                        Text("Effacer", fontSize = 12.sp, color = Color(0xFF9CA3AF))
+                                        Text("Effacer", fontSize = 12.sp, color = Color(0xFF8A6F64))
                                     }
                                 }
                             }
@@ -533,7 +533,7 @@ fun ModernEditLinkScreen(
                             text = "Visibilité",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF374151)
+                            color = Color(0xFF4E3530)
                         )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -545,10 +545,10 @@ fun ModernEditLinkScreen(
                                     .weight(1f)
                                     .clickable { isPublic = false },
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (!isPublic) Color(0xFFFFF7ED) else Color(0xFFF9FAFB),
+                                color = if (!isPublic) Color(0xFFFDE6BD) else Color(0xFFFBF3E7),
                                 border = androidx.compose.foundation.BorderStroke(
                                     width = 2.dp,
-                                    color = if (!isPublic) Color(0xFFF97316) else Color(0xFFF3F4F6)
+                                    color = if (!isPublic) Color(0xFFC8492C) else Color(0xFFF1E3D1)
                                 )
                             ) {
                                 Column(
@@ -559,19 +559,19 @@ fun ModernEditLinkScreen(
                                     Icon(
                                         imageVector = Icons.Filled.Lock,
                                         contentDescription = null,
-                                        tint = if (!isPublic) Color(0xFFF97316) else Color(0xFF9CA3AF),
+                                        tint = if (!isPublic) Color(0xFFC8492C) else Color(0xFF8A6F64),
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
                                         text = "Privé",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = if (!isPublic) Color(0xFFF97316) else Color(0xFF6B7280)
+                                        color = if (!isPublic) Color(0xFFC8492C) else Color(0xFF6B5047)
                                     )
                                     Text(
                                         text = "Ma tribu uniquement",
                                         fontSize = 10.sp,
-                                        color = Color(0xFF9CA3AF)
+                                        color = Color(0xFF8A6F64)
                                     )
                                 }
                             }
@@ -582,10 +582,10 @@ fun ModernEditLinkScreen(
                                     .weight(1f)
                                     .clickable { isPublic = true },
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isPublic) Color(0xFFFFF7ED) else Color(0xFFF9FAFB),
+                                color = if (isPublic) Color(0xFFFDE6BD) else Color(0xFFFBF3E7),
                                 border = androidx.compose.foundation.BorderStroke(
                                     width = 2.dp,
-                                    color = if (isPublic) Color(0xFFF97316) else Color(0xFFF3F4F6)
+                                    color = if (isPublic) Color(0xFFC8492C) else Color(0xFFF1E3D1)
                                 )
                             ) {
                                 Column(
@@ -596,19 +596,19 @@ fun ModernEditLinkScreen(
                                     Icon(
                                         imageVector = Icons.Filled.Public,
                                         contentDescription = null,
-                                        tint = if (isPublic) Color(0xFFF97316) else Color(0xFF9CA3AF),
+                                        tint = if (isPublic) Color(0xFFC8492C) else Color(0xFF8A6F64),
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
                                         text = "Public",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = if (isPublic) Color(0xFFF97316) else Color(0xFF6B7280)
+                                        color = if (isPublic) Color(0xFFC8492C) else Color(0xFF6B5047)
                                     )
                                     Text(
                                         text = "Toute la communauté",
                                         fontSize = 10.sp,
-                                        color = Color(0xFF9CA3AF)
+                                        color = Color(0xFF8A6F64)
                                     )
                                 }
                             }
@@ -658,8 +658,8 @@ fun ModernEditLinkScreen(
                         .height(48.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF97316),
-                        disabledContainerColor = Color(0xFFD1D5DB)
+                        containerColor = Color(0xFFC8492C),
+                        disabledContainerColor = Color(0xFFD9C2AE)
                     )
                 ) {
                     Text(

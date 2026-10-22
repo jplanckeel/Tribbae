@@ -1,249 +1,270 @@
 package ai
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
-	"net/http"
+	"log"
 	"strings"
 	"time"
-
-	"google.golang.org/genai"
+	"unicode/utf8"
 )
 
-// SuggestedLink représente une idée générée par l'IA
+// SuggestedLink représente une idée générée par l'IA.
 type SuggestedLink struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
-	URL         string   `json:"url,omitempty"`
-	ImageURL    string   `json:"imageUrl,omitempty"`
 	Category    string   `json:"category"`
 	Tags        []string `json:"tags"`
 	AgeRange    string   `json:"ageRange,omitempty"`
-	Price       string   `json:"price,omitempty"`
-	Location    string   `json:"location,omitempty"`
-	Ingredients []string `json:"ingredients,omitempty"`
 }
 
 type GenerateRequest struct {
 	Prompt string `json:"prompt"`
-	Model  string `json:"model,omitempty"`
 }
 
 type GenerateResponse struct {
 	Ideas []SuggestedLink `json:"ideas"`
 }
 
-type Service struct {
-	ollamaURL    string
-	model        string
-	searxURL     string
-	geminiAPIKey string
+// Config de la génération d'idées (variables d'environnement, cf. config.Load).
+type Config struct {
+	OllamaURL       string
+	OllamaModel     string
+	OllamaKeepAlive string // durée de maintien en mémoire, ex. "30m"
+	OllamaNumThread int    // 0 : laisser Ollama choisir
 }
 
-func NewService(ollamaURL, model, searxURL, geminiAPIKey string) *Service {
-	if ollamaURL == "" {
-		ollamaURL = "http://localhost:11434"
+// ErrBusy : le modèle local traite déjà une demande (un petit CPU n'en mène
+// bien qu'une à la fois ; mieux vaut le dire que d'empiler).
+var ErrBusy = errors.New("ai is busy")
+
+const (
+	generateBudget = 100 * time.Second
+	maxTitleRunes  = 80
+	maxDescRunes   = 300
+)
+
+type Service struct {
+	ollama    *ollamaClient
+	localSlot chan struct{}
+}
+
+func NewService(cfg Config) *Service {
+	if cfg.OllamaURL == "" {
+		cfg.OllamaURL = "http://localhost:11434"
 	}
-	if model == "" {
-		model = "qwen2.5:1.5b"
+	if cfg.OllamaModel == "" {
+		cfg.OllamaModel = "qwen3:1.7b"
+	}
+	if cfg.OllamaKeepAlive == "" {
+		cfg.OllamaKeepAlive = "30m"
 	}
 	return &Service{
-		ollamaURL:    ollamaURL,
-		model:        model,
-		searxURL:     searxURL,
-		geminiAPIKey: geminiAPIKey,
+		ollama:    newOllamaClient(cfg.OllamaURL, cfg.OllamaModel, cfg.OllamaKeepAlive, cfg.OllamaNumThread),
+		localSlot: make(chan struct{}, 1),
 	}
 }
 
-const systemPrompt = `Assistant familial français. Génère 3 idées en JSON.
-Format: {"ideas":[{"title":"...","description":"...","url":"...","category":"LINK_CATEGORY_CADEAU|LINK_CATEGORY_ACTIVITE|LINK_CATEGORY_RECETTE|LINK_CATEGORY_EVENEMENT|LINK_CATEGORY_IDEE","tags":["..."],"ageRange":"...","price":"...","location":"...","ingredients":[]}]}
-Règles: français uniquement, JSON valide sans markdown, base-toi sur les résultats web fournis.`
-
-func (s *Service) Generate(ctx context.Context, prompt, model string, isPremium bool) (*GenerateResponse, error) {
-	if model == "" {
-		model = s.model
+// Warmup prépare le modèle local (téléchargement si besoin, chargement en
+// mémoire). Au démarrage du compose, Ollama peut ne pas encore répondre : on
+// réessaie quelques minutes avant d'abandonner (la génération réessaiera).
+func (s *Service) Warmup(ctx context.Context) {
+	for attempt := 0; attempt < 18; attempt++ {
+		if s.ollama.EnsureReady(ctx) {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(10 * time.Second):
+		}
 	}
+	log.Printf("ai: ollama still unavailable, giving up warm-up (generation will retry on demand)")
+}
 
+// Generate fait rédiger des idées par le modèle local d'Ollama. Un petit CPU
+// ne mène bien qu'une génération à la fois : une demande concurrente reçoit
+// ErrBusy plutôt que d'attendre.
+func (s *Service) Generate(ctx context.Context, prompt string) (*GenerateResponse, error) {
+	select {
+	case s.localSlot <- struct{}{}:
+		defer func() { <-s.localSlot }()
+	default:
+		return nil, ErrBusy
+	}
 	start := time.Now()
-	fmt.Printf("[AI] Starting generation for prompt: %q (Premium: %v, Gemini Key configured: %v)\n", prompt, isPremium, s.geminiAPIKey != "")
-
-	// Timeout global : 2 minutes max
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, generateBudget)
 	defer cancel()
 
-	// Étape 1 : Recherche web
-	var searchResults []SearchResult
-	var searchContext string
-
-	// Si premium et clé Gemini disponible, utiliser Gemini
-	if isPremium && s.geminiAPIKey != "" {
-		fmt.Printf("[AI] Using Gemini for premium user\n")
-		t := time.Now()
-		results, err := s.searchWithGemini(ctx, prompt)
-		fmt.Printf("[AI] Gemini search took %v, got %d results\n", time.Since(t), len(results))
-		if err != nil {
-			fmt.Printf("[AI] Gemini search failed: %v, falling back to SearXNG\n", err)
-			// Fallback sur SearXNG en cas d'erreur
-			if s.searxURL != "" {
-				results, err = searchWebMulti(ctx, s.searxURL, prompt, 5)
-				if err == nil {
-					searchResults = results
-					searchContext = formatSearchContext(results)
-				}
-			}
-		} else {
-			searchResults = results
-			searchContext = formatSearchContext(results)
-		}
-	} else if s.searxURL != "" {
-		// Utilisateurs non-premium : SearXNG
-		t := time.Now()
-		results, err := searchWebMulti(ctx, s.searxURL, prompt, 5)
-		fmt.Printf("[AI] Search took %v, got %d results\n", time.Since(t), len(results))
-		if err != nil {
-			fmt.Printf("[AI] searxng search failed: %v\n", err)
-		} else {
-			searchResults = results
-			searchContext = formatSearchContext(results)
-		}
-	}
-
-	// Étape 2 : Génération Ollama (prompt compact, 5 idées max)
-	fullPrompt := fmt.Sprintf("%s%s\n\nDemande : %s", systemPrompt, searchContext, prompt)
-
-	body := map[string]any{
-		"model":  model,
-		"prompt": fullPrompt,
-		"stream": false,
-		"options": map[string]any{
-			"temperature": 0.3,
-			"num_predict": 1024,
-			"num_ctx":     2048,
-		},
-	}
-
-	data, _ := json.Marshal(body)
-
-	fmt.Printf("[AI] Calling Ollama (model: %s, prompt length: %d chars)...\n", model, len(fullPrompt))
-	t := time.Now()
-	ollamaClient := &http.Client{Timeout: 120 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.ollamaURL+"/api/generate", bytes.NewReader(data))
+	n := wantedCount(prompt)
+	raw, err := s.ollama.generate(ctx, systemPrompt(n), userPrompt(prompt), n)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := ollamaClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("ollama unreachable: %w", err)
-	}
-	defer resp.Body.Close()
-
-	raw, err := io.ReadAll(resp.Body)
+	ideas, err := parseIdeas(raw, n)
 	if err != nil {
 		return nil, err
 	}
+	// Pas de contenu de la demande dans les journaux (donnée personnelle)
+	log.Printf("ai: generated %d ideas in %s", len(ideas), time.Since(start).Round(time.Millisecond))
+	return &GenerateResponse{Ideas: ideas}, nil
+}
 
-	var ollamaResp struct {
-		Response string `json:"response"`
-	}
-	if err := json.Unmarshal(raw, &ollamaResp); err != nil {
-		return nil, fmt.Errorf("invalid ollama response: %w", err)
-	}
-	fmt.Printf("[AI] Ollama responded in %v\n", time.Since(t))
+// rawIdea est une idée telle que décrite par le schéma imposé au modèle.
+type rawIdea struct {
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Category    string   `json:"category"`
+	Tags        []string `json:"tags"`
+	AgeRange    string   `json:"ageRange"`
+}
 
-	jsonStr := extractJSON(ollamaResp.Response)
-	if jsonStr == "" {
-		return nil, fmt.Errorf("no JSON found in ollama response")
+// parseIdeas valide et normalise la réponse du modèle.
+func parseIdeas(raw string, n int) ([]SuggestedLink, error) {
+	var out struct {
+		Ideas []rawIdea `json:"ideas"`
 	}
-
-	var result GenerateResponse
-	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
-		return nil, fmt.Errorf("failed to parse ideas JSON: %w", err)
-	}
-
-	// Normaliser les catégories + enrichir images depuis SearXNG
-	searchImageMap := buildSearchImageMap(searchResults)
-	for i := range result.Ideas {
-		result.Ideas[i].Category = normalizeCategory(result.Ideas[i].Category)
-		if result.Ideas[i].URL != "" && result.Ideas[i].ImageURL == "" {
-			if img, ok := searchImageMap[result.Ideas[i].URL]; ok && img != "" {
-				result.Ideas[i].ImageURL = img
-			}
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		// Filets de sécurité : JSON entouré de texte, ou réponse tronquée par la
+		// limite de jetons (on garde alors les idées complètes)
+		if j := extractJSON(raw); j != "" && json.Unmarshal([]byte(j), &out) == nil {
+			// récupéré
+		} else if out.Ideas = salvageIdeas(raw); len(out.Ideas) == 0 {
+			return nil, fmt.Errorf("invalid ideas JSON: %w", err)
 		}
 	}
-
-	// Étape 3 : Scrape OG images en parallèle (max 8s)
-	enrichImagesFromOG(ctx, result.Ideas)
-
-	fmt.Printf("[AI] Total generation took %v, returning %d ideas\n", time.Since(start), len(result.Ideas))
-	return &result, nil
-}
-
-func buildSearchImageMap(results []SearchResult) map[string]string {
-	m := make(map[string]string, len(results))
-	for _, r := range results {
-		if r.URL != "" && r.ImageURL != "" {
-			m[r.URL] = r.ImageURL
+	seen := map[string]bool{}
+	ideas := make([]SuggestedLink, 0, len(out.Ideas))
+	for _, r := range out.Ideas {
+		title := truncate(clean(r.Title), maxTitleRunes)
+		key := strings.ToLower(title)
+		if title == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		idea := SuggestedLink{
+			Title:       title,
+			Description: truncate(clean(r.Description), maxDescRunes),
+			Category:    categoryFor(r.Category),
+			Tags:        cleanTags(r.Tags),
+			AgeRange:    known(r.AgeRange),
+		}
+		ideas = append(ideas, idea)
+		if len(ideas) == n {
+			break
 		}
 	}
-	return m
+	if len(ideas) == 0 {
+		return nil, errors.New("model returned no usable idea")
+	}
+	return ideas, nil
 }
 
-func scrapeOGImage(ctx context.Context, rawURL string) string {
-	client := &http.Client{Timeout: 3 * time.Second}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-	if err != nil {
-		return ""
+// salvageIdeas lit une à une les idées complètes du tableau "ideas", même si
+// la réponse s'arrête au milieu de la suivante.
+func salvageIdeas(raw string) []rawIdea {
+	i := strings.Index(raw, `"ideas"`)
+	if i < 0 {
+		return nil
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; Tribbae/1.0)")
-	resp, err := client.Do(req)
-	if err != nil {
-		return ""
+	j := strings.Index(raw[i:], "[")
+	if j < 0 {
+		return nil
 	}
-	defer resp.Body.Close()
-
-	limited := io.LimitReader(resp.Body, 32*1024)
-	body, err := io.ReadAll(limited)
-	if err != nil {
-		return ""
+	dec := json.NewDecoder(strings.NewReader(raw[i+j:]))
+	if _, err := dec.Token(); err != nil { // « [ »
+		return nil
 	}
-	s := string(body)
-	idx := strings.Index(s, `og:image`)
-	if idx == -1 {
-		return ""
+	var out []rawIdea
+	for dec.More() {
+		var r rawIdea
+		if err := dec.Decode(&r); err != nil {
+			break
+		}
+		out = append(out, r)
 	}
-	sub := s[idx:]
-	cIdx := strings.Index(sub, `content="`)
-	if cIdx == -1 {
-		cIdx = strings.Index(sub, `content='`)
-	}
-	if cIdx == -1 {
-		return ""
-	}
-	quote := sub[cIdx+8 : cIdx+9]
-	start := cIdx + 9
-	end := strings.Index(sub[start:], quote)
-	if end == -1 || end > 500 {
-		return ""
-	}
-	return sub[start : start+end]
+	return out
 }
 
+func categoryFor(key string) string {
+	k := strings.ToLower(strings.TrimSpace(key))
+	k = strings.NewReplacer("é", "e", "è", "e", "ê", "e").Replace(k)
+	if c, ok := categoryKeys[k]; ok {
+		return c
+	}
+	for short, c := range categoryKeys {
+		if strings.Contains(k, short) {
+			return c
+		}
+	}
+	return "LINK_CATEGORY_IDEE"
+}
+
+func cleanTags(tags []string) []string {
+	out := []string{}
+	for _, t := range tags {
+		t = strings.ToLower(strings.TrimPrefix(clean(t), "#"))
+		if t != "" && utf8.RuneCountInString(t) <= 30 && !containsString(out, t) {
+			out = append(out, t)
+		}
+		if len(out) == 3 {
+			break
+		}
+	}
+	return out
+}
+
+// known écarte les valeurs « je ne sais pas » que les petits modèles écrivent
+// malgré la consigne de laisser vide.
+func known(v string) string {
+	v = truncate(clean(v), 60)
+	switch strings.ToLower(strings.Trim(v, " .")) {
+	case "", "-", "n/a", "na", "inconnu", "non précisé", "non precise", "non communiqué", "variable", "?", "aucun", "none", "null":
+		return ""
+	}
+	return v
+}
+
+func clean(s string) string { return strings.Join(strings.Fields(s), " ") }
+
+func truncate(s string, n int) string {
+	if utf8.RuneCountInString(s) <= n {
+		return s
+	}
+	return strings.TrimSpace(string([]rune(s)[:n-1])) + "…"
+}
+
+func containsString(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}
+
+// extractJSON isole le premier objet JSON équilibré d'un texte.
 func extractJSON(s string) string {
 	start := strings.Index(s, "{")
 	if start == -1 {
 		return ""
 	}
-	depth := 0
+	depth, inString, escaped := 0, false, false
 	for i := start; i < len(s); i++ {
-		switch s[i] {
-		case '{':
+		c := s[i]
+		switch {
+		case escaped:
+			escaped = false
+		case c == '\\' && inString:
+			escaped = true
+		case c == '"':
+			inString = !inString
+		case inString:
+		case c == '{':
 			depth++
-		case '}':
+		case c == '}':
 			depth--
 			if depth == 0 {
 				return s[start : i+1]
@@ -251,76 +272,4 @@ func extractJSON(s string) string {
 		}
 	}
 	return ""
-}
-
-var validCategories = map[string]bool{
-	"LINK_CATEGORY_IDEE":      true,
-	"LINK_CATEGORY_CADEAU":    true,
-	"LINK_CATEGORY_ACTIVITE":  true,
-	"LINK_CATEGORY_EVENEMENT": true,
-	"LINK_CATEGORY_RECETTE":   true,
-}
-
-func normalizeCategory(cat string) string {
-	cat = strings.ToUpper(strings.TrimSpace(cat))
-	if validCategories[cat] {
-		return cat
-	}
-	switch {
-	case strings.Contains(cat, "CADEAU") || strings.Contains(cat, "GIFT"):
-		return "LINK_CATEGORY_CADEAU"
-	case strings.Contains(cat, "ACTIVIT") || strings.Contains(cat, "ACTIVITY"):
-		return "LINK_CATEGORY_ACTIVITE"
-	case strings.Contains(cat, "RECETTE") || strings.Contains(cat, "RECIPE"):
-		return "LINK_CATEGORY_RECETTE"
-	case strings.Contains(cat, "EVENEMENT") || strings.Contains(cat, "EVENT"):
-		return "LINK_CATEGORY_EVENEMENT"
-	default:
-		return "LINK_CATEGORY_IDEE"
-	}
-}
-
-// searchWithGemini utilise le SDK officiel Google Gemini pour générer du contexte de recherche
-func (s *Service) searchWithGemini(ctx context.Context, query string) ([]SearchResult, error) {
-	if s.geminiAPIKey == "" {
-		return nil, fmt.Errorf("gemini API key not configured")
-	}
-
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		APIKey:  s.geminiAPIKey,
-		Backend: genai.BackendGeminiAPI,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create gemini client: %w", err)
-	}
-
-	prompt := fmt.Sprintf(
-		"Recherche des informations pertinentes sur : %s. Fournis un résumé détaillé avec des idées concrètes, des suggestions pratiques et du contexte utile pour une famille. Réponds en français.",
-		query,
-	)
-
-	result, err := client.Models.GenerateContent(ctx,
-		"gemini-2.5-flash",
-		genai.Text(prompt),
-		&genai.GenerateContentConfig{
-			Temperature:     genai.Ptr[float32](0.2),
-			MaxOutputTokens: 1000,
-		},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("gemini generate: %w", err)
-	}
-
-	if result == nil || len(result.Candidates) == 0 {
-		return nil, fmt.Errorf("no results from gemini")
-	}
-
-	content := result.Text()
-	return []SearchResult{
-		{
-			Title:   "Résultats Gemini pour: " + query,
-			Content: content,
-			URL:     "",
-		},
-	}, nil
 }

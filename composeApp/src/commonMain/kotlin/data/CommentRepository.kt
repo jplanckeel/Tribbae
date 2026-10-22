@@ -44,7 +44,7 @@ data class ApiGetCommentCountResponse(
 )
 
 class CommentRepository(
-    private val baseUrl: String = "https://tribbae.bananaops.cloud",
+    private val baseUrl: String = Backend.url,
     private val sessionManager: SessionManager
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }

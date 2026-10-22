@@ -40,8 +40,41 @@ data class ApiAuthFolder(
     val tags: List<String> = emptyList(),
     val likeCount: Int = 0,
     val collaborators: List<ApiCollaborator> = emptyList(),
-    val updatedAt: String = ""
+    val updatedAt: String = "",
+    val description: String = "",
+    val cover: String = "",
+    val illustration: String = "",
+    val keyDate: Long = 0,
+    val keyDateType: String = "",
+    val childIds: List<String> = emptyList(),
+    val viewMode: String = "",
+    val sort: String = "",
+    val pinned: Boolean = false,
 )
+
+/** Membre d'une tribu (compte). `sharing` : son contenu est partagé avec la tribu. */
+@Serializable
+data class ApiTribeMember(
+    val userId: String = "",
+    val displayName: String = "",
+    val email: String = "",
+    val role: String = "TRIBE_ROLE_MEMBER",
+    val sharing: Boolean = false,
+    val addedAt: Long = 0
+) {
+    val isOwner: Boolean get() = role == "TRIBE_ROLE_OWNER"
+}
+
+/** Tribu : comptes d'une famille qui partagent idées, dossiers et enfants. */
+@Serializable
+data class ApiTribe(
+    val id: String = "",
+    val name: String = "",
+    val members: List<ApiTribeMember> = emptyList()
+)
+
+@Serializable
+private data class ApiTribeResponse(val tribe: ApiTribe = ApiTribe())
 
 @Serializable
 data class ApiLinkListResponse(
@@ -68,6 +101,7 @@ data class ApiAuthLink(
     val ingredients: List<String> = emptyList(),
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
+    val favorite: Boolean = false,
     val updatedAt: String = "",
     val createdAt: String = "",
     val ownerDisplayName: String = "",
@@ -82,9 +116,22 @@ data class CreateFolderRequest(
     val color: String = "ORANGE",
     val visibility: String = "PRIVATE",
     val bannerUrl: String = "",
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val description: String = "",
+    val cover: String = "",
+    val illustration: String = "",
+    val keyDate: Long = 0,
+    val keyDateType: String = "",
+    val childIds: List<String> = emptyList(),
+    val viewMode: String = "",
+    val sort: String = "",
+    val pinned: Boolean = false,
 )
 
+/**
+ * Personnalisation sans valeurs par défaut : toujours envoyée (le JSON n'écrit
+ * pas les valeurs par défaut, et le serveur garde un champ absent).
+ */
 @Serializable
 data class UpdateFolderRequest(
     val folderId: String,
@@ -93,7 +140,17 @@ data class UpdateFolderRequest(
     val color: String = "ORANGE",
     val visibility: String = "PRIVATE",
     val bannerUrl: String = "",
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val description: String,
+    val cover: String,
+    val illustration: String,
+    val keyDate: Long,
+    val keyDateType: String,
+    val childIds: List<String>,
+    val setChildIds: Boolean,
+    val viewMode: String,
+    val sort: String,
+    val pinned: Boolean,
 )
 
 @Serializable
@@ -153,7 +210,7 @@ data class UpdateLinkRequest(
 )
 
 class AuthenticatedApiClient(
-    private val baseUrl: String = "https://tribbae.bananaops.cloud",
+    private val baseUrl: String = Backend.url,
     private val sessionManager: SessionManager
 ) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
@@ -278,7 +335,7 @@ class AuthenticatedApiClient(
     suspend fun likeLink(linkId: String): Int {
         return request("/v1/links/$linkId/like", "POST", "{}") { response ->
             @Serializable
-            data class LikeResponse(val likeCount: Int)
+            data class LikeResponse(val likeCount: Int = 0)
             json.decodeFromString<LikeResponse>(response).likeCount
         }
     }
@@ -286,10 +343,68 @@ class AuthenticatedApiClient(
     suspend fun unlikeLink(linkId: String): Int {
         return request("/v1/links/$linkId/like", "DELETE", null) { response ->
             @Serializable
-            data class LikeResponse(val likeCount: Int)
+            data class LikeResponse(val likeCount: Int = 0)
             json.decodeFromString<LikeResponse>(response).likeCount
         }
     }
+
+    // Folder likes (dossiers de la communauté)
+    suspend fun likeFolder(folderId: String): Int {
+        return request("/v1/folders/$folderId/like", "POST", "{}") { response ->
+            @Serializable
+            data class LikeResponse(val likeCount: Int = 0)
+            json.decodeFromString<LikeResponse>(response).likeCount
+        }
+    }
+
+    suspend fun unlikeFolder(folderId: String): Int {
+        return request("/v1/folders/$folderId/like", "DELETE", null) { response ->
+            @Serializable
+            data class LikeResponse(val likeCount: Int = 0)
+            json.decodeFromString<LikeResponse>(response).likeCount
+        }
+    }
+
+    /** Favori personnel (distinct du like communautaire) : bascule et renvoie le nouvel état. */
+    suspend fun toggleFavorite(linkId: String): Boolean {
+        return request("/v1/links/$linkId/favorite", "POST", "{}") { response ->
+            @Serializable
+            data class FavoriteResponse(val favorite: Boolean = false)
+            json.decodeFromString<FavoriteResponse>(response).favorite
+        }
+    }
+
+    // Droits RGPD sur le compte
+    /** Toutes les données du compte, en JSON (export complet). */
+    suspend fun exportAccount(): String = request("/v1/account/export", "GET") { it }
+
+    /** Suppression définitive du compte ; le mot de passe est exigé. */
+    suspend fun deleteAccount(password: String) {
+        request("/v1/account/delete", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject { put("password", kotlinx.serialization.json.JsonPrimitive(password)) })) { it }
+    }
+
+    // Tribu
+    suspend fun getTribe(): ApiTribe = request("/v1/tribe", "GET") { json.decodeFromString<ApiTribeResponse>(it).tribe }
+
+    suspend fun renameTribe(name: String): ApiTribe =
+        request("/v1/tribe", "PUT", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject { put("name", kotlinx.serialization.json.JsonPrimitive(name)) })) {
+            json.decodeFromString<ApiTribeResponse>(it).tribe
+        }
+
+    suspend fun addTribeMember(email: String): ApiTribe =
+        request("/v1/tribe/members", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject { put("email", kotlinx.serialization.json.JsonPrimitive(email)) })) {
+            json.decodeFromString<ApiTribeResponse>(it).tribe
+        }
+
+    /** Avec son propre ID : quitter la tribu. */
+    suspend fun removeTribeMember(userId: String): ApiTribe =
+        request("/v1/tribe/members/$userId", "DELETE") { json.decodeFromString<ApiTribeResponse>(it).tribe }
+
+    suspend fun setTribeSharing(sharing: Boolean): ApiTribe =
+        request("/v1/tribe/sharing", "PUT", """{"sharing":$sharing}""") { json.decodeFromString<ApiTribeResponse>(it).tribe }
 
     // Children
     suspend fun listChildren(): ApiChildrenListResponse {

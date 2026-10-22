@@ -1,0 +1,316 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "tribbae/v1/tribe.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "TribeService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/tribe": {
+      "get": {
+        "operationId": "TribeService_GetTribe",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetTribeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "TribeService"
+        ]
+      },
+      "put": {
+        "operationId": "TribeService_UpdateTribe",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UpdateTribeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UpdateTribeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TribeService"
+        ]
+      }
+    },
+    "/v1/tribe/members": {
+      "post": {
+        "operationId": "TribeService_AddTribeMember",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AddTribeMemberResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AddTribeMemberRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TribeService"
+        ]
+      }
+    },
+    "/v1/tribe/members/{userId}": {
+      "delete": {
+        "operationId": "TribeService_RemoveTribeMember",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RemoveTribeMemberResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "userId",
+            "description": "son propre ID : quitter la tribu",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "TribeService"
+        ]
+      }
+    },
+    "/v1/tribe/sharing": {
+      "put": {
+        "operationId": "TribeService_SetTribeSharing",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SetTribeSharingResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1SetTribeSharingRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TribeService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1AddTribeMemberRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        }
+      }
+    },
+    "v1AddTribeMemberResponse": {
+      "type": "object",
+      "properties": {
+        "tribe": {
+          "$ref": "#/definitions/v1Tribe"
+        }
+      }
+    },
+    "v1GetTribeResponse": {
+      "type": "object",
+      "properties": {
+        "tribe": {
+          "$ref": "#/definitions/v1Tribe"
+        }
+      }
+    },
+    "v1RemoveTribeMemberResponse": {
+      "type": "object",
+      "properties": {
+        "tribe": {
+          "$ref": "#/definitions/v1Tribe"
+        }
+      }
+    },
+    "v1SetTribeSharingRequest": {
+      "type": "object",
+      "properties": {
+        "sharing": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1SetTribeSharingResponse": {
+      "type": "object",
+      "properties": {
+        "tribe": {
+          "$ref": "#/definitions/v1Tribe"
+        }
+      }
+    },
+    "v1Tribe": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "vide tant que la tribu ne compte que son créateur"
+        },
+        "name": {
+          "type": "string",
+          "title": "Nom affiché (« La tribu … »), par défaut le nom du compte"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1TribeMember"
+          }
+        }
+      }
+    },
+    "v1TribeMember": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/v1TribeRole"
+        },
+        "sharing": {
+          "type": "boolean",
+          "title": "Le contenu de ce membre est partagé avec la tribu (confirmé par lui)"
+        },
+        "addedAt": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1TribeRole": {
+      "type": "string",
+      "enum": [
+        "TRIBE_ROLE_UNSPECIFIED",
+        "TRIBE_ROLE_OWNER",
+        "TRIBE_ROLE_MEMBER"
+      ],
+      "default": "TRIBE_ROLE_UNSPECIFIED",
+      "description": "- TRIBE_ROLE_OWNER: a créé la tribu"
+    },
+    "v1UpdateTribeRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "v1UpdateTribeResponse": {
+      "type": "object",
+      "properties": {
+        "tribe": {
+          "$ref": "#/definitions/v1Tribe"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Icône à thème (Android 13+) : le système teinte cette silhouette. Les nuances viennent
+  de l'opacité (soleil estompé, toile pleine, porte et fanion en réserve).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.66"
+        android:scaleY="0.66"
+        android:translateX="21"
+        android:translateY="23">
+        <path android:fillColor="#FF000000" android:fillAlpha="0.4" android:pathData="M14,80A36,36 0,0 1,86 80Z" />
+        <path android:fillColor="#FF000000" android:pathData="M50,24L81,80H19Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="4" android:strokeLineCap="round"
+            android:pathData="M43,13L54,30M57,13L46,30" />
+        <path android:fillColor="#FF000000" android:fillAlpha="0.45" android:pathData="M50,50L64,80H36Z" />
+        <path android:fillColor="#FF000000" android:fillAlpha="0.7" android:pathData="M34,52H50L42,68Z" />
+        <path android:strokeColor="#FF000000" android:strokeWidth="4" android:strokeLineCap="round"
+            android:pathData="M14,80H86" />
+    </group>
+</vector>

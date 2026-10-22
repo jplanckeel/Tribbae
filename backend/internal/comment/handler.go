@@ -3,6 +3,8 @@ package comment
 import (
 	"context"
 	"log"
+	"strings"
+	"unicode/utf8"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
 	"github.com/tribbae/backend/internal/interceptor"
@@ -11,13 +13,30 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// maxCommentLen borne la taille d'un commentaire (en caractères).
+const maxCommentLen = 2000
+
+// LinkVisibility indique si un utilisateur peut voir un lien.
+type LinkVisibility func(ctx context.Context, linkID, userID string) bool
+
 type Handler struct {
 	pb.UnimplementedCommentServiceServer
-	svc *Service
+	svc     *Service
+	canView LinkVisibility
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+// NewHandler crée le handler ; canView restreint les commentaires aux liens
+// que l'utilisateur a le droit de voir (nil = pas de restriction).
+func NewHandler(svc *Service, canView LinkVisibility) *Handler {
+	return &Handler{svc: svc, canView: canView}
+}
+
+func (h *Handler) visible(ctx context.Context, linkID string) bool {
+	if h.canView == nil {
+		return true
+	}
+	userID, _ := interceptor.UserIDFromContext(ctx)
+	return h.canView(ctx, linkID, userID)
 }
 
 // toProto converts a CommentWithUser to protobuf format
@@ -46,8 +65,15 @@ func (h *Handler) CreateComment(ctx context.Context, req *pb.CreateCommentReques
 	if req.LinkId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "link_id is required")
 	}
+	req.Text = strings.TrimSpace(req.Text)
 	if req.Text == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "text is required")
+	}
+	if utf8.RuneCountInString(req.Text) > maxCommentLen {
+		return nil, status.Errorf(codes.InvalidArgument, "comment is too long")
+	}
+	if !h.visible(ctx, req.LinkId) {
+		return nil, status.Errorf(codes.NotFound, "link not found")
 	}
 
 	// Create comment
@@ -75,6 +101,10 @@ func (h *Handler) GetComments(ctx context.Context, req *pb.GetCommentsRequest) (
 	// Validate request
 	if req.LinkId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "link_id is required")
+	}
+
+	if !h.visible(ctx, req.LinkId) {
+		return nil, status.Errorf(codes.NotFound, "link not found")
 	}
 
 	// Get comments
@@ -130,6 +160,10 @@ func (h *Handler) GetCommentCount(ctx context.Context, req *pb.GetCommentCountRe
 	// Validate request
 	if req.LinkId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "link_id is required")
+	}
+
+	if !h.visible(ctx, req.LinkId) {
+		return nil, status.Errorf(codes.NotFound, "link not found")
 	}
 
 	// Get comment count

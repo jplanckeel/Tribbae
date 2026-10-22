@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Logo A « Tipi soleil » (maquette Logo A · Tipi soleil) : tipi devant un soleil levant.
+  Canevas d'icône adaptative 108 dp ; le dessin (viewBox 100) est réduit à 0,66 et centré
+  sur (50, 47) pour tenir dans la zone sûre de 66 dp, quel que soit le masque du lanceur.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.66"
+        android:scaleY="0.66"
+        android:translateX="21"
+        android:translateY="23">
+        <!-- Soleil levant -->
+        <path android:fillColor="#FDE6BD" android:pathData="M14,80A36,36 0,0 1,86 80Z" />
+        <!-- Toile du tipi -->
+        <path android:fillColor="#D45A43" android:strokeColor="#3A211B" android:strokeWidth="4"
+            android:strokeLineJoin="round" android:pathData="M50,24L81,80H19Z" />
+        <!-- Perches -->
+        <path android:strokeColor="#3A211B" android:strokeWidth="4" android:strokeLineCap="round"
+            android:pathData="M43,13L54,30M57,13L46,30" />
+        <!-- Porte -->
+        <path android:fillColor="#5E4558" android:strokeColor="#3A211B" android:strokeWidth="4"
+            android:strokeLineJoin="round" android:pathData="M50,50L64,80H36Z" />
+        <!-- Fanion -->
+        <path android:fillColor="#F28C38" android:strokeColor="#3A211B" android:strokeWidth="3.5"
+            android:strokeLineJoin="round" android:pathData="M34,52H50L42,68Z" />
+        <!-- Sol -->
+        <path android:strokeColor="#3A211B" android:strokeWidth="4" android:strokeLineCap="round"
+            android:pathData="M14,80H86" />
+    </group>
+</vector>

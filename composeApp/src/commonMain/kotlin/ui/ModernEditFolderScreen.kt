@@ -48,7 +48,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF9FAFB)),
+                .background(Color(0xFFFBF3E7)),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -58,7 +58,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                 Box(
                     modifier = Modifier
                         .size(80.dp)
-                        .background(Color(0xFFF97316), CircleShape),
+                        .background(Color(0xFFC8492C), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -72,12 +72,12 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                     text = "Dossier modifié ! ✨",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF111827)
+                    color = Color(0xFF3A211B)
                 )
                 Text(
                     text = "Vos modifications ont été enregistrées.",
                     fontSize = 14.sp,
-                    color = Color(0xFF6B7280)
+                    color = Color(0xFF6B5047)
                 )
             }
         }
@@ -119,7 +119,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
     }
 
     Scaffold(
-        containerColor = Color(0xFFF9FAFB)
+        containerColor = Color(0xFFFBF3E7)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -143,14 +143,14 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF3F4F6))
+                            .background(Color(0xFFF1E3D1))
                             .clickable(onClick = onBack),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Retour",
-                            tint = Color(0xFF6B7280),
+                            tint = Color(0xFF6B5047),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -158,7 +158,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         text = "Modifier le dossier",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827),
+                        color = Color(0xFF3A211B),
                         modifier = Modifier.weight(1f)
                     )
                     // Bouton supprimer
@@ -166,7 +166,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFFEE2E2))
+                            .background(Color(0xFFF8DCD3))
                             .clickable(enabled = !isDeleting) { showDeleteConfirm = true },
                         contentAlignment = Alignment.Center
                     ) {
@@ -174,13 +174,13 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                             CircularProgressIndicator(
                                 modifier = Modifier.size(18.dp),
                                 strokeWidth = 2.dp,
-                                color = Color(0xFFEF4444)
+                                color = Color(0xFFB2412A)
                             )
                         } else {
                             Icon(
                                 imageVector = Icons.Filled.Delete,
                                 contentDescription = "Supprimer",
-                                tint = Color(0xFFEF4444),
+                                tint = Color(0xFFB2412A),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -200,7 +200,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                 errorMessage?.let { error ->
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFFFEE2E2),
+                        color = Color(0xFFF8DCD3),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Row(
@@ -211,19 +211,19 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                             Icon(
                                 imageVector = Icons.Filled.Warning,
                                 contentDescription = null,
-                                tint = Color(0xFFEF4444),
+                                tint = Color(0xFFB2412A),
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
                                 text = error,
                                 fontSize = 13.sp,
-                                color = Color(0xFFEF4444),
+                                color = Color(0xFFB2412A),
                                 modifier = Modifier.weight(1f)
                             )
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "Fermer",
-                                tint = Color(0xFFEF4444),
+                                tint = Color(0xFFB2412A),
                                 modifier = Modifier
                                     .size(20.dp)
                                     .clickable { errorMessage = null }
@@ -237,7 +237,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                     if (status.startsWith("Erreur")) {
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            color = Color(0xFFFEF3C7),
+                            color = Color(0xFFFBEACB),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Row(
@@ -248,13 +248,13 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                                 Icon(
                                     imageVector = Icons.Filled.Info,
                                     contentDescription = null,
-                                    tint = Color(0xFFF59E0B),
+                                    tint = Color(0xFFF28C38),
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
                                     text = status,
                                     fontSize = 13.sp,
-                                    color = Color(0xFF92400E)
+                                    color = Color(0xFF85560C)
                                 )
                             }
                         }
@@ -267,7 +267,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         text = "Nom du dossier *",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     OutlinedTextField(
                         value = name,
@@ -278,8 +278,8 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFFF97316),
-                            unfocusedBorderColor = Color(0xFFF3F4F6)
+                            focusedBorderColor = Color(0xFFC8492C),
+                            unfocusedBorderColor = Color(0xFFF1E3D1)
                         )
                     )
                 }
@@ -290,7 +290,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         text = "Icône",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(6),
@@ -305,13 +305,13 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                                     .size(48.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(
-                                        if (isSelected) Color(0xFFF97316) 
-                                        else Color(0xFFF9FAFB)
+                                        if (isSelected) Color(0xFFC8492C) 
+                                        else Color(0xFFFBF3E7)
                                     )
                                     .border(
                                         width = 1.5.dp,
-                                        color = if (isSelected) Color(0xFFF97316) 
-                                               else Color(0xFFE5E7EB),
+                                        color = if (isSelected) Color(0xFFC8492C) 
+                                               else Color(0xFFEADBC8),
                                         shape = RoundedCornerShape(12.dp)
                                     )
                                     .clickable { selectedIcon = icon },
@@ -321,7 +321,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                                     imageVector = folderIconVector(data.Folder("", "", icon)),
                                     contentDescription = null,
                                     tint = if (isSelected) Color.White 
-                                           else Color(0xFF6B7280),
+                                           else Color(0xFF6B5047),
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
@@ -335,11 +335,11 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         text = "Couleur",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         FolderColor.entries.forEach { color ->
-                            val colorValue = FolderColors[color.name] ?: Color(0xFFF97316)
+                            val colorValue = FolderColors[color.name] ?: Color(0xFFC8492C)
                             val isSelected = selectedColor == color
                             Box(
                                 modifier = Modifier
@@ -373,7 +373,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         text = "Visibilité",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         // Privé
@@ -389,7 +389,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF6B7280),
+                                selectedContainerColor = Color(0xFF6B5047),
                                 selectedLabelColor = Color.White,
                                 selectedLeadingIconColor = Color.White
                             )
@@ -407,7 +407,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF10B981),
+                                selectedContainerColor = Color(0xFF4C7A3C),
                                 selectedLabelColor = Color.White,
                                 selectedLeadingIconColor = Color.White
                             )
@@ -425,7 +425,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF3B82F6),
+                                selectedContainerColor = Color(0xFF2F7393),
                                 selectedLabelColor = Color.White,
                                 selectedLeadingIconColor = Color.White
                             )
@@ -438,7 +438,7 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                             else -> "Visible uniquement par vous"
                         },
                         fontSize = 12.sp,
-                        color = Color(0xFF6B7280)
+                        color = Color(0xFF6B5047)
                     )
                 }
 
@@ -476,8 +476,8 @@ fun ModernEditFolderScreen(folder: Folder, viewModel: LinkViewModel, onBack: () 
                         .height(48.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF97316),
-                        disabledContainerColor = Color(0xFFD1D5DB)
+                        containerColor = Color(0xFFC8492C),
+                        disabledContainerColor = Color(0xFFD9C2AE)
                     )
                 ) {
                     Text(

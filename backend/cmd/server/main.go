@@ -2,14 +2,20 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	pathpkg "path"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/tribbae/backend/internal/account"
 	"github.com/tribbae/backend/internal/admin"
 	"github.com/tribbae/backend/internal/ai"
 	"github.com/tribbae/backend/internal/auth"
@@ -19,8 +25,12 @@ import (
 	"github.com/tribbae/backend/internal/db"
 	"github.com/tribbae/backend/internal/folder"
 	"github.com/tribbae/backend/internal/follow"
+	"github.com/tribbae/backend/internal/httpx"
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/link"
+	"github.com/tribbae/backend/internal/preview"
+	"github.com/tribbae/backend/internal/seo"
+	"github.com/tribbae/backend/internal/tribe"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -31,6 +41,9 @@ import (
 
 func main() {
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("config: %v", err)
+	}
 
 	database, err := db.Connect(cfg.MongoURI, cfg.MongoDB)
 	if err != nil {
@@ -53,9 +66,23 @@ func main() {
 	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)
 	linkSvc := link.NewService(database.Col("links"), database.Col("folders"))
 	childSvc := child.NewService(database.DB())
+	// Tribu : ses membres partagent idées, dossiers et enfants
+	tribeSvc := tribe.NewService(database.Col("tribes"), database.Col("users"))
+	linkSvc.SetTribePeers(tribeSvc.Peers)
+	folderSvc.SetTribePeers(tribeSvc.Peers)
+	childSvc.SetTribePeers(tribeSvc.Peers)
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
 	commentSvc := comment.NewService(database.Col("comments"), database.Col("links"), database.Col("users"))
-	aiSvc := ai.NewService(cfg.OllamaURL, cfg.OllamaModel, cfg.SearxURL, cfg.GeminiAPIKey)
+	aiSvc := ai.NewService(ai.Config{
+		OllamaURL:       cfg.OllamaURL,
+		OllamaModel:     cfg.OllamaModel,
+		OllamaKeepAlive: cfg.OllamaKeepAlive,
+		OllamaNumThread: cfg.OllamaNumThread,
+	})
+	// Télécharge (si besoin) et charge le modèle local sans retarder le démarrage
+	go aiSvc.Warmup(context.Background())
+	// Rattrape en continu l'image des idées qui n'en ont pas (lots de 20 toutes les 10 min)
+	go linkSvc.RunImageBackfill(context.Background(), 10*time.Minute, 20)
 
 	// Handlers (gRPC servers)
 	authH := auth.NewHandler(authSvc)
@@ -63,52 +90,22 @@ func main() {
 	linkH := link.NewHandler(linkSvc)
 	childH := child.NewHandler(childSvc)
 	followH := follow.NewHandler(followSvc)
-	commentH := comment.NewHandler(commentSvc)
+	commentH := comment.NewHandler(commentSvc, linkSvc.CanView)
 	adminH := admin.NewHandler(authSvc)
-	
-	// Adaptateur pour récupérer le statut premium d'un utilisateur
-	userGetter := &userGetterAdapter{authSvc: authSvc}
-	
-	aiH := ai.NewHandler(aiSvc, userGetter,
-		// Token parser : extrait le userID du header Authorization
-		func(r *http.Request) (string, error) {
-			h := r.Header.Get("Authorization")
-			if h == "" {
-				return "", nil
-			}
-			token := h
-			if len(h) > 7 && h[:7] == "Bearer " {
-				token = h[7:]
-			}
-			return authSvc.ValidateToken(token)
-		},
-		// Folder creator : crée un dossier communautaire IA
-		func(ctx context.Context, ownerID, name string) (string, error) {
-			f, err := folderSvc.CreateAiFolder(ctx, ownerID, name)
-			if err != nil {
-				return "", err
-			}
-			return f.ID.Hex(), nil
-		},
-		// Link creator : crée un lien dans le dossier
-		func(ctx context.Context, ownerID string, idea ai.SuggestedLink, folderID string) error {
-			l := &link.Link{
-				FolderID:    folderID,
-				Title:       idea.Title,
-				URL:         idea.URL,
-				Description: idea.Description,
-				Category:    idea.Category,
-				Tags:        idea.Tags,
-				AgeRange:    idea.AgeRange,
-				Location:    idea.Location,
-				Price:       idea.Price,
-				ImageURL:    idea.ImageURL,
-				Ingredients: idea.Ingredients,
-			}
-			_, err := linkSvc.Create(ctx, ownerID, l)
-			return err
-		},
-	)
+	tribeH := tribe.NewHandler(tribeSvc)
+
+	// Extrait le userID du header Authorization pour les routes HTTP hors gateway
+	bearerUser := func(r *http.Request) (string, error) {
+		token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+		if !ok || token == "" {
+			return "", errors.New("missing bearer token")
+		}
+		return authSvc.ValidateToken(token)
+	}
+
+	aiH := ai.NewHandler(aiSvc, bearerUser)
+	// Droits RGPD : export des données et suppression du compte
+	accountH := account.NewHandler(account.NewService(database.DB(), tribeSvc), authSvc, bearerUser)
 
 	// Serveur gRPC
 	grpcServer := grpc.NewServer(
@@ -124,6 +121,7 @@ func main() {
 	pb.RegisterFollowServiceServer(grpcServer, followH)
 	pb.RegisterCommentServiceServer(grpcServer, commentH)
 	pb.RegisterAdminServiceServer(grpcServer, adminH)
+	pb.RegisterTribeServiceServer(grpcServer, tribeH)
 	reflection.Register(grpcServer)
 
 	grpcAddr := ":" + cfg.GRPCPort
@@ -175,11 +173,50 @@ func main() {
 	if err := pb.RegisterAdminServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
 		log.Fatalf("register admin gateway: %v", err)
 	}
+	if err := pb.RegisterTribeServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
+		log.Fatalf("register tribe gateway: %v", err)
+	}
 
-	httpAddr := ":" + cfg.Port
-	log.Printf("HTTP server listening on %s", httpAddr)
-	handler := cors(withAI(aiH, withPreview(withSPA(mux))))
-	log.Fatal(http.ListenAndServe(httpAddr, handler))
+	// Limites de débit par IP sur les routes sensibles (force brute, coût IA, requêtes sortantes)
+	authLimiter := httpx.NewRateLimiter(10, time.Minute)
+	costlyLimiter := httpx.NewRateLimiter(20, time.Minute)
+
+	var handler http.Handler = withSPA(mux, cfg.SiteURL, seo.NewSource(linkSvc, folderSvc))
+	handler = withPreview(preview.Handler(bearerUser), handler)
+	handler = withAI(aiH, handler)
+	handler = withAccount(accountH, handler)
+	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true}, handler)
+	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, account.DeletePath: true}, handler)
+	handler = httpx.MaxBody(1<<20, handler)
+	handler = httpx.CORS(cfg.AllowedOrigins, handler)
+	handler = httpx.SecurityHeaders(handler)
+
+	srv := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		// La génération IA peut durer jusqu'à 2 minutes
+		WriteTimeout: 3 * time.Minute,
+		IdleTimeout:  2 * time.Minute,
+	}
+
+	go func() {
+		log.Printf("HTTP server listening on %s", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("http serve: %v", err)
+		}
+	}()
+
+	// Arrêt propre sur SIGINT/SIGTERM (déploiements, docker stop)
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
+	log.Println("shutting down...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(shutdownCtx)
+	grpcServer.GracefulStop()
 }
 
 func withAI(aiH http.Handler, next http.Handler) http.Handler {
@@ -192,8 +229,17 @@ func withAI(aiH http.Handler, next http.Handler) http.Handler {
 	})
 }
 
-func withPreview(next http.Handler) http.Handler {
-	preview := link.PreviewHandler()
+func withAccount(accountH http.Handler, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == account.ExportPath || r.URL.Path == account.DeletePath {
+			accountH.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func withPreview(preview http.HandlerFunc, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/links/preview" && r.Method == http.MethodGet {
 			preview(w, r)
@@ -203,23 +249,14 @@ func withPreview(next http.Handler) http.Handler {
 	})
 }
 
-func cors(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
 // withSPA sert les fichiers statiques du frontend depuis /public.
 // Si le fichier n'existe pas, renvoie index.html (SPA fallback).
-func withSPA(apiHandler http.Handler) http.Handler {
-	const staticDir = "/public"
+func withSPA(apiHandler http.Handler, siteURL string, content seo.Source) http.Handler {
+	// STATIC_DIR : pour lancer le serveur hors Docker sur un build local du frontend
+	staticDir := os.Getenv("STATIC_DIR")
+	if staticDir == "" {
+		staticDir = "/public"
+	}
 
 	// Si le dossier n'existe pas, on ne sert que l'API
 	if _, err := os.Stat(staticDir); os.IsNotExist(err) {
@@ -227,8 +264,15 @@ func withSPA(apiHandler http.Handler) http.Handler {
 		return apiHandler
 	}
 
-	log.Println("Serving frontend from /public")
+	log.Printf("Serving frontend from %s", staticDir)
 	fs := http.FileServer(http.Dir(staticDir))
+	// Pages rendues pour les moteurs et assistants IA (en-tête et contenu propres
+	// à chaque adresse), plan du site et llms.txt
+	pages, err := seo.New(siteURL, staticDir, content)
+	if err != nil {
+		log.Fatalf("seo: %v", err)
+	}
+	sitemap, llms := pages.Sitemap(), pages.LLMs()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Les routes API passent directement au handler gRPC-gateway
@@ -237,27 +281,24 @@ func withSPA(apiHandler http.Handler) http.Handler {
 			return
 		}
 
+		switch r.URL.Path {
+		case "/sitemap.xml":
+			sitemap(w, r)
+			return
+		case "/llms.txt":
+			llms(w, r)
+			return
+		}
+
 		// Essayer de servir le fichier statique
-		path := filepath.Join(staticDir, r.URL.Path)
+		// path.Clean sur un chemin absolu supprime les "..": on reste dans staticDir
+		path := filepath.Join(staticDir, filepath.FromSlash(pathpkg.Clean("/"+r.URL.Path)))
 		if info, err := os.Stat(path); err == nil && !info.IsDir() {
 			fs.ServeHTTP(w, r)
 			return
 		}
 
-		// SPA fallback : renvoyer index.html
-		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+		// Application : index.html avec l'en-tête et le contenu de l'adresse
+		pages.ServeHTML(w, r)
 	})
-}
-
-// userGetterAdapter adapte auth.Service pour l'interface ai.UserGetter
-type userGetterAdapter struct {
-	authSvc *auth.Service
-}
-
-func (u *userGetterAdapter) GetUser(ctx context.Context, userID string) (bool, error) {
-	user, err := u.authSvc.GetUser(ctx, userID)
-	if err != nil {
-		return false, err
-	}
-	return user.IsPremium, nil
 }

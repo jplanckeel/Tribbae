@@ -215,7 +215,7 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8DCD3)),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Row(
@@ -225,13 +225,13 @@ fun LoginScreen(
                     Icon(
                         imageVector = Icons.Default.Error,
                         contentDescription = null,
-                        tint = Color(0xFFD32F2F),
+                        tint = Color(0xFFB2412A),
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = errorMessage ?: "",
-                        color = Color(0xFFD32F2F),
+                        color = Color(0xFFB2412A),
                         fontSize = 14.sp
                     )
                 }
@@ -309,7 +309,6 @@ private suspend fun handleAuth(
     onError: (String) -> Unit,
     onSuccess: () -> Unit
 ) {
-    println("DEBUG handleAuth: Début - isLoginMode=$isLoginMode, email=$email")
     onLoading(true)
     try {
         println("DEBUG handleAuth: Appel authRepository.${if (isLoginMode) "login" else "register"}")
@@ -319,7 +318,6 @@ private suspend fun handleAuth(
             authRepository.register(email, password, displayName)
         }
         
-        println("DEBUG handleAuth: Réponse reçue - userId=${response.userId}, token=${response.token}, displayName=${response.displayName}")
         
         // Vérifier que la réponse contient bien les données nécessaires
         if (response.token.isBlank()) {
@@ -329,7 +327,7 @@ private suspend fun handleAuth(
         }
         
         println("DEBUG handleAuth: Sauvegarde de la session")
-        sessionManager.saveSession(response.userId, response.token, response.displayName)
+        sessionManager.saveSession(response.userId, response.token, response.displayName, response.isAdmin)
         println("DEBUG handleAuth: Succès!")
         onSuccess()
     } catch (e: Exception) {

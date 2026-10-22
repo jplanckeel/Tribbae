@@ -18,26 +18,26 @@ import (
 func setupTestDB(t *testing.T) (*mongo.Client, *mongo.Database, func()) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	// Connect to MongoDB (assumes MongoDB is running locally for tests)
 	clientOpts := options.Client().
 		ApplyURI("mongodb://localhost:27017").
 		SetServerSelectionTimeout(5 * time.Second)
-	
+
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		t.Skipf("Skipping test: Failed to connect to MongoDB: %v", err)
 	}
-	
+
 	// Ping to verify connection
 	if err := client.Ping(ctx, nil); err != nil {
 		t.Skipf("Skipping test: MongoDB not available: %v", err)
 	}
-	
+
 	// Use a test database
 	dbName := "tribbae_test_" + primitive.NewObjectID().Hex()
 	db := client.Database(dbName)
-	
+
 	// Cleanup function
 	cleanup := func() {
 		ctx := context.Background()
@@ -48,7 +48,7 @@ func setupTestDB(t *testing.T) (*mongo.Client, *mongo.Database, func()) {
 			t.Logf("Failed to disconnect from MongoDB: %v", err)
 		}
 	}
-	
+
 	return client, db, cleanup
 }
 
@@ -59,25 +59,25 @@ func setupTestDB(t *testing.T) (*mongo.Client, *mongo.Database, func()) {
 func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 	_, db, cleanup := setupTestDB(t)
 	defer cleanup()
-	
+
 	ctx := context.Background()
 	linksCol := db.Collection("links")
 	foldersCol := db.Collection("folders")
 	usersCol := db.Collection("users")
-	
+
 	svc := NewService(linksCol, foldersCol)
-	
+
 	parameters := gopter.DefaultTestParameters()
 	parameters.MinSuccessfulTests = 100
 	properties := gopter.NewProperties(parameters)
-	
+
 	properties.Property("link responses include owner display name from users collection", prop.ForAll(
 		func(displayName string, isAdmin bool) bool {
 			// Clean up collections before each test
 			linksCol.DeleteMany(ctx, bson.M{})
 			foldersCol.DeleteMany(ctx, bson.M{})
 			usersCol.DeleteMany(ctx, bson.M{})
-			
+
 			// Create a test user with the generated display name
 			userID := primitive.NewObjectID()
 			user := bson.M{
@@ -91,7 +91,7 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 				t.Logf("Failed to insert user: %v", err)
 				return false
 			}
-			
+
 			// Create a folder for the link
 			folderID := primitive.NewObjectID()
 			folder := bson.M{
@@ -106,7 +106,7 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 				t.Logf("Failed to insert folder: %v", err)
 				return false
 			}
-			
+
 			// Create a link owned by this user
 			link := &Link{
 				OwnerID:     userID.Hex(),
@@ -119,34 +119,34 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 				Ingredients: []string{},
 				Visibility:  "private",
 			}
-			
+
 			createdLink, err := svc.Create(ctx, userID.Hex(), link)
 			if err != nil {
 				t.Logf("Failed to create link: %v", err)
 				return false
 			}
-			
+
 			// Call GetOwnerInfo to retrieve the owner's display name
 			retrievedDisplayName, retrievedIsAdmin := svc.GetOwnerInfo(ctx, createdLink.OwnerID)
-			
+
 			// Verify the display name matches what we stored
 			if retrievedDisplayName != displayName {
 				t.Logf("Display name mismatch: expected=%q, got=%q", displayName, retrievedDisplayName)
 				return false
 			}
-			
+
 			// Verify the admin status matches
 			if retrievedIsAdmin != isAdmin {
 				t.Logf("Admin status mismatch: expected=%v, got=%v", isAdmin, retrievedIsAdmin)
 				return false
 			}
-			
+
 			// Verify that empty display names are returned as empty strings (not null)
 			if displayName == "" && retrievedDisplayName != "" {
 				t.Logf("Empty display name should return empty string, got=%q", retrievedDisplayName)
 				return false
 			}
-			
+
 			return true
 		},
 		// Generate random display names (including empty strings to test edge case)
@@ -159,7 +159,7 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 		// Generate random admin status
 		gen.Bool(),
 	))
-	
+
 	properties.TestingRun(t)
 }
 
@@ -261,23 +261,23 @@ func TestProperty_PublicLinksInCommunityListings(t *testing.T) {
 func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 	_, db, cleanup := setupTestDB(t)
 	defer cleanup()
-	
+
 	ctx := context.Background()
 	linksCol := db.Collection("links")
 	foldersCol := db.Collection("folders")
-	
+
 	svc := NewService(linksCol, foldersCol)
-	
+
 	parameters := gopter.DefaultTestParameters()
 	parameters.MinSuccessfulTests = 100
 	properties := gopter.NewProperties(parameters)
-	
+
 	properties.Property("updating a link increases updated_at timestamp", prop.ForAll(
 		func(title string, description string, category string) bool {
 			// Clean up collections before each test
 			linksCol.DeleteMany(ctx, bson.M{})
 			foldersCol.DeleteMany(ctx, bson.M{})
-			
+
 			// Ensure non-empty values
 			if title == "" {
 				title = "Test Title"
@@ -288,10 +288,10 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 			if category == "" {
 				category = "LINK_CATEGORY_IDEE"
 			}
-			
+
 			// Create a test user
 			userID := "test_user_" + primitive.NewObjectID().Hex()
-			
+
 			// Create a folder for the link
 			folderID := primitive.NewObjectID()
 			folder := bson.M{
@@ -306,7 +306,7 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 				t.Logf("Failed to insert folder: %v", err)
 				return false
 			}
-			
+
 			// Create initial link
 			initialLink := &Link{
 				OwnerID:     userID,
@@ -319,19 +319,19 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 				Ingredients: []string{},
 				Visibility:  "private",
 			}
-			
+
 			createdLink, err := svc.Create(ctx, userID, initialLink)
 			if err != nil {
 				t.Logf("Failed to create link: %v", err)
 				return false
 			}
-			
+
 			// Store the original updated_at timestamp
 			originalUpdatedAt := createdLink.UpdatedAt
-			
+
 			// Wait a small amount to ensure timestamp difference
 			time.Sleep(10 * time.Millisecond)
-			
+
 			// Update the link with new values
 			updatedLink := &Link{
 				FolderID:    folderID.Hex(),
@@ -343,32 +343,32 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 				Ingredients: []string{},
 				Visibility:  "public",
 			}
-			
+
 			resultLink, err := svc.Update(ctx, createdLink.ID.Hex(), userID, updatedLink)
 			if err != nil {
 				t.Logf("Failed to update link: %v", err)
 				return false
 			}
-			
+
 			// Verify that updated_at is greater than the original
 			if !resultLink.UpdatedAt.After(originalUpdatedAt) {
 				t.Logf("UpdatedAt not increased: original=%v, new=%v", originalUpdatedAt, resultLink.UpdatedAt)
 				return false
 			}
-			
+
 			// Verify the update was persisted correctly by fetching from DB
 			var dbLink Link
 			if err := linksCol.FindOne(ctx, bson.M{"_id": createdLink.ID}).Decode(&dbLink); err != nil {
 				t.Logf("Failed to fetch updated link from DB: %v", err)
 				return false
 			}
-			
+
 			// Verify DB timestamp also increased
 			if !dbLink.UpdatedAt.After(originalUpdatedAt) {
 				t.Logf("DB UpdatedAt not increased: original=%v, new=%v", originalUpdatedAt, dbLink.UpdatedAt)
 				return false
 			}
-			
+
 			return true
 		},
 		// Generate random title
@@ -384,6 +384,6 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 			"LINK_CATEGORY_RECETTE",
 		),
 	))
-	
+
 	properties.TestingRun(t)
 }

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ouverture de l'application (Android 12+) : le sol se trace depuis le centre, le soleil se
+  lève derrière, le tipi surgit avec un léger rebond puis le fanion flotte. Même géométrie
+  que splash_icon.xml ; l'état final de l'animation est identique à l'icône fixe.
+-->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="288dp"
+            android:height="288dp"
+            android:viewportWidth="288"
+            android:viewportHeight="288">
+            <group android:scaleX="1.8" android:scaleY="1.8" android:translateX="54" android:translateY="59.4">
+                <!-- Le soleil, masqué sous la ligne de sol, monte à sa place -->
+                <clip-path android:pathData="M0,0H100V80H0Z" />
+                <group android:name="sun" android:translateY="40">
+                    <path android:name="sun_path" android:fillColor="#FDE6BD" android:fillAlpha="0"
+                        android:pathData="M14,80A36,36 0,0 1,86 80Z" />
+                </group>
+            </group>
+            <group android:scaleX="1.8" android:scaleY="1.8" android:translateX="54" android:translateY="59.4">
+                <group android:name="tipi" android:pivotX="50" android:pivotY="80" android:scaleX="0" android:scaleY="0">
+                    <path android:fillColor="#D45A43" android:strokeColor="#3A211B" android:strokeWidth="4"
+                        android:strokeLineJoin="round" android:pathData="M50,24L81,80H19Z" />
+                    <path android:strokeColor="#3A211B" android:strokeWidth="4" android:strokeLineCap="round"
+                        android:pathData="M43,13L54,30M57,13L46,30" />
+                    <path android:fillColor="#5E4558" android:strokeColor="#3A211B" android:strokeWidth="4"
+                        android:strokeLineJoin="round" android:pathData="M50,50L64,80H36Z" />
+                    <group android:name="flag" android:pivotX="34" android:pivotY="52">
+                        <path android:fillColor="#F28C38" android:strokeColor="#3A211B" android:strokeWidth="3.5"
+                            android:strokeLineJoin="round" android:pathData="M34,52H50L42,68Z" />
+                    </group>
+                    <path android:fillColor="#00000000" android:strokeColor="#3A211B" android:strokeWidth="2.6"
+                        android:strokeLineCap="round" android:strokeLineJoin="round"
+                        android:pathData="M49,43l2.7,-3 2.7,3 2.6,-3M58,62l2.7,-3 2.7,3 2.6,-3" />
+                </group>
+                <!-- Sol tracé depuis le centre : deux demi-segments -->
+                <path android:name="ground_left" android:strokeColor="#3A211B" android:strokeWidth="4"
+                    android:strokeLineCap="round" android:trimPathEnd="0" android:pathData="M50,80H14" />
+                <path android:name="ground_right" android:strokeColor="#3A211B" android:strokeWidth="4"
+                    android:strokeLineCap="round" android:trimPathEnd="0" android:pathData="M50,80H86" />
+            </group>
+        </vector>
+    </aapt:attr>
+
+    <!-- 0–280 ms : le sol se trace -->
+    <target android:name="ground_left">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="trimPathEnd" android:valueFrom="0" android:valueTo="1"
+                android:duration="280" android:interpolator="@android:interpolator/fast_out_slow_in" />
+        </aapt:attr>
+    </target>
+    <target android:name="ground_right">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="trimPathEnd" android:valueFrom="0" android:valueTo="1"
+                android:duration="280" android:interpolator="@android:interpolator/fast_out_slow_in" />
+        </aapt:attr>
+    </target>
+
+    <!-- 120–620 ms : le soleil se lève -->
+    <target android:name="sun">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="translateY" android:valueFrom="40" android:valueTo="0"
+                android:startOffset="120" android:duration="500"
+                android:interpolator="@android:interpolator/fast_out_slow_in" />
+        </aapt:attr>
+    </target>
+    <target android:name="sun_path">
+        <aapt:attr name="android:animation">
+            <objectAnimator android:propertyName="fillAlpha" android:valueFrom="0" android:valueTo="1"
+                android:startOffset="120" android:duration="300" />
+        </aapt:attr>
+    </target>
+
+    <!-- 300–760 ms : le tipi surgit avec un rebond -->
+    <target android:name="tipi">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator android:propertyName="scaleX" android:valueFrom="0" android:valueTo="1"
+                    android:startOffset="300" android:duration="460"
+                    android:interpolator="@android:anim/overshoot_interpolator" />
+                <objectAnimator android:propertyName="scaleY" android:valueFrom="0" android:valueTo="1"
+                    android:startOffset="300" android:duration="460"
+                    android:interpolator="@android:anim/overshoot_interpolator" />
+            </set>
+        </aapt:attr>
+    </target>
+
+    <!-- 700–1000 ms : le fanion flotte -->
+    <target android:name="flag">
+        <aapt:attr name="android:animation">
+            <set android:ordering="sequentially">
+                <objectAnimator android:propertyName="rotation" android:valueFrom="0" android:valueTo="-12"
+                    android:startOffset="700" android:duration="120"
+                    android:interpolator="@android:interpolator/fast_out_slow_in" />
+                <objectAnimator android:propertyName="rotation" android:valueFrom="-12" android:valueTo="6"
+                    android:duration="110" android:interpolator="@android:interpolator/fast_out_slow_in" />
+                <objectAnimator android:propertyName="rotation" android:valueFrom="6" android:valueTo="0"
+                    android:duration="90" android:interpolator="@android:interpolator/fast_out_slow_in" />
+            </set>
+        </aapt:attr>
+    </target>
+</animated-vector>

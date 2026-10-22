@@ -1,563 +1,455 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { links as linksApi, folders as foldersApi, children as childrenApi, community as communityApi } from "../api";
-import { normalizeCategory } from "../types";
-import LinkCard from "../components/LinkCard";
-import FilterBar from "../components/FilterBar";
-import AdminBadge from "../components/AdminBadge";
-import SEOHead from "../components/SEOHead";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faWandMagicSparkles, faGlobe, faLightbulb, faHeart as faHeartSolid, faArrowLeft, faStar, faClock, faSearch, faXmark } from "@fortawesome/free-solid-svg-icons";
-import { faHeart as faHeartOutline } from "@fortawesome/free-regular-svg-icons";
-import AddLinkModal from "../components/AddLinkModal";
-import AiGenerateModal from "../components/AiGenerateModal";
-
-function FolderCard({ folder, onOpen, onLike, liking }: any) {
-  return (
-    <div
-      onClick={() => onOpen(folder)}
-      className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 cursor-pointer hover:border-orange-400 hover:shadow-md transition-all duration-300 overflow-hidden group"
-    >
-      <div className="h-32 bg-gradient-to-br from-green-100 to-teal-50 relative overflow-hidden">
-        {folder.bannerUrl ? (
-          <img src={folder.bannerUrl} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl opacity-50 transition-transform duration-300 group-hover:scale-110">
-            {folder.aiGenerated ? "✨" : "🌍"}
-          </div>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onLike(folder.id, folder.likedByMe); }}
-          disabled={liking === folder.id}
-          className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs"
-        >
-          <FontAwesomeIcon
-            icon={folder.likedByMe ? faHeartSolid : faHeartOutline}
-            className={`w-3 h-3 ${folder.likedByMe ? "text-red-500" : "text-gray-400"}`}
-          />
-          <span className={folder.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
-            {folder.likeCount || 0}
-          </span>
-        </button>
-      </div>
-      <div className="p-3">
-        <p className="font-semibold text-gray-800 line-clamp-1">{folder.name}</p>
-        <p className="text-xs text-gray-400 mt-0.5">
-          {folder.ownerDisplayName && <span>par {folder.ownerDisplayName}</span>}
-          {folder.ownerIsAdmin && <AdminBadge />}
-          {folder.linkCount > 0 && <span> · {folder.linkCount} idée{folder.linkCount > 1 ? "s" : ""}</span>}
-        </p>
-        {folder.tags && folder.tags.length > 0 && (
-          <div className="flex gap-1 mt-1.5 flex-wrap">
-            {folder.tags.slice(0, 2).map((tag: string, i: number) => (
-              <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-600">{tag}</span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function HorizontalLinkRow({ title, items, onLike, likingLink, navigate, viewAllPath }: any) {
-  if (!items || items.length === 0) return null;
-  return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">{title}</h2>
-        {viewAllPath && (
-          <Link to={viewAllPath} className="text-sm text-orange-500 hover:text-orange-600 font-medium">
-            Voir tout →
-          </Link>
-        )}
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {items.slice(0, 4).map((link: any) => (
-          <LinkCard key={link.id} link={link} onClick={() => navigate(`/links/${link.id}`)} onLike={onLike} liking={likingLink} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function parseAgeMonths(ageRange: string): number {
-  const lower = ageRange.toLowerCase();
-  const isMois = lower.includes("mois");
-  const nums = [...lower.matchAll(/\d+/g)].map((m) => parseInt(m[0]));
-  const max = Math.max(...nums);
-  if (!isFinite(max)) return Infinity;
-  return isMois ? max : max * 12;
-}
-
-type Tab = "discover" | "my-ideas";
+import { useMemo, useState, type FormEvent } from "react";
+import { Link as RouterLink, useNavigate } from "react-router";
+import { AiCard, CategoryTile, ListCard, Rail, RailCard, RowCard } from "../components/cards";
+import { useComposer } from "../components/Composer";
+import Icon from "../components/Icon";
+import Logo from "../components/Logo";
+import { Page } from "../components/Shell";
+import Sheet from "../components/Sheet";
+import { EmptyState, SectionTitle } from "../components/ui";
+import * as api from "../lib/api";
+import { CATEGORIES, normalizeCategory } from "../lib/categories";
+import { useMyData } from "../lib/data";
+import { dayBadge, formatShortDate, formatTime, formatToday, metaLine } from "../lib/format";
+import { byPopularity, byRecent, soonReminders, upcoming } from "../lib/links";
+import { useSession } from "../lib/session";
+import { useAsync } from "../lib/useAsync";
+import { useDesktop } from "../lib/useMediaQuery";
+import Seo from "../components/Seo";
 
 export default function Home() {
-  const isLoggedIn = !!localStorage.getItem("token");
-  const [tab, setTab] = useState<Tab>("discover");
-  const [allLinks, setAllLinks] = useState<any[]>([]);
-  const [folderList, setFolderList] = useState<any[]>([]);
-  const [childList, setChildList] = useState<any[]>([]);
-  const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
-  const [showAi, setShowAi] = useState(false);
-  const [topFolders, setTopFolders] = useState<any[]>([]);
-  const [communityFolders, setCommunityFolders] = useState<any[]>([]);
-  const [selectedCommunityFolder, setSelectedCommunityFolder] = useState<any | null>(null);
-  const [communityFolderLinks, setCommunityFolderLinks] = useState<any[]>([]);
-  const [liking, setLiking] = useState<string | null>(null);
-  const [likingLink, setLikingLink] = useState<string | null>(null);
-  const [communityLinks, setCommunityLinks] = useState<any[]>([]);
-  const [newLinks, setNewLinks] = useState<any[]>([]);
-  const [discoverSearch, setDiscoverSearch] = useState("");
+  // Deux mises en page distinctes (maquettes mobile et « Web · Accueil »)
+  return useDesktop() ? <HomeDesktop /> : <HomeMobile />;
+}
+
+function HomeMobile() {
+  const session = useSession();
   const navigate = useNavigate();
+  const { openAi } = useComposer();
+  const { links, tribe } = useMyData();
+  const [q, setQ] = useState("");
+  const [remindersOpen, setRemindersOpen] = useState(false);
 
-  const fetchLinks = async () => {
-    try {
-      const res = await linksApi.list();
-      setAllLinks(res.links || []);
-    } catch (err: any) {
-      if (err?.status === 401 || err?.status === 403) navigate("/login");
+  const community = useAsync(() => api.community.links(undefined, 40), []);
+  const popular = useMemo(() => [...(community.data ?? [])].sort(byPopularity).slice(0, 10), [community.data]);
+
+  const next = useMemo(() => upcoming(links), [links]);
+  const reminders = useMemo(() => soonReminders(links), [links]);
+  const recent = useMemo(() => [...links].sort(byRecent).slice(0, 8), [links]);
+  const counts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const l of links) {
+      const k = normalizeCategory(l.category);
+      m.set(k, (m.get(k) ?? 0) + 1);
     }
+    return m;
+  }, [links]);
+
+  const search = (e: FormEvent) => {
+    e.preventDefault();
+    navigate(q.trim() ? `/explorer?q=${encodeURIComponent(q.trim())}` : "/explorer");
   };
 
-  useEffect(() => {
-    communityApi.top(12).then((r) => setTopFolders(r.folders || [])).catch(() => { });
-    communityApi.list(undefined, 30).then((r) => setCommunityFolders(r.folders || [])).catch(() => { });
-    communityApi.links().then((r) => setCommunityLinks(r.links || [])).catch(() => { });
-    communityApi.newLinks(12).then((r) => setNewLinks(r.links || [])).catch(() => { });
-    if (isLoggedIn) {
-      fetchLinks();
-      foldersApi.list().then((r) => setFolderList(r.folders || [])).catch(() => { });
-      childrenApi.list().then((r) => setChildList(r.children || [])).catch(() => { });
-    }
-  }, []);
+  const event = next[0];
+  // « La tribu Dupont » : nom choisi pour la tribu, à défaut celui du compte
+  const firstName = tribe?.name?.trim() || session?.displayName?.trim();
 
-  const updateLinkInState = (linkId: string, isLiked: boolean, likeCount: number) => {
-    const upd = (l: any) => l.id === linkId ? { ...l, likedByMe: !isLiked, likeCount } : l;
-    setCommunityFolderLinks((p) => p.map(upd));
-    setAllLinks((p) => p.map(upd));
-    setCommunityLinks((p) => p.map(upd));
-    setNewLinks((p) => p.map(upd));
-  };
+  return (
+    <div className="relative overflow-hidden">
+      <Seo
+        title="Tribbae — Les idées de la famille au même endroit"
+        description="Tribbae rassemble les idées de la famille : sorties, activités, recettes, cadeaux, livres et déco. Rangez-les en dossiers, partagez-les avec votre tribu et piochez dans celles des autres familles."
+        path="/"
+      />
+      {/* Motifs du logo : grand soleil, petit rond et croix */}
+      <div aria-hidden="true" className="pointer-events-none absolute -top-[110px] -right-[120px] h-[330px] w-[330px] rounded-full bg-soleil md:right-[8%]" />
+      <span aria-hidden="true" className="pointer-events-none absolute top-[118px] right-10 h-[9px] w-[9px] rounded-full border-2 border-terracotta md:right-[22%]" />
+      <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" className="pointer-events-none absolute top-[70px] right-[150px] md:right-[30%]">
+        <path d="M2 2l8 8M10 2l-8 8" stroke="#3A211B" strokeWidth="2" strokeLinecap="round" />
+      </svg>
 
-  const handleLike = async (folderId: string, isLiked: boolean) => {
-    if (!isLoggedIn) { navigate("/login"); return; }
-    if (liking) return;
-    setLiking(folderId);
-    try {
-      const result = isLiked ? await communityApi.unlike(folderId) : await communityApi.like(folderId);
-      const upd = (f: any) => f.id === folderId ? { ...f, likedByMe: !isLiked, likeCount: result.likeCount } : f;
-      setTopFolders((p) => p.map(upd));
-      setCommunityFolders((p) => p.map(upd));
-    } catch { /* silencieux */ }
-    setLiking(null);
-  };
+      <Page className="relative gap-6">
+        <div className="flex items-center justify-between md:hidden">
+          <Logo />
+          {session && <BellButton count={reminders.length} onClick={() => setRemindersOpen(true)} />}
+        </div>
 
-  const handleLinkLike = async (linkId: string, isLiked: boolean) => {
-    if (!isLoggedIn) { navigate("/login"); return; }
-    if (likingLink) return;
-    setLikingLink(linkId);
-    try {
-      const result = isLiked ? await linksApi.unlike(linkId) : await linksApi.like(linkId);
-      updateLinkInState(linkId, isLiked, result.likeCount);
-    } catch { /* silencieux */ }
-    setLikingLink(null);
-  };
-
-  const openCommunityFolder = async (folder: any) => {
-    setSelectedCommunityFolder(folder);
-    const cached = communityLinks.filter((l: any) => l.folderId === folder.id);
-    if (cached.length > 0) {
-      setCommunityFolderLinks(cached);
-    } else {
-      try {
-        const res = await linksApi.list(folder.id);
-        setCommunityFolderLinks(res.links || []);
-      } catch {
-        setCommunityFolderLinks([]);
-      }
-    }
-  };
-
-  const childAgeMonths = selectedChildId
-    ? (() => {
-      const child = childList.find((c) => c.id === selectedChildId);
-      if (!child) return null;
-      return Math.floor((Date.now() - Number(child.birthDate)) / (1000 * 60 * 60 * 24 * 30.44));
-    })()
-    : null;
-
-  const filtered = allLinks.filter((l) => {
-    if (selectedCategory && normalizeCategory(l.category) !== selectedCategory) return false;
-    if (selectedFolderId && l.folderId !== selectedFolderId) return false;
-    if (favoritesOnly && !l.favorite) return false;
-    if (childAgeMonths !== null && l.ageRange && parseAgeMonths(l.ageRange) < childAgeMonths) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (
-        l.title?.toLowerCase().includes(q) ||
-        l.description?.toLowerCase().includes(q) ||
-        l.location?.toLowerCase().includes(q) ||
-        l.tags?.some((t: string) => t.toLowerCase().includes(q))
-      );
-    }
-    return true;
-  });
-
-  const CATEGORIES = [
-    { key: "LINK_CATEGORY_RECETTE",    path: "recette",    emoji: "🍳", label: "Recettes",    color: "#81C784" },
-    { key: "LINK_CATEGORY_CADEAU",     path: "cadeau",     emoji: "🎁", label: "Cadeaux",     color: "#FF8C00" },
-    { key: "LINK_CATEGORY_ACTIVITE",   path: "activite",   emoji: "🏃", label: "Activités",   color: "#4FC3F7" },
-    { key: "LINK_CATEGORY_EVENEMENT",  path: "evenement",  emoji: "📅", label: "Événements",  color: "#FF7043" },
-    { key: "LINK_CATEGORY_IDEE",       path: "idee",       emoji: "💡", label: "Idées",       color: "#FFD700" },
-    { key: "LINK_CATEGORY_LIVRE",      path: "livre",      emoji: "📚", label: "Livres",      color: "#9C27B0" },
-    { key: "LINK_CATEGORY_DECORATION", path: "decoration", emoji: "🎨", label: "Décorations", color: "#E91E63" },
-  ];
-
-  // Vue détail d'un dossier public
-  if (selectedCommunityFolder) {
-    return (
-      <div className="max-w-5xl mx-auto px-4 py-6">
-        <button
-          onClick={() => setSelectedCommunityFolder(null)}
-          className="flex items-center gap-1 text-orange-500 mb-4 text-sm font-medium"
-        >
-          <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Retour
-        </button>
-        {selectedCommunityFolder.bannerUrl && (
-          <div className="h-40 rounded-2xl overflow-hidden mb-4">
-            <img src={selectedCommunityFolder.bannerUrl} alt="" className="w-full h-full object-cover" />
+        <div className="flex items-end justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[15px] text-sec">{formatToday()}</span>
+            <h1 className="font-display text-[32px] leading-[1.05] font-extrabold tracking-[-0.8px] md:text-[44px]">
+              {firstName ? <>La tribu {firstName},</> : <>Bienvenue dans la tribu,</>}
+              <br />
+              on fait quoi ce <span className="whitespace-nowrap">week-end ?</span>
+            </h1>
           </div>
+          {session && (
+            <span className="hidden md:block">
+              <BellButton count={reminders.length} onClick={() => setRemindersOpen(true)} />
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={search} role="search" className="flex max-w-2xl gap-2">
+          <label className="flex h-[52px] flex-1 items-center gap-2.5 rounded-medium bg-white px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
+            <Icon name="search" size={20} />
+            <span className="sr-only">Rechercher une idée</span>
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Une sortie, une recette, un cadeau…"
+              className="min-w-0 flex-1 bg-transparent text-[15px] font-medium text-ecorce outline-none placeholder:text-muted"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => openAi({ prompt: q.trim() || undefined })}
+            aria-label="Générer des idées avec l'IA"
+            title="Générer des idées avec l'IA"
+            className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-medium bg-prune text-soleil transition-colors hover:bg-[#4d3848]"
+          >
+            <Icon name="sparkles" size={22} />
+          </button>
+        </form>
+
+        {session ? (
+          event ? (
+            <RouterLink to={`/links/${event.id}`} className="flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-3.5 transition-transform hover:-translate-y-0.5">
+              <span className="flex h-16 w-[58px] shrink-0 flex-col items-center justify-center rounded-2xl bg-braise text-ecorce">
+                <span className="text-[11px] font-bold tracking-[0.6px] uppercase">{dayBadge(event.at).weekday}</span>
+                <span className="font-display text-[26px] leading-none font-extrabold">{dayBadge(event.at).day}</span>
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-xs font-semibold tracking-[0.8px] text-braise-soft uppercase">
+                  À venir{event.reminderEnabled ? " · rappel activé" : ""}
+                </span>
+                <span className="truncate font-display text-[17px] font-bold text-sable">{event.title}</span>
+                <span className="truncate text-[13px] text-bark-soft">
+                  {[formatTime(event.at), metaLine(event)].filter(Boolean).join(" · ") || formatShortDate(event.at)}
+                </span>
+              </span>
+              <Icon name="chevronRight" size={20} className="text-bark-soft" />
+            </RouterLink>
+          ) : (
+            <NoEventCard />
+          )
+        ) : (
+          <JoinCard />
         )}
-        <div className="mb-4">
-          <h2 className="text-xl font-bold text-gray-800">{selectedCommunityFolder.name}</h2>
-          <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
-            <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5 text-green-500" />
-            {selectedCommunityFolder.ownerDisplayName && (
-              <span>par {selectedCommunityFolder.ownerDisplayName}</span>
+
+        <section className="flex flex-col gap-3">
+          <SectionTitle
+            title="Nos catégories"
+            action={<RouterLink to="/explorer" className="text-sm font-semibold text-terracotta hover:text-terracotta-dark">Tout voir</RouterLink>}
+          />
+          <Rail>
+            {CATEGORIES.map((c) => (
+              <CategoryTile
+                key={c.key}
+                cat={c}
+                count={session ? counts.get(c.key) ?? 0 : undefined}
+                to={session ? `/mes-idees?cat=${c.slug}` : `/category/${c.slug}`}
+              />
+            ))}
+          </Rail>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <SectionTitle
+            title="Ça plaît aux tribus"
+            action={<RouterLink to="/explorer" className="text-sm font-semibold text-terracotta hover:text-terracotta-dark">Explorer</RouterLink>}
+          />
+          {community.loading ? (
+            <Rail>
+              {[0, 1, 2].map((i) => <div key={i} className="h-[190px] w-[210px] shrink-0 animate-pulse rounded-large bg-sable-2" />)}
+            </Rail>
+          ) : popular.length ? (
+            <Rail>{popular.map((l) => <RailCard key={l.id} link={l} />)}</Rail>
+          ) : (
+            <p className="text-sm text-sec">La communauté n'a encore rien partagé. Soyez la première tribu !</p>
+          )}
+        </section>
+
+        {session && (
+          <section className="flex flex-col gap-3">
+            <SectionTitle
+              title="Ajouté récemment"
+              action={<RouterLink to="/mes-idees" className="text-sm font-semibold text-terracotta hover:text-terracotta-dark">Mes idées</RouterLink>}
+            />
+            {recent.length ? (
+              <div className="grid gap-2.5 md:grid-cols-2">
+                {recent.map((l) => <RowCard key={l.id} link={l} />)}
+              </div>
+            ) : (
+              <EmptyState icon="tipi" title="Votre tipi est vide" text="Ajoutez une première idée avec le bouton « + » ou laissez l'IA vous inspirer." />
             )}
-            {selectedCommunityFolder.ownerIsAdmin && <AdminBadge />}
-            {selectedCommunityFolder.linkCount > 0 && (
-              <span>· {selectedCommunityFolder.linkCount} idée{selectedCommunityFolder.linkCount > 1 ? "s" : ""}</span>
+          </section>
+        )}
+      </Page>
+
+      <UpcomingSheet open={remindersOpen} onClose={() => setRemindersOpen(false)} />
+    </div>
+  );
+}
+
+/** Tout ce qui est prévu (idées datées), avec les rappels. */
+function UpcomingSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { links } = useMyData();
+  const next = useMemo(() => upcoming(links), [links]);
+  return (
+    <Sheet open={open} onClose={onClose} title="À venir">
+      {next.length ? (
+        <ul className="flex flex-col gap-2.5">
+          {next.slice(0, 20).map((l) => (
+            <li key={l.id}>
+              <RowCard
+                link={l}
+                trailing={
+                  <span className="flex shrink-0 flex-col items-end text-xs text-sec">
+                    <span className="font-bold text-ecorce">{formatShortDate(l.at)}</span>
+                    {l.reminderEnabled && <span className="flex items-center gap-1"><Icon name="bell" size={12} />rappel</span>}
+                  </span>
+                }
+              />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState icon="calendar" title="Rien de prévu" text="Ajoutez une date à une sortie ou une activité pour la retrouver ici." />
+      )}
+    </Sheet>
+  );
+}
+
+// Raccourcis du hero bureau : filtres de l'Explorer, ou l'IA pour les envies ouvertes
+const QUICK: { label: string; to?: string; prompt?: string }[] = [
+  { label: "Ce week-end", to: "/explorer?quand=weekend" },
+  { label: "Gratuit", to: "/explorer?budget=gratuit" },
+  { label: "Jour de pluie", prompt: "Des activités d'intérieur pour un jour de pluie" },
+  { label: "3–6 ans", to: "/explorer?age=3-6" },
+];
+
+/** Accueil bureau (maquette « Web · Accueil »). */
+function HomeDesktop() {
+  const session = useSession();
+  const navigate = useNavigate();
+  const { openAi, newLink } = useComposer();
+  const { links, tribe } = useMyData();
+  const [q, setQ] = useState("");
+  const [upcomingOpen, setUpcomingOpen] = useState(false);
+  const next = useMemo(() => upcoming(links), [links]);
+  // Les listes les plus aimées ; à défaut (aucun j'aime encore), les dernières listes publiques
+  const lists = useAsync(
+    () =>
+      api.community
+        .top(7)
+        .catch(() => [])
+        .then((top) => (top.length ? top : api.community.folders(undefined, 7).then((r) => r.folders ?? []))),
+    [],
+  );
+
+  const search = (e: FormEvent) => {
+    e.preventDefault();
+    navigate(q.trim() ? `/explorer?q=${encodeURIComponent(q.trim())}` : "/explorer");
+  };
+  // « La tribu Dupont » : nom choisi pour la tribu, à défaut celui du compte
+  const firstName = tribe?.name?.trim() || session?.displayName?.trim();
+
+  return (
+    <Page className="gap-14 pt-6 pb-4">
+      <section className="flex flex-wrap items-stretch gap-8">
+        <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-[22px] pt-6">
+          <span className="text-base font-semibold text-sec">{formatToday()}</span>
+          <h1 className="font-display text-[clamp(36px,5vw,60px)] leading-[1.02] font-extrabold tracking-[-1.6px]">
+            {firstName ? <>La tribu {firstName},</> : <>Bienvenue dans la tribu,</>}
+            <br />
+            on fait quoi ce week-end ?
+          </h1>
+          <form onSubmit={search} role="search" className="flex flex-wrap gap-2.5">
+            <label className="flex h-[60px] min-w-0 flex-[1_1_320px] items-center gap-3 rounded-[20px] bg-white px-5 text-muted shadow-[0_4px_16px_rgba(58,33,27,0.08)] focus-within:ring-2 focus-within:ring-terracotta">
+              <Icon name="search" size={22} />
+              <span className="sr-only">Rechercher une idée</span>
+              <input
+                type="search"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Une sortie, une recette, un cadeau…"
+                className="min-w-0 flex-1 bg-transparent text-[17px] font-medium text-ecorce outline-none placeholder:text-muted"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => openAi({ prompt: q.trim() || undefined })}
+              className="flex h-[60px] items-center gap-2.5 rounded-[20px] bg-prune px-5 text-base font-bold text-soleil transition-colors hover:bg-[#4d3848]"
+            >
+              <Icon name="sparkles" size={22} />
+              Demander à l'IA
+            </button>
+          </form>
+          <div className="flex flex-wrap gap-2">
+            {QUICK.map((c) =>
+              c.to ? (
+                <RouterLink key={c.label} to={c.to} className="rounded-full border-[1.5px] border-line-2 bg-white px-3.5 py-[9px] text-sm font-semibold transition-colors hover:border-ecorce">
+                  {c.label}
+                </RouterLink>
+              ) : (
+                <button key={c.label} type="button" onClick={() => openAi({ prompt: c.prompt })} className="rounded-full border-[1.5px] border-line-2 bg-white px-3.5 py-[9px] text-sm font-semibold transition-colors hover:border-ecorce">
+                  {c.label}
+                </button>
+              ),
             )}
           </div>
         </div>
-        {communityFolderLinks.length === 0 ? (
-          <p className="text-center text-gray-400 py-12">Liste vide</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {communityFolderLinks.map((link) => (
-              <LinkCard
-                key={link.id}
-                link={link}
-                onClick={() => navigate(`/links/${link.id}`)}
-                onLike={handleLinkLike}
-                liking={likingLink}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
 
-  return (
-    <main className="max-w-5xl mx-auto px-4 py-6">
-      <SEOHead
-        title={tab === "discover" ? "Découvrir des idées en famille — Recettes, activités, cadeaux" : "Mes idées — Gérer mes listes et favoris"}
-        description={tab === "discover"
-          ? "Explorez des idées partagées par la communauté Tribbae : recettes faciles, activités enfants, idées cadeaux, événements familiaux. Trouvez l'inspiration !"
-          : "Gérez vos idées personnelles, listes et favoris sur Tribbae. Organisez vos recettes, activités et cadeaux en famille."
-        }
-      />
-      {/* Onglets */}
-      <nav aria-label="Navigation principale" className="flex gap-1 mb-6 bg-gray-100 rounded-full p-1 w-fit">
-        <button
-          onClick={() => setTab("discover")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${tab === "discover" ? "bg-white text-orange-500 shadow-sm" : "text-gray-500 hover:text-gray-700"
-            }`}
-        >
-          <FontAwesomeIcon icon={faGlobe} className="w-3.5 h-3.5" /> Découvrir
-        </button>
-        <button
-          onClick={() => setTab("my-ideas")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${tab === "my-ideas" ? "bg-white text-orange-500 shadow-sm" : "text-gray-500 hover:text-gray-700"
-            }`}
-        >
-          <FontAwesomeIcon icon={faLightbulb} className="w-3.5 h-3.5" /> Mes idées
-        </button>
-      </nav>
-
-      {tab === "discover" ? (
-        <>
-          {/* Barre de recherche */}
-          <div className="relative mb-6">
-            <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-400 w-4 h-4" />
-            <input
-              type="text"
-              value={discoverSearch}
-              onChange={(e) => setDiscoverSearch(e.target.value)}
-              placeholder="Rechercher une idée, une liste..."
-              className="w-full pl-10 pr-10 py-2.5 rounded-full border border-orange-200 focus:border-orange-400 focus:outline-none bg-white text-sm"
-            />
-            {discoverSearch && (
-              <button onClick={() => setDiscoverSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <FontAwesomeIcon icon={faXmark} className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Résultats de recherche ou contenu normal */}
-          {discoverSearch ? (() => {
-            const q = discoverSearch.toLowerCase();
-            const matchedLinks = communityLinks.filter((l) =>
-              l.title?.toLowerCase().includes(q) ||
-              l.description?.toLowerCase().includes(q) ||
-              l.location?.toLowerCase().includes(q) ||
-              l.tags?.some((t: string) => t.toLowerCase().includes(q))
-            );
-            const matchedFolders = communityFolders.filter((f) =>
-              f.name?.toLowerCase().includes(q) ||
-              f.tags?.some((t: string) => t.toLowerCase().includes(q))
-            );
-            return (
-              <>
-                {matchedLinks.length > 0 && (
-                  <div className="mb-8">
-                    <h2 className="text-lg font-bold text-gray-800 mb-3">🔍 Idées trouvées ({matchedLinks.length})</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {matchedLinks.map((link) => (
-                        <LinkCard key={link.id} link={link} onClick={() => navigate(`/links/${link.id}`)} onLike={handleLinkLike} liking={likingLink} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {matchedFolders.length > 0 && (
-                  <div className="mb-8">
-                    <h2 className="text-lg font-bold text-gray-800 mb-3">📁 Listes trouvées ({matchedFolders.length})</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {matchedFolders.map((f) => (
-                        <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {matchedLinks.length === 0 && matchedFolders.length === 0 && (
-                  <div className="text-center py-20 text-gray-400">
-                    <p className="text-5xl mb-4">🔍</p>
-                    <p>Aucun résultat pour "{discoverSearch}"</p>
-                  </div>
-                )}
-              </>
-            );
-          })() : (
+        <aside className={`flex min-w-0 flex-[1_1_340px] flex-col gap-4 rounded-[28px] bg-ecorce p-6 text-sable ${session && next.length ? "" : "self-start"}`}>
+          <h2 className="font-display text-xl font-bold">À venir pour la tribu</h2>
+          {!session ? (
             <>
-              {/* Catégories */}
-              <div className="mb-8">
-                <h2 className="text-lg font-bold text-gray-800 mb-3">🎯 Explorer par catégorie</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                  {CATEGORIES.map(({ path, emoji, label, color }) => (
-                    <Link
-                      key={path}
-                      to={`/category/${path}`}
-                      className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group"
-                    >
-                      <div
-                        className="relative h-20 sm:h-24 flex flex-col items-center justify-center gap-1"
-                        style={{ background: `linear-gradient(135deg, ${color}CC, ${color}88)` }}
-                      >
-                        <div className="absolute inset-0 flex flex-col justify-evenly opacity-10">
-                          {[0, 1].map((row) => (
-                            <div key={row} className="flex justify-evenly" style={{ marginLeft: row % 2 === 1 ? 12 : 0 }}>
-                              {Array.from({ length: 8 }).map((_, i) => (
-                                <span key={i} className="text-base">{emoji}</span>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                        <span className="text-2xl sm:text-3xl group-hover:scale-110 transition-transform relative z-10">{emoji}</span>
-                        <p className="text-white font-semibold text-[11px] sm:text-xs relative z-10 drop-shadow">{label}</p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
-              {/* Nouveautés */}
-              <HorizontalLinkRow
-                title={<><FontAwesomeIcon icon={faClock} className="text-blue-400" /> Nouveautés</>}
-                items={newLinks}
-                onLike={handleLinkLike}
-                likingLink={likingLink}
-                navigate={navigate}
-              />
-
-              {/* Tops par catégorie */}
-              {CATEGORIES.map(({ key, emoji, label, path }) => {
-                const items = communityLinks
-                  .filter((l) => l.category === key)
-                  .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
-                  .slice(0, 8);
+              <p className="text-[15px] text-bark-soft">Créez votre tribu pour ranger vos sorties datées et recevoir un rappel la veille.</p>
+              <RouterLink to="/bienvenue" className="self-start rounded-[14px] bg-braise px-4 py-2.5 text-sm font-bold text-ecorce transition-colors hover:bg-soleil">
+                Créer ma tribu
+              </RouterLink>
+            </>
+          ) : next.length ? (
+            <>
+              {next.slice(0, 3).map((l, i) => {
+                const b = dayBadge(l.at);
                 return (
-                  <HorizontalLinkRow
-                    key={key}
-                    title={<><FontAwesomeIcon icon={faStar} className="text-yellow-400" /> {emoji} {label}</>}
-                    items={items}
-                    onLike={handleLinkLike}
-                    likingLink={likingLink}
-                    navigate={navigate}
-                    viewAllPath={`/category/${path}`}
-                  />
+                  <RouterLink key={l.id} to={`/links/${l.id}`} className="flex items-center gap-3.5 rounded-[18px] bg-[#4D2F28] p-3 transition-colors hover:bg-[#583830]">
+                    <span className={`flex h-[62px] w-[58px] shrink-0 flex-col items-center justify-center rounded-2xl text-ecorce ${i === 0 ? "bg-braise" : "bg-soleil"}`}>
+                      <span className="text-[11px] font-bold uppercase">{b.weekday}</span>
+                      <span className="font-display text-2xl leading-none font-extrabold">{b.day}</span>
+                    </span>
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="truncate text-base font-bold">{l.title}</span>
+                      <span className="truncate text-[13px] text-bark-soft">
+                        {[formatTime(l.at), metaLine(l)].filter(Boolean).join(" · ") || formatShortDate(l.at)}
+                      </span>
+                    </span>
+                  </RouterLink>
                 );
               })}
-
-              {/* Listes populaires */}
-              {topFolders.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="text-lg font-bold text-gray-800 mb-3">🔥 Listes populaires</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {topFolders.slice(0, 4).map((f) => (
-                      <div
-                        key={f.id}
-                        onClick={() => openCommunityFolder(f)}
-                        className="bg-white rounded-2xl shadow-sm border-2 border-gray-100 cursor-pointer hover:border-orange-400 hover:shadow-md transition-all duration-300 overflow-hidden group"
-                      >
-                        <div className="h-28 bg-gradient-to-br from-orange-200 to-amber-100 relative overflow-hidden">
-                          {f.bannerUrl ? (
-                            <img src={f.bannerUrl} alt="" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-4xl opacity-60 transition-transform duration-300 group-hover:scale-110">
-                              {f.aiGenerated ? "✨" : "📋"}
-                            </div>
-                          )}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleLike(f.id, f.likedByMe); }}
-                            disabled={liking === f.id}
-                            className="absolute top-2 right-2 flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs"
-                          >
-                            <FontAwesomeIcon
-                              icon={f.likedByMe ? faHeartSolid : faHeartOutline}
-                              className={`w-3 h-3 ${f.likedByMe ? "text-red-500" : "text-gray-400"}`}
-                            />
-                            <span className={f.likedByMe ? "text-red-500 font-medium" : "text-gray-500"}>
-                              {f.likeCount || 0}
-                            </span>
-                          </button>
-                        </div>
-                        <div className="p-3">
-                          <p className="text-sm font-semibold text-gray-800 line-clamp-1">{f.name}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            par {f.ownerDisplayName || "Anonyme"} {f.ownerIsAdmin && <AdminBadge />} · {f.linkCount || 0} idées
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Toutes les listes publiques */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-lg font-bold text-gray-800">🌍 Toutes les listes publiques</h2>
-                  {communityFolders.length > 6 && (
-                    <Link to="/discover" className="text-sm text-orange-500 hover:text-orange-600 font-medium">
-                      Voir tout →
-                    </Link>
-                  )}
-                </div>
-                {communityFolders.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400">
-                    <FontAwesomeIcon icon={faGlobe} className="mx-auto mb-3 text-gray-300 w-10 h-10" />
-                    <p>Aucune liste publique pour le moment</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {communityFolders.slice(0, 6).map((f) => (
-                      <FolderCard key={f.id} folder={f} onOpen={openCommunityFolder} onLike={handleLike} liking={liking} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </>
-      ) : (
-        <>
-          {!isLoggedIn ? (
-            <div className="text-center py-20">
-              <p className="text-5xl mb-4">🔒</p>
-              <p className="text-gray-500 mb-4">Connectez-vous pour voir et gérer vos idées</p>
-              <button
-                onClick={() => navigate("/login")}
-                className="px-6 py-2.5 rounded-full bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors"
-              >
-                Se connecter
+              <button type="button" onClick={() => setUpcomingOpen(true)} className="self-start text-sm font-bold text-braise-soft hover:text-soleil">
+                {next.length > 3 ? `Voir les ${next.length} sorties prévues` : "Voir tout le programme"}
               </button>
-            </div>
+            </>
           ) : (
             <>
-              <FilterBar
-                search={search} onSearchChange={setSearch}
-                selectedCategory={selectedCategory} onCategoryChange={setSelectedCategory}
-                favoritesOnly={favoritesOnly} onFavoritesToggle={() => setFavoritesOnly(!favoritesOnly)}
-                folders={folderList} selectedFolderId={selectedFolderId} onFolderChange={setSelectedFolderId}
-                children={childList} selectedChildId={selectedChildId} onChildChange={setSelectedChildId}
-              />
-              {filtered.length === 0 ? (
-                <div className="text-center py-20 text-gray-400">
-                  <p className="text-5xl mb-4">💡</p>
-                  <p>Ajoutez votre première idée</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                  {filtered.map((link) => (
-                    <LinkCard
-                      key={link.id}
-                      link={link}
-                      onClick={() => navigate(`/links/${link.id}`)}
-                      onLike={handleLinkLike}
-                      liking={likingLink}
-                    />
-                  ))}
-                </div>
-              )}
+              <p className="text-[15px] text-bark-soft">Rien de prévu pour l'instant. Ajoutez une sortie datée pour la voir ici et recevoir un rappel.</p>
+              <button type="button" onClick={() => newLink({ category: "LINK_CATEGORY_EVENEMENT" })} className="self-start rounded-[14px] bg-braise px-4 py-2.5 text-sm font-bold text-ecorce transition-colors hover:bg-soleil">
+                Ajouter une sortie
+              </button>
             </>
           )}
-        </>
-      )}
+        </aside>
+      </section>
 
-      {isLoggedIn && (
-        <>
-          <button
-            onClick={() => setShowAi(true)}
-            className="fixed bottom-6 right-24 w-14 h-14 rounded-full bg-purple-500 text-white shadow-lg hover:bg-purple-600 flex items-center justify-center transition-colors group"
-            title="Générer avec l'IA (Expérimental)"
-          >
-            <FontAwesomeIcon icon={faWandMagicSparkles} className="w-6 h-6" />
-            <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-              EXP
-            </span>
-          </button>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-orange-500 text-white shadow-lg hover:bg-orange-600 flex items-center justify-center transition-colors"
-          >
-            <FontAwesomeIcon icon={faPlus} className="w-7 h-7" />
-          </button>
-        </>
-      )}
+      <section className="flex flex-col gap-[18px]">
+        <DesktopTitle title="Explorer par catégorie" to="/explorer" action="Tout voir" />
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
+          {CATEGORIES.map((c) => (
+            <RouterLink
+              key={c.key}
+              to={`/category/${c.slug}`}
+              className={`flex flex-col gap-3.5 rounded-[22px] p-[18px] transition-transform hover:-translate-y-0.5 ${c.bg} ${c.ink}`}
+            >
+              <Icon name={c.icon} size={30} />
+              <span className="text-base font-bold">{c.plural}</span>
+            </RouterLink>
+          ))}
+        </div>
+      </section>
 
-      {showAdd && (
-        <AddLinkModal onClose={() => setShowAdd(false)} onCreated={() => { setShowAdd(false); fetchLinks(); }} />
-      )}
-      {showAi && (
-        <AiGenerateModal onClose={() => setShowAi(false)} onCreated={() => { setShowAi(false); fetchLinks(); }} />
-      )}
-    </main>
+      <section className="flex flex-col gap-[18px]">
+        <DesktopTitle title="Les listes qui plaisent aux tribus" to="/explorer?vue=dossiers" action="Toutes les listes" />
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
+          {lists.loading
+            ? [0, 1, 2].map((i) => <div key={i} className="h-[214px] animate-pulse rounded-[24px] bg-sable-2" />)
+            : (lists.data ?? []).map((f) => <ListCard key={f.id} folder={f} />)}
+          <AiCard
+            title="Une liste sur mesure en 30 secondes"
+            text="Décrivez votre envie, l'IA prépare un dossier d'idées."
+            onClick={() => openAi()}
+          />
+        </div>
+      </section>
+
+      {session && <RecentSection />}
+      <UpcomingSheet open={upcomingOpen} onClose={() => setUpcomingOpen(false)} />
+    </Page>
+  );
+}
+
+function DesktopTitle({ title, to, action }: { title: string; to: string; action: string }) {
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <h2 className="font-display text-[28px] font-bold tracking-[-0.5px]">{title}</h2>
+      <RouterLink to={to} className="text-[15px] font-bold text-terracotta hover:text-terracotta-dark">{action}</RouterLink>
+    </div>
+  );
+}
+
+/** Dernières idées de la tribu (bureau, sous les listes). */
+function RecentSection() {
+  const { links } = useMyData();
+  const recent = useMemo(() => [...links].sort(byRecent).slice(0, 6), [links]);
+  if (!recent.length) return null;
+  return (
+    <section className="flex flex-col gap-[18px]">
+      <DesktopTitle title="Ajouté récemment" to="/mes-idees" action="Mes idées" />
+      <div className="grid gap-2.5 md:grid-cols-2 lg:grid-cols-3">
+        {recent.map((l) => <RowCard key={l.id} link={l} />)}
+      </div>
+    </section>
+  );
+}
+
+function BellButton({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={count ? `À venir, ${count} rappel${count > 1 ? "s" : ""} cette semaine` : "À venir"}
+      className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white text-ecorce shadow-soft transition-colors hover:bg-sable-2"
+    >
+      <Icon name="bell" size={21} />
+      {count > 0 && <span className="absolute top-2.5 right-[11px] h-2 w-2 rounded-full border-2 border-white bg-terracotta" />}
+    </button>
+  );
+}
+
+function NoEventCard() {
+  const { newLink } = useComposer();
+  return (
+    <button
+      type="button"
+      onClick={() => newLink({ category: "LINK_CATEGORY_EVENEMENT" })}
+      className="flex max-w-2xl items-center gap-3.5 rounded-large border-2 border-dashed border-dash p-3.5 text-left transition-colors hover:bg-sable-2/60"
+    >
+      <span className="flex h-16 w-[58px] shrink-0 items-center justify-center rounded-2xl bg-sortie-bg text-sortie-ic">
+        <Icon name="calendar" size={26} />
+      </span>
+      <span className="flex flex-1 flex-col gap-0.5">
+        <span className="font-display text-[17px] font-bold">Rien de prévu pour l'instant</span>
+        <span className="text-[13px] text-sec">Ajoutez une sortie datée pour la voir ici et recevoir un rappel.</span>
+      </span>
+      <Icon name="plus" size={20} className="text-terracotta" />
+    </button>
+  );
+}
+
+function JoinCard() {
+  return (
+    <RouterLink to="/bienvenue" className="flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-4 text-sable transition-transform hover:-translate-y-0.5">
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-braise text-ecorce">
+        <Icon name="tribe" size={24} />
+      </span>
+      <span className="flex flex-1 flex-col gap-0.5">
+        <span className="font-display text-[17px] font-bold">Créez votre tribu</span>
+        <span className="text-[13px] text-bark-soft">Rangez vos idées, partagez-les avec vos proches.</span>
+      </span>
+      <Icon name="chevronRight" size={20} className="text-bark-soft" />
+    </RouterLink>
   );
 }

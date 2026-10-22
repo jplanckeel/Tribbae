@@ -1,47 +1,78 @@
 package ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import data.Link
 import data.LinkCategory
-import ui.components.CategoryPatternBackground
-import ui.components.IdeaCard
-import ui.components.getCategoryColor
-import ui.components.getCategoryEmoji
-import ui.components.getCategoryLabel
+import ui.campfire.*
 
-enum class SortOption { POPULAR, RECENT, RATED }
-enum class ViewMode { GRID, LIST }
+private enum class Sort(val label: String) { FEATURED("À la une"), POPULAR("Les plus aimées"), RECENT("Les plus récentes"), RATED("Les mieux notées") }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** Taille d'un lot de cartes de l'Explorer. */
+private const val PAGE = 24
+
+/** Durée d'une « une » : l'ordre de l'Explorer change toutes les 6 heures. */
+private const val ROTATION_MS = 6 * 3600 * 1000L
+
+/** FNV-1a 32 bits, identique au web (frontend/src/lib/links.ts). */
+private fun fnv1a(s: String): Long {
+    var h = 0x811c9dc5L
+    for (b in s.toByteArray(Charsets.UTF_8)) {
+        h = h xor (b.toLong() and 0xff)
+        h = (h * 0x01000193L) and 0xffffffffL
+    }
+    return h
+}
+
+/**
+ * Score « À la une » pour la période de 6 h en cours : tirage pondéré
+ * u^(1/poids), le même pour tous les utilisateurs et sur le web. Les idées
+ * aimées et récentes remontent plus souvent, mais chacune a sa chance.
+ */
+internal fun rotationScore(id: String, likeCount: Int, createdAt: String, now: Long = System.currentTimeMillis()): Double {
+    val period = Math.floorDiv(now, ROTATION_MS)
+    val u = (fnv1a("$id:$period") + 0.5) / 4294967296.0
+    val created = runCatching { java.time.OffsetDateTime.parse(createdAt).toInstant().toEpochMilli() }.getOrNull()
+    val ageDays = created?.let { (now - it) / 86_400_000.0 } ?: Double.POSITIVE_INFINITY
+    val fresh = if (ageDays < 14) 2 else if (ageDays < 60) 1 else 0
+    val weight = 1 + kotlin.math.ln1p(likeCount.coerceAtLeast(0).toDouble()) + fresh
+    return Math.pow(u, 1 / weight)
+}
+
+private data class AgeBand(val key: String, val label: String, val min: Float, val max: Float)
+
+private val AGES = listOf(
+    AgeBand("0-3", "0–3", 0f, 3f),
+    AgeBand("3-6", "3–6", 3f, 6f),
+    AgeBand("6-10", "6–10", 6f, 10f),
+    AgeBand("10+", "10+", 10f, 99f),
+)
+
+/** Explorer « feu de camp » : idées publiques en mosaïque, filtres catégorie / âge / tags / note. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ExploreScreen(
     links: List<Link>,
@@ -49,828 +80,301 @@ fun ExploreScreen(
     onNavigateToDetail: (String) -> Unit,
     onSaveLink: (Link) -> Unit,
     viewModel: viewmodel.LinkViewModel,
-    sessionManager: data.SessionManager? = null,
-    followRepository: data.FollowRepository? = null,
+    initialQuery: String = "",
+    initialCategory: LinkCategory? = null,
+    onNavigateToAI: () -> Unit = {},
+    onOpenFolder: (data.Folder) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf<LinkCategory?>(null) }
-    var sortOption by remember { mutableStateOf(SortOption.RECENT) }
-    var viewMode by remember { mutableStateOf(ViewMode.GRID) }
+    var query by remember(initialQuery) { mutableStateOf(initialQuery) }
+    // 0 = idées, 1 = dossiers publics (comme l'onglet « Dossiers » du web)
+    var view by rememberSaveable { mutableStateOf(0) }
+    val communityFolders by viewModel.communityFolders.collectAsState()
+    LaunchedEffect(view) { if (view == 1) viewModel.loadCommunityFolders() }
+    var category by remember(initialCategory) { mutableStateOf(initialCategory) }
+    var ages by remember { mutableStateOf(setOf<String>()) }
+    var tags by remember { mutableStateOf(setOf<String>()) }
+    var minRating by remember { mutableStateOf(0) }
+    // Budget max en euros : null = peu importe, 0 = gratuit (même filtre que le web)
+    var budget by remember { mutableStateOf<Int?>(null) }
+    var sort by remember { mutableStateOf(Sort.FEATURED) }
     var showFilters by remember { mutableStateOf(false) }
-    var minRating by remember { mutableStateOf(0f) }
-    var activeTags by remember { mutableStateOf<List<String>>(emptyList()) }
+    // État « j'aime » optimiste, par idée
+    val likes = remember { mutableStateMapOf<String, Pair<Boolean, Int>>() }
     val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val pullRefreshState = rememberPullToRefreshState()
-    val currentUserId by sessionManager?.userId?.collectAsState() ?: remember { mutableStateOf(null) }
+    val children by viewModel.children.collectAsState()
 
-    // All unique tags from links
     val allTags = remember(links) {
-        links.flatMap { it.tags }.distinct().sorted().take(20)
+        links.flatMap { it.tags }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.take(20).map { it.key }
     }
 
-    // Tag suggestions while typing
-    val tagSuggestions = remember(searchQuery, activeTags) {
-        if (searchQuery.length >= 1) {
-            allTags.filter { t ->
-                t.contains(searchQuery, ignoreCase = true) && !activeTags.contains(t)
-            }.take(6)
-        } else emptyList()
-    }
-
-    val filteredLinks = remember(links, searchQuery, selectedCategory, sortOption, minRating, activeTags) {
-        val filtered = links.filter { link ->
-            val matchesSearch = searchQuery.isEmpty() ||
-                link.title.contains(searchQuery, ignoreCase = true) ||
-                link.description.contains(searchQuery, ignoreCase = true) ||
-                link.tags.any { it.contains(searchQuery, ignoreCase = true) }
-            val matchesCategory = selectedCategory == null || link.category == selectedCategory
-            val matchesRating = minRating == 0f || link.rating >= minRating
-            val matchesTags = activeTags.isEmpty() || activeTags.all { tag -> link.tags.contains(tag) }
-            matchesSearch && matchesCategory && matchesRating && matchesTags
-        }
-        when (sortOption) {
-            SortOption.POPULAR -> filtered.sortedByDescending { it.likeCount }
-            SortOption.RECENT -> filtered.sortedByDescending { it.updatedAt }
-            SortOption.RATED -> filtered.sortedWith(compareByDescending<Link> { it.rating }.thenByDescending { it.updatedAt })
+    val list = remember(links, query, category, ages, tags, minRating, budget, sort) {
+        val bands = AGES.filter { it.key in ages }
+        links.filter { l ->
+            (query.isBlank() || listOf(l.title, l.description, l.location, l.ownerDisplayName).any { it.contains(query, true) } ||
+                l.tags.any { it.contains(query, true) }) &&
+                (category == null || l.category == category) &&
+                (bands.isEmpty() || bands.any { matchesAge(l.ageRange, it.min, it.max) }) &&
+                (tags.isEmpty() || tags.all { it in l.tags }) &&
+                l.rating >= minRating &&
+                budget.let { max -> max == null || priceValue(l.price)?.let { if (max == 0) it == 0.0 else it < max } == true }
+        }.let { f ->
+            when (sort) {
+                Sort.FEATURED -> {
+                    val now = System.currentTimeMillis()
+                    f.sortedByDescending { rotationScore(it.id, it.likeCount, it.createdAt, now) }
+                }
+                Sort.POPULAR -> f.sortedByDescending { it.likeCount }
+                Sort.RECENT -> f.sortedByDescending { it.createdAt.ifEmpty { it.updatedAt } }
+                Sort.RATED -> f.sortedWith(compareByDescending<Link> { it.rating }.thenByDescending { it.likeCount })
+            }
         }
     }
+    // Cartes construites par lots : toutes d'un coup (jusqu'à 700 idées avec
+    // image) rendaient l'arrivée sur l'Explorer lente. Le lot suivant est ajouté
+    // à l'approche du bas de la page.
+    val scroll = rememberScrollState()
+    var shown by remember(list) { mutableStateOf(PAGE) }
+    val nearBottom by remember { derivedStateOf { scroll.maxValue - scroll.value < 1500 } }
+    LaunchedEffect(nearBottom, shown, list.size) { if (nearBottom && shown < list.size) shown += PAGE }
+    val activeFilters = ages.size + tags.size + (if (minRating > 0) 1 else 0) + (if (budget != null) 1 else 0) + (if (sort != Sort.FEATURED) 1 else 0)
 
-    val categories = listOf(
-        LinkCategory.ACTIVITE to "Activités",
-        LinkCategory.CADEAU to "Cadeaux",
-        LinkCategory.RECETTE to "Recettes",
-        LinkCategory.EVENEMENT to "Événements",
-        LinkCategory.IDEE to "Idées",
-        LinkCategory.LIVRE to "Livres",
-        LinkCategory.DECORATION to "Décorations"
-    )
-
-    val activeFiltersCount = (if (selectedCategory != null) 1 else 0) +
-        (if (minRating > 0f) 1 else 0) +
-        activeTags.size
-
-    fun toggleTag(tag: String) {
-        activeTags = if (activeTags.contains(tag)) activeTags - tag else activeTags + tag
-    }
-
-    fun clearAll() {
-        selectedCategory = null
-        minRating = 0f
-        activeTags = emptyList()
-        searchQuery = ""
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFF9FAFB))
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.loadCommunityLinks() },
+        modifier = modifier.fillMaxSize().background(Sable)
     ) {
-        // Sticky header
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color.White,
-            shadowElevation = 4.dp
+        Column(
+            Modifier.fillMaxSize().verticalScroll(scroll).statusBarsPadding().padding(top = 20.dp, bottom = ui.components.bottomNavClearance()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 12.dp, bottom = 10.dp)
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Title row + view toggle
+                Text(category?.let { categoryUi(it).plural } ?: "Explorer", style = display(32.sp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Explorer",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
-                    )
-                    // View mode toggle
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFF3F4F6)
-                    ) {
-                        Row(modifier = Modifier.padding(4.dp)) {
-                            ViewToggleButton(
-                                icon = Icons.Filled.GridView,
-                                selected = viewMode == ViewMode.GRID,
-                                onClick = { viewMode = ViewMode.GRID }
-                            )
-                            ViewToggleButton(
-                                icon = Icons.Filled.ViewList,
-                                selected = viewMode == ViewMode.LIST,
-                                onClick = { viewMode = ViewMode.LIST }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(10.dp))
-
-                // Search bar
-                Box {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFF3F4F6)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Search,
-                                contentDescription = null,
-                                tint = Color(0xFF9CA3AF),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            TextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = {
-                                    Text("Idée, tag, auteur…", fontSize = 14.sp, color = Color(0xFF9CA3AF))
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                ),
-                                singleLine = true,
-                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp)
-                            )
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(20.dp)) {
-                                    Icon(Icons.Filled.Close, contentDescription = "Effacer",
-                                        tint = Color(0xFF9CA3AF), modifier = Modifier.size(14.dp))
-                                }
-                            }
-                        }
-                    }
-                    // Tag suggestions dropdown
-                    if (tagSuggestions.isNotEmpty()) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 52.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            shadowElevation = 8.dp,
-                            color = Color.White
-                        ) {
-                            Column {
-                                tagSuggestions.forEach { tag ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable { toggleTag(tag); searchQuery = "" }
-                                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text("#", fontSize = 12.sp, color = Color(0xFFF97316), fontWeight = FontWeight.Bold)
-                                        Text(tag, fontSize = 13.sp, color = Color(0xFF374151))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(10.dp))
-
-                // Category chips
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
+                    Modifier
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.White)
+                        .border(ThinBorder, RoundedCornerShape(14.dp))
+                        .clickable(role = Role.Button) { showFilters = true }
+                        .padding(horizontal = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    CategoryChip(
-                        label = "Toutes",
-                        emoji = null,
-                        color = Color(0xFFF97316),
-                        selected = selectedCategory == null,
-                        onClick = { selectedCategory = null }
-                    )
-                    categories.forEach { (category, label) ->
-                        CategoryChip(
-                            label = label,
-                            emoji = getCategoryEmoji(category),
-                            color = getCategoryColor(category),
-                            selected = selectedCategory == category,
-                            onClick = { selectedCategory = if (selectedCategory == category) null else category }
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(10.dp))
-
-                // Sort pills + filter button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SortPill(
-                        label = "Populaire",
-                        icon = "🔥",
-                        selected = sortOption == SortOption.POPULAR,
-                        onClick = { sortOption = SortOption.POPULAR }
-                    )
-                    SortPill(
-                        label = "Récent",
-                        icon = "🕐",
-                        selected = sortOption == SortOption.RECENT,
-                        onClick = { sortOption = SortOption.RECENT }
-                    )
-                    SortPill(
-                        label = "Mieux noté",
-                        icon = "⭐",
-                        selected = sortOption == SortOption.RATED,
-                        onClick = { sortOption = SortOption.RATED }
-                    )
-                    Spacer(Modifier.weight(1f))
-                    // Advanced filter button
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (showFilters || activeFiltersCount > 0) Color(0xFFFFF7ED) else Color(0xFFF3F4F6),
-                        modifier = Modifier.clickable { showFilters = !showFilters }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Tune,
-                                contentDescription = null,
-                                tint = if (showFilters || activeFiltersCount > 0) Color(0xFFF97316) else Color(0xFF9CA3AF),
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Text(
-                                text = "Filtres",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (showFilters || activeFiltersCount > 0) Color(0xFFF97316) else Color(0xFF9CA3AF)
-                            )
-                            if (activeFiltersCount > 0) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(16.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFFF97316)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = activeFiltersCount.toString(),
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
-                            }
-                            Icon(
-                                imageVector = Icons.Filled.KeyboardArrowDown,
-                                contentDescription = null,
-                                tint = if (showFilters || activeFiltersCount > 0) Color(0xFFF97316) else Color(0xFF9CA3AF),
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .rotate(if (showFilters) 180f else 0f)
-                            )
-                        }
-                    }
-                }
-
-                // Advanced filter panel
-                if (showFilters) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                    ) {
-                        HorizontalDivider(color = Color(0xFFF3F4F6), thickness = 1.dp)
-                        Spacer(Modifier.height(12.dp))
-
-                        // Min rating
-                        Text(
-                            text = "NOTE MINIMALE",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF9CA3AF),
-                            letterSpacing = 0.8.sp
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf(0f, 3f, 4f, 4.5f).forEach { val_ ->
-                                val selected = minRating == val_
-                                Surface(
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = if (selected) Color(0xFFF97316) else Color(0xFFF3F4F6),
-                                    modifier = Modifier.clickable { minRating = val_ }
-                                ) {
-                                    Text(
-                                        text = if (val_ == 0f) "Toutes" else "⭐ ${if (val_ == val_.toInt().toFloat()) val_.toInt() else val_}+",
-                                        fontSize = 11.sp,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selected) Color.White else Color(0xFF6B7280),
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        if (allTags.isNotEmpty()) {
-                            Spacer(Modifier.height(12.dp))
-                            Text(
-                                text = "TAGS POPULAIRES",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF9CA3AF),
-                                letterSpacing = 0.8.sp
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                allTags.take(12).forEach { tag ->
-                                    val selected = activeTags.contains(tag)
-                                    Surface(
-                                        shape = RoundedCornerShape(20.dp),
-                                        color = if (selected) Color(0xFFF97316) else Color(0xFFF3F4F6),
-                                        modifier = Modifier.clickable { toggleTag(tag) }
-                                    ) {
-                                        Text(
-                                            text = "#$tag",
-                                            fontSize = 11.sp,
-                                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                            color = if (selected) Color.White else Color(0xFF6B7280),
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                        )
-                                    }
-                                }
-                            }
+                    Icon(Icons.Outlined.Tune, null, tint = Ecorce, modifier = Modifier.size(20.dp))
+                    Text("Filtres", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
+                    if (activeFilters > 0) {
+                        Box(Modifier.size(20.dp).clip(RoundedCornerShape(10.dp)).background(Terracotta), contentAlignment = Alignment.Center) {
+                            Text("$activeFilters", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
-        }
 
-        // Content
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { viewModel.loadCommunityLinks() },
-            state = pullRefreshState,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            if (viewMode == ViewMode.GRID) {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp)
-                ) {
-                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
-                        ResultsBar(
-                            count = filteredLinks.size,
-                            selectedCategory = selectedCategory,
-                            minRating = minRating,
-                            activeTags = activeTags,
-                            categories = categories,
-                            onClearCategory = { selectedCategory = null },
-                            onClearRating = { minRating = 0f },
-                            onClearTag = { toggleTag(it) },
-                            onClearAll = { clearAll() }
-                        )
-                    }
-                    if (filteredLinks.isEmpty()) {
-                        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
-                            EmptyState(onClearAll = { clearAll() })
-                        }
-                    } else {
-                        items(filteredLinks) { link ->
-                            IdeaGridCard(
-                                link = link,
-                                onClick = { onNavigateToDetail(link.id) },
-                                onSaveClick = { onSaveLink(link) }
-                            )
-                        }
-                    }
-                }
+            SearchField(
+                query, { query = it },
+                if (view == 1) "Anniversaire, vacances, recettes d'hiver…" else "Sortie nature, crêpes, Lego…",
+                Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+            )
+
+            SegmentedTabs(listOf("Idées", "Dossiers"), view, { view = it }, Modifier.padding(horizontal = 20.dp))
+
+            if (view == 1) {
+                CommunityFolderGrid(communityFolders, query, isRefreshing, onOpenFolder)
             } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp)
-                ) {
-                    item {
-                        ResultsBar(
-                            count = filteredLinks.size,
-                            selectedCategory = selectedCategory,
-                            minRating = minRating,
-                            activeTags = activeTags,
-                            categories = categories,
-                            onClearCategory = { selectedCategory = null },
-                            onClearRating = { minRating = 0f },
-                            onClearTag = { toggleTag(it) },
-                            onClearAll = { clearAll() }
+
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Pill("Tout", category == null, { category = null })
+                CategoryOrder.forEach { c ->
+                    Pill(c.plural, category == c.category, { category = if (category == c.category) null else c.category }, idleBg = c.bg, idleFg = c.ink)
+                }
+            }
+
+            Row(
+                Modifier.padding(horizontal = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Âge", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextSec)
+                AGES.forEach { a ->
+                    OutlinePill(a.label, a.key in ages) { ages = if (a.key in ages) ages - a.key else ages + a.key }
+                }
+            }
+
+            Text(
+                buildAnnotatedString {
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Ecorce)) {
+                        append("${list.size} idée${if (list.size > 1) "s" else ""}")
+                    }
+                    append(" partagée${if (list.size > 1) "s" else ""} par la communauté")
+                },
+                fontSize = 13.sp, color = TextSec, modifier = Modifier.padding(horizontal = 20.dp)
+            )
+
+            Box(Modifier.padding(horizontal = 20.dp)) {
+                if (list.isEmpty()) {
+                    EmptyBlock(
+                        Icons.Outlined.Explore,
+                        if (isRefreshing) "Chargement…" else "Rien trouvé par ici",
+                        "Élargissez les filtres ou demandez à l'IA de vous préparer un dossier sur mesure."
+                    ) { CampButton("Demander à l'IA", onNavigateToAI, kind = ButtonKind.Ai, icon = Icons.Outlined.AutoAwesome) }
+                } else {
+                    // La carte IA s'insère en 4e position, comme sur la maquette
+                    val slot = minOf(3, list.size)
+                    val items: List<Link?> = (list.take(slot) + listOf(null) + list.drop(slot)).take(shown + 1)
+                    TwoColumnMosaic(items) { l, i ->
+                        if (l == null) {
+                            AiPromoCard(onNavigateToAI)
+                        } else {
+                            val (liked, _) = likes[l.id] ?: (l.likedByMe to l.likeCount)
+                            MosaicCard(
+                                link = l.copy(likeCount = likes[l.id]?.second ?: l.likeCount),
+                                index = i,
+                                onClick = { onNavigateToDetail(l.id) },
+                                liked = liked,
+                                onLike = {
+                                    val count = likes[l.id]?.second ?: l.likeCount
+                                    likes[l.id] = !liked to (count + if (liked) -1 else 1)
+                                    viewModel.toggleLike(l.id, liked) { ok, c -> likes[l.id] = ok to c }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            }
+        }
+    }
+
+    if (showFilters) {
+        ModalBottomSheet(onDismissRequest = { showFilters = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+            Column(
+                Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                Text("Filtres", style = display(24.sp))
+                FilterGroup("Trier par") {
+                    Sort.entries.forEach { s -> Pill(s.label, sort == s, { sort = s }) }
+                }
+                FilterGroup("Âge des enfants") {
+                    AGES.forEach { a -> Pill("${a.label} ans", a.key in ages, { ages = if (a.key in ages) ages - a.key else ages + a.key }) }
+                }
+                if (children.isNotEmpty()) {
+                    Row(
+                        Modifier.clip(RoundedCornerShape(12.dp)).clickable {
+                            ages = children.map { c ->
+                                val y = ageInMonths(c.birthDate) / 12f
+                                AGES.firstOrNull { y >= it.min && y < it.max }?.key ?: "10+"
+                            }.toSet()
+                        }.padding(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Outlined.ChildCare, null, tint = Terracotta, modifier = Modifier.size(18.dp))
+                        Text("L'âge de mes enfants (${children.joinToString { it.name }})", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta)
+                    }
+                }
+                FilterGroup("Budget") {
+                    listOf<Pair<Int?, String>>(null to "Peu importe", 0 to "Gratuit", 10 to "Moins de 10 €").forEach { (b, label) ->
+                        Pill(label, budget == b, { budget = b })
+                    }
+                }
+                FilterGroup("Note minimale") {
+                    listOf(0, 3, 4, 5).forEach { r -> Pill(if (r == 0) "Toutes" else "$r ★ et +", minRating == r, { minRating = r }) }
+                }
+                if (allTags.isNotEmpty()) {
+                    FilterGroup("Tags populaires") {
+                        allTags.forEach { t -> Pill("#$t", t in tags, { tags = if (t in tags) tags - t else tags + t }, idleBg = Sable2, idleFg = TextSec) }
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CampButton("Réinitialiser", {
+                        ages = emptySet(); tags = emptySet(); minRating = 0; budget = null; sort = Sort.FEATURED
+                    }, Modifier.weight(1f), kind = ButtonKind.Ghost)
+                    CampButton("Voir ${list.size} idées", { showFilters = false }, Modifier.weight(1f), kind = ButtonKind.Dark)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FilterGroup(title: String, content: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
+    }
+}
+
+@Composable
+private fun AiPromoCard(onClick: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Prune).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.size(26.dp))
+        Text("Pas d'idée ? L'IA prépare un dossier sur mesure.", style = display(16.sp, FontWeight.Bold, Sable))
+        Text(
+            "Essayer",
+            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ecorce,
+            modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Soleil).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 8.dp)
+        )
+    }
+}
+
+/** Dossiers publics de la communauté, filtrés par la recherche. */
+@Composable
+private fun CommunityFolderGrid(folders: List<data.Folder>, query: String, loading: Boolean, onOpen: (data.Folder) -> Unit) {
+    val q = query.trim().lowercase()
+    val list = if (q.isEmpty()) folders else folders.filter { f ->
+        f.name.lowercase().contains(q) || f.tags.any { it.lowercase().contains(q) } || f.ownerDisplayName.lowercase().contains(q)
+    }
+    Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            "${list.size} dossier${if (list.size > 1) "s" else ""} partagé${if (list.size > 1) "s" else ""} par la communauté",
+            fontSize = 13.sp, color = TextSec
+        )
+        if (list.isEmpty()) {
+            EmptyBlock(
+                Icons.Outlined.Explore,
+                if (loading && folders.isEmpty()) "Chargement…" else "Aucun dossier public",
+                "Rendez un de vos dossiers public pour inspirer les autres tribus."
+            )
+        } else {
+            list.chunked(2).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    row.forEach { f ->
+                        FolderCard(
+                            f, f.linkCount, { onOpen(f) }, Modifier.weight(1f),
+                            ownerLabel = listOfNotNull(
+                                f.ownerDisplayName.takeIf { it.isNotBlank() },
+                                f.likeCount.takeIf { it > 0 }?.let { "♥ $it" }
+                            ).joinToString(" · ").ifBlank { null }
                         )
                     }
-                    if (filteredLinks.isEmpty()) {
-                        item { EmptyState(onClearAll = { clearAll() }) }
-                    } else {
-                        items(filteredLinks) { link ->
-                            IdeaListCard(
-                                link = link,
-                                onClick = { onNavigateToDetail(link.id) },
-                                onSaveClick = { onSaveLink(link) },
-                                sessionManager = sessionManager,
-                                followRepository = followRepository,
-                                currentUserId = currentUserId
-                            )
-                        }
-                    }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
         }
     }
 }
 
-// ── Results bar ──────────────────────────────────────────────────────
-
-@Composable
-private fun ResultsBar(
-    count: Int,
-    selectedCategory: LinkCategory?,
-    minRating: Float,
-    activeTags: List<String>,
-    categories: List<Pair<LinkCategory, String>>,
-    onClearCategory: () -> Unit,
-    onClearRating: () -> Unit,
-    onClearTag: (String) -> Unit,
-    onClearAll: () -> Unit
-) {
-    val activeFiltersCount = (if (selectedCategory != null) 1 else 0) +
-        (if (minRating > 0f) 1 else 0) + activeTags.size
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Filled.TrendingUp,
-            contentDescription = null,
-            tint = Color(0xFFF97316),
-            modifier = Modifier.size(13.dp)
-        )
-        Text(
-            text = "$count idée${if (count > 1) "s" else ""}",
-            fontSize = 12.sp,
-            color = Color(0xFF6B7280)
-        )
-
-        // Active filter chips
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            if (selectedCategory != null) {
-                ActiveFilterChip(
-                    label = "${getCategoryEmoji(selectedCategory)} ${categories.find { it.first == selectedCategory }?.second ?: ""}",
-                    onRemove = onClearCategory
-                )
-            }
-            if (minRating > 0f) {
-                ActiveFilterChip(
-                    label = "⭐ ${if (minRating == minRating.toInt().toFloat()) minRating.toInt() else minRating}+",
-                    onRemove = onClearRating
-                )
-            }
-            activeTags.forEach { tag ->
-                ActiveFilterChip(label = "#$tag", onRemove = { onClearTag(tag) })
-            }
-            if (activeFiltersCount > 1) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFFFEE2E2),
-                    modifier = Modifier.clickable(onClick = onClearAll)
-                ) {
-                    Text(
-                        text = "Tout effacer",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFEF4444),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-        }
-    }
+/**
+ * Prix comparable d'une idée, en euros : 0 si gratuite, le premier montant
+ * trouvé sinon (« 6 € / enfant » → 6), null si absent ou illisible.
+ * Même logique que `priceValue` côté web (frontend/src/lib/format.ts).
+ */
+private fun priceValue(price: String): Double? {
+    val p = price.trim().lowercase()
+    if (p.isEmpty()) return null
+    if (Regex("gratuit|free|offert").containsMatchIn(p)) return 0.0
+    return Regex("""\d+(?:[.,]\d+)?""").find(p)?.value?.replace(',', '.')?.toDoubleOrNull()
 }
-
-@Composable
-private fun ActiveFilterChip(label: String, onRemove: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFFFFF7ED),
-        modifier = Modifier.clickable(onClick = onRemove)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFF97316))
-            Icon(Icons.Filled.Close, contentDescription = null, tint = Color(0xFFF97316), modifier = Modifier.size(9.dp))
-        }
-    }
-}
-
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-@Composable
-private fun EmptyState(onClearAll: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 64.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(text = "🔍", fontSize = 52.sp)
-        Text(text = "Aucune idée trouvée", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF374151))
-        Text(text = "Essayez d'autres mots-clés ou réinitialisez les filtres", fontSize = 13.sp, color = Color(0xFF9CA3AF))
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = Color(0xFFF97316),
-            modifier = Modifier.clickable(onClick = onClearAll)
-        ) {
-            Text(
-                text = "Réinitialiser",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)
-            )
-        }
-    }
-}
-
-// ── Header composables ────────────────────────────────────────────────────────
-
-@Composable
-private fun ViewToggleButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .size(32.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (selected) Color.White else Color.Transparent)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (selected) Color(0xFFF97316) else Color(0xFF9CA3AF),
-            modifier = Modifier.size(16.dp)
-        )
-    }
-}
-
-@Composable
-private fun SortPill(label: String, icon: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = if (selected) Color(0xFFFFF7ED) else Color(0xFFF3F4F6),
-        modifier = Modifier.clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = icon, fontSize = 10.sp)
-            Text(
-                text = label,
-                fontSize = 11.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                color = if (selected) Color(0xFFF97316) else Color(0xFF9CA3AF)
-            )
-        }
-    }
-}
-
-@Composable
-private fun CategoryChip(
-    label: String,
-    emoji: String?,
-    color: Color,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = if (selected) color else color.copy(alpha = 0.12f),
-        modifier = Modifier.clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (emoji != null) Text(text = emoji, fontSize = 12.sp)
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = if (selected) Color.White else color
-            )
-        }
-    }
-}
-
-// ── Card composables ──────────────────────────────────────────────────────────
-
-@Composable
-fun IdeaGridCard(
-    link: Link,
-    onClick: () -> Unit,
-    onSaveClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var saved by remember { mutableStateOf(link.favorite) }
-    val categoryColor = getCategoryColor(link.category)
-    val ownerName = link.ownerDisplayName.ifBlank { "Anonyme" }
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        shadowElevation = 4.dp,
-        color = Color.White
-    ) {
-        Column {
-            // Image
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-            ) {
-                if (link.imageUrl.isNotEmpty()) {
-                    AsyncImage(
-                        model = link.imageUrl,
-                        contentDescription = link.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    CategoryPatternBackground(category = link.category, modifier = Modifier.fillMaxSize())
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))))
-                )
-                // Save button
-                Box(
-                    modifier = Modifier
-                        .padding(6.dp)
-                        .size(24.dp)
-                        .align(Alignment.TopEnd)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.9f))
-                        .clickable { saved = !saved; onSaveClick() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (saved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                        contentDescription = null,
-                        tint = if (saved) Color(0xFFF97316) else Color(0xFF374151),
-                        modifier = Modifier.size(12.dp)
-                    )
-                }
-                // Rating
-                if (link.rating > 0) {
-                    Surface(
-                        modifier = Modifier.padding(6.dp).align(Alignment.BottomStart),
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.White.copy(alpha = 0.9f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            horizontalArrangement = Arrangement.spacedBy(2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Filled.Star, null, tint = Color(0xFFF59E0B), modifier = Modifier.size(9.dp))
-                            Text(link.rating.toString(), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1F2937))
-                        }
-                    }
-                }
-            }
-
-            // Content
-            Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(getCategoryEmoji(link.category), fontSize = 10.sp)
-                    Text(
-                        getCategoryLabel(link.category),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = categoryColor
-                    )
-                }
-                Text(
-                    text = link.title,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF111827),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 16.sp
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(16.dp)
-                                .background(categoryColor, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = ownerName.firstOrNull()?.uppercase() ?: "?",
-                                fontSize = 8.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                lineHeight = 8.sp
-                            )
-                        }
-                        Text(ownerName, fontSize = 9.sp, color = Color(0xFF9CA3AF), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Filled.FavoriteBorder, null, tint = Color(0xFFD1D5DB), modifier = Modifier.size(11.dp))
-                        Text(link.likeCount.toString(), fontSize = 9.sp, color = Color(0xFF9CA3AF))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun IdeaListCard(
-    link: Link,
-    onClick: () -> Unit,
-    onSaveClick: () -> Unit,
-    sessionManager: data.SessionManager? = null,
-    followRepository: data.FollowRepository? = null,
-    currentUserId: String? = null,
-    modifier: Modifier = Modifier
-) {
-    IdeaCard(
-        link = link,
-        compact = true,
-        onClick = onClick,
-        onSaveClick = onSaveClick,
-        sessionManager = sessionManager,
-        followRepository = followRepository,
-        currentUserId = currentUserId,
-        modifier = modifier
-    )
-}
-

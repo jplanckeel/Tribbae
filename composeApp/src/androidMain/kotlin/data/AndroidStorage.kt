@@ -9,6 +9,11 @@ class AndroidStorage(context: Context) : Storage {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("tribbae_data", Context.MODE_PRIVATE)
 
+    // Le jeton vit dans un fichier exclu des sauvegardes (backup_rules.xml ne
+    // sauvegarde que tribbae_data) : il ne doit pas quitter l'appareil.
+    private val secrets: SharedPreferences =
+        context.getSharedPreferences("tribbae_secrets", Context.MODE_PRIVATE)
+
     private val json = Json { ignoreUnknownKeys = true }
 
     override fun saveLinks(links: List<Link>) {
@@ -27,6 +32,15 @@ class AndroidStorage(context: Context) : Storage {
     override fun loadFolders(): List<Folder> {
         val raw = prefs.getString("folders", null) ?: return emptyList()
         return try { json.decodeFromString(raw) } catch (_: Exception) { emptyList() }
+    }
+
+    override fun saveImageChecks(checks: Map<String, Long>) {
+        prefs.edit().putString("image_checks", json.encodeToString(checks)).apply()
+    }
+
+    override fun loadImageChecks(): Map<String, Long> {
+        val raw = prefs.getString("image_checks", null) ?: return emptyMap()
+        return try { json.decodeFromString(raw) } catch (_: Exception) { emptyMap() }
     }
 
     override fun saveTags(tags: List<String>) {
@@ -48,8 +62,12 @@ class AndroidStorage(context: Context) : Storage {
     }
 
     override fun saveToken(token: String) {
-        prefs.edit().putString("auth_token", token).apply()
+        secrets.edit().putString("auth_token", token).apply()
+        prefs.edit().remove("auth_token").apply()
     }
 
-    override fun loadToken(): String? = prefs.getString("auth_token", null)
+    // Migration : les versions précédentes rangeaient le jeton dans tribbae_data
+    override fun loadToken(): String? =
+        secrets.getString("auth_token", null)
+            ?: prefs.getString("auth_token", null)?.also { saveToken(it) }
 }

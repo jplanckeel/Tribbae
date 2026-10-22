@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -14,38 +15,58 @@ import (
 const (
 	AdminEmail       = "tribbae@bananaops.cloud"
 	AdminDisplayName = "Tribbae"
+
+	// legacyDefaultAdminPassword était le mot de passe par défaut (public, dans le
+	// dépôt) des anciennes versions. Un compte qui l'utilise encore est réinitialisé
+	// dès qu'ADMIN_PASSWORD est fourni.
+	legacyDefaultAdminPassword = "tribbae-admin" // #nosec G101 -- valeur publique, sert uniquement à détecter et remplacer l'ancien défaut
+	minAdminPasswordLen        = 12
 )
 
-// EnsureAdminAccount crée ou met à jour le compte admin Tribbae au démarrage.
-// Idempotent : si l'email existe déjà, active juste is_admin.
+// EnsureAdminAccount crée le compte admin Tribbae au démarrage si ADMIN_PASSWORD
+// est défini. Il ne promeut jamais un compte existant : sinon n'importe qui
+// pourrait s'inscrire avec l'email admin avant le premier démarrage.
 func EnsureAdminAccount(ctx context.Context, col *mongo.Collection, password string) error {
-	var existing User
-	err := col.FindOne(ctx, bson.M{"email": AdminEmail}).Decode(&existing)
-
-	if err == nil {
-		// L'utilisateur existe déjà — s'assurer qu'il est admin
-		if !existing.IsAdmin {
-			_, err = col.UpdateOne(ctx, bson.M{"_id": existing.ID}, bson.M{"$set": bson.M{"is_admin": true}})
-			if err != nil {
-				return err
-			}
-			log.Printf("Admin account %s updated to admin", AdminEmail)
-		} else {
-			log.Printf("Admin account %s already exists", AdminEmail)
-		}
-		return nil
+	if password != "" && len(password) < minAdminPasswordLen {
+		return errors.New("ADMIN_PASSWORD must be at least 12 characters")
 	}
 
-	if err != mongo.ErrNoDocuments {
+	var existing User
+	err := col.FindOne(ctx, bson.M{"email": AdminEmail}).Decode(&existing)
+	if err == nil {
+		if !existing.IsAdmin {
+			log.Printf("WARNING: account %s exists but is not admin; it will not be promoted automatically", AdminEmail)
+			return nil
+		}
+		if bcrypt.CompareHashAndPassword([]byte(existing.Password), []byte(legacyDefaultAdminPassword)) != nil {
+			return nil
+		}
+		if password == "" {
+			log.Printf("WARNING: admin account %s still uses the public default password; set ADMIN_PASSWORD to rotate it", AdminEmail)
+			return nil
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		if _, err := col.UpdateOne(ctx, bson.M{"_id": existing.ID}, bson.M{"$set": bson.M{"password": string(hash)}}); err != nil {
+			return err
+		}
+		log.Printf("Admin account %s: default password replaced by ADMIN_PASSWORD", AdminEmail)
+		return nil
+	}
+	if !errors.Is(err, mongo.ErrNoDocuments) {
 		return err
 	}
 
-	// Créer le compte admin
+	if password == "" {
+		log.Printf("ADMIN_PASSWORD not set: admin account %s not created", AdminEmail)
+		return nil
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-
 	user := User{
 		ID:          primitive.NewObjectID(),
 		Email:       AdminEmail,
@@ -57,6 +78,6 @@ func EnsureAdminAccount(ctx context.Context, col *mongo.Collection, password str
 	if _, err := col.InsertOne(ctx, user); err != nil {
 		return err
 	}
-	log.Printf("Admin account %s created (displayName: %s)", AdminEmail, AdminDisplayName)
+	log.Printf("Admin account %s created", AdminEmail)
 	return nil
 }

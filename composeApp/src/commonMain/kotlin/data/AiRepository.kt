@@ -14,14 +14,9 @@ import java.net.URL
 data class AiSuggestedLink(
     val title: String = "",
     val description: String = "",
-    val url: String = "",
-    val imageUrl: String = "",
     val category: String = "LINK_CATEGORY_IDEE",
     val tags: List<String> = emptyList(),
-    val ageRange: String = "",
-    val price: String = "",
-    val location: String = "",
-    val ingredients: List<String> = emptyList()
+    val ageRange: String = ""
 )
 
 @Serializable
@@ -29,7 +24,7 @@ data class AiGenerateResponse(
     val ideas: List<AiSuggestedLink> = emptyList()
 )
 
-class AiRepository(private val baseUrl: String = "https://tribbae.bananaops.cloud") {
+class AiRepository(private val baseUrl: String = Backend.url) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     suspend fun generateIdeas(prompt: String, token: String): AiGenerateResponse =

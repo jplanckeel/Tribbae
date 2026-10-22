@@ -21,9 +21,9 @@ func NewHandler(svc *Service) *Handler {
 // toProto converts a UserProfile to protobuf format
 func (h *Handler) toProto(profile UserProfile) *pb.UserProfile {
 	return &pb.UserProfile{
-		Id:             profile.ID,
-		DisplayName:    profile.DisplayName,
-		Email:          profile.Email,
+		Id:          profile.ID,
+		DisplayName: profile.DisplayName,
+		// L'email n'est jamais exposé : ces profils sont visibles par n'importe quel utilisateur.
 		IsAdmin:        profile.IsAdmin,
 		FollowerCount:  profile.FollowerCount,
 		FollowingCount: profile.FollowingCount,
@@ -143,4 +143,3 @@ func (h *Handler) GetFollowing(ctx context.Context, req *pb.GetFollowingRequest)
 
 	return &pb.GetFollowingResponse{Following: protoFollowing}, nil
 }
-

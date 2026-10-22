@@ -30,7 +30,8 @@ fun TagInputWithAutocomplete(
     tagsList: List<String>,
     onTagsChanged: (List<String>) -> Unit,
     allAvailableTags: List<String>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showLabel: Boolean = true
 ) {
     var tagInput by remember { mutableStateOf("") }
 
@@ -57,12 +58,14 @@ fun TagInputWithAutocomplete(
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = "Tags",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF374151)
-        )
+        if (showLabel) {
+            Text(
+                text = "Tags",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF4E3530)
+            )
+        }
 
         // Chips des tags sélectionnés
         if (tagsList.isNotEmpty()) {
@@ -76,7 +79,7 @@ fun TagInputWithAutocomplete(
                 tagsList.forEach { tag ->
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFFFFF7ED)
+                        color = Color(0xFFFDE6BD)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -86,13 +89,13 @@ fun TagInputWithAutocomplete(
                             Text(
                                 text = tag,
                                 fontSize = 13.sp,
-                                color = Color(0xFFF97316),
+                                color = Color(0xFFC8492C),
                                 fontWeight = FontWeight.Medium
                             )
                             Icon(
                                 imageVector = Icons.Filled.Close,
                                 contentDescription = "Supprimer",
-                                tint = Color(0xFFF97316),
+                                tint = Color(0xFFC8492C),
                                 modifier = Modifier
                                     .size(14.dp)
                                     .clickable { onTagsChanged(tagsList.filter { it != tag }) }
@@ -119,8 +122,8 @@ fun TagInputWithAutocomplete(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
-                        focusedBorderColor = Color(0xFFF97316),
-                        unfocusedBorderColor = Color(0xFFF3F4F6)
+                        focusedBorderColor = Color(0xFFC8492C),
+                        unfocusedBorderColor = Color(0xFFF1E3D1)
                     ),
                     singleLine = true
                 )
@@ -128,7 +131,7 @@ fun TagInputWithAutocomplete(
                     onClick = { addTag(tagInput) },
                     enabled = tagInput.isNotBlank(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF97316)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC8492C)),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -159,12 +162,12 @@ fun TagInputWithAutocomplete(
                                     text = "#",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFF97316)
+                                    color = Color(0xFFC8492C)
                                 )
                                 Text(
                                     text = suggestion,
                                     fontSize = 13.sp,
-                                    color = Color(0xFF374151)
+                                    color = Color(0xFF4E3530)
                                 )
                             }
                         }
@@ -178,7 +181,7 @@ fun TagInputWithAutocomplete(
             Text(
                 text = "Tags populaires",
                 fontSize = 11.sp,
-                color = Color(0xFF9CA3AF),
+                color = Color(0xFF8A6F64),
                 fontWeight = FontWeight.Medium
             )
             Row(
@@ -191,7 +194,7 @@ fun TagInputWithAutocomplete(
                     Surface(
                         onClick = { addTag(suggestion) },
                         shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFF3F4F6)
+                        color = Color(0xFFF1E3D1)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -201,10 +204,10 @@ fun TagInputWithAutocomplete(
                             Icon(
                                 imageVector = Icons.Filled.Add,
                                 contentDescription = null,
-                                tint = Color(0xFF6B7280),
+                                tint = Color(0xFF6B5047),
                                 modifier = Modifier.size(12.dp)
                             )
-                            Text(text = suggestion, fontSize = 11.sp, color = Color(0xFF6B7280))
+                            Text(text = suggestion, fontSize = 11.sp, color = Color(0xFF6B5047))
                         }
                     }
                 }

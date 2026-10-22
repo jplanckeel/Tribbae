@@ -1,0 +1,226 @@
+// Package account met en œuvre les droits RGPD sur le compte : accès et
+// portabilité (export de toutes ses données) et effacement (suppression
+// définitive du compte et de tout ce qui lui appartient).
+package account
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+var ErrNotFound = errors.New("account not found")
+
+// TribeLeaver retire un compte de sa tribu (transfert au plus ancien membre
+// si c'était son créateur). Implémenté par tribe.Service.
+type TribeLeaver interface {
+	Leave(ctx context.Context, userID string) error
+}
+
+type Service struct {
+	db    *mongo.Database
+	tribe TribeLeaver
+}
+
+func NewService(db *mongo.Database, tribe TribeLeaver) *Service {
+	return &Service{db: db, tribe: tribe}
+}
+
+func (s *Service) col(name string) *mongo.Collection { return s.db.Collection(name) }
+
+// Export rassemble toutes les données liées au compte, dans un format lisible
+// et réutilisable (JSON). Le mot de passe (haché) n'en fait pas partie.
+func (s *Service) Export(ctx context.Context, userID string) (map[string]any, error) {
+	oid, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	var user bson.M
+	if err := s.col("users").FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	delete(user, "password")
+
+	find := func(name string, filter bson.M) ([]bson.M, error) {
+		cur, err := s.col(name).Find(ctx, filter)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", name, err)
+		}
+		out := []bson.M{}
+		return out, cur.All(ctx, &out)
+	}
+	out := map[string]any{
+		"exportedAt": time.Now().UTC().Format(time.RFC3339),
+		"about":      "Export Tribbae de vos données personnelles (RGPD, articles 15 et 20).",
+		"account":    user,
+	}
+	sections := []struct {
+		key, col string
+		filter   bson.M
+	}{
+		{"ideas", "links", bson.M{"owner_id": userID}},
+		{"folders", "folders", bson.M{"owner_id": userID}},
+		{"sharedWithMe", "folders", bson.M{"collaborators.user_id": userID}},
+		{"children", "children", bson.M{"ownerId": oid}},
+		{"comments", "comments", bson.M{"user_id": userID}},
+		{"ideaLikes", "link_likes", bson.M{"user_id": userID}},
+		{"following", "follows", bson.M{"follower_id": userID}},
+		{"followers", "follows", bson.M{"following_id": userID}},
+		{"tribe", "tribes", bson.M{"members.user_id": userID}},
+	}
+	for _, sec := range sections {
+		docs, err := find(sec.col, sec.filter)
+		if err != nil {
+			return nil, err
+		}
+		out[sec.key] = docs
+	}
+	// Dossiers des autres : seulement le nom et son rôle, pas leur contenu
+	if shared, ok := out["sharedWithMe"].([]bson.M); ok {
+		slim := make([]bson.M, 0, len(shared))
+		for _, f := range shared {
+			slim = append(slim, bson.M{"_id": f["_id"], "name": f["name"]})
+		}
+		out["sharedWithMe"] = slim
+	}
+	liked, err := find("folders", bson.M{"liked_by": userID})
+	if err != nil {
+		return nil, err
+	}
+	folderLikes := make([]bson.M, 0, len(liked))
+	for _, f := range liked {
+		folderLikes = append(folderLikes, bson.M{"_id": f["_id"], "name": f["name"]})
+	}
+	out["folderLikes"] = folderLikes
+	return out, nil
+}
+
+// Delete efface définitivement le compte et tout ce qui lui appartient :
+// idées (et leurs commentaires et « j'aime »), dossiers, profils enfants,
+// commentaires, « j'aime », abonnements, place dans la tribu et dans les
+// dossiers partagés. Les idées que d'autres ont rangées dans ses dossiers leur
+// restent (elles redeviennent « non rangées »).
+//
+// Le compte lui-même est supprimé en dernier : si une étape échoue, une
+// nouvelle demande reprend là où la précédente s'est arrêtée.
+func (s *Service) Delete(ctx context.Context, userID string) error {
+	oid, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		return ErrNotFound
+	}
+	if n, err := s.col("users").CountDocuments(ctx, bson.M{"_id": oid}); err != nil {
+		return err
+	} else if n == 0 {
+		return ErrNotFound
+	}
+
+	// 1. Tribu : on la quitte (le contenu des autres membres reste le leur)
+	if s.tribe != nil {
+		if err := s.tribe.Leave(ctx, userID); err != nil {
+			return fmt.Errorf("tribe: %w", err)
+		}
+	}
+
+	// 2. Ses dossiers : les idées des autres qui s'y trouvent sont gardées, hors dossier
+	folderIDs, err := s.ids(ctx, "folders", bson.M{"owner_id": userID})
+	if err != nil {
+		return err
+	}
+	if len(folderIDs) > 0 {
+		if _, err := s.col("links").UpdateMany(ctx,
+			bson.M{"folder_id": bson.M{"$in": folderIDs}, "owner_id": bson.M{"$ne": userID}},
+			bson.M{"$set": bson.M{"folder_id": "", "updated_at": time.Now()}}); err != nil {
+			return fmt.Errorf("links in folders: %w", err)
+		}
+	}
+
+	// 3. Ses idées, avec les commentaires et « j'aime » qu'elles ont reçus
+	linkIDs, err := s.ids(ctx, "links", bson.M{"owner_id": userID})
+	if err != nil {
+		return err
+	}
+	if len(linkIDs) > 0 {
+		for _, c := range []string{"comments", "link_likes"} {
+			if _, err := s.col(c).DeleteMany(ctx, bson.M{"link_id": bson.M{"$in": linkIDs}}); err != nil {
+				return fmt.Errorf("%s on ideas: %w", c, err)
+			}
+		}
+	}
+
+	// 4. Ses « j'aime » sur les idées des autres : compteurs mis à jour
+	cur, err := s.col("link_likes").Find(ctx, bson.M{"user_id": userID})
+	if err != nil {
+		return err
+	}
+	var likes []struct {
+		LinkID string `bson:"link_id"`
+	}
+	if err := cur.All(ctx, &likes); err != nil {
+		return err
+	}
+	for _, l := range likes {
+		if id, err := primitive.ObjectIDFromHex(l.LinkID); err == nil {
+			_, _ = s.col("links").UpdateOne(ctx, bson.M{"_id": id, "like_count": bson.M{"$gt": 0}}, bson.M{"$inc": bson.M{"like_count": -1}})
+		}
+	}
+	if _, err := s.col("link_likes").DeleteMany(ctx, bson.M{"user_id": userID}); err != nil {
+		return err
+	}
+
+	// 5. Ses « j'aime » sur des dossiers, et sa place dans les dossiers des autres
+	if _, err := s.col("folders").UpdateMany(ctx, bson.M{"liked_by": userID},
+		bson.M{"$pull": bson.M{"liked_by": userID}, "$inc": bson.M{"like_count": -1}}); err != nil {
+		return fmt.Errorf("folder likes: %w", err)
+	}
+	if _, err := s.col("folders").UpdateMany(ctx, bson.M{"collaborators.user_id": userID},
+		bson.M{"$pull": bson.M{"collaborators": bson.M{"user_id": userID}}}); err != nil {
+		return fmt.Errorf("collaborations: %w", err)
+	}
+
+	// 6. Tout le reste de ce qui lui appartient
+	deletes := []struct {
+		col    string
+		filter bson.M
+	}{
+		{"links", bson.M{"owner_id": userID}},
+		{"folders", bson.M{"owner_id": userID}},
+		{"comments", bson.M{"user_id": userID}},
+		{"follows", bson.M{"$or": bson.A{bson.M{"follower_id": userID}, bson.M{"following_id": userID}}}},
+		{"children", bson.M{"ownerId": oid}},
+	}
+	for _, d := range deletes {
+		if _, err := s.col(d.col).DeleteMany(ctx, d.filter); err != nil {
+			return fmt.Errorf("%s: %w", d.col, err)
+		}
+	}
+
+	// 7. Le compte
+	_, err = s.col("users").DeleteOne(ctx, bson.M{"_id": oid})
+	return err
+}
+
+func (s *Service) ids(ctx context.Context, col string, filter bson.M) ([]string, error) {
+	cur, err := s.col(col).Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	var docs []struct {
+		ID primitive.ObjectID `bson:"_id"`
+	}
+	if err := cur.All(ctx, &docs); err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(docs))
+	for _, d := range docs {
+		out = append(out, d.ID.Hex())
+	}
+	return out, nil
+}

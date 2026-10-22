@@ -195,7 +195,7 @@ fun ImagePickerSection(
                             horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             Box(
-                                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF8B5CF6)),
+                                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF5E4558)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(imageVector = Icons.Default.Link, contentDescription = null,
@@ -222,7 +222,7 @@ fun ImagePickerSection(
         AlertDialog(
             onDismissRequest = { showUrlDialog = false },
             title = { Text("URL de l'image", fontWeight = FontWeight.Bold) },
-            icon = { Icon(imageVector = Icons.Default.Link, contentDescription = null, tint = Color(0xFF8B5CF6)) },
+            icon = { Icon(imageVector = Icons.Default.Link, contentDescription = null, tint = Color(0xFF5E4558)) },
             text = {
                 OutlinedTextField(
                     value = urlInput,
@@ -234,7 +234,7 @@ fun ImagePickerSection(
                         Icon(
                             imageVector = Icons.Default.Link,
                             contentDescription = null,
-                            tint = Color(0xFF9CA3AF),
+                            tint = Color(0xFF8A6F64),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -250,7 +250,7 @@ fun ImagePickerSection(
                     },
                     enabled = urlInput.isNotBlank()
                 ) {
-                    Text("Valider", fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
+                    Text("Valider", fontWeight = FontWeight.Bold, color = Color(0xFF5E4558))
                 }
             },
             dismissButton = {

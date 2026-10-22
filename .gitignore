@@ -4,9 +4,10 @@ Thumbs.db
 *.swp
 *.swo
 
-# ── IDE ──────────────────────────────────────────────────
+# ── IDE / assistants ─────────────────────────────────────
 .idea/
 .vscode/
+.claude/settings.local.json
 *.iml
 *.iws
 *.ipr
@@ -47,12 +48,18 @@ usage.txt
 
 # ── Go (backend) ─────────────────────────────────────────
 backend/vendor/
+# Binaires compilés (`go build`, `task backend:build`) : l'image Docker les recompile
+backend/server
+backend/cmd/server/server
+*.test
+coverage.out
 
 # ── Frontend (Node) ──────────────────────────────────────
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
 frontend/*.local
+frontend/.vite/
 
 # ── Logs ─────────────────────────────────────────────────
 *.log
@@ -79,3 +86,5 @@ docker-compose.override.yml
 # ── Divers ───────────────────────────────────────────────
 /tmp/tribbae-*.pid
 *.tmp
+# Exports de maquettes de design (dossier « … -html » avec runtime JS embarqué)
+*-html/

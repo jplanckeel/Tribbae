@@ -21,6 +21,9 @@ kotlin {
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.kotlinx.coroutines.android)
+            implementation(libs.androidx.core.splashscreen)
+            // Analyse HTML des pages liées (images, titre) quand le backend n'est pas joignable
+            implementation(libs.jsoup)
         }
         commonMain.dependencies {
             implementation(libs.compose.ui)
@@ -42,7 +45,7 @@ kotlin {
 
 android {
     namespace = "com.linkkeeper.app"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.linkkeeper.app"
@@ -58,9 +61,18 @@ android {
         }
     }
     
+    buildFeatures {
+        buildConfig = true
+    }
     buildTypes {
+        getByName("debug") {
+            // Backend visé par une build de dev : -Ptribbae.apiUrl=http://10.0.2.2:8080
+            val apiUrl = (project.findProperty("tribbae.apiUrl") as String?) ?: ""
+            buildConfigField("String", "API_URL", "\"$apiUrl\"")
+        }
         getByName("release") {
             isMinifyEnabled = false
+            buildConfigField("String", "API_URL", "\"\"")
         }
     }
     

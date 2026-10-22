@@ -82,7 +82,7 @@ fun AdminScreen(
             errorMessage != null -> {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8DCD3)),
                     shape = RoundedCornerShape(18.dp)
                 ) {
                     Column(
@@ -92,13 +92,13 @@ fun AdminScreen(
                         Icon(
                             imageVector = Icons.Default.Error,
                             contentDescription = null,
-                            tint = Color(0xFFD32F2F),
+                            tint = Color(0xFFB2412A),
                             modifier = Modifier.size(48.dp)
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = errorMessage ?: "Erreur",
-                            color = Color(0xFFD32F2F),
+                            color = Color(0xFFB2412A),
                             fontSize = 14.sp
                         )
                     }
@@ -128,7 +128,7 @@ fun AdminScreen(
                                 fontSize = 14.sp
                             )
                             Text(
-                                "Recherche IA améliorée avec Google Gemini",
+                                "Statut de soutien, sans avantage pour l'instant",
                                 fontSize = 12.sp,
                                 color = TextSecondary
                             )

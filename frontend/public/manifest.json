@@ -4,11 +4,15 @@
   "description": "Organisez et partagez vos idées en famille : recettes, activités, cadeaux, événements",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FFF8F0",
-  "theme_color": "#FF8C00",
+  "background_color": "#FBF3E7",
+  "theme_color": "#FBF3E7",
   "orientation": "any",
   "lang": "fr",
-  "categories": ["lifestyle", "social", "productivity"],
+  "categories": [
+    "lifestyle",
+    "social",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/tribbae.jpg",
@@ -22,5 +26,14 @@
       "type": "image/jpeg",
       "purpose": "any"
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/partager",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

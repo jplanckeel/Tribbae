@@ -6,7 +6,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
+	"regexp"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -38,9 +42,11 @@ type Folder struct {
 	AiGenerated   bool                `bson:"ai_generated"`
 	CreatedAt     time.Time           `bson:"created_at"`
 	UpdatedAt     time.Time           `bson:"updated_at"`
+	Style         `bson:",inline"`
 }
 
 type Service struct {
+	peers   func(ctx context.Context, userID string) []string
 	col     *mongo.Collection
 	linkCol *mongo.Collection
 	userCol *mongo.Collection
@@ -51,9 +57,69 @@ func NewService(col *mongo.Collection, linkCol *mongo.Collection, userCol *mongo
 	return &Service{col: col, linkCol: linkCol, userCol: userCol, baseURL: baseURL}
 }
 
-func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibility, bannerURL string, tags []string) (*Folder, error) {
-	if tags == nil {
-		tags = []string{}
+// SetTribePeers branche la tribu : peers(userID) retourne les comptes dont
+// userID voit et gère les dossiers (lui compris). Sans tribu : lui seul.
+func (s *Service) SetTribePeers(peers func(ctx context.Context, userID string) []string) {
+	s.peers = peers
+}
+
+// ownedByTribe : filtre « dossier appartenant à userID ou à sa tribu ».
+func (s *Service) ownedByTribe(ctx context.Context, userID string) bson.M {
+	ids := []string{userID}
+	if s.peers != nil {
+		ids = s.peers(ctx, userID)
+	}
+	return bson.M{"owner_id": bson.M{"$in": ids}}
+}
+
+// ErrInvalidInput signale une saisie invalide (→ codes.InvalidArgument).
+var ErrInvalidInput = errors.New("invalid input")
+
+// ErrNotFound signale un dossier absent ou inaccessible.
+var ErrNotFound = errors.New("folder not found")
+
+func invalid(msg string) error { return errors.Join(ErrInvalidInput, errors.New(msg)) }
+
+// sanitizeFolder valide les champs saisis d'un dossier.
+func sanitizeFolder(name, bannerURL string, tags []string) (string, string, []string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", "", nil, invalid("name is required")
+	}
+	if utf8.RuneCountInString(name) > 100 {
+		return "", "", nil, invalid("name is too long")
+	}
+	bannerURL = strings.TrimSpace(bannerURL)
+	if bannerURL != "" {
+		u, err := url.Parse(bannerURL)
+		if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || len(bannerURL) > 2048 {
+			return "", "", nil, invalid("bannerUrl must be an http(s) address")
+		}
+	}
+	clean := make([]string, 0, len(tags))
+	for _, t := range tags {
+		t = strings.TrimSpace(t)
+		if t == "" {
+			continue
+		}
+		if utf8.RuneCountInString(t) > 50 {
+			return "", "", nil, invalid("tag is too long")
+		}
+		clean = append(clean, t)
+	}
+	if len(clean) > 20 {
+		return "", "", nil, invalid("too many tags")
+	}
+	return name, bannerURL, clean, nil
+}
+
+func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibility, bannerURL string, tags []string, style Style) (*Folder, error) {
+	name, bannerURL, tags, err := sanitizeFolder(name, bannerURL, tags)
+	if err != nil {
+		return nil, err
+	}
+	if style, err = sanitizeStyle(style); err != nil {
+		return nil, err
 	}
 	f := &Folder{
 		ID:         primitive.NewObjectID(),
@@ -64,6 +130,7 @@ func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibi
 		BannerURL:  bannerURL,
 		Tags:       tags,
 		Visibility: visibility,
+		Style:      style,
 		CreatedAt:  time.Now(),
 		UpdatedAt:  time.Now(),
 	}
@@ -73,31 +140,32 @@ func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibi
 	return f, nil
 }
 
-func (s *Service) Get(ctx context.Context, folderID, ownerID string) (*Folder, error) {
+// Get retourne un dossier visible par userID (éventuellement anonyme) :
+// dossier public, ou dont il est propriétaire / collaborateur.
+func (s *Service) Get(ctx context.Context, folderID, userID string) (*Folder, error) {
 	id, err := primitive.ObjectIDFromHex(folderID)
 	if err != nil {
-		return nil, errors.New("invalid folder id")
+		return nil, ErrNotFound
+	}
+	or := bson.A{bson.M{"visibility": "public"}}
+	if userID != "" {
+		or = append(or, s.ownedByTribe(ctx, userID), bson.M{"collaborators.user_id": userID})
 	}
 	var f Folder
-	// Owner OU collaborateur peut accéder
-	filter := bson.M{
-		"_id": id,
-		"$or": bson.A{
-			bson.M{"owner_id": ownerID},
-			bson.M{"collaborators.user_id": ownerID},
-		},
-	}
-	if err := s.col.FindOne(ctx, filter).Decode(&f); err != nil {
+	if err := s.col.FindOne(ctx, bson.M{"_id": id, "$or": or}).Decode(&f); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	return &f, nil
 }
 
 func (s *Service) List(ctx context.Context, ownerID string) ([]*Folder, error) {
-	// Retourne les dossiers dont l'utilisateur est owner OU collaborateur
+	// Retourne les dossiers de l'utilisateur et de sa tribu, ou dont il est collaborateur
 	filter := bson.M{
 		"$or": bson.A{
-			bson.M{"owner_id": ownerID},
+			s.ownedByTribe(ctx, ownerID),
 			bson.M{"collaborators.user_id": ownerID},
 		},
 	}
@@ -110,35 +178,43 @@ func (s *Service) List(ctx context.Context, ownerID string) ([]*Folder, error) {
 	return folders, cursor.All(ctx, &folders)
 }
 
-func (s *Service) Update(ctx context.Context, folderID, ownerID, name, icon, color, visibility, bannerURL string, tags []string) (*Folder, error) {
-	if tags == nil {
-		tags = []string{}
-	}
-	id, err := primitive.ObjectIDFromHex(folderID)
-	if err != nil {
-		return nil, errors.New("invalid folder id")
-	}
-	// Owner OU éditeur peut modifier
-	filter := bson.M{
-		"_id": id,
-		"$or": bson.A{
-			bson.M{"owner_id": ownerID},
-			bson.M{"collaborators": bson.M{"$elemMatch": bson.M{"user_id": ownerID, "role": "editor"}}},
-		},
-	}
-	// Update includes visibility field to ensure it's persisted correctly
-	update := bson.M{"$set": bson.M{
-		"name": name, "icon": icon, "color": color,
-		"visibility": visibility, "banner_url": bannerURL, "tags": tags, "updated_at": time.Now(),
-	}}
-	res, err := s.col.UpdateOne(ctx, filter, update)
+func (s *Service) Update(ctx context.Context, folderID, userID, name, icon, color, visibility, bannerURL string, tags []string, patch StylePatch) (*Folder, error) {
+	name, bannerURL, tags, err := sanitizeFolder(name, bannerURL, tags)
 	if err != nil {
 		return nil, err
 	}
-	if res.MatchedCount == 0 {
-		return nil, errors.New("not found or not authorized")
+	id, err := primitive.ObjectIDFromHex(folderID)
+	if err != nil {
+		return nil, ErrNotFound
 	}
-	return s.Get(ctx, folderID, ownerID)
+	// Propriétaire, sa tribu, OU éditeur peut modifier
+	filter := bson.M{
+		"_id": id,
+		"$or": bson.A{
+			s.ownedByTribe(ctx, userID),
+			bson.M{"collaborators": bson.M{"$elemMatch": bson.M{"user_id": userID, "role": "editor"}}},
+		},
+	}
+	var existing Folder
+	if err := s.col.FindOne(ctx, filter).Decode(&existing); err != nil {
+		return nil, ErrNotFound
+	}
+	// Seul le propriétaire décide de la visibilité (un éditeur ne peut pas publier un dossier privé)
+	if existing.OwnerID != userID {
+		visibility = existing.Visibility
+	}
+	style, err := sanitizeStyle(patch.apply(existing.Style))
+	if err != nil {
+		return nil, err
+	}
+	set := style.setDoc()
+	set["name"], set["icon"], set["color"] = name, icon, color
+	set["visibility"], set["banner_url"], set["tags"], set["updated_at"] = visibility, bannerURL, tags, time.Now()
+	update := bson.M{"$set": set}
+	if _, err := s.col.UpdateOne(ctx, bson.M{"_id": id}, update); err != nil {
+		return nil, err
+	}
+	return s.Get(ctx, folderID, userID)
 }
 
 func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
@@ -146,15 +222,17 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 	if err != nil {
 		return errors.New("invalid folder id")
 	}
-	// Seul le owner peut supprimer
-	res, err := s.col.DeleteOne(ctx, bson.M{"_id": id, "owner_id": ownerID})
+	// Seuls le propriétaire et sa tribu peuvent supprimer
+	filter := s.ownedByTribe(ctx, ownerID)
+	filter["_id"] = id
+	res, err := s.col.DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}
 	if res.DeletedCount == 0 {
 		return errors.New("folder not found or not authorized to delete")
 	}
-	
+
 	// Orphan associated links by setting their folder_id to empty string
 	// This preserves user data while removing the folder association
 	_, err = s.linkCol.UpdateMany(ctx,
@@ -166,7 +244,7 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 		// The folder is already deleted at this point
 		return fmt.Errorf("folder deleted but failed to orphan links: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -191,11 +269,20 @@ func (s *Service) GenerateShareToken(ctx context.Context, folderID, ownerID stri
 }
 
 func (s *Service) GetByShareToken(ctx context.Context, token string) (*Folder, []map[string]any, error) {
+	if len(token) != 32 {
+		return nil, nil, ErrNotFound
+	}
 	var f Folder
 	if err := s.col.FindOne(ctx, bson.M{"share_token": token}).Decode(&f); err != nil {
-		return nil, nil, err
+		return nil, nil, ErrNotFound
 	}
-	cursor, err := s.linkCol.Find(ctx, bson.M{"folder_id": f.ID.Hex()})
+	// Le lien de partage est la décision du propriétaire : il expose ses idées,
+	// pas celles des collaborateurs (sauf celles que leur auteur a publiées).
+	// Même règle que link.PublicFolderFilter, sans dépendance au package link.
+	cursor, err := s.linkCol.Find(ctx, bson.M{"folder_id": f.ID.Hex(), "$or": bson.A{
+		bson.M{"owner_id": f.OwnerID},
+		bson.M{"visibility": "public"},
+	}})
 	if err != nil {
 		return &f, nil, nil
 	}
@@ -204,7 +291,6 @@ func (s *Service) GetByShareToken(ctx context.Context, token string) (*Folder, [
 	cursor.All(ctx, &links)
 	return &f, links, nil
 }
-
 
 // --- Collaborateurs ---
 
@@ -220,14 +306,18 @@ func (s *Service) AddCollaborator(ctx context.Context, folderID, ownerID, email,
 		return nil, errors.New("not found or not authorized")
 	}
 
+	email = strings.TrimSpace(email)
 	// Trouver l'utilisateur par email
 	var user struct {
 		ID          primitive.ObjectID `bson:"_id"`
 		Email       string             `bson:"email"`
 		DisplayName string             `bson:"display_name"`
 	}
-	if err := s.userCol.FindOne(ctx, bson.M{"email": email}).Decode(&user); err != nil {
+	if err := s.userCol.FindOne(ctx, bson.M{"email": bson.M{"$in": bson.A{email, strings.ToLower(email)}}}).Decode(&user); err != nil {
 		return nil, errors.New("user not found with this email")
+	}
+	if user.ID.Hex() == ownerID {
+		return nil, errors.New("you already own this folder")
 	}
 
 	// Vérifier qu'il n'est pas déjà collaborateur
@@ -294,19 +384,22 @@ func (s *Service) ListCommunity(ctx context.Context, search string, pageSize int
 	}
 
 	filter := bson.M{"visibility": "public"}
-	if search != "" {
-		filter["name"] = bson.M{"$regex": search, "$options": "i"}
+	if search = strings.TrimSpace(search); search != "" {
+		if utf8.RuneCountInString(search) > 100 {
+			search = string([]rune(search)[:100])
+		}
+		filter["name"] = bson.M{"$regex": regexp.QuoteMeta(search), "$options": "i"}
 	}
 
-	// Pagination par _id
+	// Pagination par _id décroissant (du plus récent au plus ancien)
 	if pageToken != "" {
 		if oid, err := primitive.ObjectIDFromHex(pageToken); err == nil {
-			filter["_id"] = bson.M{"$gt": oid}
+			filter["_id"] = bson.M{"$lt": oid}
 		}
 	}
 
 	opts := options.Find().
-		SetSort(bson.M{"updated_at": -1}).
+		SetSort(bson.D{{Key: "_id", Value: -1}}).
 		SetLimit(int64(pageSize + 1))
 
 	cursor, err := s.col.Find(ctx, filter, opts)
@@ -322,8 +415,8 @@ func (s *Service) ListCommunity(ctx context.Context, search string, pageSize int
 
 	var nextToken string
 	if len(folders) > int(pageSize) {
-		nextToken = folders[pageSize].ID.Hex()
 		folders = folders[:pageSize]
+		nextToken = folders[pageSize-1].ID.Hex()
 	}
 
 	return folders, nextToken, nil
@@ -369,6 +462,9 @@ func (s *Service) Like(ctx context.Context, folderID, userID string) (int32, err
 	id, err := primitive.ObjectIDFromHex(folderID)
 	if err != nil {
 		return 0, errors.New("invalid folder id")
+	}
+	if !s.canView(ctx, id, userID) {
+		return 0, ErrNotFound
 	}
 	// Ajouter le userID au tableau liked_by (s'il n'y est pas déjà)
 	_, err = s.col.UpdateOne(ctx,
@@ -420,7 +516,9 @@ func (s *Service) ListTop(ctx context.Context, limit int32) ([]*Folder, error) {
 		limit = 10
 	}
 	opts := options.Find().
-		SetSort(bson.M{"like_count": -1, "updated_at": -1}).
+		// bson.D et non bson.M : un tri sur plusieurs clés doit être ordonné
+		// (le driver refuse une map à plusieurs clés).
+		SetSort(bson.D{{Key: "like_count", Value: -1}, {Key: "updated_at", Value: -1}}).
 		SetLimit(int64(limit))
 	cursor, err := s.col.Find(ctx, bson.M{"visibility": "public", "like_count": bson.M{"$gt": 0}}, opts)
 	if err != nil {
@@ -431,21 +529,90 @@ func (s *Service) ListTop(ctx context.Context, limit int32) ([]*Folder, error) {
 	return folders, cursor.All(ctx, &folders)
 }
 
-// CreateAiFolder crée un dossier public pour les idées générées par IA
-func (s *Service) CreateAiFolder(ctx context.Context, ownerID, name string) (*Folder, error) {
-	f := &Folder{
-		ID:          primitive.NewObjectID(),
-		OwnerID:     ownerID,
-		Name:        name,
-		Icon:        "sparkles",
-		Color:       "PURPLE",
-		Visibility:  "public",
-		AiGenerated: true,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+// canView : dossier public, ou utilisateur propriétaire / collaborateur.
+func (s *Service) canView(ctx context.Context, id primitive.ObjectID, userID string) bool {
+	count, _ := s.col.CountDocuments(ctx, bson.M{
+		"_id": id,
+		"$or": bson.A{
+			bson.M{"visibility": "public"},
+			s.ownedByTribe(ctx, userID),
+			bson.M{"collaborators.user_id": userID},
+		},
+	})
+	return count > 0
+}
+
+// OwnerInfo contient les informations publiques d'un propriétaire.
+type OwnerInfo struct {
+	DisplayName string
+	IsAdmin     bool
+}
+
+// Stats regroupe les données d'affichage d'un lot de dossiers (nombre de liens,
+// propriétaires), chargées en deux requêtes.
+type Stats struct {
+	LinkCount map[string]int32
+	Owners    map[string]OwnerInfo
+}
+
+// LoadStats charge le nombre de liens et les propriétaires d'une liste de dossiers.
+func (s *Service) LoadStats(ctx context.Context, folders []*Folder) *Stats {
+	st := &Stats{LinkCount: map[string]int32{}, Owners: map[string]OwnerInfo{}}
+	if len(folders) == 0 {
+		return st
 	}
-	if _, err := s.col.InsertOne(ctx, f); err != nil {
+	ids := make([]string, 0, len(folders))
+	ownerSet := map[primitive.ObjectID]struct{}{}
+	for _, f := range folders {
+		ids = append(ids, f.ID.Hex())
+		if oid, err := primitive.ObjectIDFromHex(f.OwnerID); err == nil {
+			ownerSet[oid] = struct{}{}
+		}
+	}
+	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"folder_id": bson.M{"$in": ids}}}},
+		{{Key: "$group", Value: bson.M{"_id": "$folder_id", "n": bson.M{"$sum": 1}}}},
+	}
+	if cur, err := s.linkCol.Aggregate(ctx, pipeline); err == nil {
+		var rows []struct {
+			ID string `bson:"_id"`
+			N  int32  `bson:"n"`
+		}
+		if cur.All(ctx, &rows) == nil {
+			for _, r := range rows {
+				st.LinkCount[r.ID] = r.N
+			}
+		}
+	}
+	oids := make([]primitive.ObjectID, 0, len(ownerSet))
+	for oid := range ownerSet {
+		oids = append(oids, oid)
+	}
+	proj := options.Find().SetProjection(bson.M{"display_name": 1, "is_admin": 1})
+	if cur, err := s.userCol.Find(ctx, bson.M{"_id": bson.M{"$in": oids}}, proj); err == nil {
+		var rows []struct {
+			ID          primitive.ObjectID `bson:"_id"`
+			DisplayName string             `bson:"display_name"`
+			IsAdmin     bool               `bson:"is_admin"`
+		}
+		if cur.All(ctx, &rows) == nil {
+			for _, r := range rows {
+				st.Owners[r.ID.Hex()] = OwnerInfo{DisplayName: r.DisplayName, IsAdmin: r.IsAdmin}
+			}
+		}
+	}
+	return st
+}
+
+// ListPublished retourne les dossiers publics, les plus récemment modifiés
+// d'abord (plan du site, pages publiques).
+func (s *Service) ListPublished(ctx context.Context, limit int64) ([]*Folder, error) {
+	opts := options.Find().SetSort(bson.D{{Key: "updated_at", Value: -1}}).SetLimit(limit)
+	cursor, err := s.col.Find(ctx, bson.M{"visibility": "public"}, opts)
+	if err != nil {
 		return nil, err
 	}
-	return f, nil
+	defer cursor.Close(ctx)
+	folders := []*Folder{}
+	return folders, cursor.All(ctx, &folders)
 }

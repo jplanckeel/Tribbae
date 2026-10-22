@@ -1,47 +1,54 @@
 package ui
 
-import androidx.compose.foundation.BorderStroke
+import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import data.Link
 import data.Comment
 import data.CommentRepository
 import data.FollowRepository
+import data.Link
 import data.SessionManager
 import kotlinx.coroutines.launch
-import ui.components.CategoryPatternBackground
-import ui.components.getCategoryColor
-import ui.components.getCategoryEmoji
-import ui.components.getCategoryLabel
+import ui.campfire.*
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
+/** Fiche idée « feu de camp » : visuel, infos, rappel, ingrédients, commentaires, barre d'actions. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LinkDetailScreen(
@@ -56,936 +63,472 @@ fun LinkDetailScreen(
     followRepository: FollowRepository? = null,
     sessionManager: SessionManager? = null,
     commentRepository: CommentRepository? = null,
-    viewModel: viewmodel.LinkViewModel? = null
+    viewModel: viewmodel.LinkViewModel? = null,
+    onOpenFolder: ((data.Folder) -> Unit)? = null,
 ) {
-    val categoryColor = getCategoryColor(link.category)
-    val coroutineScope = rememberCoroutineScope()
-    var showSaveDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var saved by remember { mutableStateOf(link.favorite) }
-    var liked by remember { mutableStateOf(link.likedByMe) }
-    var currentLikeCount by remember { mutableStateOf(link.likeCount) }
-    var isFollowing by remember { mutableStateOf(false) }
-    var isLoadingFollow by remember { mutableStateOf(false) }
-    var showComments by remember { mutableStateOf(false) }
+    // Ouverture depuis une carte : les infos et la barre arrivent après l'en-tête
+    val openProgress = LocalOpenProgress.current
+    // Idée sans image : tentative de récupération dès l'ouverture de la fiche
+    LaunchedEffect(link.id) { if (!readOnly && link.imageUrl.isBlank()) viewModel?.ensureImage(link.id) }
+    val cat = categoryUi(link.category)
+    val scope = rememberCoroutineScope()
+    val scroll = rememberScrollState()
+    val context = LocalContext.current
+    val myId = sessionManager?.getUserId()
+    val isLoggedIn = sessionManager?.hasToken() == true
 
-    // Comments state
+    var liked by remember(link.id) { mutableStateOf(link.likedByMe) }
+    var likeCount by remember(link.id) { mutableStateOf(link.likeCount) }
+    var isFollowing by remember { mutableStateOf<Boolean?>(null) }
     var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
-    var isLoadingComments by remember { mutableStateOf(false) }
-    var commentText by remember { mutableStateOf("") }
-    var isPostingComment by remember { mutableStateOf(false) }
+    var commentsLoading by remember { mutableStateOf(commentRepository != null) }
+    var commentsY by remember { mutableStateOf(0) }
+    var showMenu by remember { mutableStateOf(false) }
+    var showSave by remember { mutableStateOf(false) }
+    var showDelete by remember { mutableStateOf(false) }
+    var savedCopy by remember { mutableStateOf(false) }
 
-    // Check if we're following this user
     LaunchedEffect(link.ownerId) {
-        if (followRepository != null && link.ownerId.isNotEmpty() && sessionManager?.getUserId() != link.ownerId) {
-            followRepository.isFollowing(link.ownerId).onSuccess { following ->
-                isFollowing = following
-            }
+        if (followRepository != null && isLoggedIn && link.ownerId.isNotEmpty() && myId != link.ownerId) {
+            followRepository.isFollowing(link.ownerId).onSuccess { isFollowing = it }
         }
     }
-
-    // Load comments
     LaunchedEffect(link.id) {
-        if (commentRepository != null) {
-            isLoadingComments = true
-            commentRepository.getComments(link.id).onSuccess { loadedComments ->
-                comments = loadedComments
-                isLoadingComments = false
-            }.onFailure {
-                println("ERROR: Failed to load comments: ${it.message}")
-                isLoadingComments = false
-            }
-        }
+        commentRepository?.getComments(link.id)?.onSuccess { comments = it }
+        commentsLoading = false
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF9FAFB))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 80.dp)
-        ) {
-            // ── Hero image ──
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-            ) {
-                if (link.imageUrl.isNotEmpty()) {
-                    AsyncImage(
-                        model = link.imageUrl,
-                        contentDescription = link.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+    val folder = folders.find { it.id == link.folderId }
+    val at = eventMs(link)
+    val infos = buildList<Triple<ImageVector, String, String>> {
+        if (at != null) add(Triple(Icons.Outlined.CalendarMonth, "Quand", listOf(formatShortDate(at), formatTime(at)).filter { it.isNotEmpty() }.joinToString(" · ")))
+        if (link.ageRange.isNotBlank()) add(Triple(Icons.Outlined.Person, "Âge", link.ageRange))
+        if (link.location.isNotBlank()) add(Triple(Icons.Outlined.Place, "Où", link.location))
+        if (link.price.isNotBlank()) add(Triple(Icons.Outlined.Euro, "Prix", link.price))
+    }
+
+    val share = {
+        val body = listOf(link.title, link.url.ifBlank { if (link.visibility == "public") "https://tribbae.bananaops.cloud/links/${link.id}" else "" })
+            .filter { it.isNotBlank() }.joinToString("\n")
+        context.startActivity(
+            Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, body), "Partager l'idée")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
+
+    Box(Modifier.fillMaxSize().background(Sable)) {
+        Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(bottom = 110.dp)) {
+            // ── Visuel ──
+            Box(Modifier.fillMaxWidth().height(300.dp).background(cat.bg)) {
+                if (link.imageUrl.isNotBlank()) {
+                    AsyncImage(link.imageUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 } else {
-                    CategoryPatternBackground(
-                        category = link.category,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    Box(Modifier.align(Alignment.BottomCenter).offset(y = 120.dp).size(320.dp).clip(CircleShape).background(Soleil))
+                    TipiMark(150.dp, stroke = 1.6f, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
                 }
-
-                // Gradient overlay
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.10f),
-                                    Color.Black.copy(alpha = 0.20f),
-                                    Color.Black.copy(alpha = 0.70f)
-                                )
-                            )
-                        )
-                )
-
-                // Back button
-                Box(
-                    modifier = Modifier
-                        .padding(start = 20.dp, top = 48.dp)
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.3f))
-                        .clickable(onClick = onBack),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Filled.ArrowBack, "Retour", tint = Color.White, modifier = Modifier.size(20.dp))
-                }
-
-                // Top-right action buttons
                 Row(
-                    modifier = Modifier
-                        .padding(end = 20.dp, top = 48.dp)
-                        .align(Alignment.TopEnd),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Modifier.fillMaxWidth().statusBarsPadding().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Save/Bookmark
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.3f))
-                            .clickable { saved = !saved },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (saved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
-                            contentDescription = "Save",
-                            tint = if (saved) Color(0xFFF97316) else Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
+                    CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = Color.White.copy(alpha = 0.92f))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircleIconButton(Icons.Outlined.IosShare, "Partager", share, background = Color.White.copy(alpha = 0.92f))
+                        CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = Color.White.copy(alpha = 0.92f))
                     }
-                    if (!readOnly) {
-                        // Edit
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.3f))
-                                .clickable(onClick = onEdit),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Filled.Edit, "Modifier", tint = Color.White, modifier = Modifier.size(18.dp))
-                        }
-                        // Delete
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFEF4444).copy(alpha = 0.9f))
-                                .clickable { showDeleteDialog = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Filled.Delete, "Supprimer", tint = Color.White, modifier = Modifier.size(18.dp))
-                        }
-                    }
-                }
-
-                // Category badge + title at bottom of hero
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(start = 20.dp, end = 20.dp, bottom = 28.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Surface(shape = RoundedCornerShape(20.dp), color = categoryColor) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(getCategoryEmoji(link.category), fontSize = 11.sp)
-                                Text(
-                                    getCategoryLabel(link.category),
-                                    fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White
-                                )
-                            }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color(0xFF6B7280).copy(alpha = 0.85f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    if (link.visibility == "public") Icons.Filled.Public else Icons.Filled.Lock,
-                                    null, tint = Color.White, modifier = Modifier.size(10.dp)
-                                )
-                                Text(
-                                    if (link.visibility == "public") "Public" else "Privé",
-                                    fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White
-                                )
-                            }
-                        }
-                    }
-                    Text(
-                        text = link.title,
-                        fontSize = 20.sp, fontWeight = FontWeight.Bold,
-                        color = Color.White, lineHeight = 26.sp
-                    )
                 }
             }
 
-            // ── White card overlapping hero ──
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset(y = (-20).dp),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-                color = Color.White
+            // ── Contenu ──
+            Column(
+                Modifier
+                    .graphicsLayer {
+                        val p = lateProgress(openProgress())
+                        alpha = p
+                        translationY = (1f - EaseSoft.transform(p)) * 24.dp.toPx()
+                    }
+                    .offset(y = (-28).dp)
+                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                    .background(Sable)
+                    .padding(start = 20.dp, end = 20.dp, top = 22.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Column {
-                    // ── Stats row ──
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        cat.label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = cat.ink,
+                        modifier = Modifier.clip(CircleShape).background(cat.bg).padding(horizontal = 12.dp, vertical = 5.dp)
+                    )
+                    // Toujours le nom du compte qui a ajouté l'idée, même au sein d'une tribu
+                    val mine = link.ownerId.isBlank() || link.ownerId == myId
+                    val by = when {
+                        link.ownerDisplayName.isNotBlank() -> "par ${link.ownerDisplayName}" + if (mine) " (vous)" else ""
+                        mine -> "par vous"
+                        else -> ""
+                    }
+                    Text(
+                        listOf(by, folder?.let { "dossier ${it.name}" }.orEmpty()).filter { it.isNotEmpty() }.joinToString(" · "),
+                        fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (link.favorite) Icon(Icons.Filled.Star, "Favori", tint = Braise, modifier = Modifier.size(16.dp))
+                    if (link.visibility == "public") Icon(Icons.Outlined.Public, "Public", tint = TextSec, modifier = Modifier.size(16.dp))
+                }
+
+                Text(link.title, style = display(28.sp))
+
+                if (readOnly && isFollowing != null && link.ownerId.isNotEmpty()) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceAround
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White).padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (link.rating > 0) {
-                            StatItem(
-                                top = {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Filled.Star, null, tint = Color(0xFFF59E0B), modifier = Modifier.size(14.dp))
-                                        Text(link.rating.toString(), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1F2937))
-                                    }
-                                },
-                                label = "Note"
-                            )
-                        }
-                        StatItem(
-                            top = { Text(currentLikeCount.toString(), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1F2937)) },
-                            label = "J'aime"
-                        )
-                        StatItem(
-                            top = { Text(link.commentCount.toString(), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1F2937)) },
-                            label = "Commentaires"
+                        InitialAvatar(link.ownerDisplayName, 0, 36.dp, 12.dp, 15.sp)
+                        Text(link.ownerDisplayName.ifBlank { "Une tribu" }, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Ecorce, modifier = Modifier.weight(1f))
+                        CampButton(
+                            if (isFollowing == true) "Suivie" else "Suivre",
+                            {
+                                val now = isFollowing == true
+                                isFollowing = !now
+                                scope.launch {
+                                    val r = if (now) followRepository!!.unfollow(link.ownerId) else followRepository!!.follow(link.ownerId)
+                                    if (r.isFailure) isFollowing = now
+                                }
+                            },
+                            kind = if (isFollowing == true) ButtonKind.Ghost else ButtonKind.Dark,
+                            height = 40.dp
                         )
                     }
+                }
 
-                    HorizontalDivider(color = Color(0xFFF3F4F6))
+                if (infos.isNotEmpty()) {
+                    infos.chunked(2).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            row.forEach { (icon, label, value) -> InfoTile(icon, label, value, cat.tint, Modifier.weight(1f)) }
+                            if (row.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
+                }
 
-                    // ── Author row ──
+                if (at != null && !readOnly && viewModel != null) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Soleil).padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(
-                                    brush = Brush.linearGradient(listOf(categoryColor, categoryColor.copy(alpha = 0.8f))),
-                                    shape = CircleShape
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = link.ownerDisplayName.firstOrNull()?.uppercase() ?: "?",
-                                fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    link.ownerDisplayName.ifBlank { "Anonyme" },
-                                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF111827)
-                                )
-                                if (link.ownerIsAdmin) {
-                                    Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFEF4444)) {
-                                        Text(
-                                            "ADMIN", fontSize = 9.sp, fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            Text(
-                                text = if (link.createdAt.isNotEmpty()) {
-                                    "Partagé le ${formatDateFr(link.createdAt)}"
-                                } else "Partagé récemment",
-                                fontSize = 11.sp, color = Color(0xFF9CA3AF)
-                            )
-                        }
-                        if (followRepository != null && sessionManager?.getUserId() != link.ownerId && link.ownerId.isNotEmpty()) {
-                            Button(
-                                onClick = {
-                                    isLoadingFollow = true
-                                    coroutineScope.launch {
-                                        if (isFollowing) {
-                                            followRepository.unfollow(link.ownerId).onSuccess {
-                                                isFollowing = false; isLoadingFollow = false
-                                            }.onFailure {
-                                                println("ERROR: Failed to unfollow: ${it.message}")
-                                                isLoadingFollow = false
-                                            }
-                                        } else {
-                                            followRepository.follow(link.ownerId).onSuccess {
-                                                isFollowing = true; isLoadingFollow = false
-                                            }.onFailure {
-                                                println("ERROR: Failed to follow: ${it.message}")
-                                                isLoadingFollow = false
-                                            }
-                                        }
-                                    }
-                                },
-                                enabled = !isLoadingFollow,
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isFollowing) Color(0xFF9CA3AF) else categoryColor
-                                ),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    if (isFollowing) "Abonné" else "Suivre",
-                                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold
-                                )
-                            }
+                        Icon(Icons.Outlined.NotificationsNone, null, tint = Ecorce, modifier = Modifier.size(20.dp))
+                        Text("Me le rappeler la veille", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ecorce, modifier = Modifier.weight(1f))
+                        CampSwitch(link.reminderEnabled, { viewModel.updateLink(link.copy(reminderEnabled = it)) }, "Rappel la veille")
+                    }
+                }
+
+                if (link.rating > 0) {
+                    Row(Modifier.semantics { contentDescription = "Note : ${link.rating} sur 5" }) {
+                        repeat(5) { i ->
+                            Icon(if (i < link.rating) Icons.Filled.Star else Icons.Outlined.StarBorder, null, tint = Braise, modifier = Modifier.size(20.dp))
                         }
                     }
+                }
 
-                    HorizontalDivider(color = Color(0xFFF3F4F6))
+                if (link.description.isNotBlank()) {
+                    Text(link.description, fontSize = 15.sp, lineHeight = 22.sp, color = Ecorce2)
+                }
 
-                    // ── URL section ──
-                    if (link.url.isNotEmpty()) {
-                        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                border = BorderStroke(1.5.dp, categoryColor.copy(alpha = 0.25f)),
-                                color = Color.White
-                            ) {
-                                Column {
-                                    // Header
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(categoryColor.copy(alpha = 0.08f))
-                                            .padding(horizontal = 16.dp, vertical = 10.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Filled.Link, null, tint = categoryColor, modifier = Modifier.size(14.dp))
-                                        Text(
-                                            "LIEN DE L'IDÉE",
-                                            fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                                            color = categoryColor, letterSpacing = 0.5.sp
-                                        )
-                                    }
-                                    // URL row
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clickable { onOpenUrl?.invoke(link.url) }
-                                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Filled.OpenInNew, null, tint = categoryColor, modifier = Modifier.size(14.dp))
-                                        Text(
-                                            link.url,
-                                            fontSize = 13.sp, fontWeight = FontWeight.Medium,
-                                            color = categoryColor, maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = Color(0xFFF3F4F6),
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Box(contentAlignment = Alignment.Center) {
-                                                Icon(Icons.Filled.ContentCopy, "Copier", tint = Color(0xFF9CA3AF), modifier = Modifier.size(14.dp))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                if (folder != null && onOpenFolder != null) {
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White)
+                            .clickable(role = Role.Button) { onOpenFolder(folder) }.padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(folderBg(folder.color)), contentAlignment = Alignment.Center) {
+                            Icon(folderIconVector(folder), null, tint = folderSolid(folder.color), modifier = Modifier.size(20.dp))
                         }
-                    }
-
-                    // ── Description ──
-                    if (link.description.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = if (link.url.isEmpty()) 16.dp else 0.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                "DESCRIPTION",
-                                fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                                color = Color(0xFF9CA3AF), letterSpacing = 0.5.sp
-                            )
-                            Text(
-                                link.description,
-                                fontSize = 14.sp, color = Color(0xFF374151), lineHeight = 24.5.sp
-                            )
+                        Column(Modifier.weight(1f)) {
+                            Text("Rangée dans", fontSize = 12.sp, color = TextSec)
+                            Text(folder.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
+                        Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
                     }
+                }
 
-                    // ── Infos pratiques (2-col grid) ──
-                    val hasInfos = link.price.isNotEmpty() || link.ageRange.isNotEmpty() || link.location.isNotEmpty() || !link.folderId.isNullOrEmpty()
-                    if (hasInfos) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text(
-                                "INFOS PRATIQUES",
-                                fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                                color = Color(0xFF9CA3AF), letterSpacing = 0.5.sp
-                            )
-                            // Build info items
-                            val infoItems = mutableListOf<InfoPillData>()
-                            if (link.price.isNotEmpty()) {
-                                infoItems.add(InfoPillData(Icons.Filled.Euro, "Budget", link.price, Color(0xFF10B981)))
-                            }
-                            if (link.ageRange.isNotEmpty()) {
-                                infoItems.add(InfoPillData(Icons.Filled.ChildCare, "Âge conseillé", link.ageRange, Color(0xFF8B5CF6)))
-                            }
-                            if (link.location.isNotEmpty()) {
-                                infoItems.add(InfoPillData(
-                                    icon = Icons.Filled.LocationOn,
-                                    label = "Lieu",
-                                    value = link.location,
-                                    accent = Color(0xFF3B82F6),
-                                    onClick = { onOpenUrl?.invoke("geo:0,0?q=${link.location}") }
-                                ))
-                            }
-                            if (!link.folderId.isNullOrEmpty()) {
-                                val folderName = folders.find { it.id == link.folderId }?.name ?: "Dossier"
-                                infoItems.add(InfoPillData(Icons.Filled.FolderOpen, "Dossier", folderName, categoryColor))
-                            }
-                            // 2-column grid
-                            val rows = infoItems.chunked(2)
-                            rows.forEach { rowItems ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    rowItems.forEach { item ->
-                                        InfoPill(
-                                            icon = item.icon,
-                                            label = item.label,
-                                            value = item.value,
-                                            accent = item.accent,
-                                            modifier = Modifier.weight(1f),
-                                            onClick = item.onClick
-                                        )
-                                    }
-                                    if (rowItems.size == 1) {
-                                        Spacer(Modifier.weight(1f))
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // ── Tags ──
-                    if (link.tags.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text(
-                                "TAGS",
-                                fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                                color = Color(0xFF9CA3AF), letterSpacing = 0.5.sp
-                            )
-                            Row(
-                                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                link.tags.forEach { tag ->
-                                    Surface(
-                                        shape = RoundedCornerShape(20.dp),
-                                        color = categoryColor.copy(alpha = 0.12f)
-                                    ) {
-                                        Text(
-                                            "#$tag",
-                                            fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                                            color = categoryColor,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // ── Comments Section ──
-                    HorizontalDivider(color = Color(0xFFF3F4F6), modifier = Modifier.padding(top = 8.dp))
-
+                if (link.ingredients.isNotEmpty()) {
+                    val rc = categoryUi(data.LinkCategory.RECETTE)
                     Column(
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White).padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "COMMENTAIRES",
-                                fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                                color = Color(0xFF9CA3AF), letterSpacing = 0.5.sp
-                            )
-                            Surface(shape = CircleShape, color = Color(0xFFF3F4F6)) {
-                                Text(
-                                    comments.size.toString(),
-                                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF6B7280),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Outlined.ShoppingCart, null, tint = rc.tint, modifier = Modifier.size(20.dp))
+                            Text("Ingrédients", style = display(18.sp, FontWeight.Bold))
+                        }
+                        link.ingredients.forEach { ing ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(6.dp).clip(CircleShape).background(rc.tint))
+                                Text(ing, fontSize = 15.sp, color = Ecorce2)
                             }
                         }
+                    }
+                }
 
-                        // Comment input
-                        if (commentRepository != null && sessionManager != null) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.Top
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .background(categoryColor, CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        sessionManager.getDisplayName()?.firstOrNull()?.uppercase() ?: "?",
-                                        fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White
-                                    )
-                                }
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = commentText,
-                                        onValueChange = { commentText = it },
-                                        placeholder = { Text("Ajouter un commentaire...", fontSize = 14.sp) },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = categoryColor,
-                                            unfocusedBorderColor = Color(0xFFE5E7EB)
-                                        ),
-                                        minLines = 2, maxLines = 4
-                                    )
-                                    if (commentText.isNotBlank()) {
-                                        Button(
-                                            onClick = {
-                                                isPostingComment = true
-                                                coroutineScope.launch {
-                                                    commentRepository.createComment(link.id, commentText).onSuccess { newComment ->
-                                                        comments = listOf(newComment) + comments
-                                                        commentText = ""
-                                                        isPostingComment = false
-                                                    }.onFailure {
-                                                        println("ERROR: Failed to create comment: ${it.message}")
-                                                        isPostingComment = false
-                                                    }
-                                                }
-                                            },
-                                            enabled = !isPostingComment,
-                                            shape = RoundedCornerShape(12.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = categoryColor),
-                                            modifier = Modifier.align(Alignment.End)
-                                        ) {
-                                            Text(
-                                                if (isPostingComment) "Publication..." else "Publier",
-                                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
+                if (link.tags.isNotEmpty()) {
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        link.tags.forEach { t ->
+                            Text("#$t", fontSize = 13.sp, color = TextSec, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Sable2).padding(horizontal = 10.dp, vertical = 5.dp))
                         }
+                    }
+                }
 
-                        // Comments list
-                        if (isLoadingComments) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = categoryColor, modifier = Modifier.size(32.dp))
-                            }
-                        } else if (comments.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Icon(Icons.Filled.ChatBubbleOutline, null, tint = Color(0xFF9CA3AF), modifier = Modifier.size(48.dp))
-                                    Text("Aucun commentaire", fontSize = 14.sp, color = Color(0xFF9CA3AF))
-                                    Text("Soyez le premier à commenter", fontSize = 12.sp, color = Color(0xFFD1D5DB))
-                                }
-                            }
-                        } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                comments.forEach { comment ->
-                                    CommentItem(
-                                        comment = comment,
-                                        categoryColor = categoryColor,
-                                        currentUserId = sessionManager?.getUserId(),
-                                        linkOwnerId = link.ownerId,
-                                        onDelete = { commentId ->
-                                            coroutineScope.launch {
-                                                commentRepository?.deleteComment(commentId)?.onSuccess {
-                                                    comments = comments.filter { it.id != commentId }
-                                                }?.onFailure {
-                                                    println("ERROR: Failed to delete comment: ${it.message}")
-                                                }
-                                            }
-                                        }
-                                    )
+                if (readOnly && onSaveToMyList != null) {
+                    CampButton(
+                        if (savedCopy) "Enregistrée dans mes idées" else "Enregistrer dans mes idées",
+                        { if (!savedCopy) showSave = true },
+                        kind = ButtonKind.Secondary,
+                        icon = if (savedCopy) Icons.Outlined.Check else Icons.Outlined.BookmarkBorder
+                    )
+                }
+
+                // ── Commentaires ──
+                Column(
+                    Modifier.fillMaxWidth().padding(top = 8.dp).onGloballyPositioned { commentsY = it.positionInParent().y.toInt() },
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("Commentaires" + if (comments.isNotEmpty()) " (${comments.size})" else "", style = display(20.sp, FontWeight.Bold))
+                    when {
+                        commentsLoading -> CircularProgressIndicator(color = Terracotta, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        comments.isEmpty() -> Text("Pas encore de commentaire. Une astuce, un retour d'expérience ?", fontSize = 14.sp, color = TextSec)
+                        else -> comments.forEachIndexed { i, c ->
+                            CommentBubble(c, i, canDelete = c.userId == myId || (!readOnly)) {
+                                scope.launch {
+                                    commentRepository?.deleteComment(c.id)?.onSuccess { comments = comments.filterNot { it.id == c.id } }
                                 }
                             }
                         }
+                    }
+                    if (commentRepository != null && isLoggedIn) {
+                        CommentInput { text ->
+                            scope.launch {
+                                commentRepository.createComment(link.id, text).onSuccess { comments = comments + it }
+                            }
+                        }
+                    } else if (!isLoggedIn) {
+                        Text("Connectez-vous dans « Ma tribu » pour commenter.", fontSize = 13.sp, color = TextSec)
                     }
                 }
             }
         }
 
-        // ── Bottom CTA bar ──
-        Surface(
-            modifier = Modifier
+        // ── Barre d'actions ──
+        Row(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .graphicsLayer {
+                    val p = lateProgress(openProgress())
+                    alpha = p
+                    translationY = (1f - p) * 40.dp.toPx()
+                }
                 .fillMaxWidth()
-                .align(Alignment.BottomCenter),
-            color = Color.White,
-            shadowElevation = 12.dp
+                .background(Sable)
+                .drawBehind { drawLine(Line, androidx.compose.ui.geometry.Offset(0f, 0f), androidx.compose.ui.geometry.Offset(size.width, 0f), 1.dp.toPx()) }
+                .navigationBarsPadding()
+                .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ActionChip(
+                if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, "$likeCount", Terracotta,
+                if (liked) "Je n'aime plus, $likeCount" else "J'aime, $likeCount",
+                iconModifier = Modifier.likePop(liked),
             ) {
-                // Like button
-                Surface(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clickable {
-                            if (readOnly) {
-                                // Lien communautaire : appel API direct
-                                viewModel?.toggleLike(link.id, liked) { newLiked, newCount ->
-                                    liked = newLiked
-                                    currentLikeCount = newCount
-                                }
-                            } else {
-                                // Lien personnel : mise à jour locale + backend via toggleFavorite
-                                liked = !liked
-                                currentLikeCount += if (liked) 1 else -1
-                                viewModel?.toggleFavorite(link.id)
-                            }
-                        },
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (liked) Color(0xFFFEF2F2) else Color.White,
-                    border = BorderStroke(2.dp, if (liked) Color(0xFFEF4444) else Color(0xFFE5E7EB))
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                            "Like",
-                            tint = if (liked) Color(0xFFEF4444) else Color(0xFF6B7280),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-                // Comment button
-                Surface(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clickable { showComments = !showComments },
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    border = BorderStroke(2.dp, Color(0xFFE5E7EB))
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.ChatBubble, "Comment", tint = Color(0xFF6B7280), modifier = Modifier.size(20.dp))
-                    }
-                }
-                // Save/unsave gradient button
-                Button(
-                    onClick = {
-                        if (readOnly && onSaveToMyList != null) {
-                            showSaveDialog = true
-                        } else {
-                            saved = !saved
-                            viewModel?.toggleFavorite(link.id)
-                        }
-                    },
-                    modifier = Modifier.weight(1f).height(48.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (saved) Color(0xFF9CA3AF) else categoryColor
-                    )
-                ) {
-                    Icon(Icons.Filled.Bookmark, null, modifier = Modifier.size(18.dp), tint = Color.White)
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        if (saved) "Sauvegardé ✓" else "Sauvegarder",
-                        fontSize = 15.sp, fontWeight = FontWeight.SemiBold
-                    )
-                }
+                if (viewModel == null || !isLoggedIn) return@ActionChip
+                val was = liked
+                liked = !was
+                likeCount += if (was) -1 else 1
+                viewModel.toggleLike(link.id, was) { l, c -> liked = l; likeCount = c }
             }
-        }
-    }
-
-    // ── Save dialog ──
-    if (showSaveDialog && onSaveToMyList != null) {
-        var selectedFolderId by remember { mutableStateOf<String?>(null) }
-        AlertDialog(
-            onDismissRequest = { showSaveDialog = false },
-            icon = { Icon(Icons.Default.BookmarkAdd, null, tint = Color(0xFFF97316)) },
-            title = { Text("Ajouter à mes listes", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Choisissez une liste (optionnel)", fontSize = 14.sp, color = Color(0xFF6B7280))
-                    FilterChip(
-                        selected = selectedFolderId == null,
-                        onClick = { selectedFolderId = null },
-                        label = { Text("Mes idées (sans liste)") },
-                        leadingIcon = { Icon(Icons.Default.Lightbulb, null, modifier = Modifier.size(16.dp)) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFF97316),
-                            selectedLabelColor = Color.White,
-                            selectedLeadingIconColor = Color.White
-                        )
-                    )
-                    folders.forEach { folder ->
-                        FilterChip(
-                            selected = selectedFolderId == folder.id,
-                            onClick = { selectedFolderId = folder.id },
-                            label = { Text(folder.name) },
-                            leadingIcon = { Icon(Icons.Default.Folder, null, modifier = Modifier.size(16.dp)) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFF97316),
-                                selectedLabelColor = Color.White,
-                                selectedLeadingIconColor = Color.White
-                            )
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    onSaveToMyList(link, selectedFolderId)
-                    showSaveDialog = false
-                    saved = true
-                }) { Text("Ajouter", color = Color(0xFFF97316), fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSaveDialog = false }) { Text("Annuler") }
+            ActionChip(Icons.Outlined.ChatBubbleOutline, "${comments.size}", Ecorce, "Commentaires, ${comments.size}") {
+                scope.launch { scroll.animateScrollTo(commentsY) }
             }
-        )
-    }
-
-    // ── Delete confirmation dialog ──
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            icon = { Icon(Icons.Default.Warning, null, tint = Color(0xFFEF4444)) },
-            title = { Text("Supprimer cette idée ?", fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    "Cette action est irréversible. L'idée \"${link.title}\" sera définitivement supprimée.",
-                    fontSize = 14.sp, color = Color(0xFF6B7280)
+            when {
+                link.url.isNotBlank() -> CampButton(
+                    "Voir le site", { onOpenUrl?.invoke(link.url) }, Modifier.weight(1f), trailingIcon = Icons.Outlined.ArrowOutward, height = 54.dp
                 )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showDeleteDialog = false; onDelete() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
-                ) { Text("Supprimer", fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Annuler") }
+                !readOnly -> CampButton("Modifier", onEdit, Modifier.weight(1f), icon = Icons.Outlined.Edit, height = 54.dp)
+                onSaveToMyList != null -> CampButton("Enregistrer", { showSave = true }, Modifier.weight(1f), icon = Icons.Outlined.BookmarkBorder, height = 54.dp)
             }
+        }
+    }
+
+    // ── Menu « … » ──
+    if (showMenu) {
+        ModalBottomSheet(onDismissRequest = { showMenu = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Idée", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
+                if (!readOnly) {
+                    MenuRow(Icons.Outlined.Edit, "Modifier") { showMenu = false; onEdit() }
+                    MenuRow(if (link.favorite) Icons.Filled.Star else Icons.Outlined.StarBorder, if (link.favorite) "Retirer des favoris" else "Ajouter aux favoris") {
+                        showMenu = false; viewModel?.toggleFavorite(link.id)
+                    }
+                    // Seul l'auteur décide de publier son idée (pas un autre membre de la tribu)
+                    if (link.ownerId.isBlank() || link.ownerId == myId) {
+                        MenuRow(
+                            if (link.visibility == "public") Icons.Outlined.Lock else Icons.Outlined.Public,
+                            if (link.visibility == "public") "Ne plus partager avec la communauté" else "Partager avec la communauté"
+                        ) {
+                            showMenu = false
+                            viewModel?.updateLinkVisibility(link.id, if (link.visibility == "public") "private" else "public")
+                        }
+                    }
+                } else if (onSaveToMyList != null) {
+                    MenuRow(Icons.Outlined.BookmarkBorder, "Enregistrer dans mes idées") { showMenu = false; showSave = true }
+                }
+                MenuRow(Icons.Outlined.IosShare, "Partager") { showMenu = false; share() }
+                if (!readOnly) MenuRow(Icons.Outlined.Delete, "Supprimer", danger = true) { showMenu = false; showDelete = true }
+            }
+        }
+    }
+
+    // ── Enregistrer une idée de la communauté ──
+    if (showSave && onSaveToMyList != null) {
+        ModalBottomSheet(onDismissRequest = { showSave = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+            Column(
+                Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Ranger dans…", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
+                MenuRow(Icons.Outlined.BookmarkBorder, "Mes idées (sans dossier)") {
+                    onSaveToMyList(link, null); savedCopy = true; showSave = false
+                }
+                folders.forEach { f ->
+                    MenuRow(folderIconVector(f), f.name, tint = folderSolid(f.color)) {
+                        onSaveToMyList(link, f.id); savedCopy = true; showSave = false
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDelete) {
+        AlertDialog(
+            onDismissRequest = { showDelete = false },
+            containerColor = Sable,
+            title = { Text("Supprimer cette idée ?", style = display(20.sp, FontWeight.Bold)) },
+            text = { Text("« ${link.title} » sera définitivement supprimée.", color = Ecorce2) },
+            confirmButton = {
+                TextButton(onClick = { showDelete = false; onDelete() }) { Text("Supprimer", color = Terracotta, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { showDelete = false }) { Text("Annuler", color = Ecorce) } }
         )
     }
 }
 
-// ── Helper composables ──
-
 @Composable
-private fun StatItem(top: @Composable () -> Unit, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        top()
-        Text(label, fontSize = 10.sp, color = Color(0xFF9CA3AF))
-    }
-}
-
-private data class InfoPillData(
-    val icon: ImageVector,
-    val label: String,
-    val value: String,
-    val accent: Color,
-    val onClick: (() -> Unit)? = null
-)
-
-@Composable
-private fun InfoPill(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    accent: Color,
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null
-) {
-    val clickableModifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
+private fun InfoTile(icon: ImageVector, label: String, value: String, tint: Color, modifier: Modifier) {
     Row(
-        modifier = clickableModifier
-            .background(accent.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier.clip(RoundedCornerShape(16.dp)).background(Color.White).padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .background(accent.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, null, tint = accent, modifier = Modifier.size(16.dp))
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                label.uppercase(),
-                fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF9CA3AF), letterSpacing = 0.5.sp
-            )
-            Text(
-                value, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1F2937), maxLines = 1, overflow = TextOverflow.Ellipsis
-            )
+        Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
+        Column {
+            Text(label, fontSize = 12.sp, color = TextSec)
+            Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
 
 @Composable
-fun CommentItem(
-    comment: Comment,
-    categoryColor: Color,
-    currentUserId: String?,
-    linkOwnerId: String,
-    onDelete: (String) -> Unit
-) {
-    val canDelete = currentUserId == comment.userId || currentUserId == linkOwnerId
-
+private fun ActionChip(icon: ImageVector, text: String, tint: Color, label: String, iconModifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        Modifier
+            .height(54.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color.White)
+            .border(ThinBorder, RoundedCornerShape(18.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics(mergeDescendants = true) { contentDescription = label }
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(icon, null, tint = tint, modifier = iconModifier.size(20.dp))
+        Text(text, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = tint)
+    }
+}
+
+@Composable
+fun MenuRow(icon: ImageVector, label: String, danger: Boolean = false, tint: Color? = null, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp)).background(Color.White).clickable(onClick = onClick).padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .background(categoryColor.copy(alpha = 0.3f), CircleShape),
-            contentAlignment = Alignment.Center
+        val c = if (danger) Color(0xFF9A3420) else Ecorce
+        Icon(icon, null, tint = tint ?: c, modifier = Modifier.size(20.dp))
+        Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = c)
+    }
+}
+
+@Composable
+private fun CommentBubble(c: Comment, index: Int, canDelete: Boolean, onDelete: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        InitialAvatar(c.userDisplayName, index, 34.dp, 12.dp, 14.sp)
+        Column(
+            Modifier.weight(1f).clip(RoundedCornerShape(topStart = 6.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp)).background(Color.White).padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            Text(
-                comment.userDisplayName.firstOrNull()?.uppercase() ?: "?",
-                fontSize = 13.sp, fontWeight = FontWeight.Bold, color = categoryColor
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(c.userDisplayName.ifBlank { "Membre" }, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+                Text(relativeTime(c.createdAt), fontSize = 12.sp, color = TextMuted, modifier = Modifier.weight(1f))
+                if (canDelete) {
+                    Icon(
+                        Icons.Outlined.Delete, "Supprimer le commentaire", tint = TextMuted,
+                        modifier = Modifier.size(18.dp).clip(CircleShape).clickable(onClick = onDelete)
+                    )
+                }
+            }
+            Text(c.text, fontSize = 14.sp, lineHeight = 20.sp, color = Ecorce2)
+        }
+    }
+}
+
+@Composable
+private fun CommentInput(onSend: (String) -> Unit) {
+    var text by remember { mutableStateOf("") }
+    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(
+            Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(18.dp)).background(Color.White)
+                .border(ThinBorder, RoundedCornerShape(18.dp)).padding(horizontal = 16.dp, vertical = 13.dp)
+        ) {
+            if (text.isEmpty()) Text("Ajouter un commentaire…", color = TextMuted, fontSize = 15.sp)
+            BasicTextField(
+                value = text,
+                onValueChange = { if (it.length <= 1000) text = it },
+                textStyle = TextStyle(fontSize = 15.sp, color = Ecorce),
+                cursorBrush = SolidColor(Terracotta),
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Votre commentaire" }
             )
         }
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        Box(
+            Modifier.size(48.dp).clip(RoundedCornerShape(18.dp)).background(if (text.isBlank()) Dash else Ecorce)
+                .clickable(enabled = text.isNotBlank(), role = Role.Button) { onSend(text.trim()); text = "" }
+                .semantics { contentDescription = "Envoyer" },
+            contentAlignment = Alignment.Center
         ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    comment.userDisplayName.ifBlank { "Anonyme" },
-                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF111827)
-                )
-                if (comment.userIsAdmin) {
-                    Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFEF4444)) {
-                        Text(
-                            "ADMIN", fontSize = 8.sp, fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-                Text("•", fontSize = 11.sp, color = Color(0xFF9CA3AF))
-                Text(formatTimestamp(comment.createdAt), fontSize = 11.sp, color = Color(0xFF9CA3AF))
-            }
-            Text(comment.text, fontSize = 14.sp, color = Color(0xFF374151), lineHeight = 20.sp)
-        }
-        if (canDelete) {
-            IconButton(onClick = { onDelete(comment.id) }, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Filled.Delete, "Supprimer", tint = Color(0xFF9CA3AF), modifier = Modifier.size(18.dp))
-            }
+            Icon(Icons.Outlined.Send, null, tint = Sable, modifier = Modifier.size(20.dp))
         }
     }
 }
 
-fun formatTimestamp(timestamp: String): String {
-    return try {
-        "à l'instant"
-    } catch (e: Exception) {
-        "récemment"
-    }
-}
-
-fun formatDateFr(isoDate: String): String {
-    return try {
-        // Parse ISO date like "2025-01-15T10:30:00Z"
-        val parts = isoDate.take(10).split("-")
-        if (parts.size == 3) {
-            val day = parts[2].toIntOrNull() ?: return isoDate
-            val month = when (parts[1]) {
-                "01" -> "janvier"; "02" -> "février"; "03" -> "mars"
-                "04" -> "avril"; "05" -> "mai"; "06" -> "juin"
-                "07" -> "juillet"; "08" -> "août"; "09" -> "septembre"
-                "10" -> "octobre"; "11" -> "novembre"; "12" -> "décembre"
-                else -> parts[1]
-            }
-            "$day $month ${parts[0]}"
-        } else isoDate
-    } catch (e: Exception) {
-        isoDate
+/** « il y a 5 min », « hier », « 12 oct. » à partir d'un horodatage ISO 8601. */
+fun relativeTime(iso: String): String {
+    if (iso.isBlank()) return ""
+    val ms = runCatching {
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.parse(iso.take(19))!!.time
+    }.getOrNull() ?: return ""
+    val diff = (System.currentTimeMillis() - ms) / 1000
+    return when {
+        diff < 60 -> "à l'instant"
+        diff < 3600 -> "il y a ${diff / 60} min"
+        diff < 86400 -> "il y a ${diff / 3600} h"
+        diff < 172800 -> "hier"
+        else -> SimpleDateFormat("d MMM", Locale.FRENCH).format(java.util.Date(ms))
     }
 }

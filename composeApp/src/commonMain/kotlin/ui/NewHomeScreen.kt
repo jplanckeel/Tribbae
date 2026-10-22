@@ -3,40 +3,30 @@ package ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import data.Link
 import data.LinkCategory
-import ui.components.IdeaCard
-import ui.components.getCategoryColor
-import ui.components.getCategoryEmoji
+import ui.campfire.*
 
-data class CategoryInfo(
-    val id: LinkCategory,
-    val name: String,
-    val emoji: String,
-    val color: Color,
-    val bgColor: Color,
-    val count: Int
-)
-
+/** Accueil « feu de camp » : salutation, recherche + IA, prochaine sortie, catégories, tendances. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewHomeScreen(
@@ -48,464 +38,254 @@ fun NewHomeScreen(
     sessionManager: data.SessionManager? = null,
     onNavigateToAI: () -> Unit = {},
     viewModel: viewmodel.LinkViewModel,
-    onNavigateToFavorites: () -> Unit = {},
-    onNavigateToPublicLinks: () -> Unit = {},
-    onNavigateToFollowing: () -> Unit = {},
+    onSearch: (String) -> Unit = { onNavigateToExplore() },
+    onOpenCommunityLink: (Link) -> Unit = {},
+    onAddWithCategory: (LinkCategory) -> Unit = {},
+    onNavigateToTribe: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val displayName by sessionManager?.displayName?.collectAsState() ?: remember { mutableStateOf(null) }
+    val displayName by sessionManager?.displayName?.collectAsState() ?: remember { mutableStateOf<String?>(null) }
+    val isLoggedIn by sessionManager?.isLoggedIn?.collectAsState() ?: remember { mutableStateOf(false) }
     val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val pullRefreshState = rememberPullToRefreshState()
-    val categories = remember(links) {
-        listOf(
-            CategoryInfo(
-                LinkCategory.ACTIVITE,
-                "Activités",
-                "🏃",
-                Color(0xFF4FC3F7),
-                Color(0xFFEFF6FF),
-                links.count { it.category == LinkCategory.ACTIVITE }
-            ),
-            CategoryInfo(
-                LinkCategory.CADEAU,
-                "Cadeaux",
-                "🎁",
-                Color(0xFFFF8C00),
-                Color(0xFFFFF7ED),
-                links.count { it.category == LinkCategory.CADEAU }
-            ),
-            CategoryInfo(
-                LinkCategory.RECETTE,
-                "Recettes",
-                "🍳",
-                Color(0xFF81C784),
-                Color(0xFFF0FDF4),
-                links.count { it.category == LinkCategory.RECETTE }
-            ),
-            CategoryInfo(
-                LinkCategory.EVENEMENT,
-                "Événements",
-                "📅",
-                Color(0xFFFF7043),
-                Color(0xFFFDF2F8),
-                links.count { it.category == LinkCategory.EVENEMENT }
-            ),
-            CategoryInfo(
-                LinkCategory.IDEE,
-                "Idées",
-                "💡",
-                Color(0xFFFFD700),
-                Color(0xFFFFFBEB),
-                links.count { it.category == LinkCategory.IDEE }
-            ),
-            CategoryInfo(
-                LinkCategory.LIVRE,
-                "Livres",
-                "📚",
-                Color(0xFF9C27B0),
-                Color(0xFFF3E5F5),
-                links.count { it.category == LinkCategory.LIVRE }
-            ),
-            CategoryInfo(
-                LinkCategory.DECORATION,
-                "Décorations",
-                "🎨",
-                Color(0xFFE91E63),
-                Color(0xFFFCE4EC),
-                links.count { it.category == LinkCategory.DECORATION }
-            )
-        )
-    }
+    val community by viewModel.communityLinks.collectAsState()
+    var query by remember { mutableStateOf("") }
+    var showUpcoming by remember { mutableStateOf(false) }
 
-    val trendingLinks = remember(links) { links.sortedByDescending { it.likeCount }.take(5) }
-    val recentLinks = remember(links) { links.sortedByDescending { it.createdAt }.take(3) }
-    val savedCount = remember(links) { links.count { it.favorite } }
-    val children by viewModel.children.collectAsState()
-    val familyCount = children.size + 1
+    LaunchedEffect(Unit) { if (community.isEmpty()) viewModel.loadCommunityLinks() }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { viewModel.forceSync() },
-            state = pullRefreshState,
-            modifier = Modifier.fillMaxSize()
-        ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-        // Header avec gradient
-        item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFFFF6B35),
-                                Color(0xFFF97316),
-                                Color(0xFFFBBF24)
-                            )
-                        )
-                    )
-                    .padding(top = 48.dp, bottom = 32.dp, start = 20.dp, end = 20.dp)
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
-                    // Top bar
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Bonjour 👋",
-                                fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                            Text(
-                                text = if (displayName != null) "La famille $displayName" else "Bienvenue",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
+    val next = remember(links) { upcoming(links) }
+    val reminders = remember(links) { soonReminders(links) }
+    val counts = remember(links) { links.groupingBy { it.category }.eachCount() }
+    val popular = remember(community) { community.sortedByDescending { it.likeCount }.take(10) }
+    val recent = remember(links) { links.sortedByDescending { it.createdAt.ifEmpty { it.updatedAt } }.take(6) }
+    // « La tribu Dupont » : nom choisi pour la tribu (si c'est bien celle du compte connecté), à défaut celui du compte
+    val tribe by viewModel.tribe.collectAsState()
+    val userId by sessionManager?.userId?.collectAsState() ?: remember { mutableStateOf<String?>(null) }
+    val name = tribe?.takeIf { t -> t.members.any { it.userId == userId } }?.name?.trim()?.ifEmpty { null }
+        ?: displayName?.trim().orEmpty()
 
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(Color.White.copy(alpha = 0.2f), CircleShape)
-                                .clickable { },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Notifications,
-                                contentDescription = "Notifications",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            // Badge
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = (-6).dp, y = 6.dp)
-                                    .background(Color(0xFFFBBF24), CircleShape)
-                            )
-                        }
-                    }
-
-                    // Search bar
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onNavigateToExplore),
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color.White,
-                        shadowElevation = 8.dp
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Search,
-                                contentDescription = null,
-                                tint = Color(0xFF9CA3AF),
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "Chercher une idée, une activité…",
-                                fontSize = 14.sp,
-                                color = Color(0xFF9CA3AF)
-                            )
-                        }
-                    }
-
-                    // Stats
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        StatCard(
-                            label = "Idées",
-                            value = links.size.toString(),
-                            onClick = onNavigateToFavorites,
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            label = "Sauvegardées",
-                            value = savedCount.toString(),
-                            onClick = onNavigateToPublicLinks,
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            label = "Tribu",
-                            value = familyCount.toString(),
-                            onClick = onNavigateToFollowing,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-        }
-
-        // Categories
-        item {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.forceSync(); viewModel.loadCommunityLinks() },
+        modifier = modifier.fillMaxSize().background(Sable)
+    ) {
+        Box(Modifier.fillMaxSize()) {
+            SunDecor()
             Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .statusBarsPadding()
+                    .padding(top = 20.dp, bottom = ui.components.bottomNavClearance()),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "Catégories",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
+                    Logo()
+                    CircleIconButton(
+                        Icons.Outlined.NotificationsNone,
+                        if (reminders > 0) "À venir, $reminders rappels cette semaine" else "À venir",
+                        onClick = { showUpcoming = true },
+                        badge = reminders > 0
                     )
-                    TextButton(onClick = onNavigateToExplore) {
-                        Text(
-                            text = "Voir tout",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFFF97316)
-                        )
-                        Icon(
-                            imageVector = Icons.Filled.ChevronRight,
-                            contentDescription = null,
-                            tint = Color(0xFFF97316),
-                            modifier = Modifier.size(14.dp)
-                        )
+                }
+
+                Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(formatToday(), fontSize = 15.sp, color = TextSec)
+                    Text(
+                        if (name.isNotEmpty()) "La tribu $name,\non fait quoi ce week‑end ?" else "Bienvenue dans la tribu,\non fait quoi ce week‑end ?",
+                        style = display(32.sp)
+                    )
+                }
+
+                Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SearchField(
+                        value = query,
+                        onValueChange = { query = it },
+                        placeholder = "Une sortie, une recette, un cadeau…",
+                        onSearch = { onSearch(query.trim()) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Box(
+                        Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(Prune)
+                            .clickable(role = Role.Button, onClick = onNavigateToAI)
+                            .semantics { contentDescription = "Générer des idées avec l'IA" },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.size(22.dp))
                     }
                 }
 
-                // Grid de catégories
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    categories.chunked(3).forEach { rowCategories ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            rowCategories.forEach { category ->
-                                CategoryCard(
-                                    category = category,
-                                    onClick = { onNavigateToCategory(category.id) },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
+                Box(Modifier.padding(horizontal = 20.dp)) {
+                    val event = next.firstOrNull()
+                    when {
+                        event != null -> NextEventCard(event.first, event.second) { onNavigateToDetail(event.first.id) }
+                        isLoggedIn || links.isNotEmpty() -> NoEventCard { onAddWithCategory(LinkCategory.EVENEMENT) }
+                        else -> JoinCard(onNavigateToTribe)
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.padding(horizontal = 20.dp)) {
+                        SectionHeader("Nos catégories", "Tout voir", onNavigateToExplore)
+                    }
+                    HorizontalRail {
+                        CategoryOrder.forEach { c ->
+                            CategoryTile(c, counts[c.category] ?: 0) { onNavigateToCategory(c.category) }
                         }
                     }
                 }
-            }
-        }
 
-        // Tendances
-        if (trendingLinks.isNotEmpty()) {
-            item {
-                Column(
-                    modifier = Modifier.padding(bottom = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Whatshot,
-                            contentDescription = null,
-                            tint = Color(0xFFF97316),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(
-                            text = "Tendances",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF111827)
-                        )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.padding(horizontal = 20.dp)) {
+                        SectionHeader("Ça plaît aux tribus", "Explorer", onNavigateToExplore)
                     }
-
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 20.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(trendingLinks) { link ->
-                            IdeaCard(
-                                link = link,
-                                compact = true,
-                                onClick = { onNavigateToDetail(link.id) },
-                                onSaveClick = { onSaveLink(link) },
-                                sessionManager = sessionManager,
-                                modifier = Modifier.width(240.dp)
-                            )
+                    if (popular.isEmpty()) {
+                        Text(
+                            if (isRefreshing) "Chargement…" else "La communauté n'a encore rien partagé. Soyez la première tribu !",
+                            fontSize = 14.sp, color = TextSec, modifier = Modifier.padding(horizontal = 20.dp)
+                        )
+                    } else {
+                        HorizontalRail {
+                            popular.forEach { l -> RailCard(l) { onOpenCommunityLink(l) } }
                         }
                     }
                 }
-            }
-        }
 
-        // Récemment ajoutées
-        if (recentLinks.isNotEmpty()) {
-            item {
-                Column(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Schedule,
-                            contentDescription = null,
-                            tint = Color(0xFF6B7280),
-                            modifier = Modifier.size(18.dp)
+                Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SectionHeader("Ajouté récemment")
+                    if (recent.isEmpty()) {
+                        EmptyBlock(
+                            Icons.Outlined.Cottage,
+                            "Votre tipi est vide",
+                            "Ajoutez une première idée avec le losange « + » ou laissez l'IA vous inspirer."
                         )
-                        Text(
-                            text = "Récemment ajoutées",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF111827)
-                        )
-                    }
-
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        recentLinks.forEach { link ->
-                            IdeaCard(
-                                link = link,
-                                onClick = { onNavigateToDetail(link.id) },
-                                onSaveClick = { onSaveLink(link) },
-                                sessionManager = sessionManager
-                            )
-                        }
+                    } else {
+                        recent.forEach { l -> RowCard(l, onClick = { onNavigateToDetail(l.id) }) }
                     }
                 }
             }
-        }
-
-        // Padding pour la bottom nav
-        item {
-            Spacer(modifier = Modifier.height(80.dp))
         }
     }
+
+    if (showUpcoming) {
+        UpcomingSheet(next, onDismiss = { showUpcoming = false }) { id ->
+            showUpcoming = false
+            onNavigateToDetail(id)
         }
-    
-    // Bouton flottant IA
-    FloatingActionButton(
-        onClick = onNavigateToAI,
-        modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .padding(bottom = 100.dp, end = 20.dp),
-        containerColor = Color(0xFF8B5CF6),
-        contentColor = Color.White
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Filled.AutoAwesome,
-                contentDescription = "Générer avec l'IA",
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = "IA",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
     }
 }
 
 @Composable
-private fun StatCard(
-    label: String,
-    value: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .height(70.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        color = Color.White.copy(alpha = 0.2f)
+private fun NextEventCard(link: Link, at: Long, onClick: () -> Unit) {
+    val (wd, day) = dayBadge(at)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(Ecorce)
+            .clickable(onClick = onClick)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
+            Modifier.size(width = 58.dp, height = 64.dp).clip(RoundedCornerShape(16.dp)).background(Braise),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Text(wd.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Ecorce, letterSpacing = 0.6.sp)
+            Text(day, style = display(26.sp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
-                text = value,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+                ("À venir" + if (link.reminderEnabled) " · rappel activé" else "").uppercase(),
+                fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFF7B57F), letterSpacing = 0.8.sp
             )
+            Text(link.title, style = display(17.sp, FontWeight.Bold, Sable), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                text = label,
-                fontSize = 10.sp,
-                color = Color.White.copy(alpha = 0.8f),
-                maxLines = 1
+                listOf(formatTime(at), metaLine(link)).filter { it.isNotEmpty() }.joinToString(" · ").ifEmpty { formatShortDate(at) },
+                fontSize = 13.sp, color = BarkSoft, maxLines = 1, overflow = TextOverflow.Ellipsis
             )
         }
+        Icon(Icons.Outlined.ChevronRight, null, tint = BarkSoft, modifier = Modifier.size(20.dp))
     }
 }
 
 @Composable
-fun CategoryCard(
-    category: CategoryInfo,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = category.bgColor,
-        border = androidx.compose.foundation.BorderStroke(1.dp, category.color.copy(alpha = 0.2f))
+private fun NoEventCard(onAdd: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .dashedBorder(Dash, 22.dp)
+            .clickable(onClick = onAdd)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        val c = categoryUi(LinkCategory.EVENEMENT)
+        Box(Modifier.size(width = 58.dp, height = 64.dp).clip(RoundedCornerShape(16.dp)).background(c.bg), contentAlignment = Alignment.Center) {
+            Icon(c.icon, null, tint = c.tint, modifier = Modifier.size(26.dp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Rien de prévu pour l'instant", style = display(17.sp, FontWeight.Bold))
+            Text("Ajoutez une sortie datée pour la voir ici et recevoir un rappel.", fontSize = 13.sp, color = TextSec)
+        }
+        Icon(Icons.Outlined.Add, null, tint = Terracotta, modifier = Modifier.size(22.dp))
+    }
+}
+
+@Composable
+private fun JoinCard(onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(22.dp))
+            .background(Ecorce)
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(Modifier.size(48.dp).clip(RoundedCornerShape(16.dp)).background(Braise), contentAlignment = Alignment.Center) {
+            Icon(Icons.Outlined.Groups, null, tint = Ecorce, modifier = Modifier.size(24.dp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Créez votre tribu", style = display(17.sp, FontWeight.Bold, Sable))
+            Text("Rangez vos idées, partagez-les avec vos proches.", fontSize = 13.sp, color = BarkSoft)
+        }
+        Icon(Icons.Outlined.ChevronRight, null, tint = BarkSoft, modifier = Modifier.size(20.dp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun UpcomingSheet(items: List<Pair<Link, Long>>, onDismiss: () -> Unit, onOpen: (String) -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Sable, dragHandle = { SheetHandle() }) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                text = category.emoji,
-                fontSize = 28.sp
-            )
-            Text(
-                text = category.name,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1F2937)
-            )
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = category.color.copy(alpha = 0.2f)
-            ) {
-                Text(
-                    text = "${category.count} idées",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = category.color,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                )
+            Text("À venir", style = display(24.sp))
+            if (items.isEmpty()) {
+                EmptyBlock(Icons.Outlined.CalendarMonth, "Rien de prévu", "Ajoutez une date à une sortie ou une activité pour la retrouver ici.")
+            } else {
+                items.take(20).forEach { (l, at) ->
+                    RowCard(l, onClick = { onOpen(l.id) }) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(formatShortDate(at), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+                            if (l.reminderEnabled) Text("rappel", fontSize = 12.sp, color = TextSec)
+                        }
+                    }
+                }
             }
         }
     }
 }
-

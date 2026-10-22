@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
 
 class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewModel() {
     val folders: StateFlow<List<Folder>> = repository.folders
@@ -45,6 +48,13 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    private val _tribe = MutableStateFlow<data.ApiTribe?>(null)
+    /** Tribu de l'utilisateur (nom affiché, membres) ; null hors connexion. */
+    val tribe: StateFlow<data.ApiTribe?> = _tribe.asStateFlow()
+
+    private val _communityFolders = MutableStateFlow<List<Folder>>(emptyList())
+    val communityFolders: StateFlow<List<Folder>> = _communityFolders.asStateFlow()
+
     private val _communityLinks = MutableStateFlow<List<Link>>(emptyList())
     val communityLinks: StateFlow<List<Link>> = _communityLinks.asStateFlow()
     
@@ -64,6 +74,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     /** Fonction pour récupérer l'image OG — injectée côté Android */
     var ogImageFetcher: (suspend (String) -> String?)? = null
+    /** Aperçu (titre, images) lu sur le téléphone, quand le backend ne répond pas. */
+    var localPreview: (suspend (String) -> data.LinkPreview?)? = null
 
     /** Fonction pour planifier un rappel — injectée côté Android */
     var reminderScheduler: ((Link) -> Unit)? = null
@@ -105,7 +117,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         eventDate: Long? = null, reminderEnabled: Boolean = false, rating: Int = 0,
         imageUrl: String = "", ingredients: List<String> = emptyList(),
         visibility: String = "private"
-    ) {
+    ): Link {
         val ownerDisplayName = sessionManager?.getDisplayName() ?: ""
         val link = Link(
             id = kotlin.random.Random.nextLong().toString(),
@@ -131,16 +143,114 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             reminderScheduler?.invoke(link)
         }
 
-        // Récupère l'image OG en arrière-plan seulement si pas d'image manuelle
+        // Récupère l'image de la page en arrière-plan seulement si pas d'image manuelle
         if (url.isNotBlank() && imageUrl.isBlank()) {
             viewModelScope.launch {
-                val ogUrl = ogImageFetcher?.invoke(url)
+                val ogUrl = resolveImage(url)
                 if (!ogUrl.isNullOrBlank()) {
                     repository.updateLink(link.copy(imageUrl = ogUrl))
                     updateFilteredLinks()
                 }
             }
         }
+        return link
+    }
+
+    /**
+     * Meilleure image d'une page : le scraper du backend (plus complet : JSON-LD,
+     * lazy-loading, oEmbed, contournement des pages anti-bot) puis, hors ligne
+     * ou sans session, l'extraction locale.
+     */
+    private suspend fun resolveImage(url: String): String? =
+        previewLink(url)?.image?.takeIf { it.isNotBlank() } ?: ogImageFetcher?.invoke(url)
+
+    /**
+     * Le contenu de ownerId appartient à l'utilisateur ou à un membre de sa tribu
+     * qui a confirmé le partage : il le gère comme le sien.
+     */
+    fun isTribePeer(ownerId: String): Boolean {
+        val me = currentUserId()
+        if (ownerId.isBlank() || ownerId == me) return true
+        return _tribe.value?.members?.any { it.userId == ownerId && it.sharing } == true
+    }
+
+    /**
+     * Action sur la tribu : met à jour la tribu puis resynchronise (idées,
+     * dossiers et enfants partagés changent avec elle). onDone(null) en cas de
+     * succès, sinon un message d'erreur en français.
+     */
+    private fun tribeAction(onDone: (String?) -> Unit, call: suspend (data.AuthenticatedApiClient) -> data.ApiTribe) {
+        val client = authenticatedClient ?: return onDone("Connectez-vous pour gérer votre tribu.")
+        viewModelScope.launch {
+            runCatching { call(client) }
+                .onSuccess { t ->
+                    _tribe.value = t
+                    sessionManager?.let { syncWithBackend(it) }
+                    onDone(null)
+                }
+                .onFailure { onDone(tribeErrorMessage(it.message.orEmpty())) }
+        }
+    }
+
+    fun renameTribe(name: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.renameTribe(name.trim()) }
+    fun addTribeMember(email: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.addTribeMember(email.trim()) }
+    fun removeTribeMember(userId: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.removeTribeMember(userId) }
+    fun setTribeSharing(sharing: Boolean, onDone: (String?) -> Unit) = tribeAction(onDone) { it.setTribeSharing(sharing) }
+
+    private fun tribeErrorMessage(raw: String): String = when {
+        "user not found with this email" in raw -> "Aucun compte Tribbae avec cet email."
+        "already a member of this tribe" in raw -> "Cette personne fait déjà partie de votre tribu."
+        "already belongs to another tribe" in raw -> "Ce compte fait déjà partie d'une autre tribu : la personne doit d'abord la quitter."
+        "tribe is full" in raw -> "La tribu est complète."
+        "only the tribe owner" in raw -> "Seul le créateur de la tribu peut retirer un membre."
+        "name must be 1 to 60" in raw -> "Le nom de la tribu doit faire entre 1 et 60 caractères."
+        "email is required" in raw -> "Saisissez l'email de son compte Tribbae."
+        else -> "Impossible de joindre le serveur, réessayez."
+    }
+
+    /**
+     * Déconnexion : la session ET les données du compte gardées sur le téléphone
+     * (idées, dossiers, enfants) sont effacées, pour qu'un autre utilisateur de
+     * l'appareil ne les voie pas.
+     */
+    fun signOut() {
+        repository.clearAll()
+        _tribe.value = null
+        sessionManager?.clearSession()
+    }
+
+    /** Export RGPD de toutes les données du compte (JSON), ou null en cas d'échec. */
+    suspend fun exportAccount(): String? = authenticatedClient?.let { runCatching { it.exportAccount() }.getOrNull() }
+
+    /** Suppression définitive du compte, puis déconnexion. onDone(null) si réussi, sinon le message d'erreur. */
+    fun deleteAccount(password: String, onDone: (String?) -> Unit) {
+        val client = authenticatedClient ?: return onDone("Connectez-vous pour supprimer votre compte.")
+        viewModelScope.launch {
+            runCatching { client.deleteAccount(password) }
+                .onSuccess { signOut(); onDone(null) }
+                .onFailure { e ->
+                    val raw = e.message.orEmpty()
+                    onDone(when {
+                        "wrong password" in raw -> "Mot de passe incorrect."
+                        "(429)" in raw -> "Trop de tentatives, réessayez dans une minute."
+                        "deletion failed" in raw -> "La suppression n'a pas abouti. Réessayez : elle reprendra là où elle s'est arrêtée."
+                        else -> "Impossible de joindre le serveur, réessayez."
+                    })
+                }
+        }
+    }
+
+    /** Identifiant de l'utilisateur connecté, ou null. */
+    fun currentUserId(): String? = sessionManager?.getUserId()?.takeIf { it.isNotBlank() }
+
+    /** Titre, description et image d'une page web, via le backend. Null si hors ligne ou non connecté. */
+    suspend fun previewLink(url: String): data.LinkPreview? {
+        val normalized = if ("://" in url) url.trim() else "https://${url.trim()}"
+        val token = sessionManager?.getToken() ?: authToken
+        val remote = token?.let { runCatching { apiClient.previewLink(normalized, it) }.getOrNull() }
+        if (remote != null && (remote.title.isNotBlank() || remote.image.isNotBlank())) return remote
+        // Sans compte, hors ligne ou serveur en échec : lecture de la page sur le téléphone
+        return localPreview?.invoke(normalized) ?: remote
     }
 
     fun deleteLink(id: String) {
@@ -180,11 +290,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     fun getLinksWithDate(): List<Link> =
         repository.links.value.filter { it.eventDate != null }.sortedBy { it.eventDate }
 
-    fun addFolder(name: String, icon: FolderIcon, color: FolderColor, visibility: String = "PRIVATE") {
-        val folder = Folder(
-            id = kotlin.random.Random.nextLong().toString(),
-            name = name, icon = icon, color = color, visibility = visibility
-        )
+    fun addFolder(name: String, icon: FolderIcon, color: FolderColor, visibility: String = "PRIVATE") =
+        addFolder(Folder(id = "", name = name, icon = icon, color = color, visibility = visibility))
+
+    /** Nouveau dossier (id local remplacé par celui du serveur après synchro). */
+    fun addFolder(draft: Folder) {
+        val folder = draft.copy(id = kotlin.random.Random.nextLong().toString())
         repository.addFolder(folder)
         
         // Sauvegarder sur le backend si authentifié
@@ -243,21 +354,21 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     fun toggleFavorites() { _favoritesOnly.value = !_favoritesOnly.value; updateFilteredLinks() }
 
-    /** Toggle le favori d'un lien (cœur) — appelle l'API like/unlike du backend */
+    /** Toggle le favori d'un lien (étoile personnelle), synchronisé avec le backend */
     fun toggleFavorite(linkId: String) {
         val link = repository.links.value.find { it.id == linkId } ?: return
         val newFavorite = !link.favorite
         repository.updateLink(link.copy(favorite = newFavorite))
         updateFilteredLinks()
         
-        // Synchroniser avec le backend via like/unlike
+        // Favori personnel, synchronisé via /favorite (le like est un geste communautaire distinct)
         val client = authenticatedClient ?: return
         viewModelScope.launch {
             try {
-                if (newFavorite) {
-                    client.likeLink(linkId)
-                } else {
-                    client.unlikeLink(linkId)
+                val serverFavorite = client.toggleFavorite(linkId)
+                if (serverFavorite != newFavorite) {
+                    repository.links.value.find { it.id == linkId }?.let { repository.updateLink(it.copy(favorite = serverFavorite)) }
+                    updateFilteredLinks()
                 }
             } catch (e: Exception) {
                 // Rollback en cas d'erreur
@@ -372,6 +483,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                         "Impossible de se connecter au backend. Vérifiez votre connexion internet."
                     e.message?.contains("401") == true || e.message?.contains("403") == true ->
                         "Session expirée. Reconnectez-vous dans Profil."
+                    e.message?.contains("AI is busy") == true ->
+                        "L'IA prépare déjà des idées pour une autre tribu. Réessayez dans une trentaine de secondes."
+                    e.message?.contains("(429)") == true ->
+                        "Trop de demandes, réessayez dans une minute."
+                    e.message?.contains("idea generation failed") == true ->
+                        "L'IA n'a pas réussi à préparer d'idées. Réessayez ou reformulez votre demande."
                     else -> e.message ?: "Erreur inconnue"
                 }
                 _aiError.value = errorMsg
@@ -393,34 +510,115 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             } catch (_: Exception) { LinkCategory.IDEE }
             addLink(
                 title = idea.title,
-                url = idea.url,
+                url = "",
                 description = idea.description,
                 category = category,
                 folderId = folderId,
                 tags = idea.tags,
                 ageRange = idea.ageRange,
-                location = idea.location,
-                price = idea.price,
-                imageUrl = idea.imageUrl,
-                ingredients = idea.ingredients
+                location = "",
+                price = ""
             )
         }
     }
 
-    /** Récupère les images OG manquantes pour les liens existants (sans image manuelle) */
-    fun fetchMissingImages() {
-        val fetcher = ogImageFetcher ?: return
+    /**
+     * Range les idées de l'IA dans un nouveau dossier. Le dossier est d'abord créé
+     * sur le serveur (quand on est connecté) pour que les idées y pointent avec
+     * son identifiant définitif, et non un identifiant local provisoire.
+     */
+    fun saveAiIdeasInNewFolder(ideas: List<AiSuggestedLink>, name: String, onDone: (String) -> Unit = {}) {
         viewModelScope.launch {
+            val folder = createPrivateFolder(Folder(
+                id = kotlin.random.Random.nextLong().toString(),
+                name = name.take(80).ifBlank { "Idées de l'IA" },
+                icon = FolderIcon.MAGIC, color = FolderColor.PURPLE, visibility = "PRIVATE", aiGenerated = true
+            ))
+            saveAiIdeas(ideas, folder.id)
+            onDone(folder.id)
+        }
+    }
+
+    /**
+     * Crée un dossier privé à la volée (depuis le choix du dossier d'une idée)
+     * et renvoie son identifiant : celui du serveur si on est en ligne, pour que
+     * l'idée enregistrée juste après y soit bien rattachée.
+     */
+    fun createFolderQuick(name: String, onDone: (String) -> Unit) {
+        val trimmed = name.trim().take(80)
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            val folder = createPrivateFolder(Folder(id = kotlin.random.Random.nextLong().toString(), name = trimmed, visibility = "PRIVATE"))
+            onDone(folder.id)
+        }
+    }
+
+    private suspend fun createPrivateFolder(local: Folder): Folder {
+        val folder = authenticatedClient?.let { client ->
+            runCatching {
+                client.createFolder(
+                    data.CreateFolderRequest(
+                        name = local.name, icon = local.icon.name, color = local.color.name,
+                        visibility = "VISIBILITY_PRIVATE", bannerUrl = "", tags = emptyList()
+                    )
+                )
+            }.getOrNull()?.let { local.copy(id = it.id) }
+        } ?: local
+        repository.addFolder(folder)
+        return folder
+    }
+
+    private var imageBackfillJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Rattrape l'image des idées qui n'en ont pas : au démarrage et après chaque
+     * synchronisation. Une même idée n'est retentée qu'une fois par jour (les
+     * sites qui bloquent ne doivent pas être sollicités à chaque ouverture) ; le
+     * serveur fait aussi ce rattrapage de son côté.
+     */
+    fun fetchMissingImages() {
+        if (imageBackfillJob?.isActive == true) return
+        imageBackfillJob = viewModelScope.launch {
+            val now = System.currentTimeMillis()
             repository.links.value
-                .filter { it.imageUrl.isBlank() && it.url.isNotBlank() }
+                .filter { it.imageUrl.isBlank() && it.url.isNotBlank() && now - repository.imageCheckedAt(it.id) > IMAGE_RETRY_MS }
+                .take(IMAGE_BACKFILL_BATCH)
                 .forEach { link ->
-                    val imageUrl = fetcher(link.url)
-                    if (!imageUrl.isNullOrBlank()) {
-                        repository.updateLink(link.copy(imageUrl = imageUrl))
-                        updateFilteredLinks()
-                    }
+                    findAndSaveImage(link)
+                    kotlinx.coroutines.delay(500)
                 }
         }
+    }
+
+    /**
+     * Fiche d'une idée sans image : on tente tout de suite (au plus une fois par
+     * heure pour une même idée) plutôt que d'attendre le prochain rattrapage.
+     */
+    fun ensureImage(linkId: String) {
+        val link = repository.links.value.find { it.id == linkId } ?: return
+        if (link.imageUrl.isNotBlank() || link.url.isBlank()) return
+        if (System.currentTimeMillis() - repository.imageCheckedAt(link.id) < IMAGE_RETRY_ON_OPEN_MS) return
+        viewModelScope.launch { findAndSaveImage(link) }
+    }
+
+    /**
+     * Cherche l'image de la page et l'enregistre. Pour ses propres idées, elle
+     * part aussi au serveur : sans cela, la synchronisation suivante l'effacerait
+     * (le serveur fait foi) et la recherche recommencerait à chaque ouverture.
+     */
+    private suspend fun findAndSaveImage(link: Link): String? {
+        repository.markImageChecked(link.id)
+        val image = resolveImage(link.url)?.takeIf { it.isNotBlank() } ?: return null
+        val fresh = repository.links.value.find { it.id == link.id } ?: return null
+        if (fresh.imageUrl.isNotBlank()) return fresh.imageUrl // choisie entre-temps
+        val mine = fresh.ownerId.isBlank() || fresh.ownerId == currentUserId()
+        if (mine) {
+            updateLink(fresh.copy(imageUrl = image))
+        } else {
+            repository.updateLink(fresh.copy(imageUrl = image))
+            updateFilteredLinks()
+        }
+        return image
     }
 
     private fun updateFilteredLinks() {
@@ -672,43 +870,72 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     
     // ── Backend Sync ──────────────────────────────────────────────────────────
 
+    private fun bearer(): String? = sessionManager?.getToken() ?: authToken
+
+    /** Dossiers publics de la communauté (onglet « Dossiers » de l'Explorer). */
+    fun loadCommunityFolders(search: String = "") {
+        viewModelScope.launch {
+            runCatching { apiClient.listCommunityFolders(search = search, pageSize = 50, token = bearer()) }
+                .onSuccess { r -> _communityFolders.value = r.folders.map { it.toFolder() } }
+                .onFailure { println("ERROR: Failed to load community folders - ${it.message}") }
+        }
+    }
+
+    /** Idées visibles d'un dossier public (seulement celles que le serveur autorise). */
+    suspend fun loadPublicFolderLinks(folderId: String): List<Link>? =
+        runCatching { apiClient.listFolderLinks(folderId, bearer()).links.map { it.toLink() } }.getOrNull()
+
+    /** Dossier ouvert depuis un lien de partage (https://…/share/<jeton>). */
+    suspend fun loadSharedFolder(token: String): Pair<Folder, List<Link>>? = runCatching {
+        val r = apiClient.getSharedFolder(token)
+        val folder = r.folder.copy(linkCount = r.links.size).toFolder()
+        folder to r.links.map { it.toLink().copy(folderId = folder.id) }
+    }.getOrNull()
+
+    /** Like / unlike d'un dossier de la communauté. */
+    fun toggleFolderLike(folderId: String, currentlyLiked: Boolean, onResult: (liked: Boolean, likeCount: Int) -> Unit) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            runCatching { if (currentlyLiked) client.unlikeFolder(folderId) else client.likeFolder(folderId) }
+                .onSuccess { count ->
+                    onResult(!currentlyLiked, count)
+                    _communityFolders.value = _communityFolders.value.map {
+                        if (it.id == folderId) it.copy(likedByMe = !currentlyLiked, likeCount = count) else it
+                    }
+                }
+        }
+    }
+
+    private var communityLoadedAt = 0L
+    private var communityLoading = false
+
+    /** Recharge les idées de la communauté si elles ont plus de 5 minutes (ou jamais chargées). */
+    fun refreshCommunityIfStale(maxAgeMs: Long = 5 * 60_000L) {
+        if (!communityLoading && System.currentTimeMillis() - communityLoadedAt > maxAgeMs) loadCommunityLinks()
+    }
+
     /** Charge les liens publics de la communauté depuis l'API publique (sans auth) */
     fun loadCommunityLinks() {
+        communityLoading = true
         viewModelScope.launch {
             _isRefreshing.value = true
             try {
-                val response = apiClient.listCommunityLinks(limit = 100)
-                _communityLinks.value = response.links.map { apiLink ->
-                    val category = try {
-                        LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
-                    } catch (_: Exception) { LinkCategory.IDEE }
-                    Link(
-                        id = apiLink.id,
-                        title = apiLink.title,
-                        url = apiLink.url,
-                        description = apiLink.description,
-                        category = category,
-                        tags = apiLink.tags,
-                        ageRange = apiLink.ageRange,
-                        location = apiLink.location,
-                        price = apiLink.price,
-                        imageUrl = apiLink.imageUrl,
-                        eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
-                        rating = apiLink.rating,
-                        ingredients = apiLink.ingredients,
-                        likeCount = apiLink.likeCount,
-                        likedByMe = apiLink.likedByMe,
-                        ownerId = apiLink.ownerId,
-                        ownerDisplayName = apiLink.ownerDisplayName,
-                        ownerIsAdmin = apiLink.ownerIsAdmin,
-                        visibility = "public"
-                    )
+                // Comme le web : jusqu'à 100 idées par catégorie (l'API plafonne à 100 par
+                // appel), avec le jeton pour savoir lesquelles on a déjà aimées
+                val token = sessionManager?.getToken() ?: authToken
+                val lists = coroutineScope {
+                    LinkCategory.entries.map { c ->
+                        async { runCatching { apiClient.listCommunityLinks("LINK_CATEGORY_${c.name}", 100, token).links }.getOrDefault(emptyList()) }
+                    }.awaitAll()
                 }
+                _communityLinks.value = lists.flatten().distinctBy { it.id }.map { it.toLink().copy(visibility = "public") }
+                communityLoadedAt = System.currentTimeMillis()
                 println("DEBUG: Loaded ${_communityLinks.value.size} community links")
             } catch (e: Exception) {
                 println("ERROR: Failed to load community links - ${e.message}")
             } finally {
                 _isRefreshing.value = false
+                communityLoading = false
             }
         }
     }
@@ -747,8 +974,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         viewModelScope.launch {
             try {
                 _syncStatus.value = "Synchronisation..."
+                runCatching { client.getTribe() }.onSuccess { _tribe.value = it }
                 performSync(client)
                 _syncStatus.value = "Synchronisé"
+                // Les idées arrivées du serveur sans image : on tente de la récupérer
+                fetchMissingImages()
             } catch (e: Exception) {
                 _syncStatus.value = "Erreur: ${e.message}"
             }
@@ -816,7 +1046,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 reminderEnabled = apiLink.reminderEnabled,
                 rating = apiLink.rating,
                 ingredients = apiLink.ingredients,
-                favorite = apiLink.likedByMe,
+                favorite = apiLink.favorite,
+                likeCount = apiLink.likeCount,
+                likedByMe = apiLink.likedByMe,
                 updatedAt = apiLink.updatedAt,
                 createdAt = apiLink.createdAt,
                 ownerId = apiLink.ownerId,
@@ -909,7 +1141,16 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                         else -> "VISIBILITY_PRIVATE"
                     },
                     bannerUrl = folder.bannerUrl,
-                    tags = folder.tags
+                    tags = folder.tags,
+                    description = folder.description,
+                    cover = folder.cover,
+                    illustration = folder.illustration,
+                    keyDate = folder.keyDate,
+                    keyDateType = folder.keyDateType,
+                    childIds = folder.childIds,
+                    viewMode = folder.viewMode,
+                    sort = folder.sort,
+                    pinned = folder.pinned,
                 )
                 val savedFolder = client.createFolder(req)
                 // Mettre à jour l'ID local avec l'ID du backend
@@ -982,7 +1223,17 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                         else -> "VISIBILITY_PRIVATE"
                     },
                     bannerUrl = folder.bannerUrl,
-                    tags = folder.tags
+                    tags = folder.tags,
+                    description = folder.description,
+                    cover = folder.cover,
+                    illustration = folder.illustration,
+                    keyDate = folder.keyDate,
+                    keyDateType = folder.keyDateType,
+                    childIds = folder.childIds,
+                    setChildIds = true,
+                    viewMode = folder.viewMode,
+                    sort = folder.sort,
+                    pinned = folder.pinned,
                 )
                 client.updateFolder(folder.id, req)
             } catch (e: Exception) {
@@ -1058,7 +1309,16 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                     role = c.role
                 )
             },
-            updatedAt = apiFolder.updatedAt
+            updatedAt = apiFolder.updatedAt,
+            description = apiFolder.description,
+            cover = apiFolder.cover,
+            illustration = apiFolder.illustration,
+            keyDate = apiFolder.keyDate,
+            keyDateType = apiFolder.keyDateType,
+            childIds = apiFolder.childIds,
+            viewMode = apiFolder.viewMode,
+            sort = apiFolder.sort,
+            pinned = apiFolder.pinned,
         )
     }
     
@@ -1102,5 +1362,13 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 _syncStatus.value = "Erreur suppression enfant: ${e.message}"
             }
         }
+    }
+
+    private companion object {
+        /** Une même idée sans image n'est retentée qu'une fois par jour… */
+        const val IMAGE_RETRY_MS = 24L * 60 * 60 * 1000
+        /** …ou une fois par heure quand l'utilisateur ouvre sa fiche. */
+        const val IMAGE_RETRY_ON_OPEN_MS = 60L * 60 * 1000
+        const val IMAGE_BACKFILL_BATCH = 30
     }
 }

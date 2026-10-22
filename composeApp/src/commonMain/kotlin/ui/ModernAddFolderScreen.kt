@@ -43,7 +43,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF9FAFB)),
+                .background(Color(0xFFFBF3E7)),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -53,7 +53,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                 Box(
                     modifier = Modifier
                         .size(80.dp)
-                        .background(Color(0xFFF97316), CircleShape),
+                        .background(Color(0xFFC8492C), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -67,12 +67,12 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                     text = "Dossier créé ! ✨",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF111827)
+                    color = Color(0xFF3A211B)
                 )
                 Text(
                     text = "Votre nouveau dossier est prêt.",
                     fontSize = 14.sp,
-                    color = Color(0xFF6B7280)
+                    color = Color(0xFF6B5047)
                 )
             }
         }
@@ -80,7 +80,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
     }
 
     Scaffold(
-        containerColor = Color(0xFFF9FAFB)
+        containerColor = Color(0xFFFBF3E7)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -104,14 +104,14 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF3F4F6))
+                            .background(Color(0xFFF1E3D1))
                             .clickable(onClick = onBack),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Retour",
-                            tint = Color(0xFF6B7280),
+                            tint = Color(0xFF6B5047),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -119,7 +119,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                         text = "Nouveau dossier",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF111827)
+                        color = Color(0xFF3A211B)
                     )
                 }
             }
@@ -138,7 +138,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                         text = "Nom du dossier *",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     OutlinedTextField(
                         value = name,
@@ -149,8 +149,8 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            focusedBorderColor = Color(0xFFF97316),
-                            unfocusedBorderColor = Color(0xFFF3F4F6)
+                            focusedBorderColor = Color(0xFFC8492C),
+                            unfocusedBorderColor = Color(0xFFF1E3D1)
                         )
                     )
                 }
@@ -161,7 +161,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                         text = "Icône",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(6),
@@ -176,13 +176,13 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                                     .size(48.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(
-                                        if (isSelected) Color(0xFFF97316) 
-                                        else Color(0xFFF9FAFB)
+                                        if (isSelected) Color(0xFFC8492C) 
+                                        else Color(0xFFFBF3E7)
                                     )
                                     .border(
                                         width = 1.5.dp,
-                                        color = if (isSelected) Color(0xFFF97316) 
-                                               else Color(0xFFE5E7EB),
+                                        color = if (isSelected) Color(0xFFC8492C) 
+                                               else Color(0xFFEADBC8),
                                         shape = RoundedCornerShape(12.dp)
                                     )
                                     .clickable { selectedIcon = icon },
@@ -192,7 +192,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                                     imageVector = folderIconVector(data.Folder("", "", icon)),
                                     contentDescription = null,
                                     tint = if (isSelected) Color.White 
-                                           else Color(0xFF6B7280),
+                                           else Color(0xFF6B5047),
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
@@ -206,11 +206,11 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                         text = "Couleur",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         FolderColor.entries.forEach { color ->
-                            val colorValue = FolderColors[color.name] ?: Color(0xFFF97316)
+                            val colorValue = FolderColors[color.name] ?: Color(0xFFC8492C)
                             val isSelected = selectedColor == color
                             Box(
                                 modifier = Modifier
@@ -244,7 +244,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                         text = "Visibilité",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF374151)
+                        color = Color(0xFF4E3530)
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         // Privé
@@ -260,7 +260,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF6B7280),
+                                selectedContainerColor = Color(0xFF6B5047),
                                 selectedLabelColor = Color.White,
                                 selectedLeadingIconColor = Color.White
                             )
@@ -278,7 +278,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF10B981),
+                                selectedContainerColor = Color(0xFF4C7A3C),
                                 selectedLabelColor = Color.White,
                                 selectedLeadingIconColor = Color.White
                             )
@@ -296,7 +296,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                                 )
                             },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFF3B82F6),
+                                selectedContainerColor = Color(0xFF2F7393),
                                 selectedLabelColor = Color.White,
                                 selectedLeadingIconColor = Color.White
                             )
@@ -309,7 +309,7 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                             else -> "Visible uniquement par vous"
                         },
                         fontSize = 12.sp,
-                        color = Color(0xFF6B7280)
+                        color = Color(0xFF6B5047)
                     )
                 }
 
@@ -340,8 +340,8 @@ fun ModernAddFolderScreen(viewModel: LinkViewModel, onBack: () -> Unit) {
                         .height(48.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF97316),
-                        disabledContainerColor = Color(0xFFD1D5DB)
+                        containerColor = Color(0xFFC8492C),
+                        disabledContainerColor = Color(0xFFD9C2AE)
                     )
                 ) {
                     Text(

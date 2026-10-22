@@ -39,7 +39,7 @@ private val faqSections = listOf(
     FaqSection(
         title = "Démarrage",
         icon = Icons.Filled.RocketLaunch,
-        color = Color(0xFF4FC3F7),
+        color = Color(0xFF2F7393),
         items = listOf(
             FaqItem(
                 "Comment créer un compte ?",
@@ -58,7 +58,7 @@ private val faqSections = listOf(
     FaqSection(
         title = "Idées & Listes",
         icon = Icons.Filled.Lightbulb,
-        color = Color(0xFFFFD700),
+        color = Color(0xFF9A6510),
         items = listOf(
             FaqItem(
                 "Comment ajouter une idée ?",
@@ -85,7 +85,7 @@ private val faqSections = listOf(
     FaqSection(
         title = "Explorer & Communauté",
         icon = Icons.Filled.Explore,
-        color = Color(0xFF81C784),
+        color = Color(0xFF4C7A3C),
         items = listOf(
             FaqItem(
                 "Qu'est-ce que l'Explorer ?",
@@ -108,7 +108,7 @@ private val faqSections = listOf(
     FaqSection(
         title = "IA & Suggestions",
         icon = Icons.Filled.AutoAwesome,
-        color = Color(0xFF8B5CF6),
+        color = Color(0xFF5E4558),
         items = listOf(
             FaqItem(
                 "Comment fonctionne la génération d'idées par IA ?",
@@ -123,7 +123,7 @@ private val faqSections = listOf(
     FaqSection(
         title = "Compte & Confidentialité",
         icon = Icons.Filled.Security,
-        color = Color(0xFFEF4444),
+        color = Color(0xFFB2412A),
         items = listOf(
             FaqItem(
                 "Comment changer mon mot de passe ?",
@@ -149,7 +149,7 @@ fun FaqScreen(onBack: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF9FAFB))
+            .background(Color(0xFFFBF3E7))
     ) {
         Column(
             modifier = Modifier
@@ -163,7 +163,7 @@ fun FaqScreen(onBack: () -> Unit) {
                     .fillMaxWidth()
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(Color(0xFFFF6B35), Color(0xFFF97316))
+                            colors = listOf(Color(0xFFF28C38), Color(0xFFC8492C))
                         )
                     )
                     .padding(top = 48.dp, bottom = 28.dp, start = 20.dp, end = 20.dp)
@@ -250,7 +250,7 @@ private fun FaqSectionBlock(
             Text(
                 section.title,
                 fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B7280), letterSpacing = 0.5.sp
+                color = Color(0xFF6B5047), letterSpacing = 0.5.sp
             )
         }
 
@@ -276,7 +276,7 @@ private fun FaqSectionBlock(
                     if (!isLast) {
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
-                            color = Color(0xFFF3F4F6)
+                            color = Color(0xFFF1E3D1)
                         )
                     }
                 }
@@ -306,13 +306,13 @@ private fun FaqItemRow(
             Text(
                 item.question,
                 fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF111827),
+                color = Color(0xFF3A211B),
                 modifier = Modifier.weight(1f).padding(end = 8.dp)
             )
             Icon(
                 if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                 null,
-                tint = if (isExpanded) accentColor else Color(0xFF9CA3AF),
+                tint = if (isExpanded) accentColor else Color(0xFF8A6F64),
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -324,7 +324,7 @@ private fun FaqItemRow(
         ) {
             Text(
                 item.answer,
-                fontSize = 13.sp, color = Color(0xFF6B7280),
+                fontSize = 13.sp, color = Color(0xFF6B5047),
                 lineHeight = 20.sp,
                 modifier = Modifier.padding(top = 10.dp)
             )
@@ -339,7 +339,7 @@ private fun ContactSupportCard() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF97316).copy(alpha = 0.08f)
+        color = Color(0xFFC8492C).copy(alpha = 0.08f)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -349,19 +349,19 @@ private fun ContactSupportCard() {
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .background(Color(0xFFF97316).copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+                    .background(Color(0xFFC8492C).copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Filled.Email, null, tint = Color(0xFFF97316), modifier = Modifier.size(22.dp))
+                Icon(Icons.Filled.Email, null, tint = Color(0xFFC8492C), modifier = Modifier.size(22.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "Vous n'avez pas trouvé votre réponse ?",
-                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF111827)
+                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF3A211B)
                 )
                 Text(
                     "Contactez-nous : support@tribbae.com",
-                    fontSize = 12.sp, color = Color(0xFF6B7280)
+                    fontSize = 12.sp, color = Color(0xFF6B5047)
                 )
             }
         }

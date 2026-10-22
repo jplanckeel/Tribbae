@@ -22,14 +22,21 @@ type TokenValidator interface {
 
 // publicMethods sont les méthodes qui ne nécessitent pas d'authentification.
 var publicMethods = map[string]bool{
-	"/tribbae.v1.AuthService/Register":              true,
+	"/tribbae.v1.AuthService/Register":               true,
 	"/tribbae.v1.AuthService/Login":                  true,
 	"/tribbae.v1.AuthService/RefreshToken":           true,
 	"/tribbae.v1.FolderService/GetSharedFolder":      true,
 	"/tribbae.v1.FolderService/ListCommunityFolders": true,
 	"/tribbae.v1.FolderService/ListTopFolders":       true,
 	"/tribbae.v1.LinkService/ListCommunityLinks":     true,
-	"/tribbae.v1.LinkService/ListNewLinks":            true,
+	"/tribbae.v1.LinkService/ListNewLinks":           true,
+	// Lecture des contenus publics : chaque handler vérifie la visibilité
+	// (idée ou dossier public, sinon propriétaire / collaborateur).
+	"/tribbae.v1.LinkService/GetLink":            true,
+	"/tribbae.v1.LinkService/ListLinks":          true,
+	"/tribbae.v1.FolderService/GetFolder":        true,
+	"/tribbae.v1.CommentService/GetComments":     true,
+	"/tribbae.v1.CommentService/GetCommentCount": true,
 }
 
 // UnaryAuth vérifie le token JWT pour les méthodes protégées.

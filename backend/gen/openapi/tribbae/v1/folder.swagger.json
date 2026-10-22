@@ -486,6 +486,42 @@
           "items": {
             "type": "string"
           }
+        },
+        "description": {
+          "type": "string",
+          "description": "Personnalisation : facultatifs pour qu'un client plus ancien qui ne les\nenvoie pas ne les efface pas."
+        },
+        "cover": {
+          "type": "string"
+        },
+        "illustration": {
+          "type": "string"
+        },
+        "keyDate": {
+          "type": "string",
+          "format": "int64"
+        },
+        "keyDateType": {
+          "type": "string"
+        },
+        "childIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "pris en compte seulement si set_child_ids"
+        },
+        "setChildIds": {
+          "type": "boolean"
+        },
+        "viewMode": {
+          "type": "string"
+        },
+        "sort": {
+          "type": "string"
+        },
+        "pinned": {
+          "type": "boolean"
         }
       }
     },
@@ -496,7 +532,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": {}
+      "additionalProperties": true
     },
     "rpcStatus": {
       "type": "object",
@@ -578,6 +614,37 @@
           "items": {
             "type": "string"
           }
+        },
+        "description": {
+          "type": "string"
+        },
+        "cover": {
+          "type": "string"
+        },
+        "illustration": {
+          "type": "string"
+        },
+        "keyDate": {
+          "type": "string",
+          "format": "int64"
+        },
+        "keyDateType": {
+          "type": "string"
+        },
+        "childIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "viewMode": {
+          "type": "string"
+        },
+        "sort": {
+          "type": "string"
+        },
+        "pinned": {
+          "type": "boolean"
         }
       }
     },
@@ -659,6 +726,47 @@
         },
         "ownerIsAdmin": {
           "type": "boolean"
+        },
+        "description": {
+          "type": "string",
+          "description": "« un petit mot », ex. « Pour ses 10 ans »",
+          "title": "Personnalisation (écran « Personnaliser »)"
+        },
+        "cover": {
+          "type": "string",
+          "title": "\"\" (auto) | illu | uni | tipis | pois | rayures | photo"
+        },
+        "illustration": {
+          "type": "string",
+          "title": "dessin de la couverture \"illu\" ; \"\" = choisi selon le nom / la date clé"
+        },
+        "keyDate": {
+          "type": "string",
+          "format": "int64",
+          "title": "date clé (ms), 0 = aucune"
+        },
+        "keyDateType": {
+          "type": "string",
+          "title": "anniv | vacances | event"
+        },
+        "childIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "« Pour qui » : enfants de la tribu"
+        },
+        "viewMode": {
+          "type": "string",
+          "title": "grid | list | mosaic"
+        },
+        "sort": {
+          "type": "string",
+          "title": "recent | date | category"
+        },
+        "pinned": {
+          "type": "boolean",
+          "title": "épinglé en haut de « Mes idées »"
         }
       }
     },
@@ -881,7 +989,7 @@
         "VISIBILITY_SHARED"
       ],
       "default": "VISIBILITY_UNSPECIFIED",
-      "title": "- VISIBILITY_PUBLIC: communautaire, visible par tous\n - VISIBILITY_SHARED: partagé avec des collaborateurs spécifiques"
+      "description": "- VISIBILITY_PUBLIC: communautaire, visible par tous\n - VISIBILITY_SHARED: partagé avec des collaborateurs spécifiques"
     }
   }
 }

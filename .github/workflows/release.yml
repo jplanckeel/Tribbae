@@ -73,6 +73,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      # QEMU : étapes RUN de l'image finale pour l'architecture non native
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
@@ -91,21 +95,11 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          # Serveur en amd64, postes de dev en arm64 (Mac Apple Silicon)
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/tribbae:latest
             ${{ secrets.DOCKER_USERNAME }}/tribbae:${{ steps.version.outputs.VERSION }}
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/tribbae:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/tribbae:buildcache,mode=max
-      
-      - name: Build and push SearXNG image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./searxng
-          file: ./searxng/Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/tribbae-searxng:latest
-            ${{ secrets.DOCKER_USERNAME }}/tribbae-searxng:${{ steps.version.outputs.VERSION }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/tribbae-searxng:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/tribbae-searxng:buildcache,mode=max

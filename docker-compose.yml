@@ -3,7 +3,7 @@ version: "3.8"
 services:
   # ── MongoDB ──────────────────────────────────────────────
   mongo:
-    image: mongo:8
+    image: mongo:9
     restart: unless-stopped
     volumes:
       - mongo_data:/data/db
@@ -19,7 +19,6 @@ services:
     depends_on:
       - mongo
       - ollama
-      - searxng
     environment:
       MONGO_URI: mongodb://mongo:27017
       MONGO_DB: tribbae
@@ -27,9 +26,15 @@ services:
       PORT: "8080"
       GRPC_PORT: "9090"
       BASE_URL: ${BASE_URL:-http://backend:8080}
+      # Adresse publique (adresses canoniques, sitemap.xml, llms.txt, aperçus de partage)
+      SITE_URL: ${SITE_URL:-https://tribbae.bananaops.cloud}
       OLLAMA_URL: http://ollama:11434
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
-      SEARXNG_URL: http://searxng:8080
+      # Petit modèle pour un VPS 2 CPU sans GPU (téléchargé automatiquement au démarrage)
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:1.7b}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
+      OLLAMA_NUM_THREAD: ${OLLAMA_NUM_THREAD:-2}
+      # Compte admin tribbae@bananaops.cloud (≥ 12 caractères). Remplace aussi l'ancien mot de passe par défaut.
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tribbae-backend.rule=Host(`${BACKEND_HOST:-tribbae.bananaops.cloud}`)"
@@ -49,15 +54,8 @@ services:
     environment:
       OLLAMA_NUM_PARALLEL: "1"
       OLLAMA_MAX_LOADED_MODELS: "1"
-    networks:
-      - internal
-
-  # ── SearXNG (recherche web) ──────────────────────────────
-  searxng:
-    image: jplanckeel/tribbae-searxng:latest
-    restart: unless-stopped
-    environment:
-      SEARXNG_BASE_URL: http://searxng:8080/
+      # Le modèle reste chargé entre deux demandes (évite ~5 s de chargement)
+      OLLAMA_KEEP_ALIVE: "30m"
     networks:
       - internal
 
