@@ -54,6 +54,7 @@ CI (`.github/workflows/test.yml`): `go build` + `go vet` + `go test -race` (with
   - Examples: `fix(ci): always install the latest go 1.26 patch`, `feat(tribe)!: require confirmation before sharing content`.
 - PRs are squash-merged, so **the PR title must itself be a Conventional Commit** (it becomes the commit on `main`). The PR description says what changed, why, and how it was tested.
 - Commits must be authored and signed by the `jplanckeel` account (`Jérémy PLANCKEEL <jeremy.planckeel@outlook.com>`, GPG key `49D1339A1DA8FB47`), set in this repo's local git config. Never pass `--no-gpg-sign` or override the identity, never rewrite published history and never force-push `main`.
+- **Every commit needs a DCO sign-off** (`Signed-off-by: Jérémy PLANCKEEL <jeremy.planckeel@outlook.com>`): the DCO app blocks any PR containing a commit without it. Always commit with `git commit -s` (a local `prepare-commit-msg` hook also adds it). GPG signing and sign-off are two different things; both are required.
 
 ## Backend architecture
 
