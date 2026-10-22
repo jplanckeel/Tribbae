@@ -50,6 +50,7 @@ func NewSender(apiKey, fromEmail, fromName string) Sender {
 
 const (
 	TagWelcome        = "welcome"
+	TagPasswordReset  = "password-reset"
 	TagAccountDeleted = "account-deleted"
 	TagTribeAdded     = "tribe-member-added"
 
@@ -61,8 +62,9 @@ const (
 
 // Mailer compose les emails de Tribbae et les envoie en arrière-plan.
 type Mailer struct {
-	sender  Sender
-	siteURL string
+	sender       Sender
+	siteURL      string
+	supportEmail string
 
 	wg sync.WaitGroup
 
@@ -71,32 +73,62 @@ type Mailer struct {
 	now      func() time.Time
 }
 
-func New(sender Sender, siteURL string) *Mailer {
+// New : siteURL sert aux liens et aux images, supportEmail à « Écrire au support ».
+func New(sender Sender, siteURL, supportEmail string) *Mailer {
 	return &Mailer{
-		sender:   sender,
-		siteURL:  strings.TrimRight(siteURL, "/"),
-		lastSent: map[string]time.Time{},
-		now:      time.Now,
+		sender:       sender,
+		siteURL:      strings.TrimRight(siteURL, "/"),
+		supportEmail: supportEmail,
+		lastSent:     map[string]time.Time{},
+		now:          time.Now,
 	}
 }
 
 // Welcome souhaite la bienvenue à un compte qui vient d'être créé.
 func (m *Mailer) Welcome(email, name string) {
-	m.send(email, name, TagWelcome, welcomeEmail(name, m.siteURL))
+	c, err := welcomeEmail(m.siteURL, name)
+	m.send(email, name, TagWelcome, c, err)
+}
+
+// PasswordReset : lien de réinitialisation du mot de passe (#18).
+type PasswordReset struct {
+	Email, Name string
+	ResetURL    string
+	Validity    time.Duration
+	RequestedAt time.Time
+	// Device : appareil ou navigateur d'où vient la demande (facultatif)
+	Device string
+}
+
+// PasswordReset envoie le lien de réinitialisation du mot de passe.
+func (m *Mailer) PasswordReset(r PasswordReset) {
+	c, err := passwordResetEmail(m.siteURL, r)
+	m.send(r.Email, r.Name, TagPasswordReset, c, err)
 }
 
 // AccountDeleted confirme l'effacement d'un compte. L'adresse n'est plus
 // conservée nulle part : elle ne sert qu'à cet envoi.
 func (m *Mailer) AccountDeleted(email, name string) {
-	m.send(email, name, TagAccountDeleted, accountDeletedEmail(name, m.siteURL))
+	c, err := accountDeletedEmail(m.siteURL, m.supportEmail, name, m.now())
+	m.send(email, name, TagAccountDeleted, c, err)
+}
+
+// TribeAdded : un compte vient d'être ajouté à une tribu.
+type TribeAdded struct {
+	Email, Name string
+	InviterName string
+	TribeName   string
+	// Members : noms des membres, le nouveau compris (pastilles et nombre)
+	Members []string
 }
 
 // TribeMemberAdded prévient un compte qu'il a été ajouté à une tribu.
-func (m *Mailer) TribeMemberAdded(email, name, inviterName, tribeName string) {
-	if !m.allow(TagTribeAdded + ":" + strings.ToLower(email)) {
+func (m *Mailer) TribeMemberAdded(a TribeAdded) {
+	if !m.allow(TagTribeAdded + ":" + strings.ToLower(a.Email)) {
 		return
 	}
-	m.send(email, name, TagTribeAdded, tribeAddedEmail(name, inviterName, tribeName, m.siteURL))
+	c, err := tribeAddedEmail(m.siteURL, a)
+	m.send(a.Email, a.Name, TagTribeAdded, c, err)
 }
 
 // Wait attend la fin des envois en cours (arrêt du serveur), au plus jusqu'à
@@ -130,16 +162,20 @@ func (m *Mailer) allow(key string) bool {
 	return true
 }
 
-func (m *Mailer) send(email, name, tag string, c content) {
+func (m *Mailer) send(email, name, tag string, c content, err error) {
+	if err != nil {
+		log.Printf("mail: %q email not rendered: %v", tag, err)
+		return
+	}
 	if email == "" {
 		return
 	}
 	msg := Message{
 		To:      email,
-		ToName:  name,
+		ToName:  oneLine(name),
 		Subject: c.Subject,
-		HTML:    c.html(),
-		Text:    c.text(),
+		HTML:    c.HTML,
+		Text:    c.Text,
 		Tag:     tag,
 	}
 	m.wg.Add(1)

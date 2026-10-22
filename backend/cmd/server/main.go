@@ -73,7 +73,7 @@ func main() {
 	folderSvc.SetTribePeers(tribeSvc.Peers)
 	childSvc.SetTribePeers(tribeSvc.Peers)
 	// Emails transactionnels (Brevo) : bienvenue, ajout à une tribu, suppression du compte
-	mailer := mail.New(mail.NewSender(cfg.BrevoAPIKey, cfg.MailFrom, cfg.MailFromName), cfg.SiteURL)
+	mailer := mail.New(mail.NewSender(cfg.BrevoAPIKey, cfg.MailFrom, cfg.MailFromName), cfg.SiteURL, cfg.SupportEmail)
 	authSvc.SetNotifier(mailer)
 	tribeSvc.SetNotifier(mailer)
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))

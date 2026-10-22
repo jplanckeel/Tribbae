@@ -18,6 +18,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/tribbae/backend/internal/mail"
 )
 
 const (
@@ -74,7 +76,7 @@ type userDoc struct {
 
 // Notifier prévient par email (mail.Mailer).
 type Notifier interface {
-	TribeMemberAdded(email, name, inviterName, tribeName string)
+	TribeMemberAdded(a mail.TribeAdded)
 }
 
 type Service struct {
@@ -234,14 +236,32 @@ func (s *Service) AddMember(ctx context.Context, userID, email string) (*Tribe, 
 	if res.ModifiedCount == 0 {
 		return nil, ErrAlreadyMember
 	}
-	if s.notify != nil {
-		inviter := ""
-		if u, err := s.user(ctx, userID); err == nil {
-			inviter = u.DisplayName
-		}
-		s.notify.TribeMemberAdded(invitee.Email, invitee.DisplayName, inviter, t.Name)
+	t, err = s.find(ctx, userID)
+	if err == nil && t != nil && s.notify != nil {
+		s.notifyAdded(ctx, t, userID, invitee)
 	}
-	return s.find(ctx, userID)
+	return t, err
+}
+
+// notifyAdded envoie l'email d'ajout à la tribu, avec le nom de chaque membre
+// pour les pastilles.
+func (s *Service) notifyAdded(ctx context.Context, t *Tribe, inviterID string, invitee userDoc) {
+	ids := make([]string, 0, len(t.Members))
+	for _, m := range t.Members {
+		ids = append(ids, m.UserID)
+	}
+	users := s.Users(ctx, ids)
+	members := make([]string, 0, len(ids))
+	for _, id := range ids {
+		members = append(members, users[id].DisplayName)
+	}
+	s.notify.TribeMemberAdded(mail.TribeAdded{
+		Email:       invitee.Email,
+		Name:        invitee.DisplayName,
+		InviterName: users[inviterID].DisplayName,
+		TribeName:   t.Name,
+		Members:     members,
+	})
 }
 
 // RemoveMember retire targetID de la tribu de userID : quitter la tribu

@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/tribbae/backend/internal/mail"
 )
 
 func setup(t *testing.T) (*Service, *mongo.Database, func()) {
@@ -153,13 +155,9 @@ func TestLeaveAndOwnerTransfer(t *testing.T) {
 	}
 }
 
-type notified struct{ email, name, inviter, tribe string }
+type fakeNotifier struct{ sent []mail.TribeAdded }
 
-type fakeNotifier struct{ sent []notified }
-
-func (f *fakeNotifier) TribeMemberAdded(email, name, inviterName, tribeName string) {
-	f.sent = append(f.sent, notified{email, name, inviterName, tribeName})
-}
+func (f *fakeNotifier) TribeMemberAdded(a mail.TribeAdded) { f.sent = append(f.sent, a) }
 
 func TestAddedMemberIsNotifiedByEmail(t *testing.T) {
 	svc, db, cleanup := setup(t)
@@ -176,9 +174,12 @@ func TestAddedMemberIsNotifiedByEmail(t *testing.T) {
 	if _, err := svc.AddMember(ctx, alice, "bob@ex.fr"); err != nil {
 		t.Fatal(err)
 	}
-	want := notified{"bob@ex.fr", "Bob", "Alice", "Les Martin"}
-	if len(n.sent) != 1 || n.sent[0] != want {
-		t.Fatalf("emails = %+v, want [%+v]", n.sent, want)
+	if len(n.sent) != 1 {
+		t.Fatalf("emails = %+v, want 1", n.sent)
+	}
+	got := n.sent[0]
+	if got.Email != "bob@ex.fr" || got.Name != "Bob" || got.InviterName != "Alice" || got.TribeName != "Les Martin" || !slices.Equal(got.Members, []string{"Alice", "Bob"}) {
+		t.Errorf("email = %+v", got)
 	}
 	// Un ajout refusé n'envoie rien
 	_, _ = svc.AddMember(ctx, alice, "bob@ex.fr")

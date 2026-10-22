@@ -1,0 +1,68 @@
+{{/* Versions texte des emails (messageries sans HTML, filtres anti-spam). */}}
+{{define "welcome"}}{{.Heading}}
+
+{{if .VerifyURL}}Votre compte Tribbae est prêt. Il reste une petite étape : confirmer votre adresse email pour sécuriser votre compte.
+
+Confirmer mon adresse : {{.VerifyURL}}
+Le lien est valable {{.VerifyValidity}}.
+{{else}}Votre compte Tribbae est prêt. Rangez-y dès maintenant les idées de toute la famille et retrouvez-les au bon moment.
+
+Ouvrir Tribbae : {{.AppURL}}
+{{end}}
+Pour bien démarrer
+{{range .Steps}}
+{{.N}}. {{.Title}}
+   {{.Text}}
+{{end}}
+Vous recevez cet email suite à la création de votre compte Tribbae.
+
+{{template "footer" .}}{{end}}
+
+{{define "password_reset"}}Choisissez un nouveau mot de passe
+
+{{if .Name}}Bonjour {{.Name}}, une{{else}}Bonjour, une{{end}} demande de réinitialisation a été faite pour le compte associé à {{.Email}}. Ouvrez ce lien pour définir votre nouveau mot de passe :
+
+{{.ResetURL}}
+
+Ce lien expire dans {{.Validity}} et ne fonctionne qu'une seule fois.
+
+Vous n'êtes pas à l'origine de cette demande ? Ignorez simplement cet email : votre mot de passe actuel reste inchangé et personne ne peut accéder à votre compte sans ce lien.
+
+Demande effectuée le {{.RequestedAt}}{{if .Device}} depuis {{.Device}}{{end}}.
+
+{{template "footer" .}}{{end}}
+
+{{define "tribe_added"}}Bienvenue dans la tribu « {{.Tribe}} »
+
+{{.Inviter}} vous a ajouté à sa tribu ({{.MemberCount}} membre{{if gt .MemberCount 1}}s{{end}}).
+
+Dans une tribu, chacun ajoute ses idées de sorties, de cadeaux ou de recettes dans des dossiers partagés, et toute la famille les retrouve au même endroit.
+
+Voir ma tribu : {{.TribeURL}}
+
+Vous voyez déjà ce que la tribu partage. Vos propres idées restent privées tant que vous n'avez pas confirmé le partage depuis « Ma tribu ».
+
+Vous recevez cet email car {{.Inviter}} a saisi votre adresse sur Tribbae. Vous ne connaissez pas cette personne ? Quittez la tribu depuis l'écran « Ma tribu ».
+
+{{template "footer" .}}{{end}}
+
+{{define "account_deleted"}}Votre compte a bien été supprimé
+
+{{if .Name}}Bonjour {{.Name}}, comme{{else}}Bonjour, comme{{end}} vous l'avez demandé le {{.DeletedOn}}, votre compte Tribbae a été supprimé, ainsi que les données qui y étaient liées.
+
+Ce qui a été effacé :
+{{range .Erased}}- {{.}}
+{{end}}
+Les idées que vous aviez rendues publiques ont été supprimées. Celles des autres membres de votre tribu leur restent, même rangées dans vos dossiers.
+
+Merci d'avoir fait partie de l'aventure. La porte du tipi reste ouverte si vous souhaitez revenir un jour.
+
+Vous n'avez pas demandé cette suppression ? Écrivez-nous rapidement à {{.SupportEmail}}, nous regarderons ce qui s'est passé.
+
+Dernier email de notre part : votre adresse ne figure plus dans nos listes.
+
+{{template "footer" .}}{{end}}
+
+{{define "footer"}}-- 
+Tribbae · {{.SiteURL}}
+{{end}}

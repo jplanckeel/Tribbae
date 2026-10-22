@@ -39,6 +39,7 @@ services:
       BREVO_API_KEY: ${BREVO_API_KEY:-}
       MAIL_FROM: ${MAIL_FROM:-tribbae@bananaops.cloud}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Tribbae}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tribbae-backend.rule=Host(`${BACKEND_HOST:-tribbae.bananaops.cloud}`)"
