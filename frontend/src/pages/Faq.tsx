@@ -42,7 +42,7 @@ export default function Faq() {
         </section>
       ))}
       <p className="text-center text-sm text-sec">
-        Une autre question ? <a href="mailto:support@tribbae.com" className="font-semibold text-terracotta">support@tribbae.com</a>
+        Une autre question ? <a href="mailto:contact@tribbae.fr" className="font-semibold text-terracotta">contact@tribbae.fr</a>
       </p>
     </Page>
   );

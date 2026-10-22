@@ -10,7 +10,7 @@ import { Toggle } from "../components/ui";
 // loi pour la confiance dans l'économie numérique).
 const EDITOR = "[à compléter : nom et adresse de l'éditeur de Tribbae]";
 const HOST = "[à compléter : hébergeur du serveur et pays]";
-const CONTACT = "support@tribbae.com";
+const CONTACT = "contact@tribbae.fr";
 const UPDATED = "20 octobre 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

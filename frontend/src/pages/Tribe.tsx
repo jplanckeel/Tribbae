@@ -312,7 +312,7 @@ export default function Tribe() {
           </section>
           <p className="text-sm text-sec">
             Pour modifier votre mot de passe, écrivez-nous à{" "}
-            <a href="mailto:support@tribbae.com" className="font-semibold text-terracotta">support@tribbae.com</a>.
+            <a href="mailto:contact@tribbae.fr" className="font-semibold text-terracotta">contact@tribbae.fr</a>.
           </p>
           <Button variant="danger" icon="logout" onClick={logout}>Se déconnecter</Button>
         </div>
