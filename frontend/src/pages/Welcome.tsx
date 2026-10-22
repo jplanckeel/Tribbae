@@ -79,7 +79,8 @@ export function Auth() {
   const [params, setParams] = useSearchParams();
   const register = params.get("mode") === "inscription";
   const next = safeNext(params.get("next"));
-  const [email, setEmail] = useState("");
+  // Adresse pré-remplie (lien d'invitation, mot de passe oublié)
+  const [email, setEmail] = useState(params.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [showPwd, setShowPwd] = useState(false);

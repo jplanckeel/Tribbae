@@ -1,6 +1,6 @@
 import { clearSession, getSession } from "./session";
 import type {
-  AdminUser, AiIdea, Child, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, UserProfile, CollaboratorRole,
+  AdminUser, AiIdea, Child, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole,
 } from "./types";
 
 const BASE = "/v1";
@@ -21,6 +21,7 @@ function frenchMessage(status: number, message: string): string {
   if (status === 401 && /credentials/i.test(message)) return "Email ou mot de passe incorrect.";
   if (status === 401) return "Votre session a expiré, reconnectez-vous.";
   if (status === 403) return "Vous n'avez pas les droits pour cette action.";
+  if (/invalid or expired invitation/i.test(message)) return "Cette invitation n'est plus valable : elle a expiré, a été annulée ou a déjà servi.";
   if (status === 404) return "Introuvable — l'élément a peut-être été supprimé.";
   if (/already registered/i.test(message)) return "Un compte existe déjà avec cet email.";
   if (/password must be/i.test(message)) return "Le mot de passe doit contenir au moins 8 caractères.";
@@ -29,7 +30,8 @@ function frenchMessage(status: number, message: string): string {
   if (/already a collaborator/i.test(message)) return "Cette personne fait déjà partie du dossier.";
   if (/already a member of this tribe/i.test(message)) return "Cette personne fait déjà partie de votre tribu.";
   if (/already belongs to another tribe/i.test(message)) return "Ce compte fait déjà partie d'une autre tribu : la personne doit d'abord la quitter.";
-  if (/tribe is full/i.test(message)) return "La tribu est complète.";
+  if (/tribe is full/i.test(message)) return "La tribu est complète (12 membres et invitations en attente au plus).";
+  if (/invitation is for another email/i.test(message)) return "Cette invitation a été envoyée à une autre adresse que celle de votre compte.";
   if (/only the tribe owner/i.test(message)) return "Seul le créateur de la tribu peut retirer un membre.";
   if (/name must be 1 to 60/i.test(message)) return "Le nom de la tribu doit faire entre 1 et 60 caractères.";
   if (/url must be/i.test(message)) return "Le lien doit être une adresse web (https://…).";
@@ -159,8 +161,16 @@ export const community = {
 export const tribe = {
   get: () => request<{ tribe: Tribe }>("/tribe").then((r) => r.tribe),
   rename: (name: string) => request<{ tribe: Tribe }>("/tribe", { method: "PUT", body: json({ name }) }).then((r) => r.tribe),
-  addMember: (email: string) =>
+  /** Envoie une invitation par email (même réponse que l'adresse ait un compte ou non). */
+  invite: (email: string) =>
     request<{ tribe: Tribe }>("/tribe/members", { method: "POST", body: json({ email }) }).then((r) => r.tribe),
+  revokeInvitation: (id: string) =>
+    request<{ tribe: Tribe }>(`/tribe/invitations/${encodeURIComponent(id)}`, { method: "DELETE" }).then((r) => r.tribe),
+  /** Lien d'invitation : accessible sans compte. */
+  lookupInvitation: (token: string) =>
+    request<TribeInvitationInfo>("/tribe/invitations/lookup", { method: "POST", body: json({ token }) }),
+  acceptInvitation: (token: string) =>
+    request<{ tribe: Tribe }>("/tribe/invitations/accept", { method: "POST", body: json({ token }) }).then((r) => r.tribe),
   /** Avec son propre ID : quitter la tribu. */
   removeMember: (userId: string) =>
     request<{ tribe: Tribe }>(`/tribe/members/${encodeURIComponent(userId)}`, { method: "DELETE" }).then((r) => r.tribe),

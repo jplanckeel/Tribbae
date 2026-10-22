@@ -53,12 +53,9 @@ const (
 	TagPasswordReset  = "password-reset"
 	TagPasswordChange = "password-changed"
 	TagAccountDeleted = "account-deleted"
-	TagTribeAdded     = "tribe-member-added"
+	TagTribeInvite    = "tribe-invitation"
 
 	sendTimeout = 30 * time.Second
-	// Un même compte ne reçoit qu'un email d'ajout à une tribu par jour : sinon
-	// ajouter et retirer quelqu'un en boucle servirait à l'inonder d'emails.
-	tribeCooldown = 24 * time.Hour
 )
 
 // Mailer compose les emails de Tribbae et les envoie en arrière-plan.
@@ -67,11 +64,8 @@ type Mailer struct {
 	siteURL      string
 	supportEmail string
 
-	wg sync.WaitGroup
-
-	mu       sync.Mutex
-	lastSent map[string]time.Time
-	now      func() time.Time
+	wg  sync.WaitGroup
+	now func() time.Time
 }
 
 // New : siteURL sert aux liens et aux images, supportEmail à « Écrire au support ».
@@ -80,7 +74,6 @@ func New(sender Sender, siteURL, supportEmail string) *Mailer {
 		sender:       sender,
 		siteURL:      strings.TrimRight(siteURL, "/"),
 		supportEmail: supportEmail,
-		lastSent:     map[string]time.Time{},
 		now:          time.Now,
 	}
 }
@@ -121,22 +114,23 @@ func (m *Mailer) AccountDeleted(email, name string) {
 	m.send(email, name, TagAccountDeleted, c, err)
 }
 
-// TribeAdded : un compte vient d'être ajouté à une tribu.
-type TribeAdded struct {
-	Email, Name string
+// TribeInvitation : invitation à rejoindre une tribu. La fréquence des envois
+// est limitée par le service tribu (une invitation remplace la précédente).
+type TribeInvitation struct {
+	Email       string
 	InviterName string
 	TribeName   string
-	// Members : noms des membres, le nouveau compris (pastilles et nombre)
+	// Members : noms des membres actuels (pastilles et nombre)
 	Members []string
+	// URL : lien « Rejoindre la tribu », jeton compris
+	URL      string
+	Validity time.Duration
 }
 
-// TribeMemberAdded prévient un compte qu'il a été ajouté à une tribu.
-func (m *Mailer) TribeMemberAdded(a TribeAdded) {
-	if !m.allow(TagTribeAdded + ":" + strings.ToLower(a.Email)) {
-		return
-	}
-	c, err := tribeAddedEmail(m.siteURL, a)
-	m.send(a.Email, a.Name, TagTribeAdded, c, err)
+// TribeInvitation envoie l'invitation à rejoindre une tribu.
+func (m *Mailer) TribeInvitation(inv TribeInvitation) {
+	c, err := tribeInvitationEmail(m.siteURL, inv)
+	m.send(inv.Email, "", TagTribeInvite, c, err)
 }
 
 // Wait attend la fin des envois en cours (arrêt du serveur), au plus jusqu'à
@@ -151,23 +145,6 @@ func (m *Mailer) Wait(ctx context.Context) {
 	case <-done:
 	case <-ctx.Done():
 	}
-}
-
-// allow limite la fréquence d'un email par destinataire.
-func (m *Mailer) allow(key string) bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	now := m.now()
-	for k, t := range m.lastSent {
-		if now.Sub(t) >= tribeCooldown {
-			delete(m.lastSent, k)
-		}
-	}
-	if _, ok := m.lastSent[key]; ok {
-		return false
-	}
-	m.lastSent[key] = now
-	return true
 }
 
 func (m *Mailer) send(email, name, tag string, c content, err error) {

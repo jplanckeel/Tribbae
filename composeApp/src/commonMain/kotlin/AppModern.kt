@@ -48,13 +48,14 @@ import viewmodel.LinkViewModel
 
 /**
  * Contenu reçu d'une autre application : lien ou texte partagé, lien de partage
- * de dossier, lien « nouveau mot de passe » d'un email. `id` distingue deux
- * partages identiques successifs.
+ * de dossier, lien d'invitation dans une tribu ou lien « nouveau mot de passe »
+ * d'un email. `id` distingue deux partages identiques successifs.
  */
 data class SharedContent(
     val url: String? = null,
     val title: String? = null,
     val folderToken: String? = null,
+    val inviteToken: String? = null,
     val resetToken: String? = null,
     val id: Long = System.nanoTime(),
 )
@@ -125,6 +126,11 @@ private fun ModernMainApp(
     LaunchedEffect(tab) { if (tab == NavDestination.HOME || tab == NavDestination.EXPLORE) vm.refreshCommunityIfStale() }
     // Pile d'écrans : retour = dépiler
     val stack = remember { mutableStateListOf<Screen>() }
+    // Lien d'invitation dans une tribu ; masqué le temps de se connecter
+    var inviteToken by remember { mutableStateOf<String?>(null) }
+    var inviteHidden by remember { mutableStateOf(false) }
+    val loggedIn by sessionManager.isLoggedIn.collectAsState()
+    LaunchedEffect(loggedIn) { if (loggedIn) inviteHidden = false }
     // Lien « nouveau mot de passe » ouvert depuis l'email
     var resetToken by remember { mutableStateOf<String?>(null) }
     // Partage reçu (au lancement ou app déjà ouverte) : on ouvre l'écran correspondant
@@ -132,6 +138,7 @@ private fun ModernMainApp(
         val s = incoming ?: return@LaunchedEffect
         if (s.url != null || s.title != null) stack.add(Screen.IdeaForm(url = s.url, title = s.title))
         if (s.folderToken != null) stack.add(Screen.PublicFolder(shareToken = s.folderToken))
+        if (s.inviteToken != null) { inviteToken = s.inviteToken; inviteHidden = false }
         if (s.resetToken != null) resetToken = s.resetToken
     }
     var showAdd by remember { mutableStateOf(false) }
@@ -281,6 +288,22 @@ private fun ModernMainApp(
                 }
                 }
             }
+                val invite = inviteToken
+                if (invite != null && !inviteHidden) {
+                    InvitationDialog(
+                        token = invite,
+                        loggedIn = loggedIn,
+                        onAccept = { done ->
+                            vm.acceptTribeInvitation(invite) { err ->
+                                done(err)
+                                if (err == null) { inviteToken = null; stack.clear(); tab = NavDestination.PROFILE }
+                            }
+                        },
+                        // Connexion depuis l'onglet « Ma tribu » ; la boîte revient une fois connecté
+                        onSignIn = { inviteHidden = true; stack.clear(); tab = NavDestination.PROFILE },
+                        onDismiss = { inviteToken = null },
+                    )
+                }
                 resetToken?.let { token ->
                     NewPasswordDialog(
                         token = token,

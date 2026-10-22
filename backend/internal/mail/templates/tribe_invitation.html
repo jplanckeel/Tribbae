@@ -1,11 +1,11 @@
-{{define "preheader"}}{{.Inviter}} vous a ajouté à sa tribu sur Tribbae.{{end}}
+{{define "preheader"}}{{.Inviter}} vous invite à rejoindre sa tribu sur Tribbae.{{end}}
 
 {{define "card"}}
 <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
 <td valign="middle" width="44"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" width="44" height="44" style="width:44px;height:44px;border-radius:999px;background:#FFC857;color:#3A211B;font-size:16px;font-weight:700;">{{.InviterInitial}}</td></tr></table></td>
-<td valign="middle" style="padding-left:12px;font-size:15px;line-height:22px;color:#6B5047;"><strong style="color:#3A211B;">{{.Inviter}}</strong> vous a ajouté à sa tribu</td>
+<td valign="middle" style="padding-left:12px;font-size:15px;line-height:22px;color:#6B5047;"><strong style="color:#3A211B;">{{.Inviter}}</strong> vous invite à rejoindre sa tribu</td>
 </tr></table>
-{{template "h1" (print "Bienvenue dans la tribu « " .Tribe " »")}}
+{{template "h1" (print "Rejoignez la tribu « " .Tribe " »")}}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;"><tr><td style="background:#FBF3E7;border:1px solid #EADBC8;border-radius:22px;padding:18px 20px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
 <td valign="middle" width="56"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" width="56" height="56" style="width:56px;height:56px;border-radius:18px;background:#F1E3D1;"><img src="{{.Assets}}/logo.png" width="40" height="40" alt="" style="display:block;border:0;"></td></tr></table></td>
@@ -17,9 +17,9 @@
 </tr></table>
 </td></tr></table>
 <p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">Dans une tribu, chacun ajoute ses idées de sorties, de cadeaux ou de recettes dans des dossiers partagés, et toute la famille les retrouve au même endroit.</p>
-{{template "button" (dict "URL" .TribeURL "Label" "Voir ma tribu")}}
-<p style="margin:0;padding-top:20px;font-size:13px;line-height:18px;font-weight:500;color:#7A5F55;">Vous voyez déjà ce que la tribu partage. Vos propres idées restent privées tant que vous n'avez pas confirmé le partage depuis « Ma tribu ».</p>
-{{template "fallback" .TribeURL}}
+{{template "button" (dict "URL" .InviteURL "Label" "Rejoindre la tribu")}}
+<p style="margin:0;padding-top:20px;font-size:13px;line-height:18px;font-weight:500;color:#7A5F55;">Invitation valable {{.Validity}}. Pas encore de compte ? Vous pourrez en créer un en quelques secondes après avoir cliqué.</p>
+{{template "fallback" .InviteURL}}
 {{end}}
 
-{{define "footer"}}Vous recevez cet email car {{.Inviter}} a saisi votre adresse sur Tribbae. Vous ne connaissez pas cette personne ? Quittez la tribu depuis l'écran « Ma tribu ».{{end}}
+{{define "footer"}}Vous recevez cet email car {{.Inviter}} a saisi votre adresse sur Tribbae. Vous ne connaissez pas cette personne ? Ignorez simplement ce message.{{end}}

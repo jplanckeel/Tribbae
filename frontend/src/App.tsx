@@ -6,6 +6,7 @@ import Faq from "./pages/Faq";
 import Privacy from "./pages/Privacy";
 import FolderDetail from "./pages/FolderDetail";
 import Home from "./pages/Home";
+import Invitation from "./pages/Invitation";
 import LinkDetail from "./pages/LinkDetail";
 import MyIdeas from "./pages/MyIdeas";
 import { ForgotPassword, NewPassword } from "./pages/Password";
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/bienvenue", element: <Welcome /> },
       { path: "/connexion", element: <Auth /> },
+      { path: "/invitation", element: <Invitation /> },
       { path: "/mot-de-passe/oublie", element: <ForgotPassword /> },
       { path: "/mot-de-passe/nouveau", element: <NewPassword /> },
       { path: "/share/:token", element: <SharedFolder /> },

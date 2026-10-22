@@ -105,7 +105,7 @@ export default function Privacy() {
       <Section title="Qui voit vos idées">
         <ul className="list-disc space-y-1 pl-5">
           <li>Par défaut, <strong>vous seul</strong>.</li>
-          <li>Les membres de votre tribu. Quand quelqu'un vous ajoute à sa tribu, votre propre contenu n'y entre qu'après votre confirmation.</li>
+          <li>Les membres de votre tribu. On ne rejoint une tribu qu'en acceptant l'invitation reçue par email, et votre propre contenu n'y entre qu'après votre confirmation.</li>
           <li>Les personnes que vous invitez dans un dossier, ou qui reçoivent son lien de partage.</li>
           <li>Tout le monde, y compris les moteurs de recherche, seulement pour les idées et dossiers que <strong>vous</strong> choisissez de rendre publics, avec votre nom affiché. Vous pouvez les rendre privés à tout moment.</li>
         </ul>

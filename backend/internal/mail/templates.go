@@ -43,7 +43,7 @@ const (
 	tmplWelcome        = "welcome"
 	tmplPasswordReset  = "password_reset"
 	tmplPasswordChange = "password_changed"
-	tmplTribeAdded     = "tribe_added"
+	tmplTribeInvite    = "tribe_invitation"
 	tmplAccountDeleted = "account_deleted"
 )
 
@@ -53,7 +53,7 @@ var (
 )
 
 func init() {
-	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeAdded, tmplAccountDeleted} {
+	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted} {
 		htmlTemplates[name] = htmltemplate.Must(htmltemplate.New("").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
@@ -242,51 +242,53 @@ func passwordChangedEmail(siteURL, supportEmail, name string, changedAt time.Tim
 	return render(tmplPasswordChange, d.base, d)
 }
 
-// --- Ajout à une tribu ---
+// --- Invitation dans une tribu ---
 
 type avatar struct{ Bg, Ink, Text string }
 
 var avatarColors = [][2]string{{"#FFC857", "#3A211B"}, {"#ECE1EA", "#5E4558"}, {"#DCEDF3", "#235C77"}}
 
-type tribeAddedData struct {
+type tribeInvitationData struct {
 	base
 	Inviter        string
 	InviterInitial string
 	Tribe          string
 	MemberCount    int
 	Avatars        []avatar
-	TribeURL       string
+	InviteURL      string
+	Validity       string
 }
 
-func tribeAddedEmail(siteURL string, a TribeAdded) (content, error) {
-	inviter := oneLine(a.InviterName)
+func tribeInvitationEmail(siteURL string, inv TribeInvitation) (content, error) {
+	inviter := oneLine(inv.InviterName)
 	if inviter == "" {
 		inviter = "Un membre de Tribbae"
 	}
-	tribe := oneLine(a.TribeName)
+	tribe := oneLine(inv.TribeName)
 	if tribe == "" {
 		tribe = inviter
 	}
 	// Trois pastilles au plus : deux membres puis « +N »
 	var avatars []avatar
-	for i, m := range a.Members {
-		if len(a.Members) > 3 && i == 2 {
-			avatars = append(avatars, avatar{"#5E4558", "#FDE6BD", "+" + strconv.Itoa(len(a.Members)-2)})
+	for i, m := range inv.Members {
+		if len(inv.Members) > 3 && i == 2 {
+			avatars = append(avatars, avatar{"#5E4558", "#FDE6BD", "+" + strconv.Itoa(len(inv.Members)-2)})
 			break
 		}
 		c := avatarColors[i%len(avatarColors)]
 		avatars = append(avatars, avatar{c[0], c[1], initial(m)})
 	}
-	d := tribeAddedData{
-		base:           newBase(siteURL, oneLine(inviter+" vous a ajouté à la tribu « "+tribe+" » sur Tribbae")),
+	d := tribeInvitationData{
+		base:           newBase(siteURL, oneLine(inviter+" vous invite à rejoindre la tribu « "+tribe+" » sur Tribbae")),
 		Inviter:        inviter,
 		InviterInitial: initial(inviter),
 		Tribe:          tribe,
-		MemberCount:    len(a.Members),
+		MemberCount:    len(inv.Members),
 		Avatars:        avatars,
-		TribeURL:       siteURL + "/tribu",
+		InviteURL:      inv.URL,
+		Validity:       frenchDuration(inv.Validity),
 	}
-	return render(tmplTribeAdded, d.base, d)
+	return render(tmplTribeInvite, d.base, d)
 }
 
 // --- Suppression du compte ---

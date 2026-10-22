@@ -70,7 +70,18 @@ data class ApiTribeMember(
 data class ApiTribe(
     val id: String = "",
     val name: String = "",
-    val members: List<ApiTribeMember> = emptyList()
+    val members: List<ApiTribeMember> = emptyList(),
+    /** Invitations envoyées par email, en attente de réponse. */
+    val invitations: List<ApiTribeInvitation> = emptyList()
+)
+
+@Serializable
+data class ApiTribeInvitation(
+    val id: String = "",
+    val email: String = "",
+    val invitedByName: String = "",
+    val createdAt: Long = 0,
+    val expiresAt: Long = 0
 )
 
 @Serializable
@@ -393,9 +404,20 @@ class AuthenticatedApiClient(
             json.decodeFromString<ApiTribeResponse>(it).tribe
         }
 
-    suspend fun addTribeMember(email: String): ApiTribe =
+    /** Envoie une invitation par email (même réponse que l'adresse ait un compte ou non). */
+    suspend fun inviteTribeMember(email: String): ApiTribe =
         request("/v1/tribe/members", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
             kotlinx.serialization.json.buildJsonObject { put("email", kotlinx.serialization.json.JsonPrimitive(email)) })) {
+            json.decodeFromString<ApiTribeResponse>(it).tribe
+        }
+
+    suspend fun revokeTribeInvitation(id: String): ApiTribe =
+        request("/v1/tribe/invitations/$id", "DELETE") { json.decodeFromString<ApiTribeResponse>(it).tribe }
+
+    /** Accepte le lien d'invitation reçu par email : le compte doit utiliser l'adresse invitée. */
+    suspend fun acceptTribeInvitation(token: String): ApiTribe =
+        request("/v1/tribe/invitations/accept", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject { put("token", kotlinx.serialization.json.JsonPrimitive(token)) })) {
             json.decodeFromString<ApiTribeResponse>(it).tribe
         }
 

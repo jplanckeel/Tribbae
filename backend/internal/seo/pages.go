@@ -25,6 +25,7 @@ var private = map[string]string{
 	"/partager":             "Ajouter une idée",
 	"/connexion":            "Connexion",
 	"/bienvenue":            "Bienvenue",
+	"/invitation":           "Invitation dans une tribu",
 	"/mot-de-passe/oublie":  "Mot de passe oublié",
 	"/mot-de-passe/nouveau": "Nouveau mot de passe",
 }

@@ -156,19 +156,98 @@ func (x *TribeMember) GetAddedAt() int64 {
 	return 0
 }
 
+// Invitation envoyée par email, en attente de réponse.
+type TribeInvitation struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	InvitedByName string                 `protobuf:"bytes,3,opt,name=invited_by_name,json=invitedByName,proto3" json:"invited_by_name,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // millisecondes
+	ExpiresAt     int64                  `protobuf:"varint,5,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // millisecondes
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TribeInvitation) Reset() {
+	*x = TribeInvitation{}
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TribeInvitation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TribeInvitation) ProtoMessage() {}
+
+func (x *TribeInvitation) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TribeInvitation.ProtoReflect.Descriptor instead.
+func (*TribeInvitation) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *TribeInvitation) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *TribeInvitation) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *TribeInvitation) GetInvitedByName() string {
+	if x != nil {
+		return x.InvitedByName
+	}
+	return ""
+}
+
+func (x *TribeInvitation) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *TribeInvitation) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
 type Tribe struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // vide tant que la tribu ne compte que son créateur
 	// Nom affiché (« La tribu … »), par défaut le nom du compte
-	Name          string         `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Members       []*TribeMember `protobuf:"bytes,3,rep,name=members,proto3" json:"members,omitempty"`
+	Name    string         `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Members []*TribeMember `protobuf:"bytes,3,rep,name=members,proto3" json:"members,omitempty"`
+	// Invitations en attente (visibles des membres)
+	Invitations   []*TribeInvitation `protobuf:"bytes,4,rep,name=invitations,proto3" json:"invitations,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Tribe) Reset() {
 	*x = Tribe{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[1]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -180,7 +259,7 @@ func (x *Tribe) String() string {
 func (*Tribe) ProtoMessage() {}
 
 func (x *Tribe) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[1]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -193,7 +272,7 @@ func (x *Tribe) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tribe.ProtoReflect.Descriptor instead.
 func (*Tribe) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{1}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Tribe) GetId() string {
@@ -217,6 +296,13 @@ func (x *Tribe) GetMembers() []*TribeMember {
 	return nil
 }
 
+func (x *Tribe) GetInvitations() []*TribeInvitation {
+	if x != nil {
+		return x.Invitations
+	}
+	return nil
+}
+
 type GetTribeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -225,7 +311,7 @@ type GetTribeRequest struct {
 
 func (x *GetTribeRequest) Reset() {
 	*x = GetTribeRequest{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[2]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -237,7 +323,7 @@ func (x *GetTribeRequest) String() string {
 func (*GetTribeRequest) ProtoMessage() {}
 
 func (x *GetTribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[2]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -250,7 +336,7 @@ func (x *GetTribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTribeRequest.ProtoReflect.Descriptor instead.
 func (*GetTribeRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{2}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{3}
 }
 
 type GetTribeResponse struct {
@@ -262,7 +348,7 @@ type GetTribeResponse struct {
 
 func (x *GetTribeResponse) Reset() {
 	*x = GetTribeResponse{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[3]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -274,7 +360,7 @@ func (x *GetTribeResponse) String() string {
 func (*GetTribeResponse) ProtoMessage() {}
 
 func (x *GetTribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[3]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -287,7 +373,7 @@ func (x *GetTribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTribeResponse.ProtoReflect.Descriptor instead.
 func (*GetTribeResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{3}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetTribeResponse) GetTribe() *Tribe {
@@ -306,7 +392,7 @@ type UpdateTribeRequest struct {
 
 func (x *UpdateTribeRequest) Reset() {
 	*x = UpdateTribeRequest{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[4]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -318,7 +404,7 @@ func (x *UpdateTribeRequest) String() string {
 func (*UpdateTribeRequest) ProtoMessage() {}
 
 func (x *UpdateTribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[4]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -331,7 +417,7 @@ func (x *UpdateTribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateTribeRequest.ProtoReflect.Descriptor instead.
 func (*UpdateTribeRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{4}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *UpdateTribeRequest) GetName() string {
@@ -350,7 +436,7 @@ type UpdateTribeResponse struct {
 
 func (x *UpdateTribeResponse) Reset() {
 	*x = UpdateTribeResponse{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[5]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -362,7 +448,7 @@ func (x *UpdateTribeResponse) String() string {
 func (*UpdateTribeResponse) ProtoMessage() {}
 
 func (x *UpdateTribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[5]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -375,7 +461,7 @@ func (x *UpdateTribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateTribeResponse.ProtoReflect.Descriptor instead.
 func (*UpdateTribeResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{5}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpdateTribeResponse) GetTribe() *Tribe {
@@ -385,6 +471,8 @@ func (x *UpdateTribeResponse) GetTribe() *Tribe {
 	return nil
 }
 
+// Invite l'adresse donnée : un email lui propose de rejoindre la tribu. Une
+// nouvelle invitation à la même adresse remplace la précédente.
 type AddTribeMemberRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
@@ -394,7 +482,7 @@ type AddTribeMemberRequest struct {
 
 func (x *AddTribeMemberRequest) Reset() {
 	*x = AddTribeMemberRequest{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[6]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -406,7 +494,7 @@ func (x *AddTribeMemberRequest) String() string {
 func (*AddTribeMemberRequest) ProtoMessage() {}
 
 func (x *AddTribeMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[6]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -419,7 +507,7 @@ func (x *AddTribeMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddTribeMemberRequest.ProtoReflect.Descriptor instead.
 func (*AddTribeMemberRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{6}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *AddTribeMemberRequest) GetEmail() string {
@@ -438,7 +526,7 @@ type AddTribeMemberResponse struct {
 
 func (x *AddTribeMemberResponse) Reset() {
 	*x = AddTribeMemberResponse{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[7]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +538,7 @@ func (x *AddTribeMemberResponse) String() string {
 func (*AddTribeMemberResponse) ProtoMessage() {}
 
 func (x *AddTribeMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[7]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +551,7 @@ func (x *AddTribeMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddTribeMemberResponse.ProtoReflect.Descriptor instead.
 func (*AddTribeMemberResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{7}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *AddTribeMemberResponse) GetTribe() *Tribe {
@@ -482,7 +570,7 @@ type RemoveTribeMemberRequest struct {
 
 func (x *RemoveTribeMemberRequest) Reset() {
 	*x = RemoveTribeMemberRequest{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[8]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -494,7 +582,7 @@ func (x *RemoveTribeMemberRequest) String() string {
 func (*RemoveTribeMemberRequest) ProtoMessage() {}
 
 func (x *RemoveTribeMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[8]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -507,7 +595,7 @@ func (x *RemoveTribeMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveTribeMemberRequest.ProtoReflect.Descriptor instead.
 func (*RemoveTribeMemberRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{8}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *RemoveTribeMemberRequest) GetUserId() string {
@@ -526,7 +614,7 @@ type RemoveTribeMemberResponse struct {
 
 func (x *RemoveTribeMemberResponse) Reset() {
 	*x = RemoveTribeMemberResponse{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[9]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -538,7 +626,7 @@ func (x *RemoveTribeMemberResponse) String() string {
 func (*RemoveTribeMemberResponse) ProtoMessage() {}
 
 func (x *RemoveTribeMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[9]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -551,10 +639,307 @@ func (x *RemoveTribeMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveTribeMemberResponse.ProtoReflect.Descriptor instead.
 func (*RemoveTribeMemberResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{9}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *RemoveTribeMemberResponse) GetTribe() *Tribe {
+	if x != nil {
+		return x.Tribe
+	}
+	return nil
+}
+
+type RevokeTribeInvitationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	InvitationId  string                 `protobuf:"bytes,1,opt,name=invitation_id,json=invitationId,proto3" json:"invitation_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeTribeInvitationRequest) Reset() {
+	*x = RevokeTribeInvitationRequest{}
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeTribeInvitationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeTribeInvitationRequest) ProtoMessage() {}
+
+func (x *RevokeTribeInvitationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeTribeInvitationRequest.ProtoReflect.Descriptor instead.
+func (*RevokeTribeInvitationRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RevokeTribeInvitationRequest) GetInvitationId() string {
+	if x != nil {
+		return x.InvitationId
+	}
+	return ""
+}
+
+type RevokeTribeInvitationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tribe         *Tribe                 `protobuf:"bytes,1,opt,name=tribe,proto3" json:"tribe,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeTribeInvitationResponse) Reset() {
+	*x = RevokeTribeInvitationResponse{}
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeTribeInvitationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeTribeInvitationResponse) ProtoMessage() {}
+
+func (x *RevokeTribeInvitationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeTribeInvitationResponse.ProtoReflect.Descriptor instead.
+func (*RevokeTribeInvitationResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RevokeTribeInvitationResponse) GetTribe() *Tribe {
+	if x != nil {
+		return x.Tribe
+	}
+	return nil
+}
+
+// Ce qu'affiche le lien d'invitation, avant de l'accepter (sans compte).
+type GetTribeInvitationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTribeInvitationRequest) Reset() {
+	*x = GetTribeInvitationRequest{}
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTribeInvitationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTribeInvitationRequest) ProtoMessage() {}
+
+func (x *GetTribeInvitationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTribeInvitationRequest.ProtoReflect.Descriptor instead.
+func (*GetTribeInvitationRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetTribeInvitationRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type GetTribeInvitationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"` // adresse invitée : le compte qui accepte doit l'utiliser
+	TribeName     string                 `protobuf:"bytes,2,opt,name=tribe_name,json=tribeName,proto3" json:"tribe_name,omitempty"`
+	InvitedByName string                 `protobuf:"bytes,3,opt,name=invited_by_name,json=invitedByName,proto3" json:"invited_by_name,omitempty"`
+	MemberNames   []string               `protobuf:"bytes,4,rep,name=member_names,json=memberNames,proto3" json:"member_names,omitempty"`
+	ExpiresAt     int64                  `protobuf:"varint,5,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // millisecondes
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTribeInvitationResponse) Reset() {
+	*x = GetTribeInvitationResponse{}
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTribeInvitationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTribeInvitationResponse) ProtoMessage() {}
+
+func (x *GetTribeInvitationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTribeInvitationResponse.ProtoReflect.Descriptor instead.
+func (*GetTribeInvitationResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetTribeInvitationResponse) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *GetTribeInvitationResponse) GetTribeName() string {
+	if x != nil {
+		return x.TribeName
+	}
+	return ""
+}
+
+func (x *GetTribeInvitationResponse) GetInvitedByName() string {
+	if x != nil {
+		return x.InvitedByName
+	}
+	return ""
+}
+
+func (x *GetTribeInvitationResponse) GetMemberNames() []string {
+	if x != nil {
+		return x.MemberNames
+	}
+	return nil
+}
+
+func (x *GetTribeInvitationResponse) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+type AcceptTribeInvitationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcceptTribeInvitationRequest) Reset() {
+	*x = AcceptTribeInvitationRequest{}
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcceptTribeInvitationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcceptTribeInvitationRequest) ProtoMessage() {}
+
+func (x *AcceptTribeInvitationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcceptTribeInvitationRequest.ProtoReflect.Descriptor instead.
+func (*AcceptTribeInvitationRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *AcceptTribeInvitationRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type AcceptTribeInvitationResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tribe         *Tribe                 `protobuf:"bytes,1,opt,name=tribe,proto3" json:"tribe,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AcceptTribeInvitationResponse) Reset() {
+	*x = AcceptTribeInvitationResponse{}
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcceptTribeInvitationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcceptTribeInvitationResponse) ProtoMessage() {}
+
+func (x *AcceptTribeInvitationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcceptTribeInvitationResponse.ProtoReflect.Descriptor instead.
+func (*AcceptTribeInvitationResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *AcceptTribeInvitationResponse) GetTribe() *Tribe {
 	if x != nil {
 		return x.Tribe
 	}
@@ -570,7 +955,7 @@ type SetTribeSharingRequest struct {
 
 func (x *SetTribeSharingRequest) Reset() {
 	*x = SetTribeSharingRequest{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[10]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -582,7 +967,7 @@ func (x *SetTribeSharingRequest) String() string {
 func (*SetTribeSharingRequest) ProtoMessage() {}
 
 func (x *SetTribeSharingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[10]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -595,7 +980,7 @@ func (x *SetTribeSharingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTribeSharingRequest.ProtoReflect.Descriptor instead.
 func (*SetTribeSharingRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{10}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SetTribeSharingRequest) GetSharing() bool {
@@ -614,7 +999,7 @@ type SetTribeSharingResponse struct {
 
 func (x *SetTribeSharingResponse) Reset() {
 	*x = SetTribeSharingResponse{}
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[11]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -626,7 +1011,7 @@ func (x *SetTribeSharingResponse) String() string {
 func (*SetTribeSharingResponse) ProtoMessage() {}
 
 func (x *SetTribeSharingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_tribe_proto_msgTypes[11]
+	mi := &file_tribbae_v1_tribe_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -639,7 +1024,7 @@ func (x *SetTribeSharingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetTribeSharingResponse.ProtoReflect.Descriptor instead.
 func (*SetTribeSharingResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{11}
+	return file_tribbae_v1_tribe_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *SetTribeSharingResponse) GetTribe() *Tribe {
@@ -661,11 +1046,20 @@ const file_tribbae_v1_tribe_proto_rawDesc = "" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12)\n" +
 	"\x04role\x18\x04 \x01(\x0e2\x15.tribbae.v1.TribeRoleR\x04role\x12\x18\n" +
 	"\asharing\x18\x05 \x01(\bR\asharing\x12\x19\n" +
-	"\badded_at\x18\x06 \x01(\x03R\aaddedAt\"^\n" +
+	"\badded_at\x18\x06 \x01(\x03R\aaddedAt\"\x9d\x01\n" +
+	"\x0fTribeInvitation\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12&\n" +
+	"\x0finvited_by_name\x18\x03 \x01(\tR\rinvitedByName\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x04 \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x05 \x01(\x03R\texpiresAt\"\x9d\x01\n" +
 	"\x05Tribe\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x121\n" +
-	"\amembers\x18\x03 \x03(\v2\x17.tribbae.v1.TribeMemberR\amembers\"\x11\n" +
+	"\amembers\x18\x03 \x03(\v2\x17.tribbae.v1.TribeMemberR\amembers\x12=\n" +
+	"\vinvitations\x18\x04 \x03(\v2\x1b.tribbae.v1.TribeInvitationR\vinvitations\"\x11\n" +
 	"\x0fGetTribeRequest\";\n" +
 	"\x10GetTribeResponse\x12'\n" +
 	"\x05tribe\x18\x01 \x01(\v2\x11.tribbae.v1.TribeR\x05tribe\"(\n" +
@@ -680,6 +1074,24 @@ const file_tribbae_v1_tribe_proto_rawDesc = "" +
 	"\x18RemoveTribeMemberRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"D\n" +
 	"\x19RemoveTribeMemberResponse\x12'\n" +
+	"\x05tribe\x18\x01 \x01(\v2\x11.tribbae.v1.TribeR\x05tribe\"C\n" +
+	"\x1cRevokeTribeInvitationRequest\x12#\n" +
+	"\rinvitation_id\x18\x01 \x01(\tR\finvitationId\"H\n" +
+	"\x1dRevokeTribeInvitationResponse\x12'\n" +
+	"\x05tribe\x18\x01 \x01(\v2\x11.tribbae.v1.TribeR\x05tribe\"1\n" +
+	"\x19GetTribeInvitationRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"\xbb\x01\n" +
+	"\x1aGetTribeInvitationResponse\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"tribe_name\x18\x02 \x01(\tR\ttribeName\x12&\n" +
+	"\x0finvited_by_name\x18\x03 \x01(\tR\rinvitedByName\x12!\n" +
+	"\fmember_names\x18\x04 \x03(\tR\vmemberNames\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x05 \x01(\x03R\texpiresAt\"4\n" +
+	"\x1cAcceptTribeInvitationRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"H\n" +
+	"\x1dAcceptTribeInvitationResponse\x12'\n" +
 	"\x05tribe\x18\x01 \x01(\v2\x11.tribbae.v1.TribeR\x05tribe\"2\n" +
 	"\x16SetTribeSharingRequest\x12\x18\n" +
 	"\asharing\x18\x01 \x01(\bR\asharing\"B\n" +
@@ -688,12 +1100,15 @@ const file_tribbae_v1_tribe_proto_rawDesc = "" +
 	"\tTribeRole\x12\x1a\n" +
 	"\x16TRIBE_ROLE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10TRIBE_ROLE_OWNER\x10\x01\x12\x15\n" +
-	"\x11TRIBE_ROLE_MEMBER\x10\x022\xc7\x04\n" +
+	"\x11TRIBE_ROLE_MEMBER\x10\x022\x8c\b\n" +
 	"\fTribeService\x12X\n" +
 	"\bGetTribe\x12\x1b.tribbae.v1.GetTribeRequest\x1a\x1c.tribbae.v1.GetTribeResponse\"\x11\x82\xd3\xe4\x93\x02\v\x12\t/v1/tribe\x12d\n" +
 	"\vUpdateTribe\x12\x1e.tribbae.v1.UpdateTribeRequest\x1a\x1f.tribbae.v1.UpdateTribeResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\x1a\t/v1/tribe\x12u\n" +
 	"\x0eAddTribeMember\x12!.tribbae.v1.AddTribeMemberRequest\x1a\".tribbae.v1.AddTribeMemberResponse\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/v1/tribe/members\x12\x85\x01\n" +
-	"\x11RemoveTribeMember\x12$.tribbae.v1.RemoveTribeMemberRequest\x1a%.tribbae.v1.RemoveTribeMemberResponse\"#\x82\xd3\xe4\x93\x02\x1d*\x1b/v1/tribe/members/{user_id}\x12x\n" +
+	"\x11RemoveTribeMember\x12$.tribbae.v1.RemoveTribeMemberRequest\x1a%.tribbae.v1.RemoveTribeMemberResponse\"#\x82\xd3\xe4\x93\x02\x1d*\x1b/v1/tribe/members/{user_id}\x12\x9b\x01\n" +
+	"\x15RevokeTribeInvitation\x12(.tribbae.v1.RevokeTribeInvitationRequest\x1a).tribbae.v1.RevokeTribeInvitationResponse\"-\x82\xd3\xe4\x93\x02'*%/v1/tribe/invitations/{invitation_id}\x12\x8c\x01\n" +
+	"\x12GetTribeInvitation\x12%.tribbae.v1.GetTribeInvitationRequest\x1a&.tribbae.v1.GetTribeInvitationResponse\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/v1/tribe/invitations/lookup\x12\x95\x01\n" +
+	"\x15AcceptTribeInvitation\x12(.tribbae.v1.AcceptTribeInvitationRequest\x1a).tribbae.v1.AcceptTribeInvitationResponse\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/v1/tribe/invitations/accept\x12x\n" +
 	"\x0fSetTribeSharing\x12\".tribbae.v1.SetTribeSharingRequest\x1a#.tribbae.v1.SetTribeSharingResponse\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\x1a\x11/v1/tribe/sharingB5Z3github.com/tribbae/backend/gen/tribbae/v1;tribbaev1b\x06proto3"
 
 var (
@@ -709,45 +1124,61 @@ func file_tribbae_v1_tribe_proto_rawDescGZIP() []byte {
 }
 
 var file_tribbae_v1_tribe_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_tribbae_v1_tribe_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_tribbae_v1_tribe_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_tribbae_v1_tribe_proto_goTypes = []any{
-	(TribeRole)(0),                    // 0: tribbae.v1.TribeRole
-	(*TribeMember)(nil),               // 1: tribbae.v1.TribeMember
-	(*Tribe)(nil),                     // 2: tribbae.v1.Tribe
-	(*GetTribeRequest)(nil),           // 3: tribbae.v1.GetTribeRequest
-	(*GetTribeResponse)(nil),          // 4: tribbae.v1.GetTribeResponse
-	(*UpdateTribeRequest)(nil),        // 5: tribbae.v1.UpdateTribeRequest
-	(*UpdateTribeResponse)(nil),       // 6: tribbae.v1.UpdateTribeResponse
-	(*AddTribeMemberRequest)(nil),     // 7: tribbae.v1.AddTribeMemberRequest
-	(*AddTribeMemberResponse)(nil),    // 8: tribbae.v1.AddTribeMemberResponse
-	(*RemoveTribeMemberRequest)(nil),  // 9: tribbae.v1.RemoveTribeMemberRequest
-	(*RemoveTribeMemberResponse)(nil), // 10: tribbae.v1.RemoveTribeMemberResponse
-	(*SetTribeSharingRequest)(nil),    // 11: tribbae.v1.SetTribeSharingRequest
-	(*SetTribeSharingResponse)(nil),   // 12: tribbae.v1.SetTribeSharingResponse
+	(TribeRole)(0),                        // 0: tribbae.v1.TribeRole
+	(*TribeMember)(nil),                   // 1: tribbae.v1.TribeMember
+	(*TribeInvitation)(nil),               // 2: tribbae.v1.TribeInvitation
+	(*Tribe)(nil),                         // 3: tribbae.v1.Tribe
+	(*GetTribeRequest)(nil),               // 4: tribbae.v1.GetTribeRequest
+	(*GetTribeResponse)(nil),              // 5: tribbae.v1.GetTribeResponse
+	(*UpdateTribeRequest)(nil),            // 6: tribbae.v1.UpdateTribeRequest
+	(*UpdateTribeResponse)(nil),           // 7: tribbae.v1.UpdateTribeResponse
+	(*AddTribeMemberRequest)(nil),         // 8: tribbae.v1.AddTribeMemberRequest
+	(*AddTribeMemberResponse)(nil),        // 9: tribbae.v1.AddTribeMemberResponse
+	(*RemoveTribeMemberRequest)(nil),      // 10: tribbae.v1.RemoveTribeMemberRequest
+	(*RemoveTribeMemberResponse)(nil),     // 11: tribbae.v1.RemoveTribeMemberResponse
+	(*RevokeTribeInvitationRequest)(nil),  // 12: tribbae.v1.RevokeTribeInvitationRequest
+	(*RevokeTribeInvitationResponse)(nil), // 13: tribbae.v1.RevokeTribeInvitationResponse
+	(*GetTribeInvitationRequest)(nil),     // 14: tribbae.v1.GetTribeInvitationRequest
+	(*GetTribeInvitationResponse)(nil),    // 15: tribbae.v1.GetTribeInvitationResponse
+	(*AcceptTribeInvitationRequest)(nil),  // 16: tribbae.v1.AcceptTribeInvitationRequest
+	(*AcceptTribeInvitationResponse)(nil), // 17: tribbae.v1.AcceptTribeInvitationResponse
+	(*SetTribeSharingRequest)(nil),        // 18: tribbae.v1.SetTribeSharingRequest
+	(*SetTribeSharingResponse)(nil),       // 19: tribbae.v1.SetTribeSharingResponse
 }
 var file_tribbae_v1_tribe_proto_depIdxs = []int32{
 	0,  // 0: tribbae.v1.TribeMember.role:type_name -> tribbae.v1.TribeRole
 	1,  // 1: tribbae.v1.Tribe.members:type_name -> tribbae.v1.TribeMember
-	2,  // 2: tribbae.v1.GetTribeResponse.tribe:type_name -> tribbae.v1.Tribe
-	2,  // 3: tribbae.v1.UpdateTribeResponse.tribe:type_name -> tribbae.v1.Tribe
-	2,  // 4: tribbae.v1.AddTribeMemberResponse.tribe:type_name -> tribbae.v1.Tribe
-	2,  // 5: tribbae.v1.RemoveTribeMemberResponse.tribe:type_name -> tribbae.v1.Tribe
-	2,  // 6: tribbae.v1.SetTribeSharingResponse.tribe:type_name -> tribbae.v1.Tribe
-	3,  // 7: tribbae.v1.TribeService.GetTribe:input_type -> tribbae.v1.GetTribeRequest
-	5,  // 8: tribbae.v1.TribeService.UpdateTribe:input_type -> tribbae.v1.UpdateTribeRequest
-	7,  // 9: tribbae.v1.TribeService.AddTribeMember:input_type -> tribbae.v1.AddTribeMemberRequest
-	9,  // 10: tribbae.v1.TribeService.RemoveTribeMember:input_type -> tribbae.v1.RemoveTribeMemberRequest
-	11, // 11: tribbae.v1.TribeService.SetTribeSharing:input_type -> tribbae.v1.SetTribeSharingRequest
-	4,  // 12: tribbae.v1.TribeService.GetTribe:output_type -> tribbae.v1.GetTribeResponse
-	6,  // 13: tribbae.v1.TribeService.UpdateTribe:output_type -> tribbae.v1.UpdateTribeResponse
-	8,  // 14: tribbae.v1.TribeService.AddTribeMember:output_type -> tribbae.v1.AddTribeMemberResponse
-	10, // 15: tribbae.v1.TribeService.RemoveTribeMember:output_type -> tribbae.v1.RemoveTribeMemberResponse
-	12, // 16: tribbae.v1.TribeService.SetTribeSharing:output_type -> tribbae.v1.SetTribeSharingResponse
-	12, // [12:17] is the sub-list for method output_type
-	7,  // [7:12] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	2,  // 2: tribbae.v1.Tribe.invitations:type_name -> tribbae.v1.TribeInvitation
+	3,  // 3: tribbae.v1.GetTribeResponse.tribe:type_name -> tribbae.v1.Tribe
+	3,  // 4: tribbae.v1.UpdateTribeResponse.tribe:type_name -> tribbae.v1.Tribe
+	3,  // 5: tribbae.v1.AddTribeMemberResponse.tribe:type_name -> tribbae.v1.Tribe
+	3,  // 6: tribbae.v1.RemoveTribeMemberResponse.tribe:type_name -> tribbae.v1.Tribe
+	3,  // 7: tribbae.v1.RevokeTribeInvitationResponse.tribe:type_name -> tribbae.v1.Tribe
+	3,  // 8: tribbae.v1.AcceptTribeInvitationResponse.tribe:type_name -> tribbae.v1.Tribe
+	3,  // 9: tribbae.v1.SetTribeSharingResponse.tribe:type_name -> tribbae.v1.Tribe
+	4,  // 10: tribbae.v1.TribeService.GetTribe:input_type -> tribbae.v1.GetTribeRequest
+	6,  // 11: tribbae.v1.TribeService.UpdateTribe:input_type -> tribbae.v1.UpdateTribeRequest
+	8,  // 12: tribbae.v1.TribeService.AddTribeMember:input_type -> tribbae.v1.AddTribeMemberRequest
+	10, // 13: tribbae.v1.TribeService.RemoveTribeMember:input_type -> tribbae.v1.RemoveTribeMemberRequest
+	12, // 14: tribbae.v1.TribeService.RevokeTribeInvitation:input_type -> tribbae.v1.RevokeTribeInvitationRequest
+	14, // 15: tribbae.v1.TribeService.GetTribeInvitation:input_type -> tribbae.v1.GetTribeInvitationRequest
+	16, // 16: tribbae.v1.TribeService.AcceptTribeInvitation:input_type -> tribbae.v1.AcceptTribeInvitationRequest
+	18, // 17: tribbae.v1.TribeService.SetTribeSharing:input_type -> tribbae.v1.SetTribeSharingRequest
+	5,  // 18: tribbae.v1.TribeService.GetTribe:output_type -> tribbae.v1.GetTribeResponse
+	7,  // 19: tribbae.v1.TribeService.UpdateTribe:output_type -> tribbae.v1.UpdateTribeResponse
+	9,  // 20: tribbae.v1.TribeService.AddTribeMember:output_type -> tribbae.v1.AddTribeMemberResponse
+	11, // 21: tribbae.v1.TribeService.RemoveTribeMember:output_type -> tribbae.v1.RemoveTribeMemberResponse
+	13, // 22: tribbae.v1.TribeService.RevokeTribeInvitation:output_type -> tribbae.v1.RevokeTribeInvitationResponse
+	15, // 23: tribbae.v1.TribeService.GetTribeInvitation:output_type -> tribbae.v1.GetTribeInvitationResponse
+	17, // 24: tribbae.v1.TribeService.AcceptTribeInvitation:output_type -> tribbae.v1.AcceptTribeInvitationResponse
+	19, // 25: tribbae.v1.TribeService.SetTribeSharing:output_type -> tribbae.v1.SetTribeSharingResponse
+	18, // [18:26] is the sub-list for method output_type
+	10, // [10:18] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_tribbae_v1_tribe_proto_init() }
@@ -761,7 +1192,7 @@ func file_tribbae_v1_tribe_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tribbae_v1_tribe_proto_rawDesc), len(file_tribbae_v1_tribe_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   12,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

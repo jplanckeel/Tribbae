@@ -19,11 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	TribeService_GetTribe_FullMethodName          = "/tribbae.v1.TribeService/GetTribe"
-	TribeService_UpdateTribe_FullMethodName       = "/tribbae.v1.TribeService/UpdateTribe"
-	TribeService_AddTribeMember_FullMethodName    = "/tribbae.v1.TribeService/AddTribeMember"
-	TribeService_RemoveTribeMember_FullMethodName = "/tribbae.v1.TribeService/RemoveTribeMember"
-	TribeService_SetTribeSharing_FullMethodName   = "/tribbae.v1.TribeService/SetTribeSharing"
+	TribeService_GetTribe_FullMethodName              = "/tribbae.v1.TribeService/GetTribe"
+	TribeService_UpdateTribe_FullMethodName           = "/tribbae.v1.TribeService/UpdateTribe"
+	TribeService_AddTribeMember_FullMethodName        = "/tribbae.v1.TribeService/AddTribeMember"
+	TribeService_RemoveTribeMember_FullMethodName     = "/tribbae.v1.TribeService/RemoveTribeMember"
+	TribeService_RevokeTribeInvitation_FullMethodName = "/tribbae.v1.TribeService/RevokeTribeInvitation"
+	TribeService_GetTribeInvitation_FullMethodName    = "/tribbae.v1.TribeService/GetTribeInvitation"
+	TribeService_AcceptTribeInvitation_FullMethodName = "/tribbae.v1.TribeService/AcceptTribeInvitation"
+	TribeService_SetTribeSharing_FullMethodName       = "/tribbae.v1.TribeService/SetTribeSharing"
 )
 
 // TribeServiceClient is the client API for TribeService service.
@@ -34,6 +37,9 @@ type TribeServiceClient interface {
 	UpdateTribe(ctx context.Context, in *UpdateTribeRequest, opts ...grpc.CallOption) (*UpdateTribeResponse, error)
 	AddTribeMember(ctx context.Context, in *AddTribeMemberRequest, opts ...grpc.CallOption) (*AddTribeMemberResponse, error)
 	RemoveTribeMember(ctx context.Context, in *RemoveTribeMemberRequest, opts ...grpc.CallOption) (*RemoveTribeMemberResponse, error)
+	RevokeTribeInvitation(ctx context.Context, in *RevokeTribeInvitationRequest, opts ...grpc.CallOption) (*RevokeTribeInvitationResponse, error)
+	GetTribeInvitation(ctx context.Context, in *GetTribeInvitationRequest, opts ...grpc.CallOption) (*GetTribeInvitationResponse, error)
+	AcceptTribeInvitation(ctx context.Context, in *AcceptTribeInvitationRequest, opts ...grpc.CallOption) (*AcceptTribeInvitationResponse, error)
 	SetTribeSharing(ctx context.Context, in *SetTribeSharingRequest, opts ...grpc.CallOption) (*SetTribeSharingResponse, error)
 }
 
@@ -85,6 +91,36 @@ func (c *tribeServiceClient) RemoveTribeMember(ctx context.Context, in *RemoveTr
 	return out, nil
 }
 
+func (c *tribeServiceClient) RevokeTribeInvitation(ctx context.Context, in *RevokeTribeInvitationRequest, opts ...grpc.CallOption) (*RevokeTribeInvitationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeTribeInvitationResponse)
+	err := c.cc.Invoke(ctx, TribeService_RevokeTribeInvitation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tribeServiceClient) GetTribeInvitation(ctx context.Context, in *GetTribeInvitationRequest, opts ...grpc.CallOption) (*GetTribeInvitationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTribeInvitationResponse)
+	err := c.cc.Invoke(ctx, TribeService_GetTribeInvitation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tribeServiceClient) AcceptTribeInvitation(ctx context.Context, in *AcceptTribeInvitationRequest, opts ...grpc.CallOption) (*AcceptTribeInvitationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptTribeInvitationResponse)
+	err := c.cc.Invoke(ctx, TribeService_AcceptTribeInvitation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tribeServiceClient) SetTribeSharing(ctx context.Context, in *SetTribeSharingRequest, opts ...grpc.CallOption) (*SetTribeSharingResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetTribeSharingResponse)
@@ -103,6 +139,9 @@ type TribeServiceServer interface {
 	UpdateTribe(context.Context, *UpdateTribeRequest) (*UpdateTribeResponse, error)
 	AddTribeMember(context.Context, *AddTribeMemberRequest) (*AddTribeMemberResponse, error)
 	RemoveTribeMember(context.Context, *RemoveTribeMemberRequest) (*RemoveTribeMemberResponse, error)
+	RevokeTribeInvitation(context.Context, *RevokeTribeInvitationRequest) (*RevokeTribeInvitationResponse, error)
+	GetTribeInvitation(context.Context, *GetTribeInvitationRequest) (*GetTribeInvitationResponse, error)
+	AcceptTribeInvitation(context.Context, *AcceptTribeInvitationRequest) (*AcceptTribeInvitationResponse, error)
 	SetTribeSharing(context.Context, *SetTribeSharingRequest) (*SetTribeSharingResponse, error)
 }
 
@@ -124,6 +163,15 @@ func (UnimplementedTribeServiceServer) AddTribeMember(context.Context, *AddTribe
 }
 func (UnimplementedTribeServiceServer) RemoveTribeMember(context.Context, *RemoveTribeMemberRequest) (*RemoveTribeMemberResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemoveTribeMember not implemented")
+}
+func (UnimplementedTribeServiceServer) RevokeTribeInvitation(context.Context, *RevokeTribeInvitationRequest) (*RevokeTribeInvitationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeTribeInvitation not implemented")
+}
+func (UnimplementedTribeServiceServer) GetTribeInvitation(context.Context, *GetTribeInvitationRequest) (*GetTribeInvitationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTribeInvitation not implemented")
+}
+func (UnimplementedTribeServiceServer) AcceptTribeInvitation(context.Context, *AcceptTribeInvitationRequest) (*AcceptTribeInvitationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AcceptTribeInvitation not implemented")
 }
 func (UnimplementedTribeServiceServer) SetTribeSharing(context.Context, *SetTribeSharingRequest) (*SetTribeSharingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetTribeSharing not implemented")
@@ -220,6 +268,60 @@ func _TribeService_RemoveTribeMember_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TribeService_RevokeTribeInvitation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeTribeInvitationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TribeServiceServer).RevokeTribeInvitation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TribeService_RevokeTribeInvitation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TribeServiceServer).RevokeTribeInvitation(ctx, req.(*RevokeTribeInvitationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TribeService_GetTribeInvitation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTribeInvitationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TribeServiceServer).GetTribeInvitation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TribeService_GetTribeInvitation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TribeServiceServer).GetTribeInvitation(ctx, req.(*GetTribeInvitationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TribeService_AcceptTribeInvitation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptTribeInvitationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TribeServiceServer).AcceptTribeInvitation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TribeService_AcceptTribeInvitation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TribeServiceServer).AcceptTribeInvitation(ctx, req.(*AcceptTribeInvitationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TribeService_SetTribeSharing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetTribeSharingRequest)
 	if err := dec(in); err != nil {
@@ -260,6 +362,18 @@ var TribeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveTribeMember",
 			Handler:    _TribeService_RemoveTribeMember_Handler,
+		},
+		{
+			MethodName: "RevokeTribeInvitation",
+			Handler:    _TribeService_RevokeTribeInvitation_Handler,
+		},
+		{
+			MethodName: "GetTribeInvitation",
+			Handler:    _TribeService_GetTribeInvitation_Handler,
+		},
+		{
+			MethodName: "AcceptTribeInvitation",
+			Handler:    _TribeService_AcceptTribeInvitation_Handler,
 		},
 		{
 			MethodName: "SetTribeSharing",

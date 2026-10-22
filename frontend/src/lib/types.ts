@@ -87,12 +87,33 @@ export interface TribeMember {
 }
 
 /** Tribu : les comptes d'une famille, qui partagent idées, dossiers et enfants. */
+/** Invitation envoyée par email, en attente de réponse. */
+export interface TribeInvitation {
+  id: string;
+  email: string;
+  invitedByName?: string;
+  /** Millisecondes. */
+  createdAt?: string;
+  expiresAt?: string;
+}
+
 export interface Tribe {
   /** Vide tant que la tribu ne compte que son créateur. */
   id?: string;
   /** Nom affiché (« La tribu … »), par défaut le nom du compte. */
   name: string;
   members?: TribeMember[];
+  /** Invitations en attente. */
+  invitations?: TribeInvitation[];
+}
+
+/** Ce qu'affiche un lien d'invitation avant de l'accepter. */
+export interface TribeInvitationInfo {
+  email: string;
+  tribeName?: string;
+  invitedByName?: string;
+  memberNames?: string[];
+  expiresAt?: string;
 }
 
 export interface Collaborator {

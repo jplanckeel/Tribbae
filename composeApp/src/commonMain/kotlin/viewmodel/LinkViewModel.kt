@@ -193,18 +193,22 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
 
     fun renameTribe(name: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.renameTribe(name.trim()) }
-    fun addTribeMember(email: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.addTribeMember(email.trim()) }
+    fun inviteTribeMember(email: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.inviteTribeMember(email.trim()) }
+    fun revokeTribeInvitation(id: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.revokeTribeInvitation(id) }
+    fun acceptTribeInvitation(token: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.acceptTribeInvitation(token) }
     fun removeTribeMember(userId: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.removeTribeMember(userId) }
     fun setTribeSharing(sharing: Boolean, onDone: (String?) -> Unit) = tribeAction(onDone) { it.setTribeSharing(sharing) }
 
     private fun tribeErrorMessage(raw: String): String = when {
-        "user not found with this email" in raw -> "Aucun compte Tribbae avec cet email."
+        "invalid or expired invitation" in raw -> "Cette invitation n'est plus valable : elle a expiré, a été annulée ou a déjà servi."
+        "invitation is for another email" in raw -> "Cette invitation a été envoyée à une autre adresse que celle de votre compte."
+        "a valid email is required" in raw -> "Adresse email invalide."
         "already a member of this tribe" in raw -> "Cette personne fait déjà partie de votre tribu."
         "already belongs to another tribe" in raw -> "Ce compte fait déjà partie d'une autre tribu : la personne doit d'abord la quitter."
-        "tribe is full" in raw -> "La tribu est complète."
+        "tribe is full" in raw -> "La tribu est complète (12 membres et invitations en attente au plus)."
         "only the tribe owner" in raw -> "Seul le créateur de la tribu peut retirer un membre."
         "name must be 1 to 60" in raw -> "Le nom de la tribu doit faire entre 1 et 60 caractères."
-        "email is required" in raw -> "Saisissez l'email de son compte Tribbae."
+        "email is required" in raw -> "Saisissez l'adresse email de votre proche."
         else -> "Impossible de joindre le serveur, réessayez."
     }
 

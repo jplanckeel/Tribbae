@@ -28,6 +28,31 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── tribe_invitations : invitations dans une tribu ───────
+		{
+			Collection: "tribe_invitations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "token_hash", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_tribe_invitations_token_hash"),
+			},
+		},
+		{
+			// Une invitation par tribu et par adresse
+			Collection: "tribe_invitations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "tribe_id", Value: 1}, {Key: "email", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_tribe_invitations_tribe_email"),
+			},
+		},
+		{
+			// Efface les invitations expirées
+			Collection: "tribe_invitations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "expires_at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_tribe_invitations_ttl"),
+			},
+		},
+
 		// ── password_resets : liens du mot de passe oublié ───────
 		{
 			Collection: "password_resets",

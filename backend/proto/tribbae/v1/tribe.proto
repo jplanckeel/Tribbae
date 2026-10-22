@@ -9,9 +9,10 @@ option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
 // Une tribu regroupe les comptes d'une même famille : ses membres voient et
 // modifient ensemble idées, dossiers, enfants et liste de courses.
 //
-// Un membre ajouté par email voit tout de suite le contenu de la tribu, mais
-// son propre contenu n'y entre qu'après qu'il l'a confirmé (sharing = true) :
-// personne ne peut récupérer les données d'un compte en tapant son email.
+// On rejoint une tribu en acceptant une invitation reçue par email : taper une
+// adresse ne fait entrer personne et ne dit pas si elle a un compte. Le nouveau
+// membre voit tout de suite le contenu de la tribu, mais le sien n'y entre
+// qu'après qu'il l'a confirmé (sharing = true).
 // Les idées restent signées du nom de leur auteur, pas du nom de la tribu.
 
 enum TribeRole {
@@ -30,11 +31,22 @@ message TribeMember {
   int64 added_at = 6;
 }
 
+// Invitation envoyée par email, en attente de réponse.
+message TribeInvitation {
+  string id = 1;
+  string email = 2;
+  string invited_by_name = 3;
+  int64 created_at = 4;  // millisecondes
+  int64 expires_at = 5;  // millisecondes
+}
+
 message Tribe {
   string id = 1;  // vide tant que la tribu ne compte que son créateur
   // Nom affiché (« La tribu … »), par défaut le nom du compte
   string name = 2;
   repeated TribeMember members = 3;
+  // Invitations en attente (visibles des membres)
+  repeated TribeInvitation invitations = 4;
 }
 
 message GetTribeRequest {}
@@ -51,6 +63,8 @@ message UpdateTribeResponse {
   Tribe tribe = 1;
 }
 
+// Invite l'adresse donnée : un email lui propose de rejoindre la tribu. Une
+// nouvelle invitation à la même adresse remplace la précédente.
 message AddTribeMemberRequest {
   string email = 1;
 }
@@ -64,6 +78,35 @@ message RemoveTribeMemberRequest {
 }
 
 message RemoveTribeMemberResponse {
+  Tribe tribe = 1;
+}
+
+message RevokeTribeInvitationRequest {
+  string invitation_id = 1;
+}
+
+message RevokeTribeInvitationResponse {
+  Tribe tribe = 1;
+}
+
+// Ce qu'affiche le lien d'invitation, avant de l'accepter (sans compte).
+message GetTribeInvitationRequest {
+  string token = 1;
+}
+
+message GetTribeInvitationResponse {
+  string email = 1;  // adresse invitée : le compte qui accepte doit l'utiliser
+  string tribe_name = 2;
+  string invited_by_name = 3;
+  repeated string member_names = 4;
+  int64 expires_at = 5;  // millisecondes
+}
+
+message AcceptTribeInvitationRequest {
+  string token = 1;
+}
+
+message AcceptTribeInvitationResponse {
   Tribe tribe = 1;
 }
 
@@ -99,6 +142,26 @@ service TribeService {
   rpc RemoveTribeMember(RemoveTribeMemberRequest) returns (RemoveTribeMemberResponse) {
     option (google.api.http) = {
       delete: "/v1/tribe/members/{user_id}"
+    };
+  }
+
+  rpc RevokeTribeInvitation(RevokeTribeInvitationRequest) returns (RevokeTribeInvitationResponse) {
+    option (google.api.http) = {
+      delete: "/v1/tribe/invitations/{invitation_id}"
+    };
+  }
+
+  rpc GetTribeInvitation(GetTribeInvitationRequest) returns (GetTribeInvitationResponse) {
+    option (google.api.http) = {
+      post: "/v1/tribe/invitations/lookup"
+      body: "*"
+    };
+  }
+
+  rpc AcceptTribeInvitation(AcceptTribeInvitationRequest) returns (AcceptTribeInvitationResponse) {
+    option (google.api.http) = {
+      post: "/v1/tribe/invitations/accept"
+      body: "*"
     };
   }
 

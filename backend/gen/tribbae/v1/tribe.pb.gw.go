@@ -149,6 +149,99 @@ func local_request_TribeService_RemoveTribeMember_0(ctx context.Context, marshal
 	return msg, metadata, err
 }
 
+func request_TribeService_RevokeTribeInvitation_0(ctx context.Context, marshaler runtime.Marshaler, client TribeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq RevokeTribeInvitationRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	val, ok := pathParams["invitation_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "invitation_id")
+	}
+	protoReq.InvitationId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "invitation_id", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.RevokeTribeInvitation(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_TribeService_RevokeTribeInvitation_0(ctx context.Context, marshaler runtime.Marshaler, server TribeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq RevokeTribeInvitationRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	val, ok := pathParams["invitation_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "invitation_id")
+	}
+	protoReq.InvitationId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "invitation_id", err)
+	}
+	msg, err := server.RevokeTribeInvitation(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_TribeService_GetTribeInvitation_0(ctx context.Context, marshaler runtime.Marshaler, client TribeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetTribeInvitationRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.GetTribeInvitation(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_TribeService_GetTribeInvitation_0(ctx context.Context, marshaler runtime.Marshaler, server TribeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetTribeInvitationRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.GetTribeInvitation(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_TribeService_AcceptTribeInvitation_0(ctx context.Context, marshaler runtime.Marshaler, client TribeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq AcceptTribeInvitationRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.AcceptTribeInvitation(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_TribeService_AcceptTribeInvitation_0(ctx context.Context, marshaler runtime.Marshaler, server TribeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq AcceptTribeInvitationRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.AcceptTribeInvitation(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 func request_TribeService_SetTribeSharing_0(ctx context.Context, marshaler runtime.Marshaler, client TribeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
 		protoReq SetTribeSharingRequest
@@ -261,6 +354,66 @@ func RegisterTribeServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 		forward_TribeService_RemoveTribeMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodDelete, pattern_TribeService_RevokeTribeInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.TribeService/RevokeTribeInvitation", runtime.WithHTTPPathPattern("/v1/tribe/invitations/{invitation_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_TribeService_RevokeTribeInvitation_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_TribeService_RevokeTribeInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_TribeService_GetTribeInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.TribeService/GetTribeInvitation", runtime.WithHTTPPathPattern("/v1/tribe/invitations/lookup"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_TribeService_GetTribeInvitation_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_TribeService_GetTribeInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_TribeService_AcceptTribeInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.TribeService/AcceptTribeInvitation", runtime.WithHTTPPathPattern("/v1/tribe/invitations/accept"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_TribeService_AcceptTribeInvitation_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_TribeService_AcceptTribeInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodPut, pattern_TribeService_SetTribeSharing_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -390,6 +543,57 @@ func RegisterTribeServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		}
 		forward_TribeService_RemoveTribeMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodDelete, pattern_TribeService_RevokeTribeInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.TribeService/RevokeTribeInvitation", runtime.WithHTTPPathPattern("/v1/tribe/invitations/{invitation_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_TribeService_RevokeTribeInvitation_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_TribeService_RevokeTribeInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_TribeService_GetTribeInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.TribeService/GetTribeInvitation", runtime.WithHTTPPathPattern("/v1/tribe/invitations/lookup"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_TribeService_GetTribeInvitation_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_TribeService_GetTribeInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_TribeService_AcceptTribeInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.TribeService/AcceptTribeInvitation", runtime.WithHTTPPathPattern("/v1/tribe/invitations/accept"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_TribeService_AcceptTribeInvitation_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_TribeService_AcceptTribeInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodPut, pattern_TribeService_SetTribeSharing_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -411,17 +615,23 @@ func RegisterTribeServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 }
 
 var (
-	pattern_TribeService_GetTribe_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "tribe"}, ""))
-	pattern_TribeService_UpdateTribe_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "tribe"}, ""))
-	pattern_TribeService_AddTribeMember_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "tribe", "members"}, ""))
-	pattern_TribeService_RemoveTribeMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "tribe", "members", "user_id"}, ""))
-	pattern_TribeService_SetTribeSharing_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "tribe", "sharing"}, ""))
+	pattern_TribeService_GetTribe_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "tribe"}, ""))
+	pattern_TribeService_UpdateTribe_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "tribe"}, ""))
+	pattern_TribeService_AddTribeMember_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "tribe", "members"}, ""))
+	pattern_TribeService_RemoveTribeMember_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "tribe", "members", "user_id"}, ""))
+	pattern_TribeService_RevokeTribeInvitation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "tribe", "invitations", "invitation_id"}, ""))
+	pattern_TribeService_GetTribeInvitation_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "tribe", "invitations", "lookup"}, ""))
+	pattern_TribeService_AcceptTribeInvitation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "tribe", "invitations", "accept"}, ""))
+	pattern_TribeService_SetTribeSharing_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "tribe", "sharing"}, ""))
 )
 
 var (
-	forward_TribeService_GetTribe_0          = runtime.ForwardResponseMessage
-	forward_TribeService_UpdateTribe_0       = runtime.ForwardResponseMessage
-	forward_TribeService_AddTribeMember_0    = runtime.ForwardResponseMessage
-	forward_TribeService_RemoveTribeMember_0 = runtime.ForwardResponseMessage
-	forward_TribeService_SetTribeSharing_0   = runtime.ForwardResponseMessage
+	forward_TribeService_GetTribe_0              = runtime.ForwardResponseMessage
+	forward_TribeService_UpdateTribe_0           = runtime.ForwardResponseMessage
+	forward_TribeService_AddTribeMember_0        = runtime.ForwardResponseMessage
+	forward_TribeService_RemoveTribeMember_0     = runtime.ForwardResponseMessage
+	forward_TribeService_RevokeTribeInvitation_0 = runtime.ForwardResponseMessage
+	forward_TribeService_GetTribeInvitation_0    = runtime.ForwardResponseMessage
+	forward_TribeService_AcceptTribeInvitation_0 = runtime.ForwardResponseMessage
+	forward_TribeService_SetTribeSharing_0       = runtime.ForwardResponseMessage
 )

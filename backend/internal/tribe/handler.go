@@ -22,8 +22,10 @@ func toStatus(op string, err error) error {
 	switch {
 	case errors.Is(err, ErrInvalidInput):
 		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, ErrUserNotFound):
-		return status.Error(codes.NotFound, "user not found with this email")
+	case errors.Is(err, ErrInvalidInvitation):
+		return status.Error(codes.NotFound, err.Error())
+	case errors.Is(err, ErrWrongAccount):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, ErrAlreadyMember):
 		return status.Error(codes.AlreadyExists, err.Error())
 	case errors.Is(err, ErrInOtherTribe), errors.Is(err, ErrTribeFull):
@@ -70,6 +72,19 @@ func (h *Handler) toProto(ctx context.Context, t *Tribe) *pb.Tribe {
 		}
 		out.Members = append(out.Members, pm)
 	}
+	invs, err := h.svc.Invitations(ctx, t.ID)
+	if err != nil {
+		log.Printf("tribe: list invitations: %v", err)
+	}
+	for _, inv := range invs {
+		out.Invitations = append(out.Invitations, &pb.TribeInvitation{
+			Id:            inv.ID.Hex(),
+			Email:         inv.Email,
+			InvitedByName: users[inv.InvitedBy].DisplayName,
+			CreatedAt:     inv.CreatedAt.UnixMilli(),
+			ExpiresAt:     inv.ExpiresAt.UnixMilli(),
+		})
+	}
 	return out
 }
 
@@ -110,9 +125,9 @@ func (h *Handler) AddTribeMember(ctx context.Context, req *pb.AddTribeMemberRequ
 	if err != nil {
 		return nil, err
 	}
-	t, err := h.svc.AddMember(ctx, uid, req.Email)
+	t, err := h.svc.Invite(ctx, uid, req.Email)
 	if err != nil {
-		return nil, toStatus("add tribe member", err)
+		return nil, toStatus("invite tribe member", err)
 	}
 	return &pb.AddTribeMemberResponse{Tribe: h.toProto(ctx, t)}, nil
 }
@@ -139,4 +154,44 @@ func (h *Handler) SetTribeSharing(ctx context.Context, req *pb.SetTribeSharingRe
 		return nil, toStatus("set tribe sharing", err)
 	}
 	return &pb.SetTribeSharingResponse{Tribe: h.toProto(ctx, t)}, nil
+}
+
+func (h *Handler) RevokeTribeInvitation(ctx context.Context, req *pb.RevokeTribeInvitationRequest) (*pb.RevokeTribeInvitationResponse, error) {
+	uid, err := user(ctx)
+	if err != nil {
+		return nil, err
+	}
+	t, err := h.svc.Revoke(ctx, uid, req.InvitationId)
+	if err != nil {
+		return nil, toStatus("revoke tribe invitation", err)
+	}
+	return &pb.RevokeTribeInvitationResponse{Tribe: h.toProto(ctx, t)}, nil
+}
+
+// GetTribeInvitation est public : le lien d'invitation s'ouvre avant toute
+// connexion (le jeton, secret, tient lieu d'accès).
+func (h *Handler) GetTribeInvitation(ctx context.Context, req *pb.GetTribeInvitationRequest) (*pb.GetTribeInvitationResponse, error) {
+	info, err := h.svc.Lookup(ctx, req.Token)
+	if err != nil {
+		return nil, toStatus("get tribe invitation", err)
+	}
+	return &pb.GetTribeInvitationResponse{
+		Email:         info.Email,
+		TribeName:     info.TribeName,
+		InvitedByName: info.InvitedByName,
+		MemberNames:   info.MemberNames,
+		ExpiresAt:     info.ExpiresAt.UnixMilli(),
+	}, nil
+}
+
+func (h *Handler) AcceptTribeInvitation(ctx context.Context, req *pb.AcceptTribeInvitationRequest) (*pb.AcceptTribeInvitationResponse, error) {
+	uid, err := user(ctx)
+	if err != nil {
+		return nil, err
+	}
+	t, err := h.svc.Accept(ctx, uid, req.Token)
+	if err != nil {
+		return nil, toStatus("accept tribe invitation", err)
+	}
+	return &pb.AcceptTribeInvitationResponse{Tribe: h.toProto(ctx, t)}, nil
 }

@@ -96,9 +96,10 @@ class MainActivity : ComponentActivity() {
     private fun parseIncoming(intent: Intent?): SharedContent? {
         val (url, title) = extractShared(intent)
         val token = extractShareToken(intent)
+        val inviteToken = extractInviteToken(intent)
         val resetToken = extractResetToken(intent)
-        if (url == null && title == null && token == null && resetToken == null) return null
-        return SharedContent(url = url, title = title, folderToken = token, resetToken = resetToken)
+        if (url == null && title == null && token == null && inviteToken == null && resetToken == null) return null
+        return SharedContent(url = url, title = title, folderToken = token, inviteToken = inviteToken, resetToken = resetToken)
     }
 
     private fun installLaunchTransition(launchedFromIcon: Boolean) {
@@ -137,6 +138,14 @@ class MainActivity : ComponentActivity() {
         if (intent?.action != Intent.ACTION_VIEW) return null
         val segments = intent.data?.pathSegments ?: return null
         return segments.takeIf { it.size == 2 && it[0] == "share" }?.get(1)?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{16,64}")) }
+    }
+
+    /** Jeton d'un lien d'invitation dans une tribu (https://…/invitation#<jeton>). */
+    private fun extractInviteToken(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+        val data = intent.data ?: return null
+        if (data.path?.trimEnd('/') != "/invitation") return null
+        return data.fragment?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{20,128}")) }
     }
 
     /** Jeton du lien « nouveau mot de passe » d'un email (https://…/mot-de-passe/nouveau#<jeton>). */

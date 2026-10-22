@@ -68,7 +68,7 @@ func main() {
 	linkSvc := link.NewService(database.Col("links"), database.Col("folders"))
 	childSvc := child.NewService(database.DB())
 	// Tribu : ses membres partagent idées, dossiers et enfants
-	tribeSvc := tribe.NewService(database.Col("tribes"), database.Col("users"))
+	tribeSvc := tribe.NewService(database.Col("tribes"), database.Col("users"), database.Col("tribe_invitations"))
 	linkSvc.SetTribePeers(tribeSvc.Peers)
 	folderSvc.SetTribePeers(tribeSvc.Peers)
 	childSvc.SetTribePeers(tribeSvc.Peers)
@@ -78,7 +78,8 @@ func main() {
 	// Mot de passe oublié : lien vers l'écran « Nouveau mot de passe » du site
 	// (ouvert dans l'application Android quand elle est installée)
 	authSvc.SetPasswordReset(database.Col("password_resets"), strings.TrimRight(cfg.SiteURL, "/")+"/mot-de-passe/nouveau", mailer)
-	tribeSvc.SetNotifier(mailer)
+	// Invitations dans une tribu : lien vers l'écran « Rejoindre la tribu » du site
+	tribeSvc.SetNotifier(mailer, strings.TrimRight(cfg.SiteURL, "/")+"/invitation")
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
 	commentSvc := comment.NewService(database.Col("comments"), database.Col("links"), database.Col("users"))
 	aiSvc := ai.NewService(ai.Config{
@@ -195,7 +196,7 @@ func main() {
 	handler = withPreview(preview.Handler(bearerUser), handler)
 	handler = withAI(aiH, handler)
 	handler = withAccount(accountH, handler)
-	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true}, handler)
+	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true, "/v1/tribe/members": true}, handler)
 	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, account.DeletePath: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
 	handler = httpx.CORS(cfg.AllowedOrigins, handler)

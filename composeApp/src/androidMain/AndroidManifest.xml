@@ -44,6 +44,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="tribbae.fr" android:path="/mot-de-passe/nouveau" />
             </intent-filter>
+            <!-- Invitations dans une tribu (email) : https://tribbae.fr/invitation#<jeton> -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tribbae.fr" android:path="/invitation" />
+            </intent-filter>
         </activity>
         <receiver
             android:name="data.ReminderReceiver"

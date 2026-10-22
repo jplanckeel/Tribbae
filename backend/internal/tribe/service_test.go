@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,7 +32,9 @@ func setup(t *testing.T) (*Service, *mongo.Database, func()) {
 	_, _ = db.Collection("tribes").Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "members.user_id", Value: 1}}, Options: options.Index().SetUnique(true),
 	})
-	return NewService(db.Collection("tribes"), db.Collection("users")), db, func() {
+	svc := NewService(db.Collection("tribes"), db.Collection("users"), db.Collection("tribe_invitations"))
+	svc.SetNotifier(&fakeNotifier{}, "https://tribbae.example/invitation")
+	return svc, db, func() {
 		_ = db.Drop(context.Background())
 		_ = client.Disconnect(context.Background())
 	}
@@ -74,7 +78,7 @@ func TestInviteeSeesTribeButSharesOnlyAfterConfirming(t *testing.T) {
 	alice := addUser(t, db, "alice@ex.fr", "Alice")
 	bob := addUser(t, db, "bob@ex.fr", "Bob")
 
-	tr, err := svc.AddMember(ctx, alice, " BOB@ex.fr ")
+	tr, err := join(t, svc, alice, bob, " BOB@ex.fr ")
 	if err != nil || len(tr.Members) != 2 || tr.Member(bob) == nil || tr.Member(bob).Sharing {
 		t.Fatalf("ajout : %+v, %v", tr, err)
 	}
@@ -92,10 +96,11 @@ func TestInviteeSeesTribeButSharesOnlyAfterConfirming(t *testing.T) {
 		t.Errorf("après confirmation, Alice voit le contenu de Bob : %v", got)
 	}
 
-	if _, err := svc.AddMember(ctx, alice, "bob@ex.fr"); !errors.Is(err, ErrAlreadyMember) {
+	if _, err := svc.Invite(ctx, alice, "bob@ex.fr"); !errors.Is(err, ErrAlreadyMember) {
 		t.Errorf("double ajout : %v", err)
 	}
-	if _, err := svc.AddMember(ctx, alice, "inconnu@ex.fr"); !errors.Is(err, ErrUserNotFound) {
+	// Une adresse sans compte est invitée comme les autres : rien ne dit qu'elle n'a pas de compte
+	if _, err := svc.Invite(ctx, alice, "inconnu@ex.fr"); err != nil {
 		t.Errorf("email inconnu : %v", err)
 	}
 }
@@ -107,20 +112,19 @@ func TestCannotPullSomeoneOutOfAnotherSharedTribe(t *testing.T) {
 	alice := addUser(t, db, "alice@ex.fr", "Alice")
 	bob := addUser(t, db, "bob@ex.fr", "Bob")
 	carol := addUser(t, db, "carol@ex.fr", "Carol")
-	if _, err := svc.AddMember(ctx, alice, "bob@ex.fr"); err != nil {
+	if _, err := join(t, svc, alice, bob, "bob@ex.fr"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.AddMember(ctx, carol, "bob@ex.fr"); !errors.Is(err, ErrInOtherTribe) {
+	if _, err := join(t, svc, carol, bob, "bob@ex.fr"); !errors.Is(err, ErrInOtherTribe) {
 		t.Errorf("Bob est déjà dans la tribu d'Alice : %v", err)
 	}
 	// Une tribu où l'on est seul (créée en la renommant) est simplement remplacée
 	if _, err := svc.Rename(ctx, carol, "Martin"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.AddMember(ctx, alice, "carol@ex.fr"); err != nil {
+	if _, err := join(t, svc, alice, carol, "carol@ex.fr"); err != nil {
 		t.Errorf("Carol, seule dans sa tribu, peut rejoindre Alice : %v", err)
 	}
-	_ = bob
 }
 
 func TestLeaveAndOwnerTransfer(t *testing.T) {
@@ -130,9 +134,9 @@ func TestLeaveAndOwnerTransfer(t *testing.T) {
 	alice := addUser(t, db, "alice@ex.fr", "Alice")
 	bob := addUser(t, db, "bob@ex.fr", "Bob")
 	carol := addUser(t, db, "carol@ex.fr", "Carol")
-	_, _ = svc.AddMember(ctx, alice, "bob@ex.fr")
+	_, _ = join(t, svc, alice, bob, "bob@ex.fr")
 	time.Sleep(5 * time.Millisecond)
-	_, _ = svc.AddMember(ctx, alice, "carol@ex.fr")
+	_, _ = join(t, svc, alice, carol, "carol@ex.fr")
 
 	if _, err := svc.RemoveMember(ctx, bob, carol); !errors.Is(err, ErrForbidden) {
 		t.Errorf("un membre ne retire pas un autre membre : %v", err)
@@ -155,36 +159,160 @@ func TestLeaveAndOwnerTransfer(t *testing.T) {
 	}
 }
 
-type fakeNotifier struct{ sent []mail.TribeAdded }
+type fakeNotifier struct{ sent []mail.TribeInvitation }
 
-func (f *fakeNotifier) TribeMemberAdded(a mail.TribeAdded) { f.sent = append(f.sent, a) }
+func (f *fakeNotifier) TribeInvitation(inv mail.TribeInvitation) { f.sent = append(f.sent, inv) }
 
-func TestAddedMemberIsNotifiedByEmail(t *testing.T) {
+func notifier(svc *Service) *fakeNotifier { return svc.notify.(*fakeNotifier) }
+
+// lastToken : jeton du dernier lien d'invitation envoyé (après le #).
+func lastToken(t *testing.T, svc *Service) string {
+	t.Helper()
+	sent := notifier(svc).sent
+	if len(sent) == 0 {
+		t.Fatal("aucune invitation envoyée")
+	}
+	_, token, _ := strings.Cut(sent[len(sent)-1].URL, "#")
+	return token
+}
+
+// join : from invite l'adresse email, puis le compte to accepte le lien.
+func join(t *testing.T, svc *Service, from, to, email string) (*Tribe, error) {
+	t.Helper()
+	ctx := context.Background()
+	before := len(notifier(svc).sent)
+	if _, err := svc.Invite(ctx, from, email); err != nil {
+		return nil, err
+	}
+	if len(notifier(svc).sent) == before {
+		t.Fatal("invitation sans email")
+	}
+	return svc.Accept(ctx, to, lastToken(t, svc))
+}
+
+func TestInvitationEmailAndLookup(t *testing.T) {
 	svc, db, cleanup := setup(t)
 	defer cleanup()
 	ctx := context.Background()
-	n := &fakeNotifier{}
-	svc.SetNotifier(n)
 	alice := addUser(t, db, "alice@ex.fr", "Alice")
-	addUser(t, db, "bob@ex.fr", "Bob")
 	if _, err := svc.Rename(ctx, alice, "Les Martin"); err != nil {
 		t.Fatal(err)
 	}
-
-	if _, err := svc.AddMember(ctx, alice, "bob@ex.fr"); err != nil {
+	if _, err := svc.Invite(ctx, alice, "pas-un-email"); !errors.Is(err, ErrInvalidInput) {
+		t.Errorf("adresse invalide : %v", err)
+	}
+	if _, err := svc.Invite(ctx, alice, "alice@ex.fr"); !errors.Is(err, ErrAlreadyMember) {
+		t.Errorf("s'inviter soi-même : %v", err)
+	}
+	tr, err := svc.Invite(ctx, alice, " Bob@Ex.fr ")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if len(n.sent) != 1 {
-		t.Fatalf("emails = %+v, want 1", n.sent)
+	sent := notifier(svc).sent
+	if len(sent) != 1 || sent[0].Email != "bob@ex.fr" || sent[0].InviterName != "Alice" || sent[0].TribeName != "Les Martin" ||
+		!slices.Equal(sent[0].Members, []string{"Alice"}) || !strings.HasPrefix(sent[0].URL, "https://tribbae.example/invitation#") {
+		t.Fatalf("email = %+v", sent)
 	}
-	got := n.sent[0]
-	if got.Email != "bob@ex.fr" || got.Name != "Bob" || got.InviterName != "Alice" || got.TribeName != "Les Martin" || !slices.Equal(got.Members, []string{"Alice", "Bob"}) {
-		t.Errorf("email = %+v", got)
+	token := lastToken(t, svc)
+	if n, _ := db.Collection("tribe_invitations").CountDocuments(ctx, bson.M{"token_hash": token}); n != 0 {
+		t.Error("le jeton est stocké en clair")
 	}
-	// Un ajout refusé n'envoie rien
-	_, _ = svc.AddMember(ctx, alice, "bob@ex.fr")
-	_, _ = svc.AddMember(ctx, alice, "inconnu@ex.fr")
-	if len(n.sent) != 1 {
-		t.Errorf("email envoyé pour un ajout refusé : %+v", n.sent)
+	invs, err := svc.Invitations(ctx, tr.ID)
+	if err != nil || len(invs) != 1 || invs[0].Email != "bob@ex.fr" {
+		t.Fatalf("invitations en attente : %+v, %v", invs, err)
+	}
+	info, err := svc.Lookup(ctx, token)
+	if err != nil || info.Email != "bob@ex.fr" || info.TribeName != "Les Martin" || info.InvitedByName != "Alice" {
+		t.Fatalf("lookup : %+v, %v", info, err)
+	}
+	if _, err := svc.Lookup(ctx, "jeton-invente"); !errors.Is(err, ErrInvalidInvitation) {
+		t.Errorf("jeton inventé : %v", err)
+	}
+	// Renvoyer dans les 10 minutes : pas de nouvel email, le premier lien reste valable
+	if _, err := svc.Invite(ctx, alice, "bob@ex.fr"); err != nil || len(notifier(svc).sent) != 1 {
+		t.Errorf("renvoi immédiat : %v, %d emails", err, len(notifier(svc).sent))
+	}
+	if _, err := svc.Lookup(ctx, token); err != nil {
+		t.Errorf("le premier lien doit rester valable : %v", err)
+	}
+}
+
+func TestAcceptRequiresTheInvitedAccount(t *testing.T) {
+	svc, db, cleanup := setup(t)
+	defer cleanup()
+	ctx := context.Background()
+	alice := addUser(t, db, "alice@ex.fr", "Alice")
+	bob := addUser(t, db, "bob@ex.fr", "Bob")
+	eve := addUser(t, db, "eve@ex.fr", "Eve")
+	if _, err := svc.Invite(ctx, alice, "bob@ex.fr"); err != nil {
+		t.Fatal(err)
+	}
+	token := lastToken(t, svc)
+	// Un lien transféré ne fait pas entrer quelqu'un d'autre
+	if _, err := svc.Accept(ctx, eve, token); !errors.Is(err, ErrWrongAccount) {
+		t.Errorf("Eve accepte l'invitation de Bob : %v", err)
+	}
+	tr, err := svc.Accept(ctx, bob, token)
+	if err != nil || tr.Member(bob) == nil || tr.Member(bob).Sharing || tr.Member(bob).AddedBy != alice {
+		t.Fatalf("Bob accepte : %+v, %v", tr, err)
+	}
+	// L'invitation a servi
+	if _, err := svc.Accept(ctx, bob, token); !errors.Is(err, ErrInvalidInvitation) {
+		t.Errorf("lien réutilisé : %v", err)
+	}
+	if invs, _ := svc.Invitations(ctx, tr.ID); len(invs) != 0 {
+		t.Errorf("invitation encore en attente : %+v", invs)
+	}
+}
+
+func TestRevokeExpireAndFull(t *testing.T) {
+	svc, db, cleanup := setup(t)
+	defer cleanup()
+	ctx := context.Background()
+	alice := addUser(t, db, "alice@ex.fr", "Alice")
+	bob := addUser(t, db, "bob@ex.fr", "Bob")
+	tr, err := svc.Invite(ctx, alice, "bob@ex.fr")
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := lastToken(t, svc)
+	invs, _ := svc.Invitations(ctx, tr.ID)
+	if _, err := svc.Revoke(ctx, bob, invs[0].ID.Hex()); !errors.Is(err, ErrInvalidInvitation) {
+		t.Errorf("Bob, hors de la tribu, annule l'invitation : %v", err)
+	}
+	if _, err := svc.Revoke(ctx, alice, invs[0].ID.Hex()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Accept(ctx, bob, token); !errors.Is(err, ErrInvalidInvitation) {
+		t.Errorf("invitation annulée acceptée : %v", err)
+	}
+
+	// Expirée
+	if _, err := svc.Invite(ctx, alice, "bob@ex.fr"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Collection("tribe_invitations").UpdateMany(ctx, bson.M{}, bson.M{"$set": bson.M{"expires_at": time.Now().Add(-time.Second)}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Accept(ctx, bob, lastToken(t, svc)); !errors.Is(err, ErrInvalidInvitation) {
+		t.Errorf("invitation expirée acceptée : %v", err)
+	}
+	_, _ = db.Collection("tribe_invitations").DeleteMany(ctx, bson.M{})
+
+	// Membres + invitations en attente : 12 au plus
+	for i := 1; i < maxMembers; i++ {
+		if _, err := svc.Invite(ctx, alice, "invite"+strconv.Itoa(i)+"@ex.fr"); err != nil {
+			t.Fatalf("invitation %d : %v", i, err)
+		}
+	}
+	if _, err := svc.Invite(ctx, alice, "une-de-trop@ex.fr"); !errors.Is(err, ErrTribeFull) {
+		t.Errorf("tribu complète : %v", err)
+	}
+	// La tribu disparaît avec son dernier membre : ses invitations aussi
+	if _, err := svc.RemoveMember(ctx, alice, alice); err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := db.Collection("tribe_invitations").CountDocuments(ctx, bson.M{}); n != 0 {
+		t.Errorf("%d invitation(s) d'une tribu disparue", n)
 	}
 }
