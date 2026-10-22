@@ -119,10 +119,9 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 	m := New(rec, "https://tribbae.example", "aide@tribbae.example")
 	m.now = func() time.Time { return time.Date(2026, 10, 22, 14, 42, 0, 0, time.UTC) }
 	m.Welcome("alice@example.com", "Alice")
-	m.PasswordReset(PasswordReset{
-		Email: "alice@example.com", Name: "Alice", ResetURL: "https://tribbae.example/mot-de-passe/nouveau?token=abc",
-		Validity: time.Hour, RequestedAt: time.Date(2026, 10, 1, 7, 5, 0, 0, time.UTC), Device: "Firefox sur Linux",
-	})
+	m.PasswordResetLink("alice@example.com", "Alice", "https://tribbae.example/mot-de-passe/nouveau#abc",
+		time.Hour, time.Date(2026, 10, 1, 7, 5, 0, 0, time.UTC), "Firefox sur Linux")
+	m.PasswordChanged("alice@example.com", "Alice", time.Date(2026, 10, 1, 7, 9, 0, 0, time.UTC), "l'application Android")
 	m.TribeInvitation(TribeInvitation{Email: "bob@example.com", InviterName: "Alice", TribeName: "Les Martin", Members: []string{"Alice", "Bruno", "Chloé", "Denis"},
 		URL: "https://tribbae.example/invitation#tok", Validity: 7 * 24 * time.Hour})
 	m.AccountDeleted("alice@example.com", "")
@@ -142,8 +141,11 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 			[]string{"Bienvenue dans la tribu, Alice !", "Pour bien démarrer", "Invitez votre tribu", `href="https://tribbae.example/"`, "https://tribbae.example/email/welcome.png"},
 			[]string{"Bienvenue dans la tribu, Alice !", "Ouvrir Tribbae : https://tribbae.example/", "3. Gardez une idée en un geste"}},
 		{TagPasswordReset, "Choisissez un nouveau mot de passe Tribbae",
-			[]string{"Bonjour Alice, une demande", "alice@example.com", "<strong>1 heure</strong>", "1er octobre 2026 à 09 h 05", "Firefox sur Linux", "https://tribbae.example/mot-de-passe/nouveau?token=abc"},
-			[]string{"https://tribbae.example/mot-de-passe/nouveau?token=abc", "Ce lien expire dans 1 heure", "1er octobre 2026 à 09 h 05 depuis Firefox sur Linux"}},
+			[]string{"Bonjour Alice, une demande", "alice@example.com", "<strong>1 heure</strong>", "1er octobre 2026 à 09 h 05", "Firefox sur Linux", "https://tribbae.example/mot-de-passe/nouveau#abc"},
+			[]string{"https://tribbae.example/mot-de-passe/nouveau#abc", "Ce lien expire dans 1 heure", "1er octobre 2026 à 09 h 05 depuis Firefox sur Linux"}},
+		{TagPasswordChange, "Votre mot de passe Tribbae a été modifié",
+			[]string{"Votre mot de passe a été modifié", "1er octobre 2026 à 09 h 09 depuis l&#39;application Android", `href="https://tribbae.example/mot-de-passe/oublie"`, "mailto:aide@tribbae.example"},
+			[]string{"depuis l'application Android", "https://tribbae.example/mot-de-passe/oublie", "aide@tribbae.example"}},
 		{TagTribeInvite, "Alice vous invite à rejoindre la tribu « Les Martin » sur Tribbae",
 			[]string{"vous invite à rejoindre sa tribu", "Rejoignez la tribu « Les Martin »", "4 membres", "&#43;2<", ">A<", "Rejoindre la tribu", "Invitation valable 7 jours"},
 			[]string{"Alice vous invite à rejoindre sa tribu (4 membres)", "Rejoindre la tribu : https://tribbae.example/invitation#tok"}},
@@ -199,6 +201,21 @@ func TestFrenchFormats(t *testing.T) {
 	for in, want := range map[string]string{"alice": "A", " élodie": "É", "": "?", "😀": "?"} {
 		if got := initial(in); got != want {
 			t.Errorf("initial(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestDevice(t *testing.T) {
+	for ua, want := range map[string]string{
+		"Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0":                                                                  "Firefox sur Linux",
+		"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1": "Safari sur iPhone",
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36 Edg/140.0":                   "Edge sur Windows",
+		"Dalvik/2.1.0 (Linux; U; Android 15; Pixel 8 Build/AP3A)":                                                                                 "l'application Android",
+		"curl/8.0": "",
+		"":         "",
+	} {
+		if got := Device(ua); got != want {
+			t.Errorf("Device(%q) = %q, want %q", ua, got, want)
 		}
 	}
 }

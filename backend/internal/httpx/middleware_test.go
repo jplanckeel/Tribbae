@@ -50,3 +50,33 @@ func TestCORS(t *testing.T) {
 		t.Fatal("allowed origin must be reflected")
 	}
 }
+
+func TestCanonicalHost(t *testing.T) {
+	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusTeapot) })
+	h := CanonicalHost("https://tribbae.fr/", []string{"tribbae.bananaops.cloud", " WWW.tribbae.fr "}, ok)
+	cases := []struct {
+		method, host, target string
+		code                 int
+		location             string
+	}{
+		{"GET", "tribbae.bananaops.cloud", "/dossiers/42?vue=liste", http.StatusMovedPermanently, "https://tribbae.fr/dossiers/42?vue=liste"},
+		{"HEAD", "www.tribbae.fr:443", "/", http.StatusMovedPermanently, "https://tribbae.fr/"},
+		{"GET", "tribbae.bananaops.cloud", "/sitemap.xml", http.StatusMovedPermanently, "https://tribbae.fr/sitemap.xml"},
+		// L'API aussi ; un POST garde sa méthode (308)
+		{"GET", "tribbae.bananaops.cloud", "/v1/links", http.StatusMovedPermanently, "https://tribbae.fr/v1/links"},
+		{"POST", "tribbae.bananaops.cloud", "/v1/auth/login", http.StatusPermanentRedirect, "https://tribbae.fr/v1/auth/login"},
+		{"GET", "tribbae.fr", "/explorer", http.StatusTeapot, ""},
+		// Noms non listés (réseau interne, local) : jamais redirigés
+		{"GET", "backend:8080", "/", http.StatusTeapot, ""},
+		{"GET", "localhost:8080", "/", http.StatusTeapot, ""},
+	}
+	for _, c := range cases {
+		req := httptest.NewRequest(c.method, c.target, nil)
+		req.Host = c.host
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		if rec.Code != c.code || rec.Header().Get("Location") != c.location {
+			t.Errorf("%s %s%s : %d %q, want %d %q", c.method, c.host, c.target, rec.Code, rec.Header().Get("Location"), c.code, c.location)
+		}
+	}
+}

@@ -36,6 +36,7 @@ function frenchMessage(status: number, message: string): string {
   if (/name must be 1 to 60/i.test(message)) return "Le nom de la tribu doit faire entre 1 et 60 caractères.";
   if (/url must be/i.test(message)) return "Le lien doit être une adresse web (https://…).";
   if (/wrong password/i.test(message)) return "Mot de passe incorrect.";
+  if (/invalid or expired reset link/i.test(message)) return "Ce lien n'est plus valable : il a expiré ou a déjà servi. Demandez-en un nouveau.";
   if (/account deletion failed/i.test(message)) return "La suppression n'a pas abouti. Réessayez : elle reprendra là où elle s'est arrêtée.";
   if (status >= 500) return "Le serveur a rencontré un problème, réessayez.";
   return message || "Une erreur est survenue.";
@@ -81,6 +82,14 @@ export const auth = {
   login: (email: string, password: string) =>
     request<{ userId: string; token: string; displayName?: string; isAdmin?: boolean }>("/auth/login", {
       method: "POST", body: json({ email, password }),
+    }),
+  /** Envoie un lien de réinitialisation si l'adresse a un compte (même réponse sinon). */
+  forgotPassword: (email: string) =>
+    request<void>("/auth/password/forgot", { method: "POST", body: json({ email }) }),
+  /** Nouveau mot de passe depuis le lien reçu par email : ouvre une session. */
+  resetPassword: (token: string, password: string) =>
+    request<{ userId: string; token: string; displayName?: string; isAdmin?: boolean }>("/auth/password/reset", {
+      method: "POST", body: json({ token, password }),
     }),
 };
 

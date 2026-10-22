@@ -64,7 +64,7 @@ func main() {
 
 	// Services
 	authSvc := auth.NewService(database.Col("users"), cfg.JWTSecret)
-	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)
+	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), strings.TrimRight(cfg.SiteURL, "/"))
 	linkSvc := link.NewService(database.Col("links"), database.Col("folders"))
 	childSvc := child.NewService(database.DB())
 	// Tribu : ses membres partagent idées, dossiers et enfants
@@ -75,6 +75,9 @@ func main() {
 	// Emails transactionnels (Brevo) : bienvenue, ajout à une tribu, suppression du compte
 	mailer := mail.New(mail.NewSender(cfg.BrevoAPIKey, cfg.MailFrom, cfg.MailFromName), cfg.SiteURL, cfg.SupportEmail)
 	authSvc.SetNotifier(mailer)
+	// Mot de passe oublié : lien vers l'écran « Nouveau mot de passe » du site
+	// (ouvert dans l'application Android quand elle est installée)
+	authSvc.SetPasswordReset(database.Col("password_resets"), strings.TrimRight(cfg.SiteURL, "/")+"/mot-de-passe/nouveau", mailer)
 	// Invitations dans une tribu : lien vers l'écran « Rejoindre la tribu » du site
 	tribeSvc.SetNotifier(mailer, strings.TrimRight(cfg.SiteURL, "/")+"/invitation")
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
@@ -194,9 +197,11 @@ func main() {
 	handler = withAI(aiH, handler)
 	handler = withAccount(accountH, handler)
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true, "/v1/tribe/members": true}, handler)
-	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, account.DeletePath: true}, handler)
+	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, account.DeletePath: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
 	handler = httpx.CORS(cfg.AllowedOrigins, handler)
+	// Ancien domaine et www : tout redirige vers SITE_URL
+	handler = httpx.CanonicalHost(cfg.SiteURL, cfg.RedirectHosts, handler)
 	handler = httpx.SecurityHeaders(handler)
 
 	srv := &http.Server{

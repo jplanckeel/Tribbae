@@ -97,8 +97,9 @@ class MainActivity : ComponentActivity() {
         val (url, title) = extractShared(intent)
         val token = extractShareToken(intent)
         val inviteToken = extractInviteToken(intent)
-        if (url == null && title == null && token == null && inviteToken == null) return null
-        return SharedContent(url = url, title = title, folderToken = token, inviteToken = inviteToken)
+        val resetToken = extractResetToken(intent)
+        if (url == null && title == null && token == null && inviteToken == null && resetToken == null) return null
+        return SharedContent(url = url, title = title, folderToken = token, inviteToken = inviteToken, resetToken = resetToken)
     }
 
     private fun installLaunchTransition(launchedFromIcon: Boolean) {
@@ -144,6 +145,14 @@ class MainActivity : ComponentActivity() {
         if (intent?.action != Intent.ACTION_VIEW) return null
         val data = intent.data ?: return null
         if (data.path?.trimEnd('/') != "/invitation") return null
+        return data.fragment?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{20,128}")) }
+    }
+
+    /** Jeton du lien « nouveau mot de passe » d'un email (https://…/mot-de-passe/nouveau#<jeton>). */
+    private fun extractResetToken(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+        val data = intent.data ?: return null
+        if (data.path?.trimEnd('/') != "/mot-de-passe/nouveau") return null
         return data.fragment?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{20,128}")) }
     }
 

@@ -12,4 +12,4 @@ Disallow: /tribu
 Disallow: /courses
 Disallow: /partager
 
-Sitemap: https://tribbae.bananaops.cloud/sitemap.xml
+Sitemap: https://tribbae.fr/sitemap.xml

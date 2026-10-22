@@ -31,7 +31,7 @@ const (
 )
 
 type Handler struct {
-	site string // origine publique, ex. https://tribbae.bananaops.cloud
+	site string // origine publique, ex. https://tribbae.fr
 	src  Source
 	faq  []QA
 

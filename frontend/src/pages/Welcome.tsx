@@ -175,6 +175,15 @@ export function Auth() {
           </button>
         </div>
 
+        {!register && (
+          <RouterLink
+            to={email.trim() ? `/mot-de-passe/oublie?email=${encodeURIComponent(email.trim())}` : "/mot-de-passe/oublie"}
+            className="-mt-2 self-end text-sm font-semibold text-terracotta hover:text-terracotta-dark"
+          >
+            Mot de passe oublié ?
+          </RouterLink>
+        )}
+
         {error && <ErrorNote>{error}</ErrorNote>}
 
         {register && (

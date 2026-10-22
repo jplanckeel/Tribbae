@@ -51,6 +51,7 @@ func NewSender(apiKey, fromEmail, fromName string) Sender {
 const (
 	TagWelcome        = "welcome"
 	TagPasswordReset  = "password-reset"
+	TagPasswordChange = "password-changed"
 	TagAccountDeleted = "account-deleted"
 	TagTribeInvite    = "tribe-invitation"
 
@@ -83,7 +84,7 @@ func (m *Mailer) Welcome(email, name string) {
 	m.send(email, name, TagWelcome, c, err)
 }
 
-// PasswordReset : lien de réinitialisation du mot de passe (#18).
+// PasswordReset : lien de réinitialisation du mot de passe.
 type PasswordReset struct {
 	Email, Name string
 	ResetURL    string
@@ -93,10 +94,17 @@ type PasswordReset struct {
 	Device string
 }
 
-// PasswordReset envoie le lien de réinitialisation du mot de passe.
-func (m *Mailer) PasswordReset(r PasswordReset) {
+// PasswordResetLink envoie le lien de réinitialisation du mot de passe.
+func (m *Mailer) PasswordResetLink(email, name, resetURL string, validity time.Duration, requestedAt time.Time, device string) {
+	r := PasswordReset{Email: email, Name: name, ResetURL: resetURL, Validity: validity, RequestedAt: requestedAt, Device: device}
 	c, err := passwordResetEmail(m.siteURL, r)
-	m.send(r.Email, r.Name, TagPasswordReset, c, err)
+	m.send(email, name, TagPasswordReset, c, err)
+}
+
+// PasswordChanged prévient que le mot de passe du compte vient de changer.
+func (m *Mailer) PasswordChanged(email, name string, changedAt time.Time, device string) {
+	c, err := passwordChangedEmail(m.siteURL, m.supportEmail, name, changedAt, device)
+	m.send(email, name, TagPasswordChange, c, err)
 }
 
 // AccountDeleted confirme l'effacement d'un compte. L'adresse n'est plus
