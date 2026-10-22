@@ -42,6 +42,7 @@ var funcs = map[string]any{
 const (
 	tmplWelcome        = "welcome"
 	tmplPasswordReset  = "password_reset"
+	tmplPasswordChange = "password_changed"
 	tmplTribeAdded     = "tribe_added"
 	tmplAccountDeleted = "account_deleted"
 )
@@ -52,7 +53,7 @@ var (
 )
 
 func init() {
-	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplTribeAdded, tmplAccountDeleted} {
+	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeAdded, tmplAccountDeleted} {
 		htmlTemplates[name] = htmltemplate.Must(htmltemplate.New("").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
@@ -214,6 +215,31 @@ func passwordResetEmail(siteURL string, r PasswordReset) (content, error) {
 		Device:      oneLine(r.Device),
 	}
 	return render(tmplPasswordReset, d.base, d)
+}
+
+// --- Mot de passe modifié ---
+
+type passwordChangedData struct {
+	base
+	Name         string
+	ChangedAt    string
+	Device       string
+	ForgotURL    string
+	SupportURL   string
+	SupportEmail string
+}
+
+func passwordChangedEmail(siteURL, supportEmail, name string, changedAt time.Time, device string) (content, error) {
+	d := passwordChangedData{
+		base:         newBase(siteURL, "Votre mot de passe Tribbae a été modifié"),
+		Name:         oneLine(name),
+		ChangedAt:    frenchDateTime(changedAt),
+		Device:       oneLine(device),
+		ForgotURL:    siteURL + "/mot-de-passe/oublie",
+		SupportEmail: supportEmail,
+		SupportURL:   "mailto:" + supportEmail + "?subject=" + url.PathEscape("Mot de passe de mon compte Tribbae"),
+	}
+	return render(tmplPasswordChange, d.base, d)
 }
 
 // --- Ajout à une tribu ---

@@ -28,6 +28,23 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── password_resets : liens du mot de passe oublié ───────
+		{
+			Collection: "password_resets",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "token_hash", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_password_resets_token_hash"),
+			},
+		},
+		{
+			// Efface les demandes expirées
+			Collection: "password_resets",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "expires_at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_password_resets_ttl"),
+			},
+		},
+
 		// ── tribes : un compte appartient à au plus une tribu ──────
 		{
 			Collection: "tribes",
