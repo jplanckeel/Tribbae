@@ -13,7 +13,7 @@ jobs:
     # Les tests d'intégration se sautent sans MongoDB : on en fournit un
     services:
       mongo:
-        image: mongo:8
+        image: mongo:9
         ports:
           - 27017:27017
         options: >-

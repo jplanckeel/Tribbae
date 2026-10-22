@@ -3,7 +3,7 @@ version: "3.8"
 services:
   # ── MongoDB ──────────────────────────────────────────────
   mongo:
-    image: mongo:8
+    image: mongo:9
     restart: unless-stopped
     ports:
       - "27017:27017"
