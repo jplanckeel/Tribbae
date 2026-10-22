@@ -43,6 +43,18 @@ Frontend (from `frontend/`): `npm run build` (runs `tsc -b` then `vite build` �
 
 CI (`.github/workflows/test.yml`): `go build` + `go vet` + `go test -race` (with a MongoDB service) + `govulncheck` for backend, `npm ci && npm run lint && npm run build` for frontend, `./gradlew assembleDebug` for Android. `release.yml` triggers on `v*` tags (APK + Docker images).
 
+## Git workflow
+
+- **One PR per topic.** Never commit on `main`: branch from an up-to-date `main`, keep the branch to a single subject (a fix, a feature, a CI change…), and open a separate PR for anything unrelated found along the way. A CI fix and a dependency bump are two PRs, not one.
+- Branch names: `<type>/<short-kebab-description>`, e.g. `fix/govulncheck-go-patch`, `feat/tribe-invitations`, `ci/mongo-9`.
+- **Commits follow [Conventional Commits](https://www.conventionalcommits.org/)**: `<type>(<scope>): <description>`, description in English, imperative, lowercase, no final period.
+  - Types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `revert`.
+  - Scopes (optional): `backend`, `frontend`, `android`, `ai`, `proto`, `seo`, `ci`, `docker`, `deps`, or a backend domain (`link`, `folder`, `tribe`…).
+  - Breaking change: `!` after the type/scope and a `BREAKING CHANGE:` footer.
+  - Examples: `fix(ci): always install the latest go 1.26 patch`, `feat(tribe)!: require confirmation before sharing content`.
+- PRs are squash-merged, so **the PR title must itself be a Conventional Commit** (it becomes the commit on `main`). The PR description says what changed, why, and how it was tested.
+- Commits must be authored and signed by the `jplanckeel` account (`Jérémy PLANCKEEL <jeremy.planckeel@outlook.com>`, GPG key `49D1339A1DA8FB47`), set in this repo's local git config. Never pass `--no-gpg-sign` or override the identity, never rewrite published history and never force-push `main`.
+
 ## Backend architecture
 
 - `cmd/server/main.go` wires everything: Mongo connect → `db.EnsureIndexes` → `auth.EnsureAdminAccount` → services → gRPC server on `GRPC_PORT` (9090) → grpc-gateway mux on `PORT` (8080) dialing back into the gRPC server.
