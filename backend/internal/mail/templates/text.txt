@@ -32,6 +32,17 @@ Demande effectuée le {{.RequestedAt}}{{if .Device}} depuis {{.Device}}{{end}}.
 
 {{template "footer" .}}{{end}}
 
+{{define "password_changed"}}Votre mot de passe a été modifié
+
+{{if .Name}}Bonjour {{.Name}}, le{{else}}Bonjour, le{{end}} mot de passe de votre compte Tribbae a été modifié le {{.ChangedAt}}{{if .Device}} depuis {{.Device}}{{end}}. Les sessions ouvertes sur vos autres appareils ont été fermées.
+
+Ce n'est pas vous ? Choisissez tout de suite un nouveau mot de passe : {{.ForgotURL}}
+Puis écrivez-nous à {{.SupportEmail}} : nous regarderons ce qui s'est passé.
+
+Email de sécurité envoyé à chaque changement de mot de passe.
+
+{{template "footer" .}}{{end}}
+
 {{define "tribe_added"}}Bienvenue dans la tribu « {{.Tribe}} »
 
 {{.Inviter}} vous a ajouté à sa tribu ({{.MemberCount}} membre{{if gt .MemberCount 1}}s{{end}}).

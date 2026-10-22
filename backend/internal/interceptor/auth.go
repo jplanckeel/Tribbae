@@ -22,9 +22,12 @@ type TokenValidator interface {
 
 // publicMethods sont les méthodes qui ne nécessitent pas d'authentification.
 var publicMethods = map[string]bool{
-	"/tribbae.v1.AuthService/Register":               true,
-	"/tribbae.v1.AuthService/Login":                  true,
-	"/tribbae.v1.AuthService/RefreshToken":           true,
+	"/tribbae.v1.AuthService/Register":     true,
+	"/tribbae.v1.AuthService/Login":        true,
+	"/tribbae.v1.AuthService/RefreshToken": true,
+	// Mot de passe oublié : par définition sans session
+	"/tribbae.v1.AuthService/RequestPasswordReset":   true,
+	"/tribbae.v1.AuthService/ResetPassword":          true,
 	"/tribbae.v1.FolderService/GetSharedFolder":      true,
 	"/tribbae.v1.FolderService/ListCommunityFolders": true,
 	"/tribbae.v1.FolderService/ListTopFolders":       true,

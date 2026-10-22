@@ -40,6 +40,28 @@ message RefreshTokenResponse {
   string token = 1;
 }
 
+// Mot de passe oublié : envoie un lien de réinitialisation par email. La
+// réponse est la même que l'adresse ait un compte ou non.
+message RequestPasswordResetRequest {
+  string email = 1;
+}
+
+message RequestPasswordResetResponse {}
+
+// Nouveau mot de passe choisi depuis le lien reçu par email. Les sessions
+// ouvertes avant sont fermées ; la réponse ouvre une nouvelle session.
+message ResetPasswordRequest {
+  string token = 1;
+  string password = 2;
+}
+
+message ResetPasswordResponse {
+  string user_id = 1;
+  string token = 2;
+  string display_name = 3;
+  bool is_admin = 4;
+}
+
 // --- Service ---
 
 service AuthService {
@@ -58,6 +80,18 @@ service AuthService {
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {
     option (google.api.http) = {
       post: "/v1/auth/refresh"
+      body: "*"
+    };
+  }
+  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (RequestPasswordResetResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/password/forgot"
+      body: "*"
+    };
+  }
+  rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/password/reset"
       body: "*"
     };
   }

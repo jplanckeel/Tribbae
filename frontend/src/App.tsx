@@ -8,6 +8,7 @@ import FolderDetail from "./pages/FolderDetail";
 import Home from "./pages/Home";
 import LinkDetail from "./pages/LinkDetail";
 import MyIdeas from "./pages/MyIdeas";
+import { ForgotPassword, NewPassword } from "./pages/Password";
 import SharedFolder from "./pages/SharedFolder";
 import ShareTarget from "./pages/ShareTarget";
 import Shopping from "./pages/Shopping";
@@ -27,6 +28,8 @@ const router = createBrowserRouter([
     children: [
       { path: "/bienvenue", element: <Welcome /> },
       { path: "/connexion", element: <Auth /> },
+      { path: "/mot-de-passe/oublie", element: <ForgotPassword /> },
+      { path: "/mot-de-passe/nouveau", element: <NewPassword /> },
       { path: "/share/:token", element: <SharedFolder /> },
     ],
   },

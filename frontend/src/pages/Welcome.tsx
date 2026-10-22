@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { Link as RouterLink, Navigate, useNavigate, useSearchParams } from "react-router";
 import welcome from "../assets/welcome.jpg";
 import Icon from "../components/Icon";
@@ -57,6 +57,22 @@ export default function Welcome() {
   );
 }
 
+/** Mise en page des écrans de compte : soleil et tipi en haut, formulaire dessous. */
+export function AuthShell({ back = "/bienvenue", children }: { back?: string; children: ReactNode }) {
+  return (
+    <div className="flex min-h-dvh flex-col bg-braise">
+      <div className="relative flex h-[200px] shrink-0 items-end justify-center overflow-hidden md:h-[240px]">
+        <div aria-hidden="true" className="absolute -bottom-[170px] left-1/2 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-soleil" />
+        <RouterLink to={back} aria-label="Retour" className="absolute top-5 left-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/60 hover:bg-white/80">
+          <Icon name="chevronLeft" size={22} />
+        </RouterLink>
+        <span className="relative mb-0"><TipiMark size={120} /></span>
+      </div>
+      <div className="flex flex-1 justify-center rounded-t-[32px] bg-sable px-6 pt-8 pb-10">{children}</div>
+    </div>
+  );
+}
+
 export function Auth() {
   const session = useSession();
   const navigate = useNavigate();
@@ -102,88 +118,88 @@ export function Auth() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-braise">
+    <AuthShell>
       <Seo title={register ? "Créer ma tribu · Tribbae" : "Connexion · Tribbae"} noindex />
-      <div className="relative flex h-[200px] shrink-0 items-end justify-center overflow-hidden md:h-[240px]">
-        <div aria-hidden="true" className="absolute -bottom-[170px] left-1/2 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-soleil" />
-        <RouterLink to="/bienvenue" aria-label="Retour" className="absolute top-5 left-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/60 hover:bg-white/80">
-          <Icon name="chevronLeft" size={22} />
-        </RouterLink>
-        <span className="relative mb-0"><TipiMark size={120} /></span>
-      </div>
-      <div className="flex flex-1 justify-center rounded-t-[32px] bg-sable px-6 pt-8 pb-10">
-        <form onSubmit={submit} className="flex w-full max-w-md flex-col gap-4" noValidate>
-          <div className="flex flex-col gap-1">
-            <h1 className="font-display text-[32px] leading-none font-extrabold tracking-[-0.8px]">
-              {register ? "Créer ma tribu" : "Bon retour !"}
-            </h1>
-            <p className="text-[15px] text-sec">
-              {register ? "Quelques secondes et votre tipi est monté." : "Retrouvez les idées de votre tribu."}
-            </p>
-          </div>
+      <form onSubmit={submit} className="flex w-full max-w-md flex-col gap-4" noValidate>
+        <div className="flex flex-col gap-1">
+          <h1 className="font-display text-[32px] leading-none font-extrabold tracking-[-0.8px]">
+            {register ? "Créer ma tribu" : "Bon retour !"}
+          </h1>
+          <p className="text-[15px] text-sec">
+            {register ? "Quelques secondes et votre tipi est monté." : "Retrouvez les idées de votre tribu."}
+          </p>
+        </div>
 
-          {register && (
-            <Field
-              label="Nom de la tribu ou prénom"
-              autoComplete="nickname"
-              required
-              maxLength={60}
-              placeholder="Dupont"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              hint={name.trim() ? `On vous appellera « La tribu ${name.trim()} »` : undefined}
-            />
-          )}
+        {register && (
           <Field
-            label="Email"
-            type="email"
-            autoComplete="email"
-            inputMode="email"
+            label="Nom de la tribu ou prénom"
+            autoComplete="nickname"
             required
-            placeholder="vous@exemple.fr"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            maxLength={60}
+            placeholder="Dupont"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            hint={name.trim() ? `On vous appellera « La tribu ${name.trim()} »` : undefined}
           />
-          <div className="relative">
-            <Field
-              label="Mot de passe"
-              type={showPwd ? "text" : "password"}
-              autoComplete={register ? "new-password" : "current-password"}
-              required
-              minLength={register ? 8 : undefined}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              hint={register ? "8 caractères minimum" : undefined}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPwd((v) => !v)}
-              aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-              aria-pressed={showPwd}
-              className="absolute top-[34px] right-2 flex h-10 w-10 items-center justify-center rounded-small text-muted hover:text-ecorce"
-            >
-              <Icon name="eye" size={20} />
-            </button>
-          </div>
-
-          {error && <ErrorNote>{error}</ErrorNote>}
-
-          {register && (
-            <p className="text-center text-[13px] text-sec">
-              Vos idées restent privées tant que vous ne les partagez pas. Pour savoir ce que nous conservons et comment
-              supprimer votre compte, lisez la{" "}
-              <RouterLink to="/confidentialite" className="font-semibold text-terracotta">politique de confidentialité</RouterLink>.
-            </p>
-          )}
-
-          <Button type="submit" loading={busy} block className="!h-14 text-base" disabled={!email || !password || (register && !name.trim())}>
-            {register ? "Créer ma tribu" : "Se connecter"}
-          </Button>
-          <button type="button" onClick={switchMode} className="text-center text-sm font-semibold text-terracotta hover:text-terracotta-dark">
-            {register ? "J'ai déjà un compte" : "Pas encore de compte ? Créer ma tribu"}
+        )}
+        <Field
+          label="Email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          required
+          placeholder="vous@exemple.fr"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <div className="relative">
+          <Field
+            label="Mot de passe"
+            type={showPwd ? "text" : "password"}
+            autoComplete={register ? "new-password" : "current-password"}
+            required
+            minLength={register ? 8 : undefined}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            hint={register ? "8 caractères minimum" : undefined}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPwd((v) => !v)}
+            aria-label={showPwd ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+            aria-pressed={showPwd}
+            className="absolute top-[34px] right-2 flex h-10 w-10 items-center justify-center rounded-small text-muted hover:text-ecorce"
+          >
+            <Icon name="eye" size={20} />
           </button>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        {!register && (
+          <RouterLink
+            to={email.trim() ? `/mot-de-passe/oublie?email=${encodeURIComponent(email.trim())}` : "/mot-de-passe/oublie"}
+            className="-mt-2 self-end text-sm font-semibold text-terracotta hover:text-terracotta-dark"
+          >
+            Mot de passe oublié ?
+          </RouterLink>
+        )}
+
+        {error && <ErrorNote>{error}</ErrorNote>}
+
+        {register && (
+          <p className="text-center text-[13px] text-sec">
+            Vos idées restent privées tant que vous ne les partagez pas. Pour savoir ce que nous conservons et comment
+            supprimer votre compte, lisez la{" "}
+            <RouterLink to="/confidentialite" className="font-semibold text-terracotta">politique de confidentialité</RouterLink>.
+          </p>
+        )}
+
+        <Button type="submit" loading={busy} block className="!h-14 text-base" disabled={!email || !password || (register && !name.trim())}>
+          {register ? "Créer ma tribu" : "Se connecter"}
+        </Button>
+        <button type="button" onClick={switchMode} className="text-center text-sm font-semibold text-terracotta hover:text-terracotta-dark">
+          {register ? "J'ai déjà un compte" : "Pas encore de compte ? Créer ma tribu"}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

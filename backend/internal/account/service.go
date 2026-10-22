@@ -85,6 +85,13 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 		{"followers", "follows", bson.M{"following_id": userID}},
 		{"tribe", "tribes", bson.M{"members.user_id": userID}},
 	}
+	// Demande de mot de passe oublié en cours : sa date seulement, pas le jeton
+	var reset bson.M
+	if err := s.col("password_resets").FindOne(ctx, bson.M{"_id": oid}).Decode(&reset); err == nil {
+		out["passwordReset"] = bson.M{"createdAt": reset["created_at"], "expiresAt": reset["expires_at"]}
+	} else if !errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, fmt.Errorf("password_resets: %w", err)
+	}
 	for _, sec := range sections {
 		docs, err := find(sec.col, sec.filter)
 		if err != nil {
@@ -211,6 +218,7 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		{"comments", bson.M{"user_id": userID}},
 		{"follows", bson.M{"$or": bson.A{bson.M{"follower_id": userID}, bson.M{"following_id": userID}}}},
 		{"children", bson.M{"ownerId": oid}},
+		{"password_resets", bson.M{"_id": oid}},
 	}
 	for _, d := range deletes {
 		if _, err := s.col(d.col).DeleteMany(ctx, d.filter); err != nil {

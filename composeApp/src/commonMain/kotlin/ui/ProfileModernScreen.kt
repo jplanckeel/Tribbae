@@ -643,7 +643,13 @@ private fun SimpleAuthDialog(
     var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showForgot by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    if (showForgot) {
+        ForgotPasswordDialog(authRepository = authRepository, initialEmail = email.trim(), onDismiss = { showForgot = false })
+        return
+    }
 
     AlertDialog(onDismissRequest = { if (!isLoading) onDismiss() }) {
         Surface(
@@ -744,6 +750,16 @@ private fun SimpleAuthDialog(
                         focusedLabelColor = Color(0xFFC8492C)
                     )
                 )
+
+                if (isLoginMode) {
+                    TextButton(
+                        onClick = { if (!isLoading) showForgot = true },
+                        modifier = Modifier.align(Alignment.End),
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                    ) {
+                        Text("Mot de passe oublié ?", color = Color(0xFFC8492C), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
 
                 if (errorMessage != null) {
                     Surface(
