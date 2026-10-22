@@ -1,7 +1,8 @@
 # Mises à jour automatiques des dépendances.
 # Une entrée par technologie ; dans chacune, les mises à jour sont regroupées
 # en une PR par type de version (patch, minor, major) pour limiter le bruit.
-# Messages au format Conventional Commits : build(deps) pour le code, ci(deps) pour les actions.
+# Messages Conventional Commits de type « deps » (« deps: bump … ») : ils apparaissent
+# dans la section Dependencies du changelog généré par release-please.
 version: 2
 
 updates:
@@ -16,8 +17,7 @@ updates:
     cooldown:
       default-days: 3
     commit-message:
-      prefix: ci
-      include: scope
+      prefix: deps
     labels: [dependencies, github-actions]
     groups:
       actions-patch:
@@ -38,8 +38,7 @@ updates:
     cooldown:
       default-days: 3
     commit-message:
-      prefix: build
-      include: scope
+      prefix: deps
     labels: [dependencies, go]
     groups:
       go-patch:
@@ -60,8 +59,7 @@ updates:
     cooldown:
       default-days: 3
     commit-message:
-      prefix: build
-      include: scope
+      prefix: deps
     labels: [dependencies, typescript]
     groups:
       npm-patch:
@@ -82,8 +80,7 @@ updates:
     cooldown:
       default-days: 3
     commit-message:
-      prefix: build
-      include: scope
+      prefix: deps
     labels: [dependencies, kotlin]
     groups:
       kotlin-patch:
@@ -104,8 +101,7 @@ updates:
     cooldown:
       default-days: 3
     commit-message:
-      prefix: build
-      include: scope
+      prefix: deps
     labels: [dependencies, docker]
     groups:
       docker-patch:
@@ -126,8 +122,7 @@ updates:
     cooldown:
       default-days: 3
     commit-message:
-      prefix: build
-      include: scope
+      prefix: deps
     labels: [dependencies, docker]
     groups:
       compose-patch:
