@@ -26,6 +26,10 @@ type Config struct {
 	OllamaNumThread int
 	AdminPassword   string
 	AllowedOrigins  []string
+	// Emails transactionnels (Brevo) : sans clé, ils sont seulement journalisés
+	BrevoAPIKey  string
+	MailFrom     string
+	MailFromName string
 }
 
 // insecureJWTSecret est la valeur d'exemple de .env.example : elle n'est
@@ -48,6 +52,9 @@ func Load() *Config {
 		OllamaNumThread: getEnvInt("OLLAMA_NUM_THREAD", 0),
 		AdminPassword:   os.Getenv("ADMIN_PASSWORD"),
 		AllowedOrigins:  splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
+		BrevoAPIKey:     os.Getenv("BREVO_API_KEY"),
+		MailFrom:        getEnv("MAIL_FROM", "tribbae@bananaops.cloud"),
+		MailFromName:    getEnv("MAIL_FROM_NAME", "Tribbae"),
 	}
 }
 

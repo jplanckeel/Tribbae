@@ -152,3 +152,38 @@ func TestLeaveAndOwnerTransfer(t *testing.T) {
 		t.Errorf("retrait par le créateur : %v", err)
 	}
 }
+
+type notified struct{ email, name, inviter, tribe string }
+
+type fakeNotifier struct{ sent []notified }
+
+func (f *fakeNotifier) TribeMemberAdded(email, name, inviterName, tribeName string) {
+	f.sent = append(f.sent, notified{email, name, inviterName, tribeName})
+}
+
+func TestAddedMemberIsNotifiedByEmail(t *testing.T) {
+	svc, db, cleanup := setup(t)
+	defer cleanup()
+	ctx := context.Background()
+	n := &fakeNotifier{}
+	svc.SetNotifier(n)
+	alice := addUser(t, db, "alice@ex.fr", "Alice")
+	addUser(t, db, "bob@ex.fr", "Bob")
+	if _, err := svc.Rename(ctx, alice, "Les Martin"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := svc.AddMember(ctx, alice, "bob@ex.fr"); err != nil {
+		t.Fatal(err)
+	}
+	want := notified{"bob@ex.fr", "Bob", "Alice", "Les Martin"}
+	if len(n.sent) != 1 || n.sent[0] != want {
+		t.Fatalf("emails = %+v, want [%+v]", n.sent, want)
+	}
+	// Un ajout refusé n'envoie rien
+	_, _ = svc.AddMember(ctx, alice, "bob@ex.fr")
+	_, _ = svc.AddMember(ctx, alice, "inconnu@ex.fr")
+	if len(n.sent) != 1 {
+		t.Errorf("email envoyé pour un ajout refusé : %+v", n.sent)
+	}
+}

@@ -35,6 +35,10 @@ services:
       OLLAMA_NUM_THREAD: ${OLLAMA_NUM_THREAD:-2}
       # Compte admin tribbae@bananaops.cloud (≥ 12 caractères). Remplace aussi l'ancien mot de passe par défaut.
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      # Emails transactionnels (Brevo) ; sans clé, ils sont seulement journalisés
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-tribbae@bananaops.cloud}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Tribbae}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tribbae-backend.rule=Host(`${BACKEND_HOST:-tribbae.bananaops.cloud}`)"

@@ -118,6 +118,12 @@ export default function Privacy() {
           voit notre serveur, pas vous. En revanche, les images des idées s'affichent depuis le site d'origine, qui
           reçoit alors, comme pour toute image du web, l'adresse IP de votre appareil.
         </p>
+        <p>
+          Les emails liés à votre compte (bienvenue, ajout à une tribu, confirmation de suppression) sont envoyés par{" "}
+          <a href="https://www.brevo.com/fr/legal/privacypolicy/" className="font-semibold text-terracotta" rel="noopener" target="_blank">Brevo</a>{" "}
+          (France), qui reçoit pour cela votre adresse email, votre nom et le contenu du message. Nous n'envoyons ni
+          publicité ni lettre d'information.
+        </p>
       </Section>
 
       <Section title="Mesure d'audience">

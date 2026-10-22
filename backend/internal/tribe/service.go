@@ -72,14 +72,23 @@ type userDoc struct {
 	DisplayName string             `bson:"display_name"`
 }
 
+// Notifier prévient par email (mail.Mailer).
+type Notifier interface {
+	TribeMemberAdded(email, name, inviterName, tribeName string)
+}
+
 type Service struct {
 	col     *mongo.Collection
 	userCol *mongo.Collection
+	notify  Notifier
 }
 
 func NewService(col, userCol *mongo.Collection) *Service {
 	return &Service{col: col, userCol: userCol}
 }
+
+// SetNotifier active l'email prévenant un compte ajouté à une tribu.
+func (s *Service) SetNotifier(n Notifier) { s.notify = n }
 
 // find retourne la tribu enregistrée de userID, ou nil.
 func (s *Service) find(ctx context.Context, userID string) (*Tribe, error) {
@@ -172,7 +181,8 @@ func (s *Service) Rename(ctx context.Context, userID, name string) (*Tribe, erro
 }
 
 // AddMember ajoute le compte d'email donné à la tribu de userID. Il voit
-// aussitôt la tribu ; son propre contenu n'est partagé qu'après sa confirmation.
+// aussitôt la tribu ; son propre contenu n'est partagé qu'après sa confirmation,
+// et un email le prévient de son ajout.
 func (s *Service) AddMember(ctx context.Context, userID, email string) (*Tribe, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	if email == "" {
@@ -223,6 +233,13 @@ func (s *Service) AddMember(ctx context.Context, userID, email string) (*Tribe, 
 	}
 	if res.ModifiedCount == 0 {
 		return nil, ErrAlreadyMember
+	}
+	if s.notify != nil {
+		inviter := ""
+		if u, err := s.user(ctx, userID); err == nil {
+			inviter = u.DisplayName
+		}
+		s.notify.TribeMemberAdded(invitee.Email, invitee.DisplayName, inviter, t.Name)
 	}
 	return s.find(ctx, userID)
 }

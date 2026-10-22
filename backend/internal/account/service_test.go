@@ -131,3 +131,30 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		t.Errorf("seconde suppression : %v, want ErrNotFound", err)
 	}
 }
+
+type fakeNotifier struct{ emails, names []string }
+
+func (f *fakeNotifier) AccountDeleted(email, name string) {
+	f.emails = append(f.emails, email)
+	f.names = append(f.names, name)
+}
+
+// La suppression est confirmée par email, une seule fois.
+func TestDeleteSendsConfirmationEmail(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+	aliceID := insert(t, db, "users", bson.M{"email": "alice@example.com", "display_name": "Alice", "password": "x"})
+	svc := NewService(db, nil)
+	n := &fakeNotifier{}
+	svc.SetNotifier(n)
+
+	if err := svc.Delete(ctx, aliceID.Hex()); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Delete(ctx, aliceID.Hex()); err != ErrNotFound {
+		t.Fatalf("seconde suppression : %v, want ErrNotFound", err)
+	}
+	if len(n.emails) != 1 || n.emails[0] != "alice@example.com" || n.names[0] != "Alice" {
+		t.Errorf("emails = %v %v, want une confirmation à alice@example.com", n.emails, n.names)
+	}
+}

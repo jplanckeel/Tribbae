@@ -28,6 +28,7 @@ import (
 	"github.com/tribbae/backend/internal/httpx"
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/link"
+	"github.com/tribbae/backend/internal/mail"
 	"github.com/tribbae/backend/internal/preview"
 	"github.com/tribbae/backend/internal/seo"
 	"github.com/tribbae/backend/internal/tribe"
@@ -71,6 +72,10 @@ func main() {
 	linkSvc.SetTribePeers(tribeSvc.Peers)
 	folderSvc.SetTribePeers(tribeSvc.Peers)
 	childSvc.SetTribePeers(tribeSvc.Peers)
+	// Emails transactionnels (Brevo) : bienvenue, ajout à une tribu, suppression du compte
+	mailer := mail.New(mail.NewSender(cfg.BrevoAPIKey, cfg.MailFrom, cfg.MailFromName), cfg.SiteURL)
+	authSvc.SetNotifier(mailer)
+	tribeSvc.SetNotifier(mailer)
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
 	commentSvc := comment.NewService(database.Col("comments"), database.Col("links"), database.Col("users"))
 	aiSvc := ai.NewService(ai.Config{
@@ -105,7 +110,9 @@ func main() {
 
 	aiH := ai.NewHandler(aiSvc, bearerUser)
 	// Droits RGPD : export des données et suppression du compte
-	accountH := account.NewHandler(account.NewService(database.DB(), tribeSvc), authSvc, bearerUser)
+	accountSvc := account.NewService(database.DB(), tribeSvc)
+	accountSvc.SetNotifier(mailer)
+	accountH := account.NewHandler(accountSvc, authSvc, bearerUser)
 
 	// Serveur gRPC
 	grpcServer := grpc.NewServer(
@@ -217,6 +224,8 @@ func main() {
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
 	grpcServer.GracefulStop()
+	// Laisse partir les emails en cours (confirmation de suppression…)
+	mailer.Wait(shutdownCtx)
 }
 
 func withAI(aiH http.Handler, next http.Handler) http.Handler {
