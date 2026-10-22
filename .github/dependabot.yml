@@ -1,0 +1,138 @@
+# Mises à jour automatiques des dépendances.
+# Une entrée par technologie ; dans chacune, les mises à jour sont regroupées
+# en une PR par type de version (patch, minor, major) pour limiter le bruit.
+# Messages au format Conventional Commits : build(deps) pour le code, ci(deps) pour les actions.
+version: 2
+
+updates:
+  # ── GitHub Actions (épinglées par SHA, la version suit en commentaire) ──
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: ci
+      include: scope
+    labels: [dependencies, github-actions]
+    groups:
+      actions-patch:
+        update-types: [patch]
+      actions-minor:
+        update-types: [minor]
+      actions-major:
+        update-types: [major]
+
+  # ── Go (backend) ──
+  - package-ecosystem: gomod
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: build
+      include: scope
+    labels: [dependencies, go]
+    groups:
+      go-patch:
+        update-types: [patch]
+      go-minor:
+        update-types: [minor]
+      go-major:
+        update-types: [major]
+
+  # ── TypeScript / npm (frontend) ──
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: build
+      include: scope
+    labels: [dependencies, typescript]
+    groups:
+      npm-patch:
+        update-types: [patch]
+      npm-minor:
+        update-types: [minor]
+      npm-major:
+        update-types: [major]
+
+  # ── Kotlin / Gradle (Android, catalogue gradle/libs.versions.toml) ──
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: build
+      include: scope
+    labels: [dependencies, kotlin]
+    groups:
+      kotlin-patch:
+        update-types: [patch]
+      kotlin-minor:
+        update-types: [minor]
+      kotlin-major:
+        update-types: [major]
+
+  # ── Docker (images de base du Dockerfile) ──
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: build
+      include: scope
+    labels: [dependencies, docker]
+    groups:
+      docker-patch:
+        update-types: [patch]
+      docker-minor:
+        update-types: [minor]
+      docker-major:
+        update-types: [major]
+
+  # ── Docker Compose (MongoDB, Ollama…) ──
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    cooldown:
+      default-days: 3
+    commit-message:
+      prefix: build
+      include: scope
+    labels: [dependencies, docker]
+    groups:
+      compose-patch:
+        update-types: [patch]
+      compose-minor:
+        update-types: [minor]
+      compose-major:
+        update-types: [major]
