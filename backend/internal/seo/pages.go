@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	siteName        = "Tribbae"
-	siteTagline     = "Tribbae — Les idées de la famille au même endroit"
+	siteName    = "Tribbae"
+	siteTagline = "Tribbae — Les idées de la famille au même endroit"
+	// homeDescription : la description de l'accueil, complète en moins de 155 caractères
+	homeDescription = "Tribbae, l'appli gratuite des idées en famille : sorties, recettes, cadeaux, livres. Rangez-les en dossiers et partagez-les avec votre tribu."
 	siteDescription = "Tribbae rassemble les idées de la famille : sorties, activités, recettes, cadeaux, livres et déco. Rangez-les en dossiers, partagez-les avec votre tribu et piochez dans celles des autres familles."
 	listLimit       = 30
 )
@@ -98,7 +100,7 @@ func (h *Handler) home(ctx context.Context) (*Page, error) {
 		return nil, err
 	}
 	p := &Page{
-		Status: http.StatusOK, Title: siteTagline, Description: siteDescription, Path: "/",
+		Status: http.StatusOK, Title: siteTagline, Description: homeDescription, Path: "/",
 		H1: "Les idées de la famille au même endroit", Intro: siteDescription,
 		Sections: []Section{categorySection(), ideaSection("Dernières idées partagées", ideas)},
 	}
@@ -163,8 +165,9 @@ func (h *Handler) idea(ctx context.Context, id string) (*Page, error) {
 	c := categoryByKey(i.Category)
 	path := "/links/" + i.ID
 	p := &Page{
-		Status: http.StatusOK, Title: i.Title + " · " + c.Label + " · " + siteName,
+		Status: http.StatusOK, Title: ideaTitle(i),
 		Description: ideaDescription(i, c), Path: path, Image: absoluteImage(i.ImageURL), OGType: "article",
+		Published: i.Created, Modified: i.Updated, Section: c.Label,
 		Breadcrumb: []Crumb{{"Accueil", "/"}, {c.Plural, "/category/" + c.Slug}, {i.Title, path}},
 		H1:         i.Title, Intro: i.Description, Tags: i.Tags, Ingredients: i.Ingredients,
 		Source: safeURL(i.URL),
@@ -296,23 +299,6 @@ func ideaFacts(i *Idea) []Fact {
 		facts = append(facts, Fact{"Date", frenchDate(i.EventDate)})
 	}
 	return facts
-}
-
-// ideaDescription : la description de l'idée, ou à défaut une phrase tirée de
-// ses informations.
-func ideaDescription(i *Idea, c category) string {
-	if strings.TrimSpace(i.Description) != "" {
-		return i.Description
-	}
-	d := c.Label + " : " + i.Title
-	if i.Author != "" {
-		d += ", partagée par " + i.Author
-	}
-	d += " sur Tribbae."
-	for _, f := range ideaFacts(i) {
-		d += " " + f.Label + " : " + f.Value + "."
-	}
-	return d
 }
 
 func ideaTitles(ideas []Idea, n int) string {

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 const testIndex = `<!doctype html>
@@ -132,7 +133,8 @@ func TestIdeaPageHasOwnHeadContentAndSchema(t *testing.T) {
 	}
 	for _, want := range []string{
 		`<link data-seo rel="canonical" href="https://tribbae.test/links/r1" />`,
-		`<meta data-seo name="description" content="Une pâte inratable." />`,
+		`<meta data-seo name="description" content="Recette partagée par Alice sur Tribbae : Une pâte inratable." />`,
+		`<meta property="article:section" content="Recette" />`,
 		`<meta property="og:image" content="https://img.example/crepes.jpg" />`,
 		`<meta property="og:type" content="article" />`,
 		`<li>250 g de farine</li>`,
@@ -173,7 +175,7 @@ func TestEventSchemaAndUnsafeImageIgnored(t *testing.T) {
 		t.Error("une image javascript: ne doit jamais être publiée")
 	}
 	// Sans description, une phrase est composée à partir des informations
-	if !strings.Contains(body, `content="Sortie : Fête de la courge, partagée par Bob sur Tribbae. Lieu : Ferme des Saules. Date : 25 octobre 2026."`) {
+	if !strings.Contains(body, `content="Sortie partagée par Bob sur Tribbae : Fête de la courge. Lieu : Ferme des Saules. Date : 25 octobre 2026."`) {
 		t.Errorf("description générée absente :\n%s", body)
 	}
 }
@@ -277,5 +279,54 @@ func TestPlusDe(t *testing.T) {
 		if got := plusDe(in); got != want {
 			t.Errorf("plusDe(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestCleanTitle(t *testing.T) {
+	for in, want := range map[string]string{
+		"Le voleur de citrouilles - cartonné - Alice Hemming, Nicola Slater, Nicola Slater - Achat Livre | fnac": "Le voleur de citrouilles",
+		"Le voleur de citrouilles - Alice Hemming | fnac":                                                        "Le voleur de citrouilles - Alice Hemming",
+		"Mini World Lyon - Une super sortie loisirs en famille à Lyon":                                           "Mini World Lyon",
+		"Le parc de la Tête d’or | Ville de Lyon":                                                                "Le parc de la Tête d’or",
+		"Inexpensive Rabbit Arts and Crafts for Kids to Make [Video] | Bunny arts and crafts for kids":           "Inexpensive Rabbit Arts and Crafts for Kids to…",
+		"Le ciel des tout-petits – Planetarium":                                                                  "Le ciel des tout-petits – Planetarium",
+		"Un titre unique beaucoup trop long pour tenir dans un résultat de recherche":                            "Un titre unique beaucoup trop long pour tenir…",
+		"Livre": "Livre",
+	} {
+		if got := cleanTitle(in); got != want {
+			t.Errorf("cleanTitle(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestIdeaDescription(t *testing.T) {
+	book := categoryByKey("LINK_CATEGORY_LIVRE")
+	for _, c := range []struct {
+		idea Idea
+		want string
+	}{
+		{Idea{Title: "Le voleur", Description: "Un album.", AgeRange: "3–6 ans", Author: "Alice"}, "Livre partagé par Alice sur Tribbae, pour les 3–6 ans : Un album."},
+		{Idea{Title: "Le voleur", Description: "Le voleur", AgeRange: "Tous âges"}, "Livre partagé sur Tribbae, pour tous les âges : Le voleur."},
+		{Idea{Title: "Le voleur", AgeRange: "petits", Price: "12 €"}, "Livre partagé sur Tribbae, âge : petits : Le voleur. Prix : 12 €."},
+	} {
+		if got := ideaDescription(&c.idea, book); got != c.want {
+			t.Errorf("ideaDescription = %q, want %q", got, c.want)
+		}
+	}
+}
+
+func TestHomeDescriptionIsNotClipped(t *testing.T) {
+	if n := utf8.RuneCountInString(homeDescription); n > 155 {
+		t.Errorf("homeDescription : %d caractères, 155 au plus", n)
+	}
+}
+
+func TestArticleMetaOnlyOnIdeas(t *testing.T) {
+	h := newTestHandler(t)
+	if body := get(t, h, "/links/e1").Body.String(); !strings.Contains(body, `<meta property="article:section" content="Sortie" />`) {
+		t.Error("article:section absent d'une idée")
+	}
+	if body := get(t, h, "/").Body.String(); strings.Contains(body, "article:") {
+		t.Error("l'accueil n'est pas un article")
 	}
 }

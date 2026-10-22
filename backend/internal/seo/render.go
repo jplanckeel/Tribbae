@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -21,6 +22,10 @@ type Page struct {
 	OGType      string // website, article…
 	NoIndex     bool
 	JSONLD      []any
+
+	// Article (og:type article) : dates et catégorie
+	Published, Modified time.Time
+	Section             string
 
 	// Contenu
 	Breadcrumb  []Crumb
@@ -48,6 +53,7 @@ const (
 	defaultImageWidth   = 1200
 	defaultImageHeight  = 630
 	maxDescriptionRunes = 160
+	maxArticleTags      = 10
 )
 
 var headTmpl = template.Must(template.New("head").Parse(`<title data-seo>{{.Title}}</title>
@@ -62,6 +68,14 @@ var headTmpl = template.Must(template.New("head").Parse(`<title data-seo>{{.Titl
     <meta property="og:description" content="{{.Description}}" />
     {{- if .Canonical}}
     <meta property="og:url" content="{{.Canonical}}" />{{end}}
+    {{- if .Published}}
+    <meta property="article:published_time" content="{{.Published}}" />{{end}}
+    {{- if .Modified}}
+    <meta property="article:modified_time" content="{{.Modified}}" />{{end}}
+    {{- if .Section}}
+    <meta property="article:section" content="{{.Section}}" />{{end}}
+    {{- range .ArticleTags}}
+    <meta property="article:tag" content="{{.}}" />{{end}}
     <meta property="og:image" content="{{.Image}}" />
     {{- if .ImageSize}}
     <meta property="og:image:width" content="{{index .ImageSize 0}}" />
@@ -102,6 +116,8 @@ var bodyTmpl = template.Must(template.New("body").Parse(`<main class="seo-fallba
 
 type headData struct {
 	Title, Description, Robots, Canonical, OGType, Image, ImageAlt string
+	Published, Modified, Section                                   string
+	ArticleTags                                                    []string
 	ImageSize                                                      []int
 	JSONLD                                                         []template.JS
 }
@@ -120,6 +136,16 @@ func (p *Page) head(site string) ([]byte, error) {
 	}
 	if p.NoIndex {
 		d.Robots = "noindex, follow"
+	}
+	if d.OGType == "article" {
+		if !p.Published.IsZero() {
+			d.Published = p.Published.UTC().Format(time.RFC3339)
+		}
+		if !p.Modified.IsZero() {
+			d.Modified = p.Modified.UTC().Format(time.RFC3339)
+		}
+		d.Section = p.Section
+		d.ArticleTags = p.Tags[:min(len(p.Tags), maxArticleTags)]
 	}
 	if p.Path != "" {
 		d.Canonical = site + p.Path
