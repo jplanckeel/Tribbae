@@ -1,0 +1,47 @@
+name: Release Please
+
+# À chaque push sur main, release-please tient à jour une PR « chore(main): release x.y.z »
+# (version + CHANGELOG.md calculés depuis les Conventional Commits).
+# Quand cette PR est mergée, il crée le tag et la release GitHub, puis on lance
+# le build APK + Docker. Un tag créé avec GITHUB_TOKEN ne déclenche pas d'autre
+# workflow : d'où l'appel direct à release.yml plutôt que le trigger sur tag.
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build:
+    name: Build release artifacts
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    secrets: inherit
