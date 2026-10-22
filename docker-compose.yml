@@ -28,8 +28,7 @@ services:
       BASE_URL: ${BASE_URL:-http://backend:8080}
       # Adresse publique (adresses canoniques, sitemap.xml, llms.txt, aperçus de partage)
       SITE_URL: ${SITE_URL:-https://tribbae.fr}
-      # Ancien domaine et www : les pages redirigent vers SITE_URL, l'API y reste servie
-      # (applications Android déjà installées)
+      # Ancien domaine et www : tout est redirigé vers SITE_URL
       REDIRECT_HOSTS: ${REDIRECT_HOSTS:-tribbae.bananaops.cloud,www.tribbae.fr}
       OLLAMA_URL: http://ollama:11434
       # Petit modèle pour un VPS 2 CPU sans GPU (téléchargé automatiquement au démarrage)

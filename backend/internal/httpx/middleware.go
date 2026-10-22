@@ -156,11 +156,11 @@ func MaxBody(n int64, next http.Handler) http.Handler {
 	})
 }
 
-// CanonicalHost redirige définitivement (301) les pages demandées sur un autre
+// CanonicalHost redirige définitivement tout ce qui est demandé sur un autre
 // nom du site (ancien domaine, www) vers canonical (ex. https://tribbae.fr),
-// en gardant le chemin et la requête. L'API (/v1/) reste servie telle quelle :
-// les applications déjà installées appellent encore l'ancien domaine, et une
-// redirection casserait leurs POST. Seuls les noms listés sont redirigés.
+// en gardant le chemin et la requête : 301 pour les pages, 308 pour les autres
+// méthodes (l'appel garde sa méthode et son corps). Seuls les noms listés sont
+// redirigés, jamais les noms internes.
 func CanonicalHost(canonical string, hosts []string, next http.Handler) http.Handler {
 	redirect := map[string]bool{}
 	for _, h := range hosts {
@@ -174,8 +174,12 @@ func CanonicalHost(canonical string, hosts []string, next http.Handler) http.Han
 		if h, _, err := net.SplitHostPort(host); err == nil {
 			host = h
 		}
-		if redirect[host] && !strings.HasPrefix(r.URL.Path, "/v1/") && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
-			http.Redirect(w, r, canonical+r.URL.RequestURI(), http.StatusMovedPermanently)
+		if redirect[host] {
+			code := http.StatusPermanentRedirect
+			if r.Method == http.MethodGet || r.Method == http.MethodHead {
+				code = http.StatusMovedPermanently
+			}
+			http.Redirect(w, r, canonical+r.URL.RequestURI(), code)
 			return
 		}
 		next.ServeHTTP(w, r)

@@ -19,8 +19,8 @@ type Config struct {
 	// SiteURL : adresse publique du site (adresses canoniques, plan du site,
 	// aperçus, liens des emails et des partages)
 	SiteURL string
-	// RedirectHosts : autres noms du site (ancien domaine, www) dont les pages
-	// redirigent vers SiteURL ; l'API y reste servie
+	// RedirectHosts : autres noms du site (ancien domaine, www), redirigés
+	// vers SiteURL
 	RedirectHosts []string
 	OllamaURL     string
 	OllamaModel   string

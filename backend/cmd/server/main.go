@@ -196,7 +196,7 @@ func main() {
 	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, account.DeletePath: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
 	handler = httpx.CORS(cfg.AllowedOrigins, handler)
-	// Ancien domaine et www : les pages redirigent vers SITE_URL, l'API reste servie
+	// Ancien domaine et www : tout redirige vers SITE_URL
 	handler = httpx.CanonicalHost(cfg.SiteURL, cfg.RedirectHosts, handler)
 	handler = httpx.SecurityHeaders(handler)
 

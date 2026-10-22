@@ -62,9 +62,9 @@ func TestCanonicalHost(t *testing.T) {
 		{"GET", "tribbae.bananaops.cloud", "/dossiers/42?vue=liste", http.StatusMovedPermanently, "https://tribbae.fr/dossiers/42?vue=liste"},
 		{"HEAD", "www.tribbae.fr:443", "/", http.StatusMovedPermanently, "https://tribbae.fr/"},
 		{"GET", "tribbae.bananaops.cloud", "/sitemap.xml", http.StatusMovedPermanently, "https://tribbae.fr/sitemap.xml"},
-		// L'API reste servie sur l'ancien domaine (applications déjà installées)
-		{"GET", "tribbae.bananaops.cloud", "/v1/links", http.StatusTeapot, ""},
-		{"POST", "tribbae.bananaops.cloud", "/v1/auth/login", http.StatusTeapot, ""},
+		// L'API aussi ; un POST garde sa méthode (308)
+		{"GET", "tribbae.bananaops.cloud", "/v1/links", http.StatusMovedPermanently, "https://tribbae.fr/v1/links"},
+		{"POST", "tribbae.bananaops.cloud", "/v1/auth/login", http.StatusPermanentRedirect, "https://tribbae.fr/v1/auth/login"},
 		{"GET", "tribbae.fr", "/explorer", http.StatusTeapot, ""},
 		// Noms non listés (réseau interne, local) : jamais redirigés
 		{"GET", "backend:8080", "/", http.StatusTeapot, ""},
