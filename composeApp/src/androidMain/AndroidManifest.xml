@@ -37,6 +37,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="tribbae.bananaops.cloud" android:pathPrefix="/share/" />
             </intent-filter>
+            <!-- Lien « nouveau mot de passe » des emails : https://tribbae.bananaops.cloud/mot-de-passe/nouveau#<jeton> -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tribbae.bananaops.cloud" android:path="/mot-de-passe/nouveau" />
+            </intent-filter>
         </activity>
         <receiver
             android:name="data.ReminderReceiver"

@@ -24,6 +24,12 @@ data class RegisterRequest(
 )
 
 @Serializable
+data class ForgotPasswordRequest(val email: String)
+
+@Serializable
+data class ResetPasswordRequest(val token: String, val password: String)
+
+@Serializable
 data class AuthResponse(
     val userId: String = "",
     val token: String = "",
@@ -100,4 +106,37 @@ class AuthRepository(private val baseUrl: String = Backend.url) {
                 conn.disconnect()
             }
         }
+
+    /**
+     * Mot de passe oublié : le serveur envoie un lien par email si l'adresse a
+     * un compte (même réponse sinon).
+     */
+    suspend fun forgotPassword(email: String) {
+        post("/v1/auth/password/forgot", json.encodeToString(ForgotPasswordRequest.serializer(), ForgotPasswordRequest(email.trim())))
+    }
+
+    /** Nouveau mot de passe depuis le lien de l'email : ouvre une session. */
+    suspend fun resetPassword(token: String, password: String): AuthResponse =
+        json.decodeFromString(post("/v1/auth/password/reset", json.encodeToString(ResetPasswordRequest.serializer(), ResetPasswordRequest(token, password))))
+
+    private suspend fun post(path: String, body: String): String = withContext(Dispatchers.IO) {
+        val conn = URL("$baseUrl$path").openConnection() as HttpURLConnection
+        try {
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.doOutput = true
+            conn.connectTimeout = 10_000
+            conn.readTimeout = 10_000
+            OutputStreamWriter(conn.outputStream).use { it.write(body) }
+            val code = conn.responseCode
+            if (code in 200..299) {
+                BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
+            } else {
+                val error = conn.errorStream?.let { s -> BufferedReader(InputStreamReader(s)).use { it.readText() } }
+                throw Exception("HTTP $code: ${error ?: ""}")
+            }
+        } finally {
+            conn.disconnect()
+        }
+    }
 }

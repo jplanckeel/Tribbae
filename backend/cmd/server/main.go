@@ -75,6 +75,9 @@ func main() {
 	// Emails transactionnels (Brevo) : bienvenue, ajout à une tribu, suppression du compte
 	mailer := mail.New(mail.NewSender(cfg.BrevoAPIKey, cfg.MailFrom, cfg.MailFromName), cfg.SiteURL, cfg.SupportEmail)
 	authSvc.SetNotifier(mailer)
+	// Mot de passe oublié : lien vers l'écran « Nouveau mot de passe » du site
+	// (ouvert dans l'application Android quand elle est installée)
+	authSvc.SetPasswordReset(database.Col("password_resets"), strings.TrimRight(cfg.SiteURL, "/")+"/mot-de-passe/nouveau", mailer)
 	tribeSvc.SetNotifier(mailer)
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
 	commentSvc := comment.NewService(database.Col("comments"), database.Col("links"), database.Col("users"))
@@ -193,7 +196,7 @@ func main() {
 	handler = withAI(aiH, handler)
 	handler = withAccount(accountH, handler)
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true}, handler)
-	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, account.DeletePath: true}, handler)
+	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, account.DeletePath: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
 	handler = httpx.CORS(cfg.AllowedOrigins, handler)
 	handler = httpx.SecurityHeaders(handler)

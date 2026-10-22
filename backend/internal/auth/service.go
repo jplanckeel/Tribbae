@@ -24,12 +24,19 @@ type User struct {
 	IsAdmin     bool               `bson:"is_admin"`
 	IsPremium   bool               `bson:"is_premium"` // Tribbae+ (accès Perplexity)
 	CreatedAt   time.Time          `bson:"created_at"`
+	// PasswordChangedAt : les sessions ouvertes avant sont refusées
+	PasswordChangedAt *time.Time `bson:"password_changed_at,omitempty"`
 }
 
 type Service struct {
 	col       *mongo.Collection
 	jwtSecret []byte
 	notify    Notifier
+
+	// Mot de passe oublié (reset.go)
+	resets      *mongo.Collection
+	resetURL    string
+	resetNotify ResetNotifier
 }
 
 // Notifier prévient par email (mail.Mailer).
@@ -142,23 +149,37 @@ func (s *Service) ValidateToken(tokenStr string) (string, error) {
 	if !ok {
 		return "", errors.New("invalid subject")
 	}
+	issuedAt, _ := claims["iat"].(float64)
 	// Un compte supprimé (RGPD) ne doit plus rien pouvoir faire, même avec un
-	// jeton encore valide : sinon il recréerait des données orphelines.
-	if !s.exists(userID) {
+	// jeton encore valide : sinon il recréerait des données orphelines. Après
+	// un changement de mot de passe, les sessions ouvertes avant sont fermées.
+	changedAt, ok := s.passwordChangedAt(userID)
+	if !ok {
 		return "", errors.New("account no longer exists")
+	}
+	if changedAt != nil && int64(issuedAt) < changedAt.Unix() {
+		return "", errors.New("session closed by a password change")
 	}
 	return userID, nil
 }
 
-func (s *Service) exists(userID string) bool {
+// passwordChangedAt retourne la date du dernier changement de mot de passe
+// (nil si jamais) et false si le compte n'existe pas.
+func (s *Service) passwordChangedAt(userID string) (*time.Time, bool) {
 	id, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
-		return false
+		return nil, false
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	n, err := s.col.CountDocuments(ctx, bson.M{"_id": id}, options.Count().SetLimit(1))
-	return err == nil && n > 0
+	var u struct {
+		PasswordChangedAt *time.Time `bson:"password_changed_at"`
+	}
+	err = s.col.FindOne(ctx, bson.M{"_id": id}, options.FindOne().SetProjection(bson.M{"password_changed_at": 1})).Decode(&u)
+	if err != nil {
+		return nil, false
+	}
+	return u.PasswordChangedAt, true
 }
 
 // CheckPassword vérifie le mot de passe d'un compte connecté, avant une

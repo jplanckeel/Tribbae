@@ -48,12 +48,14 @@ import viewmodel.LinkViewModel
 
 /**
  * Contenu reçu d'une autre application : lien ou texte partagé, lien de partage
- * de dossier. `id` distingue deux partages identiques successifs.
+ * de dossier, lien « nouveau mot de passe » d'un email. `id` distingue deux
+ * partages identiques successifs.
  */
 data class SharedContent(
     val url: String? = null,
     val title: String? = null,
     val folderToken: String? = null,
+    val resetToken: String? = null,
     val id: Long = System.nanoTime(),
 )
 
@@ -123,11 +125,14 @@ private fun ModernMainApp(
     LaunchedEffect(tab) { if (tab == NavDestination.HOME || tab == NavDestination.EXPLORE) vm.refreshCommunityIfStale() }
     // Pile d'écrans : retour = dépiler
     val stack = remember { mutableStateListOf<Screen>() }
+    // Lien « nouveau mot de passe » ouvert depuis l'email
+    var resetToken by remember { mutableStateOf<String?>(null) }
     // Partage reçu (au lancement ou app déjà ouverte) : on ouvre l'écran correspondant
     LaunchedEffect(incoming?.id) {
         val s = incoming ?: return@LaunchedEffect
         if (s.url != null || s.title != null) stack.add(Screen.IdeaForm(url = s.url, title = s.title))
         if (s.folderToken != null) stack.add(Screen.PublicFolder(shareToken = s.folderToken))
+        if (s.resetToken != null) resetToken = s.resetToken
     }
     var showAdd by remember { mutableStateOf(false) }
     var exploreQuery by remember { mutableStateOf("") }
@@ -276,6 +281,21 @@ private fun ModernMainApp(
                 }
                 }
             }
+                resetToken?.let { token ->
+                    NewPasswordDialog(
+                        token = token,
+                        authRepository = authRepository,
+                        onDismiss = { resetToken = null },
+                        onDone = { r ->
+                            // Lien d'un autre compte que celui connecté : on ne mélange pas leurs données
+                            if (sessionManager.isLoggedIn.value && sessionManager.userId.value != r.userId) vm.signOut()
+                            sessionManager.saveSession(r.userId, r.token, r.displayName, r.isAdmin)
+                            vm.initAuthenticatedClient(sessionManager)
+                            vm.syncWithBackend(sessionManager)
+                            resetToken = null
+                        },
+                    )
+                }
                 ModernBottomNav(
                     currentDestination = tab,
                     onNavigate = { d ->
