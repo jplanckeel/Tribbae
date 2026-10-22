@@ -425,7 +425,7 @@ private fun TribeContent(
                 MenuRow(Icons.Outlined.DeleteForever, "Supprimer mon compte", danger = true) { showSettings = false; showDelete = true }
                 dataMessage?.let { Text(it, fontSize = 13.sp, color = TextSec) }
                 Text(
-                    "Pour modifier votre mot de passe, écrivez à support@tribbae.com.",
+                    "Pour modifier votre mot de passe, écrivez à contact@tribbae.fr.",
                     fontSize = 14.sp, color = TextSec
                 )
                 MenuRow(Icons.Outlined.HelpOutline, "Aide & FAQ") { showSettings = false; onFaq() }

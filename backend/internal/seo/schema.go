@@ -28,7 +28,7 @@ func (h *Handler) siteGraph() obj {
 			{
 				"@type": "Organization", "@id": h.site + "/#organization", "name": siteName, "url": h.site + "/",
 				"logo":  obj{"@type": "ImageObject", "url": h.site + "/tribbae.jpg", "width": 1024, "height": 1024},
-				"email": "support@tribbae.com",
+				"email": "contact@tribbae.fr",
 			},
 			{
 				"@type": "WebApplication", "@id": h.site + "/#app", "name": siteName, "url": h.site + "/",

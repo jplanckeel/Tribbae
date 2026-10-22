@@ -127,7 +127,7 @@ private val faqSections = listOf(
         items = listOf(
             FaqItem(
                 "Comment changer mon mot de passe ?",
-                "La modification du mot de passe n'est pas encore disponible directement dans l'app. Contactez le support à support@tribbae.com pour obtenir de l'aide."
+                "La modification du mot de passe n'est pas encore disponible directement dans l'app. Contactez le support à contact@tribbae.fr pour obtenir de l'aide."
             ),
             FaqItem(
                 "Mes données sont-elles sécurisées ?",
@@ -135,7 +135,7 @@ private val faqSections = listOf(
             ),
             FaqItem(
                 "Comment supprimer mon compte ?",
-                "Pour supprimer votre compte et toutes vos données, contactez-nous à support@tribbae.com. La suppression est définitive et irréversible."
+                "Pour supprimer votre compte et toutes vos données, contactez-nous à contact@tribbae.fr. La suppression est définitive et irréversible."
             )
         )
     )
@@ -360,7 +360,7 @@ private fun ContactSupportCard() {
                     fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF3A211B)
                 )
                 Text(
-                    "Contactez-nous : support@tribbae.com",
+                    "Contactez-nous : contact@tribbae.fr",
                     fontSize = 12.sp, color = Color(0xFF6B5047)
                 )
             }
