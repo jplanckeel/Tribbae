@@ -10,10 +10,10 @@ func TestValidate(t *testing.T) {
 		wantErr bool
 	}{
 		{"local with example secret", Config{BaseURL: "http://localhost:8080", JWTSecret: insecureJWTSecret}, false},
-		{"prod with example secret", Config{BaseURL: "https://tribbae.bananaops.cloud", JWTSecret: insecureJWTSecret}, true},
-		{"prod with short secret", Config{BaseURL: "https://tribbae.bananaops.cloud", JWTSecret: "short"}, true},
-		{"prod with medium secret", Config{BaseURL: "https://tribbae.bananaops.cloud", JWTSecret: "0123456789abcdefXYZ"}, false},
-		{"prod with strong secret", Config{BaseURL: "https://tribbae.bananaops.cloud", JWTSecret: strong}, false},
+		{"prod with example secret", Config{BaseURL: "https://tribbae.fr", JWTSecret: insecureJWTSecret}, true},
+		{"prod with short secret", Config{BaseURL: "https://tribbae.fr", JWTSecret: "short"}, true},
+		{"prod with medium secret", Config{BaseURL: "https://tribbae.fr", JWTSecret: "0123456789abcdefXYZ"}, false},
+		{"prod with strong secret", Config{BaseURL: "https://tribbae.fr", JWTSecret: strong}, false},
 	}
 	for _, c := range cases {
 		if err := c.cfg.Validate(); (err != nil) != c.wantErr {

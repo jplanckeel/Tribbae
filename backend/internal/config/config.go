@@ -16,10 +16,14 @@ type Config struct {
 	Port      string
 	GRPCPort  string
 	BaseURL   string
-	// SiteURL : adresse publique du site (adresses canoniques, plan du site, aperçus)
-	SiteURL     string
-	OllamaURL   string
-	OllamaModel string
+	// SiteURL : adresse publique du site (adresses canoniques, plan du site,
+	// aperçus, liens des emails et des partages)
+	SiteURL string
+	// RedirectHosts : autres noms du site (ancien domaine, www), redirigés
+	// vers SiteURL
+	RedirectHosts []string
+	OllamaURL     string
+	OllamaModel   string
 	// OllamaKeepAlive : durée de maintien du modèle en mémoire entre deux demandes
 	OllamaKeepAlive string
 	// OllamaNumThread : threads CPU pour l'inférence (0 = choix d'Ollama)
@@ -46,7 +50,7 @@ func Load() *Config {
 		Port:      getEnv("PORT", "8080"),
 		GRPCPort:  getEnv("GRPC_PORT", "9090"),
 		BaseURL:   getEnv("BASE_URL", "http://localhost:8080"),
-		SiteURL:   getEnv("SITE_URL", "https://tribbae.bananaops.cloud"),
+		SiteURL:   getEnv("SITE_URL", "https://tribbae.fr"),
 		OllamaURL: getEnv("OLLAMA_URL", "http://localhost:11434"),
 		// Petit modèle par défaut : la génération tourne sur le CPU d'un petit VPS
 		OllamaModel:     getEnv("OLLAMA_MODEL", "qwen3:1.7b"),
@@ -55,10 +59,11 @@ func Load() *Config {
 		AdminPassword:   os.Getenv("ADMIN_PASSWORD"),
 		AllowedOrigins:  splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
 		BrevoAPIKey:     os.Getenv("BREVO_API_KEY"),
-		MailFrom:        getEnv("MAIL_FROM", "tribbae@bananaops.cloud"),
+		MailFrom:        getEnv("MAIL_FROM", "contact@tribbae.fr"),
 		MailFromName:    getEnv("MAIL_FROM_NAME", "Tribbae"),
 	}
 	cfg.SupportEmail = getEnv("SUPPORT_EMAIL", cfg.MailFrom)
+	cfg.RedirectHosts = splitList(getEnv("REDIRECT_HOSTS", "tribbae.bananaops.cloud,www.tribbae.fr"))
 	return cfg
 }
 

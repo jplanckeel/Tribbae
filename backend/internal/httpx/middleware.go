@@ -155,3 +155,33 @@ func MaxBody(n int64, next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+// CanonicalHost redirige définitivement tout ce qui est demandé sur un autre
+// nom du site (ancien domaine, www) vers canonical (ex. https://tribbae.fr),
+// en gardant le chemin et la requête : 301 pour les pages, 308 pour les autres
+// méthodes (l'appel garde sa méthode et son corps). Seuls les noms listés sont
+// redirigés, jamais les noms internes.
+func CanonicalHost(canonical string, hosts []string, next http.Handler) http.Handler {
+	redirect := map[string]bool{}
+	for _, h := range hosts {
+		if h = strings.ToLower(strings.TrimSpace(h)); h != "" {
+			redirect[h] = true
+		}
+	}
+	canonical = strings.TrimRight(canonical, "/")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		host := strings.ToLower(r.Host)
+		if h, _, err := net.SplitHostPort(host); err == nil {
+			host = h
+		}
+		if redirect[host] {
+			code := http.StatusPermanentRedirect
+			if r.Method == http.MethodGet || r.Method == http.MethodHead {
+				code = http.StatusMovedPermanently
+			}
+			http.Redirect(w, r, canonical+r.URL.RequestURI(), code)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}

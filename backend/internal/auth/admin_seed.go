@@ -13,6 +13,8 @@ import (
 )
 
 const (
+	// Identifiant du compte admin existant, indépendant du domaine du site :
+	// le changer créerait un second compte admin au démarrage.
 	AdminEmail       = "tribbae@bananaops.cloud"
 	AdminDisplayName = "Tribbae"
 

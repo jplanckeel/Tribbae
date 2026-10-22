@@ -108,7 +108,7 @@ fun LinkDetailScreen(
     }
 
     val share = {
-        val body = listOf(link.title, link.url.ifBlank { if (link.visibility == "public") "https://tribbae.bananaops.cloud/links/${link.id}" else "" })
+        val body = listOf(link.title, link.url.ifBlank { if (link.visibility == "public") "${data.Backend.PRODUCTION}/links/${link.id}" else "" })
             .filter { it.isNotBlank() }.joinToString("\n")
         context.startActivity(
             Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, body), "Partager l'idée")
