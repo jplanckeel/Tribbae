@@ -22,14 +22,23 @@ type TribeLeaver interface {
 	Leave(ctx context.Context, userID string) error
 }
 
+// Notifier prévient par email (mail.Mailer).
+type Notifier interface {
+	AccountDeleted(email, name string)
+}
+
 type Service struct {
-	db    *mongo.Database
-	tribe TribeLeaver
+	db     *mongo.Database
+	tribe  TribeLeaver
+	notify Notifier
 }
 
 func NewService(db *mongo.Database, tribe TribeLeaver) *Service {
 	return &Service{db: db, tribe: tribe}
 }
+
+// SetNotifier active l'email confirmant la suppression du compte.
+func (s *Service) SetNotifier(n Notifier) { s.notify = n }
 
 func (s *Service) col(name string) *mongo.Collection { return s.db.Collection(name) }
 
@@ -110,16 +119,23 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 // restent (elles redeviennent « non rangées »).
 //
 // Le compte lui-même est supprimé en dernier : si une étape échoue, une
-// nouvelle demande reprend là où la précédente s'est arrêtée.
+// nouvelle demande reprend là où la précédente s'est arrêtée. Une fois le
+// compte effacé, un email le confirme à son adresse, qui n'est gardée qu'en
+// mémoire le temps de cet envoi.
 func (s *Service) Delete(ctx context.Context, userID string) error {
 	oid, err := primitive.ObjectIDFromHex(userID)
 	if err != nil {
 		return ErrNotFound
 	}
-	if n, err := s.col("users").CountDocuments(ctx, bson.M{"_id": oid}); err != nil {
+	var user struct {
+		Email       string `bson:"email"`
+		DisplayName string `bson:"display_name"`
+	}
+	if err := s.col("users").FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return ErrNotFound
+		}
 		return err
-	} else if n == 0 {
-		return ErrNotFound
 	}
 
 	// 1. Tribu : on la quitte (le contenu des autres membres reste le leur)
@@ -203,8 +219,14 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 	}
 
 	// 7. Le compte
-	_, err = s.col("users").DeleteOne(ctx, bson.M{"_id": oid})
-	return err
+	res, err := s.col("users").DeleteOne(ctx, bson.M{"_id": oid})
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount == 1 && s.notify != nil {
+		s.notify.AccountDeleted(user.Email, user.DisplayName)
+	}
+	return nil
 }
 
 func (s *Service) ids(ctx context.Context, col string, filter bson.M) ([]string, error) {

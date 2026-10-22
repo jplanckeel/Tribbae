@@ -29,11 +29,20 @@ type User struct {
 type Service struct {
 	col       *mongo.Collection
 	jwtSecret []byte
+	notify    Notifier
+}
+
+// Notifier prévient par email (mail.Mailer).
+type Notifier interface {
+	Welcome(email, name string)
 }
 
 func NewService(col *mongo.Collection, jwtSecret string) *Service {
 	return &Service{col: col, jwtSecret: []byte(jwtSecret)}
 }
+
+// SetNotifier active l'email de bienvenue à l'inscription.
+func (s *Service) SetNotifier(n Notifier) { s.notify = n }
 
 // ErrInvalidInput signale une saisie d'inscription invalide.
 var ErrInvalidInput = errors.New("invalid input")
@@ -93,6 +102,9 @@ func (s *Service) Register(ctx context.Context, email, password, displayName str
 	}
 	if _, err := s.col.InsertOne(ctx, user); err != nil {
 		return "", "", false, err
+	}
+	if s.notify != nil {
+		s.notify.Welcome(user.Email, user.DisplayName)
 	}
 
 	token, err := s.generateToken(user.ID.Hex())

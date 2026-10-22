@@ -18,6 +18,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/tribbae/backend/internal/mail"
 )
 
 const (
@@ -72,14 +74,23 @@ type userDoc struct {
 	DisplayName string             `bson:"display_name"`
 }
 
+// Notifier prévient par email (mail.Mailer).
+type Notifier interface {
+	TribeMemberAdded(a mail.TribeAdded)
+}
+
 type Service struct {
 	col     *mongo.Collection
 	userCol *mongo.Collection
+	notify  Notifier
 }
 
 func NewService(col, userCol *mongo.Collection) *Service {
 	return &Service{col: col, userCol: userCol}
 }
+
+// SetNotifier active l'email prévenant un compte ajouté à une tribu.
+func (s *Service) SetNotifier(n Notifier) { s.notify = n }
 
 // find retourne la tribu enregistrée de userID, ou nil.
 func (s *Service) find(ctx context.Context, userID string) (*Tribe, error) {
@@ -172,7 +183,8 @@ func (s *Service) Rename(ctx context.Context, userID, name string) (*Tribe, erro
 }
 
 // AddMember ajoute le compte d'email donné à la tribu de userID. Il voit
-// aussitôt la tribu ; son propre contenu n'est partagé qu'après sa confirmation.
+// aussitôt la tribu ; son propre contenu n'est partagé qu'après sa confirmation,
+// et un email le prévient de son ajout.
 func (s *Service) AddMember(ctx context.Context, userID, email string) (*Tribe, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
 	if email == "" {
@@ -224,7 +236,32 @@ func (s *Service) AddMember(ctx context.Context, userID, email string) (*Tribe, 
 	if res.ModifiedCount == 0 {
 		return nil, ErrAlreadyMember
 	}
-	return s.find(ctx, userID)
+	t, err = s.find(ctx, userID)
+	if err == nil && t != nil && s.notify != nil {
+		s.notifyAdded(ctx, t, userID, invitee)
+	}
+	return t, err
+}
+
+// notifyAdded envoie l'email d'ajout à la tribu, avec le nom de chaque membre
+// pour les pastilles.
+func (s *Service) notifyAdded(ctx context.Context, t *Tribe, inviterID string, invitee userDoc) {
+	ids := make([]string, 0, len(t.Members))
+	for _, m := range t.Members {
+		ids = append(ids, m.UserID)
+	}
+	users := s.Users(ctx, ids)
+	members := make([]string, 0, len(ids))
+	for _, id := range ids {
+		members = append(members, users[id].DisplayName)
+	}
+	s.notify.TribeMemberAdded(mail.TribeAdded{
+		Email:       invitee.Email,
+		Name:        invitee.DisplayName,
+		InviterName: users[inviterID].DisplayName,
+		TribeName:   t.Name,
+		Members:     members,
+	})
 }
 
 // RemoveMember retire targetID de la tribu de userID : quitter la tribu

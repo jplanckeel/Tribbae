@@ -1,0 +1,26 @@
+{{define "preheader"}}{{if .VerifyURL}}Confirmez votre adresse pour sécuriser votre compte.{{else}}Votre compte est prêt : rangez-y les idées de toute la famille.{{end}}{{end}}
+
+{{define "card"}}
+{{template "icon" (dict "Bg" "#FBEACB" "Src" (print .Assets "/welcome.png") "Size" 32)}}
+{{template "overline" (dict "Color" "#85560C" "Text" "Bienvenue")}}
+{{template "h1" .Heading}}
+{{if .VerifyURL}}
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">Votre compte Tribbae est prêt. Il reste une petite étape : confirmer votre adresse email pour sécuriser votre compte.</p>
+{{template "button" (dict "URL" .VerifyURL "Label" "Confirmer mon adresse")}}
+<p style="margin:0;padding-top:20px;font-size:13px;line-height:18px;font-weight:500;color:#7A5F55;">Le lien est valable {{.VerifyValidity}}.</p>
+{{else}}
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">Votre compte Tribbae est prêt. Rangez-y dès maintenant les idées de toute la famille et retrouvez-les au bon moment.</p>
+{{template "button" (dict "URL" .AppURL "Label" "Ouvrir Tribbae")}}
+{{end}}
+{{template "divider"}}
+<div style="font-family:'Bricolage Grotesque',Arial,sans-serif;font-size:20px;line-height:1.2;font-weight:700;color:#3A211B;">Pour bien démarrer</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;">
+{{range .Steps}}<tr>
+<td valign="top" width="36" style="padding-bottom:18px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" width="36" height="36" style="width:36px;height:36px;border-radius:12px;background:{{.Bg}};color:{{.Ink}};font-size:15px;font-weight:700;">{{.N}}</td></tr></table></td>
+<td valign="top" style="padding:0 0 18px 16px;"><div style="font-size:15px;line-height:20px;font-weight:700;color:#3A211B;">{{.Title}}</div><div style="padding-top:2px;font-size:15px;line-height:22px;color:#6B5047;">{{.Text}}</div></td>
+</tr>{{end}}
+</table>
+{{if .VerifyURL}}{{template "fallback" .VerifyURL}}{{end}}
+{{end}}
+
+{{define "footer"}}Vous recevez cet email suite à la création de votre compte Tribbae.{{end}}

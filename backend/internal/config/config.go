@@ -26,6 +26,12 @@ type Config struct {
 	OllamaNumThread int
 	AdminPassword   string
 	AllowedOrigins  []string
+	// Emails transactionnels (Brevo) : sans clé, ils sont seulement journalisés
+	BrevoAPIKey  string
+	MailFrom     string
+	MailFromName string
+	// SupportEmail : adresse « Écrire au support » des emails
+	SupportEmail string
 }
 
 // insecureJWTSecret est la valeur d'exemple de .env.example : elle n'est
@@ -33,7 +39,7 @@ type Config struct {
 const insecureJWTSecret = "change-me-in-production"
 
 func Load() *Config {
-	return &Config{
+	cfg := &Config{
 		MongoURI:  getEnv("MONGO_URI", "mongodb://localhost:27017"),
 		MongoDB:   getEnv("MONGO_DB", "tribbae"),
 		JWTSecret: getEnv("JWT_SECRET", insecureJWTSecret),
@@ -48,7 +54,12 @@ func Load() *Config {
 		OllamaNumThread: getEnvInt("OLLAMA_NUM_THREAD", 0),
 		AdminPassword:   os.Getenv("ADMIN_PASSWORD"),
 		AllowedOrigins:  splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
+		BrevoAPIKey:     os.Getenv("BREVO_API_KEY"),
+		MailFrom:        getEnv("MAIL_FROM", "tribbae@bananaops.cloud"),
+		MailFromName:    getEnv("MAIL_FROM_NAME", "Tribbae"),
 	}
+	cfg.SupportEmail = getEnv("SUPPORT_EMAIL", cfg.MailFrom)
+	return cfg
 }
 
 // IsLocal indique si l'instance tourne en local (BASE_URL sur localhost).

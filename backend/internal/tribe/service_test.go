@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/tribbae/backend/internal/mail"
 )
 
 func setup(t *testing.T) (*Service, *mongo.Database, func()) {
@@ -150,5 +152,39 @@ func TestLeaveAndOwnerTransfer(t *testing.T) {
 	// Le nouveau créateur peut retirer Carol
 	if _, err := svc.RemoveMember(ctx, bob, carol); err != nil {
 		t.Errorf("retrait par le créateur : %v", err)
+	}
+}
+
+type fakeNotifier struct{ sent []mail.TribeAdded }
+
+func (f *fakeNotifier) TribeMemberAdded(a mail.TribeAdded) { f.sent = append(f.sent, a) }
+
+func TestAddedMemberIsNotifiedByEmail(t *testing.T) {
+	svc, db, cleanup := setup(t)
+	defer cleanup()
+	ctx := context.Background()
+	n := &fakeNotifier{}
+	svc.SetNotifier(n)
+	alice := addUser(t, db, "alice@ex.fr", "Alice")
+	addUser(t, db, "bob@ex.fr", "Bob")
+	if _, err := svc.Rename(ctx, alice, "Les Martin"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := svc.AddMember(ctx, alice, "bob@ex.fr"); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.sent) != 1 {
+		t.Fatalf("emails = %+v, want 1", n.sent)
+	}
+	got := n.sent[0]
+	if got.Email != "bob@ex.fr" || got.Name != "Bob" || got.InviterName != "Alice" || got.TribeName != "Les Martin" || !slices.Equal(got.Members, []string{"Alice", "Bob"}) {
+		t.Errorf("email = %+v", got)
+	}
+	// Un ajout refusé n'envoie rien
+	_, _ = svc.AddMember(ctx, alice, "bob@ex.fr")
+	_, _ = svc.AddMember(ctx, alice, "inconnu@ex.fr")
+	if len(n.sent) != 1 {
+		t.Errorf("email envoyé pour un ajout refusé : %+v", n.sent)
 	}
 }

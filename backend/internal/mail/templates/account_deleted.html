@@ -1,0 +1,22 @@
+{{define "preheader"}}Votre compte Tribbae et ses données ont été effacés.{{end}}
+
+{{define "card"}}
+{{template "icon" (dict "Bg" "#ECE1EA" "Src" (print .Assets "/deleted.png") "Size" 30)}}
+{{template "overline" (dict "Color" "#5E4558" "Text" "Compte supprimé")}}
+{{template "h1" "Votre compte a bien été supprimé"}}
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">{{if .Name}}Bonjour {{.Name}}, comme{{else}}Bonjour, comme{{end}} vous l'avez demandé le {{.DeletedOn}}, votre compte Tribbae a été supprimé, ainsi que les données qui y étaient liées.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;"><tr><td style="background:#FBF3E7;border-radius:22px;padding:20px 22px;">
+<div style="font-size:15px;line-height:20px;font-weight:700;color:#3A211B;padding-bottom:4px;">Ce qui a été effacé</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+{{range .Erased}}<tr><td valign="top" width="18" style="padding-top:10px;"><img src="{{$.Assets}}/check.png" width="18" height="18" alt="" style="display:block;border:0;margin-top:2px;"></td><td valign="top" style="padding:10px 0 0 10px;font-size:15px;line-height:22px;color:#3A211B;">{{.}}</td></tr>
+{{end}}</table>
+<div style="padding-top:14px;font-size:13px;line-height:18px;font-weight:500;color:#6B5047;">Les idées que vous aviez rendues publiques ont été supprimées. Celles des autres membres de votre tribu leur restent, même rangées dans vos dossiers.</div>
+</td></tr></table>
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">Merci d'avoir fait partie de l'aventure. La porte du tipi reste ouverte si vous souhaitez revenir un jour.</p>
+{{template "divider"}}
+<div style="font-size:15px;line-height:20px;font-weight:700;color:#3A211B;">Vous n'avez pas demandé cette suppression ?</div>
+<div style="padding-top:12px;font-size:15px;line-height:22px;color:#6B5047;">Écrivez-nous rapidement, nous regarderons ce qui s'est passé.</div>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px;"><tr><td style="border:2px solid #5E4558;border-radius:18px;"><a href="{{.SupportURL}}" style="display:inline-block;padding:12px 22px;color:#5E4558;font-family:'DM Sans',Arial,sans-serif;font-size:15px;font-weight:700;text-decoration:none;">Écrire au support</a></td></tr></table>
+{{end}}
+
+{{define "footer"}}Dernier email de notre part : votre adresse ne figure plus dans nos listes.{{end}}
