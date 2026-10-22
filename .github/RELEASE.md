@@ -9,6 +9,8 @@ Les releases sont gérées par [release-please](https://github.com/googleapis/re
 
 Configuration : `release-please-config.json` (sections du changelog, fichiers versionnés) et `.release-please-manifest.json` (version courante).
 
+Les PR Dependabot (type `deps`, cf. `.github/dependabot.yml`) apparaissent dans la section **Dependencies** du changelog et déclenchent une release patch.
+
 Prérequis côté dépôt : *Settings > Actions > General > Workflow permissions* → cocher **Allow GitHub Actions to create and approve pull requests**. Les PR ouvertes par release-please avec `GITHUB_TOKEN` ne déclenchent pas la CI `Test` ; ce n'est pas bloquant, elles ne touchent qu'aux numéros de version et au changelog.
 
 Un tag poussé à la main reste possible (la release est alors créée avec des notes générées automatiquement) :
