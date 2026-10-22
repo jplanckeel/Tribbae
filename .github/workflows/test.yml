@@ -28,6 +28,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.26'
+          # Toujours prendre le dernier patch (correctifs de sécurité stdlib vus par govulncheck)
+          check-latest: true
           cache-dependency-path: backend/go.sum
       
       - name: Build backend
