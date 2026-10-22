@@ -271,3 +271,11 @@ func TestSitemapAndLLMs(t *testing.T) {
 		t.Errorf("llms.txt :\n%s", txt)
 	}
 }
+
+func TestPlusDe(t *testing.T) {
+	for in, want := range map[string]string{"activités": "Plus d'activités", "idées": "Plus d'idées", "recettes": "Plus de recettes", "déco": "Plus de déco"} {
+		if got := plusDe(in); got != want {
+			t.Errorf("plusDe(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

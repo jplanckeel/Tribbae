@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -172,9 +173,17 @@ func (h *Handler) idea(ctx context.Context, id string) (*Page, error) {
 		p.Facts = append(p.Facts, Fact{"Partagée par", i.Author})
 	}
 	p.Facts = append(p.Facts, ideaFacts(i)...)
-	p.Sections = []Section{{Title: "Plus de " + strings.ToLower(c.Plural), Items: []Item{{Title: c.Plural + " en famille", Path: "/category/" + c.Slug}}}}
+	p.Sections = []Section{{Title: plusDe(strings.ToLower(c.Plural)), Items: []Item{{Title: c.Plural + " en famille", Path: "/category/" + c.Slug}}}}
 	p.JSONLD = []any{h.ideaSchema(i, c, p), h.breadcrumbs(p.Breadcrumb)}
 	return p, nil
+}
+
+// plusDe élide « de » devant une voyelle : « Plus d'activités », « Plus de recettes ».
+func plusDe(s string) string {
+	if r, _ := utf8.DecodeRuneInString(s); strings.ContainsRune("aàâeéèêiîoôuy", r) {
+		return "Plus d'" + s
+	}
+	return "Plus de " + s
 }
 
 func (h *Handler) folder(ctx context.Context, id string) (*Page, error) {
