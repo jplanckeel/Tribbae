@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -109,6 +110,17 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 		folderLikes = append(folderLikes, bson.M{"_id": f["_id"], "name": f["name"]})
 	}
 	out["folderLikes"] = folderLikes
+
+	// Invitations dans une tribu, envoyées ou reçues (sans le jeton)
+	email, _ := user["email"].(string)
+	invs, err := find("tribe_invitations", bson.M{"$or": bson.A{bson.M{"invited_by": userID}, bson.M{"email": strings.ToLower(email)}}})
+	if err != nil {
+		return nil, err
+	}
+	for _, inv := range invs {
+		delete(inv, "token_hash")
+	}
+	out["tribeInvitations"] = invs
 	return out, nil
 }
 
@@ -211,6 +223,7 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		{"comments", bson.M{"user_id": userID}},
 		{"follows", bson.M{"$or": bson.A{bson.M{"follower_id": userID}, bson.M{"following_id": userID}}}},
 		{"children", bson.M{"ownerId": oid}},
+		{"tribe_invitations", bson.M{"$or": bson.A{bson.M{"invited_by": userID}, bson.M{"email": strings.ToLower(user.Email)}}}},
 	}
 	for _, d := range deletes {
 		if _, err := s.col(d.col).DeleteMany(ctx, d.filter); err != nil {

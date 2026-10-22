@@ -89,7 +89,8 @@ func wait(m *Mailer) {
 func TestMailerEscapesUserInput(t *testing.T) {
 	rec := &recorder{}
 	m := New(rec, "https://tribbae.example/", "aide@tribbae.example")
-	m.TribeMemberAdded(TribeAdded{Email: "bob@example.com", Name: "Bob", InviterName: "<b>Alice</b>\nBcc: x", TribeName: `Les "Martin"`, Members: []string{"Alice", "Bob"}})
+	m.TribeInvitation(TribeInvitation{Email: "bob@example.com", InviterName: "<b>Alice</b>\nBcc: x", TribeName: `Les "Martin"`, Members: []string{"Alice"},
+		URL: "https://tribbae.example/invitation#tok", Validity: 7 * 24 * time.Hour})
 	wait(m)
 
 	msgs := rec.sent()
@@ -103,36 +104,11 @@ func TestMailerEscapesUserInput(t *testing.T) {
 	if strings.Contains(msg.HTML, "<b>Alice</b>") || !strings.Contains(msg.HTML, "&lt;b&gt;Alice&lt;/b&gt;") {
 		t.Error("inviter name is not escaped in the HTML body")
 	}
-	if !strings.Contains(msg.HTML, `href="https://tribbae.example/tribu"`) || !strings.Contains(msg.Text, "https://tribbae.example/tribu") {
-		t.Error("missing link to the tribe screen")
+	if !strings.Contains(msg.HTML, `href="https://tribbae.example/invitation#tok"`) || !strings.Contains(msg.Text, "https://tribbae.example/invitation#tok") {
+		t.Error("missing invitation link")
 	}
-	if msg.Tag != TagTribeAdded || msg.To != "bob@example.com" {
+	if msg.Tag != TagTribeInvite || msg.To != "bob@example.com" {
 		t.Errorf("unexpected message %+v", msg)
-	}
-}
-
-func TestMailerLimitsTribeEmailsPerRecipient(t *testing.T) {
-	rec := &recorder{}
-	m := New(rec, "https://tribbae.example", "aide@tribbae.example")
-	now := time.Now()
-	m.now = func() time.Time { return now }
-	added := func(email string) TribeAdded {
-		return TribeAdded{Email: email, InviterName: "Alice", TribeName: "Martin", Members: []string{"Alice", "Bob"}}
-	}
-
-	m.TribeMemberAdded(added("bob@example.com"))
-	m.TribeMemberAdded(added("BOB@example.com"))
-	m.TribeMemberAdded(added("carol@example.com"))
-	wait(m)
-	if n := len(rec.sent()); n != 2 {
-		t.Fatalf("sent %d emails, want 2 (one per recipient)", n)
-	}
-
-	now = now.Add(tribeCooldown)
-	m.TribeMemberAdded(added("bob@example.com"))
-	wait(m)
-	if n := len(rec.sent()); n != 3 {
-		t.Fatalf("sent %d emails, want 3 after the cooldown", n)
 	}
 }
 
@@ -147,7 +123,8 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 		Email: "alice@example.com", Name: "Alice", ResetURL: "https://tribbae.example/mot-de-passe/nouveau?token=abc",
 		Validity: time.Hour, RequestedAt: time.Date(2026, 10, 1, 7, 5, 0, 0, time.UTC), Device: "Firefox sur Linux",
 	})
-	m.TribeMemberAdded(TribeAdded{Email: "bob@example.com", Name: "Bob", InviterName: "Alice", TribeName: "Les Martin", Members: []string{"Alice", "Bob", "Chloé", "Denis"}})
+	m.TribeInvitation(TribeInvitation{Email: "bob@example.com", InviterName: "Alice", TribeName: "Les Martin", Members: []string{"Alice", "Bruno", "Chloé", "Denis"},
+		URL: "https://tribbae.example/invitation#tok", Validity: 7 * 24 * time.Hour})
 	m.AccountDeleted("alice@example.com", "")
 	wait(m)
 
@@ -167,9 +144,9 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 		{TagPasswordReset, "Choisissez un nouveau mot de passe Tribbae",
 			[]string{"Bonjour Alice, une demande", "alice@example.com", "<strong>1 heure</strong>", "1er octobre 2026 à 09 h 05", "Firefox sur Linux", "https://tribbae.example/mot-de-passe/nouveau?token=abc"},
 			[]string{"https://tribbae.example/mot-de-passe/nouveau?token=abc", "Ce lien expire dans 1 heure", "1er octobre 2026 à 09 h 05 depuis Firefox sur Linux"}},
-		{TagTribeAdded, "Alice vous a ajouté à la tribu « Les Martin » sur Tribbae",
-			[]string{"Bienvenue dans la tribu « Les Martin »", "4 membres", "&#43;2<", ">A<", "Voir ma tribu"},
-			[]string{"Alice vous a ajouté à sa tribu (4 membres)", "Voir ma tribu : https://tribbae.example/tribu"}},
+		{TagTribeInvite, "Alice vous invite à rejoindre la tribu « Les Martin » sur Tribbae",
+			[]string{"vous invite à rejoindre sa tribu", "Rejoignez la tribu « Les Martin »", "4 membres", "&#43;2<", ">A<", "Rejoindre la tribu", "Invitation valable 7 jours"},
+			[]string{"Alice vous invite à rejoindre sa tribu (4 membres)", "Rejoindre la tribu : https://tribbae.example/invitation#tok"}},
 		{TagAccountDeleted, "Votre compte Tribbae a été supprimé",
 			[]string{"Bonjour, comme vous l'avez demandé le 22 octobre 2026", "Ce qui a été effacé", "Votre profil et votre adresse email", `href="mailto:aide@tribbae.example?subject=Suppression%20de%20mon%20compte%20Tribbae"`},
 			[]string{"le 22 octobre 2026", "- Vos idées et vos dossiers", "aide@tribbae.example"}},

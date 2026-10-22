@@ -37,6 +37,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="tribbae.bananaops.cloud" android:pathPrefix="/share/" />
             </intent-filter>
+            <!-- Invitations dans une tribu (email) : https://tribbae.bananaops.cloud/invitation#<jeton> -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tribbae.bananaops.cloud" android:path="/invitation" />
+            </intent-filter>
         </activity>
         <receiver
             android:name="data.ReminderReceiver"

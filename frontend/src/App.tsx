@@ -6,6 +6,7 @@ import Faq from "./pages/Faq";
 import Privacy from "./pages/Privacy";
 import FolderDetail from "./pages/FolderDetail";
 import Home from "./pages/Home";
+import Invitation from "./pages/Invitation";
 import LinkDetail from "./pages/LinkDetail";
 import MyIdeas from "./pages/MyIdeas";
 import SharedFolder from "./pages/SharedFolder";
@@ -27,6 +28,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/bienvenue", element: <Welcome /> },
       { path: "/connexion", element: <Auth /> },
+      { path: "/invitation", element: <Invitation /> },
       { path: "/share/:token", element: <SharedFolder /> },
     ],
   },

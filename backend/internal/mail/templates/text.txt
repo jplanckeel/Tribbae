@@ -32,17 +32,17 @@ Demande effectuée le {{.RequestedAt}}{{if .Device}} depuis {{.Device}}{{end}}.
 
 {{template "footer" .}}{{end}}
 
-{{define "tribe_added"}}Bienvenue dans la tribu « {{.Tribe}} »
+{{define "tribe_invitation"}}Rejoignez la tribu « {{.Tribe}} »
 
-{{.Inviter}} vous a ajouté à sa tribu ({{.MemberCount}} membre{{if gt .MemberCount 1}}s{{end}}).
+{{.Inviter}} vous invite à rejoindre sa tribu ({{.MemberCount}} membre{{if gt .MemberCount 1}}s{{end}}).
 
 Dans une tribu, chacun ajoute ses idées de sorties, de cadeaux ou de recettes dans des dossiers partagés, et toute la famille les retrouve au même endroit.
 
-Voir ma tribu : {{.TribeURL}}
+Rejoindre la tribu : {{.InviteURL}}
 
-Vous voyez déjà ce que la tribu partage. Vos propres idées restent privées tant que vous n'avez pas confirmé le partage depuis « Ma tribu ».
+Invitation valable {{.Validity}}. Pas encore de compte ? Vous pourrez en créer un en quelques secondes après avoir cliqué.
 
-Vous recevez cet email car {{.Inviter}} a saisi votre adresse sur Tribbae. Vous ne connaissez pas cette personne ? Quittez la tribu depuis l'écran « Ma tribu ».
+Vous recevez cet email car {{.Inviter}} a saisi votre adresse sur Tribbae. Vous ne connaissez pas cette personne ? Ignorez simplement ce message.
 
 {{template "footer" .}}{{end}}
 

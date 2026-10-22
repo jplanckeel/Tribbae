@@ -31,8 +31,11 @@ const (
 )
 
 var (
-	ErrInvalidInput  = errors.New("invalid input")
-	ErrUserNotFound  = errors.New("no account with this email")
+	ErrInvalidInput = errors.New("invalid input")
+	// Lien d'invitation inconnu, expiré, révoqué ou tribu disparue
+	ErrInvalidInvitation = errors.New("invalid or expired invitation")
+	// Le compte connecté n'est pas celui de l'adresse invitée
+	ErrWrongAccount  = errors.New("invitation is for another email")
 	ErrAlreadyMember = errors.New("already a member of this tribe")
 	ErrInOtherTribe  = errors.New("this account already belongs to another tribe")
 	ErrForbidden     = errors.New("only the tribe owner can remove another member")
@@ -74,23 +77,27 @@ type userDoc struct {
 	DisplayName string             `bson:"display_name"`
 }
 
-// Notifier prévient par email (mail.Mailer).
+// Notifier envoie les emails d'invitation (mail.Mailer).
 type Notifier interface {
-	TribeMemberAdded(a mail.TribeAdded)
+	TribeInvitation(inv mail.TribeInvitation)
 }
 
 type Service struct {
 	col     *mongo.Collection
 	userCol *mongo.Collection
-	notify  Notifier
+	// Invitations en attente (invitations.go)
+	invCol    *mongo.Collection
+	notify    Notifier
+	inviteURL string
 }
 
-func NewService(col, userCol *mongo.Collection) *Service {
-	return &Service{col: col, userCol: userCol}
+func NewService(col, userCol, invCol *mongo.Collection) *Service {
+	return &Service{col: col, userCol: userCol, invCol: invCol}
 }
 
-// SetNotifier active l'email prévenant un compte ajouté à une tribu.
-func (s *Service) SetNotifier(n Notifier) { s.notify = n }
+// SetNotifier active l'email d'invitation ; inviteURL est l'adresse de l'écran
+// « Rejoindre la tribu » du site (le jeton y est ajouté après un #).
+func (s *Service) SetNotifier(n Notifier, inviteURL string) { s.notify, s.inviteURL = n, inviteURL }
 
 // find retourne la tribu enregistrée de userID, ou nil.
 func (s *Service) find(ctx context.Context, userID string) (*Tribe, error) {
@@ -182,86 +189,42 @@ func (s *Service) Rename(ctx context.Context, userID, name string) (*Tribe, erro
 	return t, nil
 }
 
-// AddMember ajoute le compte d'email donné à la tribu de userID. Il voit
-// aussitôt la tribu ; son propre contenu n'est partagé qu'après sa confirmation,
-// et un email le prévient de son ajout.
-func (s *Service) AddMember(ctx context.Context, userID, email string) (*Tribe, error) {
-	email = strings.ToLower(strings.TrimSpace(email))
-	if email == "" {
-		return nil, invalid("email is required")
-	}
-	var invitee userDoc
-	if err := s.userCol.FindOne(ctx, bson.M{"email": email}).Decode(&invitee); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, ErrUserNotFound
-		}
-		return nil, err
-	}
-	inviteeID := invitee.ID.Hex()
-	if inviteeID == userID {
-		return nil, ErrAlreadyMember
-	}
-	t, err := s.ensure(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
+// join fait entrer inviteeID dans la tribu t (invitation acceptée). Il voit
+// aussitôt la tribu ; son propre contenu n'est partagé qu'après sa confirmation.
+func (s *Service) join(ctx context.Context, t *Tribe, inviteeID, addedBy string) error {
 	if t.Member(inviteeID) != nil {
-		return nil, ErrAlreadyMember
+		return ErrAlreadyMember
 	}
 	if len(t.Members) >= maxMembers {
-		return nil, ErrTribeFull
+		return ErrTribeFull
 	}
 	// L'invité ne peut pas être retiré d'une tribu qu'il partage avec d'autres ;
 	// une tribu où il est seul (créée pour la renommer) est simplement remplacée.
 	if other, err := s.find(ctx, inviteeID); err != nil {
-		return nil, err
+		return err
 	} else if other != nil {
 		if len(other.Members) > 1 {
-			return nil, ErrInOtherTribe
+			return ErrInOtherTribe
 		}
 		if _, err := s.col.DeleteOne(ctx, bson.M{"_id": other.ID, "members": bson.M{"$size": 1}}); err != nil {
-			return nil, err
+			return err
 		}
+		s.dropInvitations(ctx, other.ID)
 	}
-	m := Member{UserID: inviteeID, Role: RoleMember, Sharing: false, AddedAt: time.Now(), AddedBy: userID}
+	m := Member{UserID: inviteeID, Role: RoleMember, Sharing: false, AddedAt: time.Now(), AddedBy: addedBy}
 	res, err := s.col.UpdateOne(ctx,
 		bson.M{"_id": t.ID, "members.user_id": bson.M{"$ne": inviteeID}},
 		bson.M{"$push": bson.M{"members": m}, "$set": bson.M{"updated_at": time.Now()}})
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return nil, ErrInOtherTribe
+			return ErrInOtherTribe
 		}
-		return nil, err
+		return err
 	}
 	if res.ModifiedCount == 0 {
-		return nil, ErrAlreadyMember
+		return ErrAlreadyMember
 	}
-	t, err = s.find(ctx, userID)
-	if err == nil && t != nil && s.notify != nil {
-		s.notifyAdded(ctx, t, userID, invitee)
-	}
-	return t, err
-}
-
-// notifyAdded envoie l'email d'ajout à la tribu, avec le nom de chaque membre
-// pour les pastilles.
-func (s *Service) notifyAdded(ctx context.Context, t *Tribe, inviterID string, invitee userDoc) {
-	ids := make([]string, 0, len(t.Members))
-	for _, m := range t.Members {
-		ids = append(ids, m.UserID)
-	}
-	users := s.Users(ctx, ids)
-	members := make([]string, 0, len(ids))
-	for _, id := range ids {
-		members = append(members, users[id].DisplayName)
-	}
-	s.notify.TribeMemberAdded(mail.TribeAdded{
-		Email:       invitee.Email,
-		Name:        invitee.DisplayName,
-		InviterName: users[inviterID].DisplayName,
-		TribeName:   t.Name,
-		Members:     members,
-	})
+	return nil
 }
 
 // RemoveMember retire targetID de la tribu de userID : quitter la tribu
@@ -286,6 +249,7 @@ func (s *Service) RemoveMember(ctx context.Context, userID, targetID string) (*T
 	}
 	if len(rest) == 0 {
 		_, err := s.col.DeleteOne(ctx, bson.M{"_id": t.ID})
+		s.dropInvitations(ctx, t.ID)
 		return nil, err
 	}
 	// Le créateur s'en va : la tribu revient au membre le plus ancien

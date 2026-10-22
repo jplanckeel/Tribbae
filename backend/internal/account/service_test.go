@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/tribbae/backend/internal/mail"
 	"github.com/tribbae/backend/internal/tribe"
 )
 
@@ -60,10 +62,20 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	bobID := insert(t, db, "users", bson.M{"email": "bob@example.com", "display_name": "Bob", "password": "x"})
 	alice, bob := aliceID.Hex(), bobID.Hex()
 
-	tribes := tribe.NewService(db.Collection("tribes"), db.Collection("users"))
-	if _, err := tribes.AddMember(ctx, alice, "bob@example.com"); err != nil {
+	tribes := tribe.NewService(db.Collection("tribes"), db.Collection("users"), db.Collection("tribe_invitations"))
+	inv := &invitations{}
+	tribes.SetNotifier(inv, "https://tribbae.example/invitation")
+	if _, err := tribes.Invite(ctx, alice, "bob@example.com"); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := tribes.Accept(ctx, bob, inv.token()); err != nil {
+		t.Fatal(err)
+	}
+	// Invitations en attente envoyées par Alice et reçues par elle : effacées aussi
+	if _, err := tribes.Invite(ctx, alice, "carol@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	insert(t, db, "tribe_invitations", bson.M{"email": "alice@example.com", "invited_by": "someone", "token_hash": "x"})
 
 	aliceFolder := insert(t, db, "folders", bson.M{"owner_id": alice, "name": "Vacances"}).Hex()
 	bobFolder := insert(t, db, "folders", bson.M{"owner_id": bob, "name": "Noël", "liked_by": bson.A{alice}, "like_count": 1,
@@ -113,6 +125,7 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		{"place dans les dossiers des autres", "folders", bson.M{"collaborators.user_id": alice}, 0},
 		{"« j'aime » de dossiers", "folders", bson.M{"liked_by": alice}, 0},
 		{"tribu", "tribes", bson.M{"members.user_id": alice}, 0},
+		{"invitations envoyées ou reçues", "tribe_invitations", bson.M{}, 0},
 		// Ce qui est à Bob reste à Bob
 		{"compte de Bob", "users", bson.M{"_id": bobID}, 1},
 		{"idée de Bob, sortie du dossier supprimé", "links", bson.M{"_id": bobInAliceFolder, "folder_id": ""}, 1},
@@ -157,4 +170,14 @@ func TestDeleteSendsConfirmationEmail(t *testing.T) {
 	if len(n.emails) != 1 || n.emails[0] != "alice@example.com" || n.names[0] != "Alice" {
 		t.Errorf("emails = %v %v, want une confirmation à alice@example.com", n.emails, n.names)
 	}
+}
+
+// invitations retient le dernier lien d'invitation envoyé.
+type invitations struct{ last string }
+
+func (i *invitations) TribeInvitation(inv mail.TribeInvitation) { i.last = inv.URL }
+
+func (i *invitations) token() string {
+	_, token, _ := strings.Cut(i.last, "#")
+	return token
 }

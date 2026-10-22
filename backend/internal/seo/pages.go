@@ -18,13 +18,14 @@ const (
 
 // private : écrans réservés aux comptes, sans intérêt pour un moteur.
 var private = map[string]string{
-	"/mes-idees": "Mes idées",
-	"/courses":   "Liste de courses",
-	"/tribu":     "Ma tribu",
-	"/admin":     "Administration",
-	"/partager":  "Ajouter une idée",
-	"/connexion": "Connexion",
-	"/bienvenue": "Bienvenue",
+	"/mes-idees":  "Mes idées",
+	"/courses":    "Liste de courses",
+	"/tribu":      "Ma tribu",
+	"/admin":      "Administration",
+	"/partager":   "Ajouter une idée",
+	"/connexion":  "Connexion",
+	"/bienvenue":  "Bienvenue",
+	"/invitation": "Invitation dans une tribu",
 }
 
 // redirects : anciennes adresses du site, redirigées définitivement.

@@ -12,7 +12,7 @@ import { AVATAR_COLORS, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { formatAge, initial, plural } from "../lib/format";
 import { clearSession, useSession } from "../lib/session";
-import type { Child, Folder, Tribe as TribeData, TribeMember } from "../lib/types";
+import type { Child, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
 
@@ -120,6 +120,7 @@ export default function Tribe() {
           </span>
           <span className="text-sm text-sec">
             {plural(members.length, "membre", "membres")}
+            {!!tribe?.invitations?.length && ` · ${plural(tribe.invitations.length, "invitation en attente", "invitations en attente")}`}
             {session.isAdmin && " · administrateur"}
           </span>
         </div>
@@ -195,6 +196,7 @@ export default function Tribe() {
         open={membersOpen}
         onClose={() => setMembersOpen(false)}
         accounts={accounts}
+        invitations={tribe?.invitations ?? []}
         meId={session.userId}
         onChange={setTribe}
         onKids={() => { setMembersOpen(false); setKidsOpen(true); }}
@@ -504,12 +506,12 @@ function InviteForm({ onDone }: { onDone: (t: TribeData) => void }) {
   const [error, setError] = useState("");
   const invite = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return setError("Saisissez l'email de son compte Tribbae.");
+    if (!email.trim()) return setError("Saisissez l'adresse email de votre proche.");
     setBusy(true);
     setError("");
     try {
-      onDone(await api.tribe.addMember(email.trim()));
-      toast("Ajouté à la tribu");
+      onDone(await api.tribe.invite(email.trim()));
+      toast("Invitation envoyée");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -519,14 +521,15 @@ function InviteForm({ onDone }: { onDone: (t: TribeData) => void }) {
   return (
     <form onSubmit={invite} className="flex flex-col gap-3">
       <p className="text-[15px] text-ecorce-2">
-        Votre proche rejoint la tribu et gère tout avec vous : idées, dossiers, enfants et liste de courses.
+        Votre proche reçoit un lien pour rejoindre la tribu et tout gérer avec vous : idées, dossiers, enfants et liste de courses.
       </p>
-      <Field label="Email de son compte Tribbae" type="email" icon="send" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="camille@exemple.fr" autoComplete="email" />
+      <Field label="Son adresse email" type="email" icon="send" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="camille@exemple.fr" autoComplete="email" />
       <p className="text-xs text-sec">
-        Ses propres idées ne rejoindront la tribu qu'une fois qu'il l'aura confirmé depuis « Ma tribu ».
+        L'invitation est valable 7 jours. Pas encore de compte ? Il pourra en créer un depuis le lien. Ses propres
+        idées ne rejoindront la tribu qu'une fois qu'il l'aura confirmé depuis « Ma tribu ».
       </p>
       {error && <ErrorNote>{error}</ErrorNote>}
-      <Button type="submit" icon="personPlus" block loading={busy}>Ajouter à la tribu</Button>
+      <Button type="submit" icon="send" block loading={busy}>Envoyer l'invitation</Button>
     </form>
   );
 }
@@ -565,8 +568,8 @@ function SharingBanner({ tribe, counts, onChange }: {
   );
 }
 
-function MembersSheet({ open, onClose, accounts, meId, onChange, onKids, onInvite }: {
-  open: boolean; onClose: () => void; accounts: TribeMember[]; meId: string;
+function MembersSheet({ open, onClose, accounts, invitations, meId, onChange, onKids, onInvite }: {
+  open: boolean; onClose: () => void; accounts: TribeMember[]; invitations: TribeInvitation[]; meId: string;
   onChange: (t: TribeData) => void; onKids: () => void; onInvite: () => void;
 }) {
   const navigate = useNavigate();
@@ -592,6 +595,15 @@ function MembersSheet({ open, onClose, accounts, meId, onChange, onKids, onInvit
         onClose();
         navigate("/tribu");
       }
+    } catch (err) {
+      toast((err as Error).message, "error");
+    }
+  };
+
+  const revoke = async (inv: TribeInvitation) => {
+    try {
+      onChange(await api.tribe.revokeInvitation(inv.id));
+      toast("Invitation annulée");
     } catch (err) {
       toast((err as Error).message, "error");
     }
@@ -636,6 +648,28 @@ function MembersSheet({ open, onClose, accounts, meId, onChange, onKids, onInvit
           );
         })}
       </ul>
+      {invitations.length > 0 && (
+        <>
+          <h3 className="mb-1.5 text-[13px] font-bold text-sec">Invitations en attente</h3>
+          <ul className="mb-4 flex flex-col divide-y divide-sable-2 overflow-hidden rounded-[18px] bg-white">
+            {invitations.map((inv) => (
+              <li key={inv.id} className="flex items-center gap-3 px-3.5 py-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-small bg-sable-2 text-sec">
+                  <Icon name="send" size={18} />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-bold">{inv.email}</span>
+                  <span className="truncate text-xs text-sec">
+                    {[inv.invitedByName && `invité par ${inv.invitedByName}`, inv.expiresAt && `jusqu'au ${shortDate(Number(inv.expiresAt))}`]
+                      .filter(Boolean).join(" · ")}
+                  </span>
+                </span>
+                <Button size="sm" variant="ghost" onClick={() => revoke(inv)}>Annuler</Button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       <div className="flex flex-col gap-2">
         <Button variant="secondary" icon="personPlus" block onClick={onInvite}>Inviter un proche</Button>
         <Button variant="ghost" icon="baby" block onClick={onKids}>Les enfants</Button>
@@ -708,4 +742,9 @@ function DeleteAccountSheet({ onClose }: { onClose: () => void }) {
       </form>
     </Sheet>
   );
+}
+
+/** « 29 oct. » */
+function shortDate(ms: number): string {
+  return new Date(ms).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }

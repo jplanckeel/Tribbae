@@ -68,6 +68,101 @@
         ]
       }
     },
+    "/v1/tribe/invitations/accept": {
+      "post": {
+        "operationId": "TribeService_AcceptTribeInvitation",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AcceptTribeInvitationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AcceptTribeInvitationRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TribeService"
+        ]
+      }
+    },
+    "/v1/tribe/invitations/lookup": {
+      "post": {
+        "operationId": "TribeService_GetTribeInvitation",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetTribeInvitationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "Ce qu'affiche le lien d'invitation, avant de l'accepter (sans compte).",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1GetTribeInvitationRequest"
+            }
+          }
+        ],
+        "tags": [
+          "TribeService"
+        ]
+      }
+    },
+    "/v1/tribe/invitations/{invitationId}": {
+      "delete": {
+        "operationId": "TribeService_RevokeTribeInvitation",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RevokeTribeInvitationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "TribeService"
+        ]
+      }
+    },
     "/v1/tribe/members": {
       "post": {
         "operationId": "TribeService_AddTribeMember",
@@ -88,6 +183,7 @@
         "parameters": [
           {
             "name": "body",
+            "description": "Invite l'adresse donnée : un email lui propose de rejoindre la tribu. Une\nnouvelle invitation à la même adresse remplace la précédente.",
             "in": "body",
             "required": true,
             "schema": {
@@ -193,19 +289,71 @@
         }
       }
     },
+    "v1AcceptTribeInvitationRequest": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      }
+    },
+    "v1AcceptTribeInvitationResponse": {
+      "type": "object",
+      "properties": {
+        "tribe": {
+          "$ref": "#/definitions/v1Tribe"
+        }
+      }
+    },
     "v1AddTribeMemberRequest": {
       "type": "object",
       "properties": {
         "email": {
           "type": "string"
         }
-      }
+      },
+      "description": "Invite l'adresse donnée : un email lui propose de rejoindre la tribu. Une\nnouvelle invitation à la même adresse remplace la précédente."
     },
     "v1AddTribeMemberResponse": {
       "type": "object",
       "properties": {
         "tribe": {
           "$ref": "#/definitions/v1Tribe"
+        }
+      }
+    },
+    "v1GetTribeInvitationRequest": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      },
+      "description": "Ce qu'affiche le lien d'invitation, avant de l'accepter (sans compte)."
+    },
+    "v1GetTribeInvitationResponse": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "title": "adresse invitée : le compte qui accepte doit l'utiliser"
+        },
+        "tribeName": {
+          "type": "string"
+        },
+        "invitedByName": {
+          "type": "string"
+        },
+        "memberNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "millisecondes"
         }
       }
     },
@@ -218,6 +366,14 @@
       }
     },
     "v1RemoveTribeMemberResponse": {
+      "type": "object",
+      "properties": {
+        "tribe": {
+          "$ref": "#/definitions/v1Tribe"
+        }
+      }
+    },
+    "v1RevokeTribeInvitationResponse": {
       "type": "object",
       "properties": {
         "tribe": {
@@ -258,8 +414,41 @@
             "type": "object",
             "$ref": "#/definitions/v1TribeMember"
           }
+        },
+        "invitations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1TribeInvitation"
+          },
+          "title": "Invitations en attente (visibles des membres)"
         }
       }
+    },
+    "v1TribeInvitation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "invitedByName": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "millisecondes"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "millisecondes"
+        }
+      },
+      "description": "Invitation envoyée par email, en attente de réponse."
     },
     "v1TribeMember": {
       "type": "object",

@@ -234,7 +234,12 @@ private fun TribeContent(
                         modifier = Modifier.size(32.dp).clip(CircleShape).clickable { showRename = true }.padding(7.dp)
                     )
                 }
-                Text("${members.size} membre${if (members.size > 1) "s" else ""}", fontSize = 14.sp, color = TextSec)
+                val pending = tribe?.invitations?.size ?: 0
+                Text(
+                    "${members.size} membre${if (members.size > 1) "s" else ""}" +
+                        if (pending > 0) " · $pending invitation${if (pending > 1) "s" else ""} en attente" else "",
+                    fontSize = 14.sp, color = TextSec
+                )
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -326,25 +331,31 @@ private fun TribeContent(
                 Text("Inviter dans la tribu", style = display(24.sp))
                 var email by remember { mutableStateOf("") }
                 Text(
-                    "Votre proche rejoint la tribu et gère tout avec vous : idées, dossiers, enfants et liste de courses.",
+                    "Votre proche reçoit un lien pour rejoindre la tribu et tout gérer avec vous : idées, dossiers, enfants et liste de courses.",
                     fontSize = 15.sp, color = Ecorce2
                 )
                 CampField(
-                    "Email de son compte Tribbae", email, { email = it; tribeError = null },
+                    "Son adresse email", email, { email = it; tribeError = null },
                     placeholder = "camille@exemple.fr", icon = Icons.Outlined.Email,
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
                 )
-                Text("Ses propres idées ne rejoindront la tribu qu'une fois qu'il l'aura confirmé depuis « Ma tribu ».", fontSize = 12.sp, color = TextSec)
+                Text(
+                    "L'invitation est valable 7 jours. Pas encore de compte ? Il pourra en créer un depuis le lien. Ses propres idées ne rejoindront la tribu qu'une fois qu'il l'aura confirmé depuis « Ma tribu ».",
+                    fontSize = 12.sp, color = TextSec
+                )
                 tribeError?.let { Text(it, color = Color(0xFF9A3420), fontSize = 14.sp, fontWeight = FontWeight.Medium) }
-                CampButton(if (tribeBusy) "Ajout…" else "Ajouter à la tribu", {
-                    if (email.isBlank()) { tribeError = "Saisissez l'email de son compte Tribbae."; return@CampButton }
+                CampButton(if (tribeBusy) "Envoi…" else "Envoyer l'invitation", {
+                    if (email.isBlank()) { tribeError = "Saisissez l'adresse email de votre proche."; return@CampButton }
                     tribeBusy = true
-                    viewModel.addTribeMember(email) { err ->
+                    viewModel.inviteTribeMember(email) { err ->
                         tribeBusy = false
                         tribeError = err
-                        if (err == null) { email = ""; showInvite = false }
+                        if (err == null) {
+                            android.widget.Toast.makeText(context, "Invitation envoyée", android.widget.Toast.LENGTH_SHORT).show()
+                            email = ""; showInvite = false
+                        }
                     }
-                }, Modifier.fillMaxWidth(), icon = Icons.Outlined.PersonAdd)
+                }, Modifier.fillMaxWidth(), icon = Icons.Outlined.Email)
                 Text("Ou partager un seul dossier", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec, modifier = Modifier.padding(top = 16.dp))
                 Text(
                     "Vos proches pourront le consulter par lien ou y ajouter leurs idées, sans accéder au reste de la tribu.",
@@ -474,6 +485,36 @@ private fun TribeContent(
                         }
                         if (accounts.size > 1 && (self || iAmOwner)) {
                             CampButton(if (self) "Quitter" else "Retirer", { confirmRemove = m }, kind = ButtonKind.Ghost, height = 38.dp)
+                        }
+                    }
+                }
+                val invitations = tribe?.invitations.orEmpty()
+                if (invitations.isNotEmpty()) {
+                    Text("Invitations en attente", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec, modifier = Modifier.padding(top = 6.dp))
+                    invitations.forEach { inv ->
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(Sable2), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Outlined.Email, null, tint = TextSec, modifier = Modifier.size(18.dp))
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text(inv.email, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    listOfNotNull(
+                                        inv.invitedByName.takeIf { it.isNotBlank() }?.let { "invité par $it" },
+                                        inv.expiresAt.takeIf { it > 0 }?.let {
+                                            "jusqu'au " + java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault())
+                                                .format(java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.FRENCH))
+                                        },
+                                    ).joinToString(" · "),
+                                    fontSize = 12.sp, color = TextSec, maxLines = 1
+                                )
+                            }
+                            CampButton("Annuler", {
+                                viewModel.revokeTribeInvitation(inv.id) { err -> tribeError = err }
+                            }, kind = ButtonKind.Ghost, height = 38.dp)
                         }
                     }
                 }
