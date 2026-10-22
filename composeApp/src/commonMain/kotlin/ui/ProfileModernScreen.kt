@@ -402,7 +402,7 @@ private fun TribeContent(
                     InitialAvatar(name, 0, 48.dp, 16.dp, 20.sp)
                     Column {
                         Text(name, fontWeight = FontWeight.Bold, color = Ecorce)
-                        Text("Synchronisé avec tribbae.bananaops.cloud", fontSize = 12.sp, color = TextSec)
+                        Text("Synchronisé avec tribbae.fr", fontSize = 12.sp, color = TextSec)
                     }
                 }
                 MenuRow(Icons.Outlined.Edit, "Nom de la tribu : $tribeName") { showSettings = false; showRename = true }
@@ -546,7 +546,7 @@ private fun TribeContent(
 }
 
 /** Politique de confidentialité, publiée sur le site. */
-private const val PRIVACY_URL = "https://tribbae.bananaops.cloud/confidentialite"
+private const val PRIVACY_URL = "${data.Backend.PRODUCTION}/confidentialite"
 
 /**
  * Suppression définitive du compte (RGPD, droit à l'effacement) : ce qui

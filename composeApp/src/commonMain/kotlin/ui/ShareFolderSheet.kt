@@ -84,7 +84,7 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                                 if (r == null) {
                                     message = "Connexion requise pour partager un dossier."
                                 } else {
-                                    val url = r.shareUrl.ifBlank { "https://tribbae.bananaops.cloud/share/${r.shareToken}" }
+                                    val url = r.shareUrl.ifBlank { "${data.Backend.PRODUCTION}/share/${r.shareToken}" }
                                     shareUrl = url
                                     sendLink(url)
                                 }

@@ -30,11 +30,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
-            <!-- Liens de partage de dossier : https://tribbae.bananaops.cloud/share/<jeton> -->
+            <!-- Liens de partage de dossier : https://tribbae.fr/share/<jeton> (et l'ancien domaine,
+                 pour les liens déjà envoyés) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tribbae.fr" android:pathPrefix="/share/" />
                 <data android:scheme="https" android:host="tribbae.bananaops.cloud" android:pathPrefix="/share/" />
             </intent-filter>
         </activity>

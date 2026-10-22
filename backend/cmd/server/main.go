@@ -64,7 +64,7 @@ func main() {
 
 	// Services
 	authSvc := auth.NewService(database.Col("users"), cfg.JWTSecret)
-	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), cfg.BaseURL)
+	folderSvc := folder.NewService(database.Col("folders"), database.Col("links"), database.Col("users"), strings.TrimRight(cfg.SiteURL, "/"))
 	linkSvc := link.NewService(database.Col("links"), database.Col("folders"))
 	childSvc := child.NewService(database.DB())
 	// Tribu : ses membres partagent idées, dossiers et enfants
@@ -196,6 +196,8 @@ func main() {
 	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, account.DeletePath: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
 	handler = httpx.CORS(cfg.AllowedOrigins, handler)
+	// Ancien domaine et www : les pages redirigent vers SITE_URL, l'API reste servie
+	handler = httpx.CanonicalHost(cfg.SiteURL, cfg.RedirectHosts, handler)
 	handler = httpx.SecurityHeaders(handler)
 
 	srv := &http.Server{

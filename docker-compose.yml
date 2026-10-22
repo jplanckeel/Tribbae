@@ -27,7 +27,10 @@ services:
       GRPC_PORT: "9090"
       BASE_URL: ${BASE_URL:-http://backend:8080}
       # Adresse publique (adresses canoniques, sitemap.xml, llms.txt, aperçus de partage)
-      SITE_URL: ${SITE_URL:-https://tribbae.bananaops.cloud}
+      SITE_URL: ${SITE_URL:-https://tribbae.fr}
+      # Ancien domaine et www : les pages redirigent vers SITE_URL, l'API y reste servie
+      # (applications Android déjà installées)
+      REDIRECT_HOSTS: ${REDIRECT_HOSTS:-tribbae.bananaops.cloud,www.tribbae.fr}
       OLLAMA_URL: http://ollama:11434
       # Petit modèle pour un VPS 2 CPU sans GPU (téléchargé automatiquement au démarrage)
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:1.7b}
@@ -37,12 +40,13 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       # Emails transactionnels (Brevo) ; sans clé, ils sont seulement journalisés
       BREVO_API_KEY: ${BREVO_API_KEY:-}
-      MAIL_FROM: ${MAIL_FROM:-tribbae@bananaops.cloud}
+      MAIL_FROM: ${MAIL_FROM:-contact@tribbae.fr}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Tribbae}
       SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.tribbae-backend.rule=Host(`${BACKEND_HOST:-tribbae.bananaops.cloud}`)"
+      # tribbae.fr, sa variante www et l'ancien domaine (redirigés par l'application)
+      - "traefik.http.routers.tribbae-backend.rule=Host(`${BACKEND_HOST:-tribbae.fr}`) || Host(`www.${BACKEND_HOST:-tribbae.fr}`) || Host(`${LEGACY_HOST:-tribbae.bananaops.cloud}`)"
       - "traefik.http.routers.tribbae-backend.entrypoints=websecure"
       - "traefik.http.routers.tribbae-backend.tls.certresolver=letsencrypt"
       - "traefik.http.services.tribbae-backend.loadbalancer.server.port=8080"
