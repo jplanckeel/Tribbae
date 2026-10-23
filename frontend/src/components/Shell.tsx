@@ -197,6 +197,7 @@ function Footer() {
   return (
     <footer className="hidden border-t border-line px-6 py-6 text-center text-sm text-sec md:block">
       Tribbae — les idées de la tribu, au même endroit ·{" "}
+      <NavLink to="/a-propos" className="font-semibold text-terracotta hover:text-terracotta-dark">À propos</NavLink> ·{" "}
       <NavLink to="/aide" className="font-semibold text-terracotta hover:text-terracotta-dark">Aide</NavLink> ·{" "}
       <NavLink to="/confidentialite" className="font-semibold text-terracotta hover:text-terracotta-dark">Confidentialité</NavLink>
     </footer>

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, RouterProvider, useParams } from "react-
 import { AppLayout, BareLayout, RequireAuth } from "./components/Shell";
 import Admin from "./pages/Admin";
 import Explorer from "./pages/Explorer";
+import About from "./pages/About";
 import Faq from "./pages/Faq";
 import Privacy from "./pages/Privacy";
 import FolderDetail from "./pages/FolderDetail";
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
       { path: "/links/:id", element: <LinkDetail /> },
       { path: "/dossiers/:id", element: <FolderDetail /> },
       { path: "/aide", element: <Faq /> },
+      { path: "/a-propos", element: <About /> },
       { path: "/confidentialite", element: <Privacy /> },
       { path: "/mes-idees", element: auth(<MyIdeas />) },
       { path: "/courses", element: auth(<Shopping />) },
