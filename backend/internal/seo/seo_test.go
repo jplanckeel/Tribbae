@@ -45,7 +45,7 @@ func (f *fakeSource) Folder(_ context.Context, id string) (*Collection, error) {
 	return nil, nil
 }
 func (f *fakeSource) SharedFolder(_ context.Context, token string) (*Collection, error) {
-	if token == "secret" {
+	if token == "abababababababababababababababab" {
 		return &Collection{ID: "f9", Name: "Vacances", Author: "Alice"}, nil
 	}
 	return nil, nil
@@ -83,19 +83,19 @@ func newTestHandler(t *testing.T) *Handler {
 	}
 	src := &fakeSource{
 		ideas: map[string]Idea{
-			"r1": {
-				ID: "r1", Title: "Crêpes </script><script>alert(1)</script>", Category: "LINK_CATEGORY_RECETTE",
+			"0000000000000000000000a1": {
+				ID: "0000000000000000000000a1", Title: "Crêpes </script><script>alert(1)</script>", Category: "LINK_CATEGORY_RECETTE",
 				Description: "Une pâte inratable.", Ingredients: []string{"250 g de farine", "3 œufs"},
 				ImageURL: "https://img.example/crepes.jpg", URL: "https://recettes.example/crepes", Author: "Alice",
 				Created: time.Date(2026, 3, 1, 10, 0, 0, 0, time.UTC), Updated: time.Date(2026, 3, 2, 10, 0, 0, 0, time.UTC),
 			},
-			"e1": {
-				ID: "e1", Title: "Fête de la courge", Category: "LINK_CATEGORY_EVENEMENT", Location: "Ferme des Saules",
+			"0000000000000000000000e1": {
+				ID: "0000000000000000000000e1", Title: "Fête de la courge", Category: "LINK_CATEGORY_EVENEMENT", Location: "Ferme des Saules",
 				EventDate: time.Date(2026, 10, 25, 13, 0, 0, 0, time.UTC), Author: "Bob", ImageURL: "javascript:alert(1)",
 			},
 		},
 		folders: map[string]Collection{
-			"f1": {ID: "f1", Name: "Goûters", Author: "Alice", Ideas: []Idea{{ID: "r1", Title: "Crêpes"}}},
+			"0000000000000000000000f1": {ID: "0000000000000000000000f1", Name: "Goûters", Author: "Alice", Ideas: []Idea{{ID: "0000000000000000000000a1", Title: "Crêpes"}}},
 		},
 	}
 	h, err := New("https://tribbae.test/", dir, src)
@@ -130,13 +130,13 @@ func jsonLD(t *testing.T, html string) []map[string]any {
 
 func TestIdeaPageHasOwnHeadContentAndSchema(t *testing.T) {
 	h := newTestHandler(t)
-	w := get(t, h, "/links/r1")
+	w := get(t, h, "/links/0000000000000000000000a1")
 	body := w.Body.String()
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d", w.Code)
 	}
 	for _, want := range []string{
-		`<link data-seo rel="canonical" href="https://tribbae.test/links/r1" />`,
+		`<link data-seo rel="canonical" href="https://tribbae.test/links/0000000000000000000000a1" />`,
 		`<meta data-seo name="description" content="Recette partagée par Alice sur Tribbae : Une pâte inratable." />`,
 		`<meta property="article:section" content="Recette" />`,
 		`<meta property="og:image" content="https://img.example/crepes.jpg" />`,
@@ -170,7 +170,7 @@ func TestIdeaPageHasOwnHeadContentAndSchema(t *testing.T) {
 
 func TestEventSchemaAndUnsafeImageIgnored(t *testing.T) {
 	h := newTestHandler(t)
-	body := get(t, h, "/links/e1").Body.String()
+	body := get(t, h, "/links/0000000000000000000000e1").Body.String()
 	ld := jsonLD(t, body)
 	if ld[0]["@type"] != "Event" || ld[0]["startDate"] != "2026-10-25T14:00:00+01:00" {
 		t.Errorf("événement = %v", ld[0])
@@ -195,14 +195,14 @@ func TestPrivateOrUnknownContentIsNotIndexed(t *testing.T) {
 			t.Errorf("%s : l'application doit quand même démarrer (idée privée d'un membre connecté)", path)
 		}
 	}
-	for _, path := range []string{"/mes-idees", "/tribu", "/connexion", "/share/secret", "/explorer?q=crêpes"} {
+	for _, path := range []string{"/mes-idees", "/tribu", "/connexion", "/share/abababababababababababababababab", "/explorer?q=crêpes"} {
 		w := get(t, h, path)
 		if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `content="noindex, follow"`) {
 			t.Errorf("%s : status %d, doit être noindex", path, w.Code)
 		}
 	}
 	// L'aperçu d'un lien de partage affiche le dossier, sans adresse canonique
-	share := get(t, h, "/share/secret").Body.String()
+	share := get(t, h, "/share/abababababababababababababababab").Body.String()
 	if !strings.Contains(share, `<meta property="og:title" content="Vacances · partagé sur Tribbae" />`) || strings.Contains(share, "canonical") {
 		t.Errorf("partage :\n%s", share)
 	}
@@ -211,13 +211,13 @@ func TestPrivateOrUnknownContentIsNotIndexed(t *testing.T) {
 func TestListingsAndFAQ(t *testing.T) {
 	h := newTestHandler(t)
 	cat := get(t, h, "/category/recette").Body.String()
-	if !strings.Contains(cat, `<a href="/links/r1">`) || !strings.Contains(cat, "Recettes en famille") {
+	if !strings.Contains(cat, `<a href="/links/0000000000000000000000a1">`) || !strings.Contains(cat, "Recettes en famille") {
 		t.Errorf("catégorie :\n%s", cat)
 	}
 	if ld := jsonLD(t, cat); ld[0]["@type"] != "CollectionPage" {
 		t.Errorf("catégorie JSON-LD = %v", ld)
 	}
-	folder := get(t, h, "/dossiers/f1").Body.String()
+	folder := get(t, h, "/dossiers/0000000000000000000000f1").Body.String()
 	if !strings.Contains(folder, "Goûters : 1 idée rassemblée par Alice sur Tribbae.") {
 		t.Errorf("dossier :\n%s", folder)
 	}
@@ -260,7 +260,7 @@ func TestSitemapAndLLMs(t *testing.T) {
 	for _, u := range set.URLs {
 		locs[u.Loc] = true
 	}
-	for _, want := range []string{"https://tribbae.test/", "https://tribbae.test/category/deco", "https://tribbae.test/links/r1", "https://tribbae.test/dossiers/f1", "https://tribbae.test/a-propos"} {
+	for _, want := range []string{"https://tribbae.test/", "https://tribbae.test/category/deco", "https://tribbae.test/links/0000000000000000000000a1", "https://tribbae.test/dossiers/0000000000000000000000f1", "https://tribbae.test/a-propos"} {
 		if !locs[want] {
 			t.Errorf("sitemap sans %s", want)
 		}
@@ -273,7 +273,7 @@ func TestSitemapAndLLMs(t *testing.T) {
 	h.LLMs()(w, httptest.NewRequest(http.MethodGet, "/llms.txt", nil))
 	txt := w.Body.String()
 	if !strings.HasPrefix(txt, "# Tribbae\n\n> ") || !strings.Contains(txt, "(https://tribbae.test/category/livre)") ||
-		!strings.Contains(txt, "- [Crêpes </script><script>alert(1)</script>](https://tribbae.test/links/r1)") {
+		!strings.Contains(txt, "- [Crêpes </script><script>alert(1)</script>](https://tribbae.test/links/0000000000000000000000a1)") {
 		t.Errorf("llms.txt :\n%s", txt)
 	}
 }
@@ -327,7 +327,7 @@ func TestHomeDescriptionIsNotClipped(t *testing.T) {
 
 func TestArticleMetaOnlyOnIdeas(t *testing.T) {
 	h := newTestHandler(t)
-	if body := get(t, h, "/links/e1").Body.String(); !strings.Contains(body, `<meta property="article:section" content="Sortie" />`) {
+	if body := get(t, h, "/links/0000000000000000000000e1").Body.String(); !strings.Contains(body, `<meta property="article:section" content="Sortie" />`) {
 		t.Error("article:section absent d'une idée")
 	}
 	if body := get(t, h, "/").Body.String(); strings.Contains(body, "article:") {
@@ -356,5 +356,25 @@ func TestAboutPage(t *testing.T) {
 	if ld := jsonLD(t, body); len(ld) != 2 || ld[0]["@type"] != "AboutPage" {
 		t.Errorf("JSON-LD = %v", ld)
 
+	}
+}
+
+func TestMalformedAddressesAreUnknownPages(t *testing.T) {
+	h := newTestHandler(t)
+	for _, path := range []string{
+		"/links/%3Cscript%3Ealert(1)%3C%2Fscript%3E",
+		"/dossiers/%22%3E%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E",
+		"/share/%3Cscript%3E",
+		"/category/%3Cscript%3Ealert(1)%3C%2Fscript%3E",
+		"/%3Cscript%3Ealert(1)%3C%2Fscript%3E",
+		"/links/0000000000000000000000A1", // ObjectID en majuscules : jamais produit par le serveur
+	} {
+		w := get(t, h, path)
+		if w.Code != http.StatusNotFound {
+			t.Errorf("%s → %d, want 404", path, w.Code)
+		}
+		if body := w.Body.String(); strings.Contains(body, "<script>alert") || strings.Contains(body, "onerror") {
+			t.Errorf("%s : l'adresse se retrouve dans la page :\n%s", path, body)
+		}
 	}
 }

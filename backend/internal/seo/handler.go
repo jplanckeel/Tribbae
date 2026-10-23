@@ -129,6 +129,7 @@ func (h *Handler) ServeHTML(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(p.Status)
 	if r.Method != http.MethodHead {
+		// deepcode ignore XSS: la page sort de html/template (texte échappé, JSON-LD via json.Marshal) ; l'adresse ne sert qu'à choisir la page, ses identifiants sont validés (objectID, shareToken) et rien n'en est recopié (TestMalformedAddressesAreUnknownPages)
 		_, _ = w.Write(page)
 	}
 }
