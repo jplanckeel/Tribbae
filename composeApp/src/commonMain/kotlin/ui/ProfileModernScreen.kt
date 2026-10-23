@@ -208,39 +208,32 @@ private fun TribeContent(
     }
 
     Column(modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = ui.components.bottomNavClearance())) {
-        // ── Bandeau orange : soleil + tipi ──
-        Box(Modifier.fillMaxWidth().background(Braise)) {
-            Box(Modifier.align(Alignment.BottomCenter).offset(y = 170.dp).size(360.dp).clip(CircleShape).background(Soleil))
-            Column(Modifier.fillMaxWidth().statusBarsPadding()) {
-                Row(
-                    Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Ma tribu", style = display(26.sp))
-                    CircleIconButton(Icons.Outlined.Settings, "Paramètres", { showSettings = true }, background = Color.White.copy(alpha = 0.6f))
-                }
-                Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.BottomCenter) {
-                    TipiMark(110.dp, stroke = 1.8f)
-                }
-            }
-        }
+        Column(Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            val pending = tribe?.invitations?.size ?: 0
+            PageHeader(
+                "Ma tribu",
+                subtitle = "${members.size} membre${if (members.size > 1) "s" else ""}" +
+                    if (pending > 0) " · $pending invitation${if (pending > 1) "s" else ""} en attente" else "",
+                action = { CircleIconButton(Icons.Outlined.Settings, "Paramètres", { showSettings = true }, background = Color.White) },
+            )
 
-        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("La tribu $tribeName", style = display(24.sp))
-                    Icon(
-                        Icons.Outlined.Edit, "Renommer la tribu", tint = TextSec,
-                        modifier = Modifier.size(32.dp).clip(CircleShape).clickable { showRename = true }.padding(7.dp)
-                    )
+            // L'identité de la tribu : soleil, tipi et nom (même carte que le web)
+            Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Braise)) {
+                Box(Modifier.align(Alignment.BottomCenter).offset(y = 190.dp).size(300.dp).clip(CircleShape).background(Soleil))
+                Column(
+                    Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TipiMark(84.dp, stroke = 1.8f)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("La tribu $tribeName", style = display(24.sp))
+                        Icon(
+                            Icons.Outlined.Edit, "Renommer la tribu", tint = Ecorce,
+                            modifier = Modifier.size(32.dp).clip(CircleShape).clickable { showRename = true }.padding(7.dp)
+                        )
+                    }
                 }
-                val pending = tribe?.invitations?.size ?: 0
-                Text(
-                    "${members.size} membre${if (members.size > 1) "s" else ""}" +
-                        if (pending > 0) " · $pending invitation${if (pending > 1) "s" else ""} en attente" else "",
-                    fontSize = 14.sp, color = TextSec
-                )
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

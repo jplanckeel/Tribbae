@@ -148,32 +148,32 @@ fun ExploreScreen(
             Modifier.fillMaxSize().verticalScroll(scroll).statusBarsPadding().padding(top = 20.dp, bottom = ui.components.bottomNavClearance()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(category?.let { categoryUi(it).plural } ?: "Explorer", style = display(32.sp))
-                Row(
-                    Modifier
-                        .height(44.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Color.White)
-                        .border(ThinBorder, RoundedCornerShape(14.dp))
-                        .clickable(role = Role.Button) { showFilters = true }
-                        .padding(horizontal = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(Icons.Outlined.Tune, null, tint = Ecorce, modifier = Modifier.size(20.dp))
-                    Text("Filtres", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
-                    if (activeFilters > 0) {
-                        Box(Modifier.size(20.dp).clip(RoundedCornerShape(10.dp)).background(Terracotta), contentAlignment = Alignment.Center) {
-                            Text("$activeFilters", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+            PageHeader(
+                category?.let { categoryUi(it).plural } ?: "Explorer",
+                Modifier.padding(horizontal = 20.dp),
+                subtitle = if (view == 1) "Les dossiers publiés par les tribus" else "Les idées partagées par les tribus",
+                action = {
+                    Row(
+                        Modifier
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color.White)
+                            .border(ThinBorder, RoundedCornerShape(14.dp))
+                            .clickable(role = Role.Button) { showFilters = true }
+                            .padding(horizontal = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Outlined.Tune, null, tint = Ecorce, modifier = Modifier.size(20.dp))
+                        Text("Filtres", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
+                        if (activeFilters > 0) {
+                            Box(Modifier.size(20.dp).clip(RoundedCornerShape(10.dp)).background(Terracotta), contentAlignment = Alignment.Center) {
+                                Text("$activeFilters", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
-                }
-            }
+                },
+            )
 
             SearchField(
                 query, { query = it },

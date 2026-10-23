@@ -6,7 +6,7 @@ import { FolderGlyph } from "../components/FolderCover";
 import Icon, { type IconName } from "../components/Icon";
 import ShareFolderSheet from "../components/ShareFolderSheet";
 import Sheet from "../components/Sheet";
-import { Button, EmptyState, ErrorNote, Field, SectionTitle, Spinner } from "../components/ui";
+import { Button, EmptyState, ErrorNote, Field, PageHeader, SectionTitle, Spinner } from "../components/ui";
 import * as api from "../lib/api";
 import { AVATAR_COLORS, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
@@ -15,6 +15,7 @@ import { clearSession, useSession } from "../lib/session";
 import type { Child, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
+import { Page } from "../components/Shell";
 
 interface Member {
   key: string;
@@ -81,49 +82,50 @@ export default function Tribe() {
   return (
     <div>
       <Seo title="Ma tribu · Tribbae" noindex />
-      {/* Comme l'app : sur mobile, un grand bandeau orange dont le soleil déborde
-          derrière le nom de la tribu et les compteurs */}
-      <header className="relative h-[312px] bg-braise px-5 pt-5 md:h-auto md:overflow-hidden md:px-8 md:pb-[74px]">
-        <div aria-hidden="true" className="absolute top-[120px] left-1/2 h-[360px] w-[360px] -translate-x-1/2 rounded-full bg-soleil md:top-auto md:-bottom-[170px]" />
-        <div className="relative mx-auto flex max-w-3xl items-center justify-between">
-          <h1 className="font-display text-[26px] font-extrabold text-ecorce">Ma tribu</h1>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Paramètres"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/60 text-ecorce hover:bg-white/80"
-          >
-            <Icon name="settings" size={21} />
-          </button>
-        </div>
-        <svg aria-hidden="true" viewBox="0 0 48 42" className="absolute top-[70px] left-1/2 h-24 w-[110px] -translate-x-1/2 md:top-auto md:bottom-0 md:h-[104px] md:w-[120px]">
-          <path d="M20 1l6 9M28 1l-6 9" stroke="#3A211B" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M24 7L44 41H4z" fill="#D45A43" stroke="#3A211B" strokeWidth="1.8" strokeLinejoin="round" />
-          <path d="M24 22l11 19H13z" fill="#5E4558" stroke="#3A211B" strokeWidth="1.8" strokeLinejoin="round" />
-          <path d="M12 24h12.5L18 37z" fill="#F28C38" stroke="#3A211B" strokeWidth="1.6" strokeLinejoin="round" />
-          <path d="M30 18l2-1.5 2 1.5M33 26l2-1.5 2 1.5" stroke="#3A211B" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </header>
+      <Page className="gap-[18px]">
+        <PageHeader
+          title="Ma tribu"
+          subtitle={
+            <>
+              {plural(members.length, "membre", "membres")}
+              {!!tribe?.invitations?.length && ` · ${plural(tribe.invitations.length, "invitation en attente", "invitations en attente")}`}
+              {session.isAdmin && " · administrateur"}
+            </>
+          }
+          action={
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Paramètres"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-ecorce shadow-soft hover:bg-sable-2"
+            >
+              <Icon name="settings" size={21} />
+            </button>
+          }
+        />
 
-      <div className="relative mx-auto flex max-w-3xl flex-col gap-[18px] px-5 pt-[18px] md:mt-0 md:px-8">
-        <div className="flex flex-col gap-0.5 text-center">
-          <span className="flex items-center justify-center gap-1.5">
-            <span className="font-display text-2xl font-extrabold">La tribu {tribeName}</span>
+        {/* L'identité de la tribu : soleil, tipi et nom, comme le bandeau de l'app */}
+        <section className="relative flex flex-col items-center overflow-hidden rounded-large bg-braise px-5 pt-6 pb-5 text-center">
+          <div aria-hidden="true" className="absolute -bottom-[190px] left-1/2 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-soleil" />
+          <svg aria-hidden="true" viewBox="0 0 48 42" className="relative h-[84px] w-[96px]">
+            <path d="M20 1l6 9M28 1l-6 9" stroke="#3A211B" strokeWidth="1.8" strokeLinecap="round" />
+            <path d="M24 7L44 41H4z" fill="#D45A43" stroke="#3A211B" strokeWidth="1.8" strokeLinejoin="round" />
+            <path d="M24 22l11 19H13z" fill="#5E4558" stroke="#3A211B" strokeWidth="1.8" strokeLinejoin="round" />
+            <path d="M12 24h12.5L18 37z" fill="#F28C38" stroke="#3A211B" strokeWidth="1.6" strokeLinejoin="round" />
+            <path d="M30 18l2-1.5 2 1.5M33 26l2-1.5 2 1.5" stroke="#3A211B" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="relative mt-3 flex items-center gap-1.5">
+            <span className="font-display text-2xl font-extrabold text-ecorce">La tribu {tribeName}</span>
             <button
               type="button"
               onClick={() => setNameOpen(true)}
               aria-label="Renommer la tribu"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-sec hover:bg-sable-2 hover:text-ecorce"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-ecorce hover:bg-white/40"
             >
               <Icon name="pencil" size={16} />
             </button>
           </span>
-          <span className="text-sm text-sec">
-            {plural(members.length, "membre", "membres")}
-            {!!tribe?.invitations?.length && ` · ${plural(tribe.invitations.length, "invitation en attente", "invitations en attente")}`}
-            {session.isAdmin && " · administrateur"}
-          </span>
-        </div>
+        </section>
 
         <div className="grid grid-cols-3 gap-2">
           <Stat value={links.length} label={links.length > 1 ? "idées" : "idée"} />
@@ -187,7 +189,7 @@ export default function Tribe() {
           {session.isAdmin && <ListRow icon="crown" label="Administration" to="/admin" />}
           <ListRow icon="logout" label="Se déconnecter" onClick={logout} last />
         </nav>
-      </div>
+      </Page>
 
       {deleteOpen && <DeleteAccountSheet onClose={() => setDeleteOpen(false)} />}
       <ChildrenSheet open={kidsOpen} onClose={() => setKidsOpen(false)} list={children} />
