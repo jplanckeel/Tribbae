@@ -14,11 +14,12 @@ import { AuthShell } from "./Welcome";
 
 // Le jeton du lien (après le #) est gardé le temps de se connecter ou de créer
 // son compte, puis effacé : il ne passe jamais par l'adresse de la page.
-const KEY = "tribbae.invitation";
+// Nom de l'entrée sessionStorage (pas un secret : le jeton est la valeur stockée)
+const PENDING_INVITATION_ITEM = "tribbae.invitation";
 
 function storedToken(): string {
   try {
-    return sessionStorage.getItem(KEY) ?? "";
+    return sessionStorage.getItem(PENDING_INVITATION_ITEM) ?? "";
   } catch {
     return "";
   }
@@ -26,8 +27,8 @@ function storedToken(): string {
 
 function storeToken(token: string) {
   try {
-    if (token) sessionStorage.setItem(KEY, token);
-    else sessionStorage.removeItem(KEY);
+    if (token) sessionStorage.setItem(PENDING_INVITATION_ITEM, token);
+    else sessionStorage.removeItem(PENDING_INVITATION_ITEM);
   } catch {
     // Stockage indisponible (navigation privée) : il faudra rouvrir le lien
   }
