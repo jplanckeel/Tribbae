@@ -78,6 +78,8 @@ func (h *Handler) page(ctx context.Context, path string, query url.Values) (*Pag
 		return h.help(), nil
 	case path == "/confidentialite":
 		return privacy(), nil
+	case path == "/a-propos":
+		return h.aboutPage(), nil
 	}
 	if title, ok := private[path]; ok {
 		return &Page{Status: http.StatusOK, Title: title + " · " + siteName, Description: siteDescription, NoIndex: true, H1: title}, nil

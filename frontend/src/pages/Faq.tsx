@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { Link as RouterLink, useNavigate } from "react-router";
 import Icon, { type IconName } from "../components/Icon";
 import { Page } from "../components/Shell";
 import faq from "../../public/faq.json";
@@ -43,6 +43,8 @@ export default function Faq() {
       ))}
       <p className="text-center text-sm text-sec">
         Une autre question ? <a href="mailto:contact@tribbae.fr" className="font-semibold text-terracotta">contact@tribbae.fr</a>
+        {" · "}
+        <RouterLink to="/a-propos" className="font-semibold text-terracotta">À propos de Tribbae</RouterLink>
       </p>
     </Page>
   );

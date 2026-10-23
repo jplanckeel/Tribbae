@@ -77,6 +77,9 @@ func (h *Handler) sitemap(ctx context.Context) ([]byte, error) {
 		add("/category/"+c.Slug, mod, "weekly", "0.8", "")
 	}
 	add("/aide", time.Time{}, "monthly", "0.5", "")
+	if h.about != nil {
+		add("/a-propos", time.Time{}, "yearly", "0.4", "")
+	}
 	add("/confidentialite", time.Time{}, "yearly", "0.3", "")
 	for _, i := range ideas {
 		add("/links/"+i.ID, i.Updated, "", "0.6", absoluteImage(i.ImageURL))
@@ -110,6 +113,9 @@ func (h *Handler) llms(ctx context.Context) ([]byte, error) {
 	fmt.Fprintf(&b, "- [Accueil](%s/): présentation et dernières idées partagées\n", h.site)
 	fmt.Fprintf(&b, "- [Explorer](%s/explorer): toutes les idées et dossiers publiés par les familles\n", h.site)
 	fmt.Fprintf(&b, "- [Aide & FAQ](%s/aide): fonctionnement de l'application, partage, confidentialité\n", h.site)
+	if h.about != nil {
+		fmt.Fprintf(&b, "- [À propos](%s/a-propos): pourquoi Tribbae existe, ce que fait l'application, ses principes\n", h.site)
+	}
 	b.WriteString("\n## Catégories\n\n")
 	for _, c := range categories {
 		fmt.Fprintf(&b, "- [%s](%s/category/%s): %s\n", c.Plural, h.site, c.Slug, c.Intro)

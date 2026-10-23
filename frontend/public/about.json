@@ -1,0 +1,44 @@
+{
+  "intro": "Tribbae est une application gratuite, en français, qui rassemble les idées de la famille : sorties, activités, recettes, cadeaux, livres et déco. Chaque famille, sa « tribu », les range en dossiers, les partage entre ses membres et pioche dans celles que d'autres familles ont choisi de publier.",
+  "contact": "contact@tribbae.fr",
+  "sections": [
+    {
+      "title": "Pourquoi Tribbae ?",
+      "icon": "idee",
+      "paragraphs": [
+        "Les bonnes idées de la famille s'éparpillent : une sortie repérée dans une story, une recette gardée en capture d'écran, un cadeau noté dans une conversation, un livre conseillé à la sortie de l'école. Le jour où l'on en a besoin, plus personne ne sait où elles sont.",
+        "Tribbae les réunit au même endroit, pour toute la famille. On colle un lien, l'application récupère le titre et l'image, on range l'idée dans un dossier, et chacun dans la tribu la retrouve au bon moment."
+      ]
+    },
+    {
+      "title": "Ce que fait Tribbae",
+      "icon": "tipi",
+      "items": [
+        "Sept catégories pour s'y retrouver : activités, cadeaux, recettes, sorties, idées, livres et déco.",
+        "Des dossiers personnalisables, avec une date clé et un compte à rebours (anniversaire, vacances, Noël).",
+        "Une tribu de 12 personnes au plus, qui partage les idées, les dossiers et les profils des enfants.",
+        "Des rappels pour les sorties datées et une liste de courses tirée des recettes.",
+        "L'Explorer, où chacun pioche dans les idées que les autres familles ont publiées.",
+        "Des idées proposées par une IA à partir d'une simple description, que vous choisissez avant de les garder."
+      ]
+    },
+    {
+      "title": "Nos principes",
+      "icon": "lock",
+      "items": [
+        "Gratuit, sans publicité, sans revente ni profilage.",
+        "Vos idées sont privées par défaut : seules celles que vous publiez sont visibles par les autres familles.",
+        "Aucun cookie. La mesure d'audience (Umami) est anonyme et se désactive en un geste.",
+        "L'IA tourne sur notre propre serveur : vos demandes ne partent chez aucun service d'IA tiers, et elle ne consulte pas le web.",
+        "Vous pouvez télécharger vos données ou supprimer votre compte à tout moment."
+      ]
+    },
+    {
+      "title": "Sur le web et sur Android",
+      "icon": "globe",
+      "paragraphs": [
+        "Tribbae fonctionne dans le navigateur, sur tribbae.fr, et dans une application Android. Avec le même compte, les deux affichent les mêmes idées et dossiers, et l'application Android garde vos idées à portée de main même hors connexion."
+      ]
+    }
+  ]
+}

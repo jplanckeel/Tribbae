@@ -31,9 +31,10 @@ const (
 )
 
 type Handler struct {
-	site string // origine publique, ex. https://tribbae.fr
-	src  Source
-	faq  []QA
+	site  string // origine publique, ex. https://tribbae.fr
+	src   Source
+	faq   []QA
+	about *aboutContent
 
 	// index.html découpé autour de l'en-tête et de #root
 	beforeHead, betweenHeadRoot, afterRoot []byte
@@ -58,6 +59,7 @@ func New(site, staticDir string, src Source) (*Handler, error) {
 		return nil, err
 	}
 	h.faq = loadFAQ(filepath.Join(staticDir, "faq.json"))
+	h.about = loadAbout(filepath.Join(staticDir, "about.json"))
 	return h, nil
 }
 
