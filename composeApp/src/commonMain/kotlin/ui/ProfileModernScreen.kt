@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -317,6 +318,7 @@ private fun TribeContent(
                 ListRow(Icons.Outlined.ShoppingCart, "Liste de courses", onClick = onOpenShopping)
                 ListRow(Icons.Outlined.HelpOutline, "Aide & FAQ", onClick = onFaq)
                 ListRow(Icons.Outlined.Lock, "Confidentialité & mes données") { uriHandler.openUri(PRIVACY_URL) }
+                ListRow(Icons.Outlined.Info, "À propos de Tribbae") { uriHandler.openUri(ABOUT_URL) }
                 if (sessionManager.isAdmin()) ListRow(Icons.Outlined.AdminPanelSettings, "Administration", onClick = onOpenAdmin)
                 ListRow(Icons.Outlined.Logout, "Se déconnecter", last = true) { showLogout = true }
             }
@@ -588,6 +590,9 @@ private fun TribeContent(
 
 /** Politique de confidentialité, publiée sur le site. */
 private const val PRIVACY_URL = "${data.Backend.PRODUCTION}/confidentialite"
+
+/** Page À propos (pourquoi Tribbae, principes), publiée sur le site. */
+private const val ABOUT_URL = "${data.Backend.PRODUCTION}/a-propos"
 
 /**
  * Suppression définitive du compte (RGPD, droit à l'effacement) : ce qui

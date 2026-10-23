@@ -76,6 +76,10 @@ func newTestHandler(t *testing.T) *Handler {
 	if err := os.WriteFile(filepath.Join(dir, "faq.json"), []byte(faq), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	about := `{"intro":"Tribbae rassemble les idées.","contact":"contact@tribbae.test","sections":[{"title":"Pourquoi Tribbae ?","paragraphs":["Les idées s'éparpillent."]},{"title":"Nos principes","items":["Gratuit.","Aucun cookie."]}]}`
+	if err := os.WriteFile(filepath.Join(dir, "about.json"), []byte(about), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	src := &fakeSource{
 		ideas: map[string]Idea{
 			"r1": {
@@ -254,7 +258,7 @@ func TestSitemapAndLLMs(t *testing.T) {
 	for _, u := range set.URLs {
 		locs[u.Loc] = true
 	}
-	for _, want := range []string{"https://tribbae.test/", "https://tribbae.test/category/deco", "https://tribbae.test/links/r1", "https://tribbae.test/dossiers/f1"} {
+	for _, want := range []string{"https://tribbae.test/", "https://tribbae.test/category/deco", "https://tribbae.test/links/r1", "https://tribbae.test/dossiers/f1", "https://tribbae.test/a-propos"} {
 		if !locs[want] {
 			t.Errorf("sitemap sans %s", want)
 		}
@@ -277,5 +281,28 @@ func TestPlusDe(t *testing.T) {
 		if got := plusDe(in); got != want {
 			t.Errorf("plusDe(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+func TestAboutPage(t *testing.T) {
+	h := newTestHandler(t)
+	w := get(t, h, "/a-propos")
+	body := w.Body.String()
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	for _, want := range []string{
+		`<title data-seo>À propos de Tribbae</title>`,
+		`<link data-seo rel="canonical" href="https://tribbae.test/a-propos" />`,
+		`<h2>Nos principes</h2>`,
+		`<p>Gratuit. Aucun cookie.</p>`,
+		`écrivez à contact@tribbae.test.`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("manque %s", want)
+		}
+	}
+	if ld := jsonLD(t, body); len(ld) != 2 || ld[0]["@type"] != "AboutPage" {
+		t.Errorf("JSON-LD = %v", ld)
 	}
 }
