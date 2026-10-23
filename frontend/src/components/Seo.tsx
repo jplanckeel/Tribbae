@@ -1,4 +1,5 @@
 import { useLayoutEffect } from "react";
+import { clip } from "../lib/seo";
 
 const MAX_DESCRIPTION = 160;
 const INDEX = "index, follow, max-image-preview:large, max-snippet:-1";
@@ -10,14 +11,6 @@ interface SeoProps {
   path?: string;
   /** Écrans privés, recherches, liens de partage : à ne pas indexer. */
   noindex?: boolean;
-}
-
-function clip(s: string): string {
-  const t = s.replace(/\s+/g, " ").trim();
-  if (t.length <= MAX_DESCRIPTION) return t;
-  const cut = t.slice(0, MAX_DESCRIPTION - 1);
-  const space = cut.lastIndexOf(" ");
-  return `${(space > MAX_DESCRIPTION / 2 ? cut.slice(0, space) : cut).replace(/[\s,.;:]+$/, "")}…`;
 }
 
 /**
@@ -33,7 +26,7 @@ export default function Seo({ title, description, path, noindex }: SeoProps) {
   return (
     <>
       <title>{title}</title>
-      {description && <meta name="description" content={clip(description)} />}
+      {description && <meta name="description" content={clip(description, MAX_DESCRIPTION)} />}
       {path && !noindex && <link rel="canonical" href={`${window.location.origin}${path}`} />}
       <meta name="robots" content={noindex ? "noindex, follow" : INDEX} />
     </>

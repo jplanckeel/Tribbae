@@ -14,6 +14,7 @@ import { useMyData } from "../lib/data";
 import { likeFeedback } from "../lib/feedback";
 import { eventDateMs, formatShortDate, formatTime, hostname, safeHref, safeImage } from "../lib/format";
 import { canEditFolder, copyInput, toInput } from "../lib/links";
+import { ideaSeoDescription, ideaSeoTitle } from "../lib/seo";
 import { useSession } from "../lib/session";
 import { shareOrCopy } from "../lib/share";
 import type { Comment, Link } from "../lib/types";
@@ -179,8 +180,8 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   return (
     <article className="mx-auto max-w-3xl md:px-8 md:pt-8">
       <Seo
-        title={`${link.title} · ${cat.label} · Tribbae`}
-        description={link.description || `${cat.label} : ${link.title}, sur Tribbae.`}
+        title={ideaSeoTitle(link)}
+        description={ideaSeoDescription(link, cat)}
         path={`/links/${link.id}`}
       />
 

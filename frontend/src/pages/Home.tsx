@@ -58,7 +58,7 @@ function HomeMobile() {
     <div className="relative overflow-hidden">
       <Seo
         title="Tribbae — Les idées de la famille au même endroit"
-        description="Tribbae rassemble les idées de la famille : sorties, activités, recettes, cadeaux, livres et déco. Rangez-les en dossiers, partagez-les avec votre tribu et piochez dans celles des autres familles."
+        description="Tribbae, l'appli gratuite des idées en famille : sorties, recettes, cadeaux, livres. Rangez-les en dossiers et partagez-les avec votre tribu."
         path="/"
       />
       {/* Motifs du logo : grand soleil, petit rond et croix */}
