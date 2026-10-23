@@ -71,13 +71,10 @@ fun MyIdeasScreen(
                 .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = ui.components.bottomNavClearance()),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Mes idées", style = display(32.sp))
-                Text(
-                    "${links.size} idée${if (links.size > 1) "s" else ""} · ${folders.size} dossier${if (folders.size > 1) "s" else ""} · $tagTotal tag${if (tagTotal > 1) "s" else ""}",
-                    fontSize = 14.sp, color = TextSec
-                )
-            }
+            PageHeader(
+                "Mes idées",
+                subtitle = "${links.size} idée${if (links.size > 1) "s" else ""} · ${folders.size} dossier${if (folders.size > 1) "s" else ""} · $tagTotal tag${if (tagTotal > 1) "s" else ""}",
+            )
 
             SegmentedTabs(
                 listOf(Triple("Dossiers", folders.size, 0), Triple("Favoris", favTotal, 1), Triple("Tags", tagTotal, 2)).map { (l, n, _) -> if (n > 0) "$l $n" else l },

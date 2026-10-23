@@ -415,6 +415,22 @@ fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
     }
 }
 
+/**
+ * En-tête des écrans principaux (Explorer, Mes idées, Ma tribu) : même titre,
+ * même sous-titre, action éventuelle à droite. Même composant côté web
+ * (`PageHeader` dans frontend/src/components/ui.tsx).
+ */
+@Composable
+fun PageHeader(title: String, modifier: Modifier = Modifier, subtitle: String? = null, action: (@Composable () -> Unit)? = null) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = display(32.sp))
+            if (subtitle != null) Text(subtitle, fontSize = 14.sp, color = TextSec)
+        }
+        if (action != null) Box(Modifier.padding(top = 4.dp)) { action() }
+    }
+}
+
 @Composable
 fun SectionHeader(title: String, action: String? = null, onAction: () -> Unit = {}) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
