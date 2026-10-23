@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -53,6 +54,13 @@ func redirect(path string) string {
 	return ""
 }
 
+// Identifiants lus dans l'adresse : une valeur malformée est une page inconnue,
+// sans requête en base. Rien de l'adresse n'est repris tel quel dans la page.
+var (
+	objectID   = regexp.MustCompile(`^[0-9a-f]{24}$`) // idée, dossier (ObjectID MongoDB)
+	shareToken = regexp.MustCompile(`^[0-9a-f]{32}$`) // lien de partage (folder.GenerateShareToken)
+)
+
 // page construit la page d'une adresse du site.
 func (h *Handler) page(ctx context.Context, path string, query url.Values) (*Page, error) {
 	if len(path) > 1 {
@@ -71,11 +79,20 @@ func (h *Handler) page(ctx context.Context, path string, query url.Values) (*Pag
 	case strings.HasPrefix(path, "/category/"):
 		return h.category(ctx, strings.TrimPrefix(path, "/category/"))
 	case strings.HasPrefix(path, "/links/"):
-		return h.idea(ctx, strings.TrimPrefix(path, "/links/"))
+		if id := strings.TrimPrefix(path, "/links/"); objectID.MatchString(id) {
+			return h.idea(ctx, id)
+		}
+		return notFound(), nil
 	case strings.HasPrefix(path, "/dossiers/"):
-		return h.folder(ctx, strings.TrimPrefix(path, "/dossiers/"))
+		if id := strings.TrimPrefix(path, "/dossiers/"); objectID.MatchString(id) {
+			return h.folder(ctx, id)
+		}
+		return notFound(), nil
 	case strings.HasPrefix(path, "/share/"):
-		return h.shared(ctx, strings.TrimPrefix(path, "/share/"))
+		if token := strings.TrimPrefix(path, "/share/"); shareToken.MatchString(token) {
+			return h.shared(ctx, token)
+		}
+		return notFound(), nil
 	case path == "/aide":
 		return h.help(), nil
 	case path == "/confidentialite":

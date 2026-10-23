@@ -43,7 +43,7 @@ import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.ShoppingCart
-import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -292,32 +292,33 @@ private fun TribeContent(
     val extra = seats.size - shown.size
 
     Column(modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = ui.components.bottomNavClearance())) {
-        // ── En-tête : la tribu installée autour du feu ──
-        Box(Modifier.fillMaxWidth().statusBarsPadding().height(300.dp).clipToBounds()) {
+        PageHeader(
+            "Ma tribu",
+            Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 20.dp),
+            subtitle = "$foyerCount au foyer · ${circle.size} dans le cercle" +
+                (if (invitations.isNotEmpty()) " · ${invitations.size} invitation${if (invitations.size > 1) "s" else ""} en attente" else "") +
+                (if (sessionManager.isAdmin()) " · administrateur" else ""),
+            action = { CircleIconButton(Icons.Outlined.Settings, "Paramètres", { showSettings = true }, background = Color.White) },
+        )
+
+        // ── La tribu installée autour du feu ──
+        Box(Modifier.fillMaxWidth().padding(top = 12.dp).height(246.dp).clipToBounds()) {
             val sun = remember { Animatable(0f) }
             LaunchedEffect(Unit) { sun.animateTo(1f, tween(1100, easing = EaseSoft)) }
             Box(
-                Modifier.align(Alignment.TopCenter).offset(y = 96.dp).size(340.dp)
+                Modifier.align(Alignment.TopCenter).offset(y = 42.dp).size(340.dp)
                     .graphicsLayer { translationY = (1f - sun.value) * 60.dp.toPx() }
                     .clip(CircleShape).background(Soleil)
             )
-            Row(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Ma tribu", style = display(26.sp))
-                CircleIconButton(Icons.Outlined.Tune, "Paramètres", { showSettings = true })
-            }
-            CampfireTipi(Modifier.align(Alignment.TopCenter).offset(y = 140.dp).size(104.dp).entrance(150))
-            CampfireFlame(Modifier.align(Alignment.TopCenter).offset(x = 70.dp, y = 206.dp).size(26.dp, 30.dp))
+            CampfireTipi(Modifier.align(Alignment.TopCenter).offset(y = 86.dp).size(104.dp).entrance(150))
+            CampfireFlame(Modifier.align(Alignment.TopCenter).offset(x = 70.dp, y = 152.dp).size(26.dp, 30.dp))
 
             val total = shown.size + if (extra > 0) 1 else 0
             (0 until total).forEach { i ->
                 val (dx, dy) = TribePage.ringPosition(i, total)
                 val seat = shown.getOrNull(i)
                 Column(
-                    Modifier.align(Alignment.TopCenter).offset(x = dx.dp, y = (205 + dy - 40).dp).width(64.dp)
+                    Modifier.align(Alignment.TopCenter).offset(x = dx.dp, y = (151 + dy - 40).dp).width(64.dp)
                         .entrance(200 + i * 90, rise = true)
                         .clip(RoundedCornerShape(16.dp))
                         .clickable(role = Role.Button, onClickLabel = seat?.label ?: "Voir le foyer") { seat?.onClick?.invoke() ?: run { tab = 0 } },
@@ -350,23 +351,15 @@ private fun TribeContent(
                 }
             }
 
-            Column(
+            Row(
                 Modifier.align(Alignment.BottomCenter).padding(bottom = 14.dp, start = 20.dp, end = 20.dp).entrance(350),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text("La tribu $tribeName", style = display(24.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                    Icon(
-                        Icons.Outlined.Edit, "Renommer la tribu", tint = TextMuted,
-                        modifier = Modifier.size(32.dp).clip(CircleShape).clickable { showRename = true }.padding(8.dp)
-                    )
-                }
-                Text(
-                    "$foyerCount au foyer · ${circle.size} dans le cercle" +
-                        (if (invitations.isNotEmpty()) " · ${invitations.size} invitation${if (invitations.size > 1) "s" else ""} en attente" else "") +
-                        (if (sessionManager.isAdmin()) " · administrateur" else ""),
-                    fontSize = 14.sp, color = TextSec, textAlign = TextAlign.Center
+                Text("La tribu $tribeName", style = display(24.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                Icon(
+                    Icons.Outlined.Edit, "Renommer la tribu", tint = TextMuted,
+                    modifier = Modifier.size(32.dp).clip(CircleShape).clickable { showRename = true }.padding(8.dp)
                 )
             }
         }

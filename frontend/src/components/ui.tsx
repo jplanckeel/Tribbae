@@ -140,6 +140,23 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
   );
 }
 
+/**
+ * En-tête des écrans principaux (Explorer, Mes idées, Ma tribu) : même titre,
+ * même sous-titre, action éventuelle à droite. Même composant côté Android
+ * (`PageHeader` dans ui/campfire/Campfire.kt).
+ */
+export function PageHeader({ title, subtitle, action }: { title: ReactNode; subtitle?: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <h1 className="font-display text-[32px] leading-tight font-extrabold tracking-[-0.8px] md:text-[40px]">{title}</h1>
+        {subtitle && <span className="text-sm text-sec md:text-base">{subtitle}</span>}
+      </div>
+      {action && <div className="shrink-0 pt-1">{action}</div>}
+    </div>
+  );
+}
+
 export function SectionTitle({ title, action }: { title: string; action?: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3">

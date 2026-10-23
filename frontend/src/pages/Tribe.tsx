@@ -6,7 +6,7 @@ import { FolderGlyph } from "../components/FolderCover";
 import Icon, { type IconName } from "../components/Icon";
 import ShareFolderSheet from "../components/ShareFolderSheet";
 import Sheet from "../components/Sheet";
-import { Button, EmptyState, ErrorNote, Field, Spinner } from "../components/ui";
+import { Button, EmptyState, ErrorNote, Field, PageHeader, Spinner } from "../components/ui";
 import * as api from "../lib/api";
 import { AVATAR_COLORS, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
@@ -17,6 +17,7 @@ import { birthdayLabel, circleOf, ideasForChild, monthName, RING_SLOTS, ringPosi
 import type { Child, CollaboratorRole, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
+import { Page } from "../components/Shell";
 
 const CARD = "rounded-large bg-white shadow-[0_1px_0_rgba(58,33,27,0.06),0_8px_24px_rgba(58,33,27,0.06)]";
 const SPRING = "transition-transform duration-[450ms] ease-[cubic-bezier(.34,1.56,.64,1)]";
@@ -123,85 +124,88 @@ export default function Tribe() {
     <div>
       <Seo title="Ma tribu · Tribbae" noindex />
 
-      {/* En-tête : la tribu installée autour du feu */}
-      <header className="relative h-[300px] overflow-hidden">
-        <div aria-hidden="true" className="absolute top-24 left-1/2 -ml-[170px] h-[340px] w-[340px] animate-sun-up rounded-full bg-soleil" />
-        <div className="relative z-[2] mx-auto flex max-w-3xl items-center justify-between px-5 pt-[18px] md:px-8">
-          <h1 className="font-display text-[26px] font-extrabold tracking-[-0.5px]">Ma tribu</h1>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Paramètres"
-            className={`flex h-11 w-11 items-center justify-center rounded-full bg-white text-ecorce shadow-soft ${PRESS}`}
-          >
-            <Icon name="settings" size={21} />
-          </button>
-        </div>
-
-        <div className="absolute top-0 left-1/2 z-[3]">
-          {[...shown, ...(extra > 0 ? [null] : [])].map((s, i, all) => {
-            const { dx, dy } = ringPosition(i, all.length);
-            const style = { left: dx - 32, top: 205 + dy - 40, animationDelay: `${200 + i * 90}ms` };
-            const cls = `absolute flex w-16 animate-rise flex-col items-center gap-1 ${PRESS}`;
-            const tile = "relative flex h-14 w-14 items-center justify-center rounded-[20px] border-[3px] border-sable font-display text-[22px] font-extrabold shadow-[0_6px_14px_rgba(58,33,27,0.14)]";
-            if (!s) {
-              return (
-                <button key="more" type="button" onClick={() => setTab("foyer")} aria-label={`Et ${extra} de plus`} className={cls} style={style}>
-                  <span className={`${tile} bg-sable-2 text-sec`}>+{extra}</span>
-                  <span className="text-[13px] font-bold">la suite</span>
-                </button>
-              );
-            }
-            return (
-              <button key={s.key} type="button" onClick={s.open} aria-label={s.aria} className={cls} style={style}>
-                <span className={tile} style={{ background: s.colors[0], color: s.colors[1] }}>
-                  {initial(s.name)}
-                  {s.badge && (
-                    <span className="absolute -top-2 -right-2 rounded-lg bg-cadeau-ink px-1.5 py-0.5 font-sans text-[10px] font-extrabold whitespace-nowrap text-white">
-                      {s.badge}
-                    </span>
-                  )}
-                </span>
-                <span className="max-w-full truncate text-[13px] font-bold">{s.name}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <svg aria-hidden="true" viewBox="0 0 100 100" className="absolute top-[140px] left-1/2 z-[2] -ml-[52px] h-[104px] w-[104px] animate-fade-up" style={{ animationDelay: "150ms" }}>
-          <path d="M50 24L81 80H19Z" fill="#D45A43" stroke="#3A211B" strokeWidth="4" strokeLinejoin="round" />
-          <path d="M43 13L54 30M57 13L46 30" stroke="#3A211B" strokeWidth="4" strokeLinecap="round" />
-          <path d="M50 50L64 80H36Z" fill="#5E4558" stroke="#3A211B" strokeWidth="4" strokeLinejoin="round" />
-          <path d="M34 52H50L42 68Z" fill="#F28C38" stroke="#3A211B" strokeWidth="3.5" strokeLinejoin="round" />
-          <path d="M49 43l2.7-3 2.7 3 2.6-3M58 62l2.7-3 2.7 3 2.6-3" fill="none" stroke="#3A211B" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M6 80H94" stroke="#3A211B" strokeWidth="4" strokeLinecap="round" />
-        </svg>
-        <svg aria-hidden="true" width="26" height="30" viewBox="0 0 26 30" className="absolute top-[206px] left-[calc(50%+57px)] z-[2]">
-          <path className="origin-bottom animate-flame" d="M13 2c4 6 9 9 9 16a9 9 0 0 1-18 0c0-4 2-6 4-8 0 3 1 5 3 5 0-5-1-9 2-13z" fill="#F28C38" stroke="#3A211B" strokeWidth="2" strokeLinejoin="round" />
-          <path d="M3 28h20" stroke="#3A211B" strokeWidth="2.4" strokeLinecap="round" />
-        </svg>
-
-        <div className="absolute inset-x-0 bottom-3.5 flex animate-fade-up flex-col items-center gap-0.5 px-5 text-center" style={{ animationDelay: "350ms" }}>
-          <span className="flex items-center gap-1">
-            <span className="font-display text-2xl font-extrabold tracking-[-0.4px]">La tribu {tribeName}</span>
+      <Page>
+        <PageHeader
+          title="Ma tribu"
+          subtitle={
+            <>
+              {foyerCount} au foyer · {circle.length} dans le cercle
+              {invitations.length > 0 && ` · ${plural(invitations.length, "invitation en attente", "invitations en attente")}`}
+              {session.isAdmin && " · administrateur"}
+            </>
+          }
+          action={
             <button
               type="button"
-              onClick={() => setNameOpen(true)}
-              aria-label="Renommer la tribu"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-sable-2 hover:text-ecorce"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Paramètres"
+              className={`flex h-11 w-11 items-center justify-center rounded-full bg-white text-ecorce shadow-soft hover:bg-sable-2 ${PRESS}`}
             >
-              <Icon name="pencil" size={16} />
+              <Icon name="settings" size={21} />
             </button>
-          </span>
-          <span className="text-sm text-sec">
-            {foyerCount} au foyer · {circle.length} dans le cercle
-            {invitations.length > 0 && ` · ${plural(invitations.length, "invitation en attente", "invitations en attente")}`}
-            {session.isAdmin && " · administrateur"}
-          </span>
-        </div>
-      </header>
+          }
+        />
 
-      <div className="mx-auto flex max-w-3xl flex-col gap-5 px-5 pt-2 md:px-8">
+        {/* La tribu installée autour du feu */}
+        <section aria-label={`La tribu ${tribeName}`} className="relative -mx-5 -mt-2 h-[246px] overflow-hidden md:mx-0">
+          <div aria-hidden="true" className="absolute top-[42px] left-1/2 -ml-[170px] h-[340px] w-[340px] animate-sun-up rounded-full bg-soleil" />
+          <div className="absolute top-0 left-1/2 z-[3]">
+            {[...shown, ...(extra > 0 ? [null] : [])].map((s, i, all) => {
+              const { dx, dy } = ringPosition(i, all.length);
+              const style = { left: dx - 32, top: 151 + dy - 40, animationDelay: `${200 + i * 90}ms` };
+              const cls = `absolute flex w-16 animate-rise flex-col items-center gap-1 ${PRESS}`;
+              const tile = "relative flex h-14 w-14 items-center justify-center rounded-[20px] border-[3px] border-sable font-display text-[22px] font-extrabold shadow-[0_6px_14px_rgba(58,33,27,0.14)]";
+              if (!s) {
+                return (
+                  <button key="more" type="button" onClick={() => setTab("foyer")} aria-label={`Et ${extra} de plus`} className={cls} style={style}>
+                    <span className={`${tile} bg-sable-2 text-sec`}>+{extra}</span>
+                    <span className="text-[13px] font-bold">la suite</span>
+                  </button>
+                );
+              }
+              return (
+                <button key={s.key} type="button" onClick={s.open} aria-label={s.aria} className={cls} style={style}>
+                  <span className={tile} style={{ background: s.colors[0], color: s.colors[1] }}>
+                    {initial(s.name)}
+                    {s.badge && (
+                      <span className="absolute -top-2 -right-2 rounded-lg bg-cadeau-ink px-1.5 py-0.5 font-sans text-[10px] font-extrabold whitespace-nowrap text-white">
+                        {s.badge}
+                      </span>
+                    )}
+                  </span>
+                  <span className="max-w-full truncate text-[13px] font-bold">{s.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <svg aria-hidden="true" viewBox="0 0 100 100" className="absolute top-[86px] left-1/2 z-[2] -ml-[52px] h-[104px] w-[104px] animate-fade-up" style={{ animationDelay: "150ms" }}>
+            <path d="M50 24L81 80H19Z" fill="#D45A43" stroke="#3A211B" strokeWidth="4" strokeLinejoin="round" />
+            <path d="M43 13L54 30M57 13L46 30" stroke="#3A211B" strokeWidth="4" strokeLinecap="round" />
+            <path d="M50 50L64 80H36Z" fill="#5E4558" stroke="#3A211B" strokeWidth="4" strokeLinejoin="round" />
+            <path d="M34 52H50L42 68Z" fill="#F28C38" stroke="#3A211B" strokeWidth="3.5" strokeLinejoin="round" />
+            <path d="M49 43l2.7-3 2.7 3 2.6-3M58 62l2.7-3 2.7 3 2.6-3" fill="none" stroke="#3A211B" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M6 80H94" stroke="#3A211B" strokeWidth="4" strokeLinecap="round" />
+          </svg>
+          <svg aria-hidden="true" width="26" height="30" viewBox="0 0 26 30" className="absolute top-[152px] left-[calc(50%+57px)] z-[2]">
+            <path className="origin-bottom animate-flame" d="M13 2c4 6 9 9 9 16a9 9 0 0 1-18 0c0-4 2-6 4-8 0 3 1 5 3 5 0-5-1-9 2-13z" fill="#F28C38" stroke="#3A211B" strokeWidth="2" strokeLinejoin="round" />
+            <path d="M3 28h20" stroke="#3A211B" strokeWidth="2.4" strokeLinecap="round" />
+          </svg>
+
+          <div className="absolute inset-x-0 bottom-3.5 flex animate-fade-up justify-center px-5" style={{ animationDelay: "350ms" }}>
+            <span className="flex items-center gap-1">
+              <span className="font-display text-2xl font-extrabold tracking-[-0.4px]">La tribu {tribeName}</span>
+              <button
+                type="button"
+                onClick={() => setNameOpen(true)}
+                aria-label="Renommer la tribu"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:bg-sable-2 hover:text-ecorce"
+              >
+                <Icon name="pencil" size={16} />
+              </button>
+            </span>
+          </div>
+        </section>
         <div role="tablist" aria-label="Ma tribu" className="relative grid h-[50px] grid-cols-2 rounded-medium bg-sable-2 p-1">
           <span
             aria-hidden="true"
@@ -364,7 +368,7 @@ export default function Tribe() {
             </button>
           </p>
         </section>
-      </div>
+      </Page>
 
       {deleteOpen && <DeleteAccountSheet onClose={() => setDeleteOpen(false)} />}
       {kid && (

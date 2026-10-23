@@ -252,9 +252,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         val normalized = if ("://" in url) url.trim() else "https://${url.trim()}"
         val token = sessionManager?.getToken() ?: authToken
         val remote = token?.let { runCatching { apiClient.previewLink(normalized, it) }.getOrNull() }
-        if (remote != null && (remote.title.isNotBlank() || remote.image.isNotBlank())) return remote
+        if (remote != null && (remote.title.isNotBlank() || remote.image.isNotBlank())) return remote.withinLimits()
         // Sans compte, hors ligne ou serveur en échec : lecture de la page sur le téléphone
-        return localPreview?.invoke(normalized) ?: remote
+        return (localPreview?.invoke(normalized) ?: remote)?.withinLimits()
     }
 
     fun deleteLink(id: String) {

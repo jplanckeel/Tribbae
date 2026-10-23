@@ -4,7 +4,7 @@ import { FolderCard, GridCard, PinnedFolderCard, RowCard } from "../components/c
 import { useComposer } from "../components/Composer";
 import Icon from "../components/Icon";
 import { Page } from "../components/Shell";
-import { Button, EmptyState, ErrorNote, PageSpinner } from "../components/ui";
+import { Button, EmptyState, ErrorNote, PageHeader, PageSpinner } from "../components/ui";
 import { categoryBySlug, normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { plural } from "../lib/format";
@@ -102,12 +102,10 @@ export default function MyIdeas() {
   return (
     <Page>
       <Seo title="Mes idées · Tribbae" noindex />
-      <div className="flex flex-col gap-0.5">
-        <h1 className="font-display text-[32px] font-extrabold tracking-[-0.8px] md:text-[40px]">Mes idées</h1>
-        <span className="text-sm text-sec">
-          {[plural(links.length, "idée", "idées"), plural(folders.length, "dossier", "dossiers"), plural(tagTotal, "tag", "tags")].join(" · ")}
-        </span>
-      </div>
+      <PageHeader
+        title="Mes idées"
+        subtitle={[plural(links.length, "idée", "idées"), plural(folders.length, "dossier", "dossiers"), plural(tagTotal, "tag", "tags")].join(" · ")}
+      />
 
       {error && (
         <div className="flex items-center gap-3">

@@ -5,7 +5,7 @@ import { useComposer } from "../components/Composer";
 import Icon from "../components/Icon";
 import { Page } from "../components/Shell";
 import Sheet from "../components/Sheet";
-import { Button, Chip, EmptyState, ErrorNote, PageSpinner } from "../components/ui";
+import { Button, Chip, EmptyState, ErrorNote, PageHeader, PageSpinner } from "../components/ui";
 import * as api from "../lib/api";
 import { CATEGORIES, categoryBySlug, normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
@@ -253,6 +253,9 @@ function WeekendChip({ update }: Pick<LayoutProps, "update">) {
 
 // ── Mobile ────────────────────────────────────────────────────────────
 
+const explorerSubtitle = (view: string) =>
+  view === "idees" ? "Les idées partagées par les tribus" : "Les dossiers publiés par les tribus";
+
 function ExplorerMobile(p: LayoutProps) {
   const { view, filters, update } = p;
   const session = useSession();
@@ -264,11 +267,10 @@ function ExplorerMobile(p: LayoutProps) {
 
   return (
     <Page className="gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-display text-[32px] font-extrabold tracking-[-0.8px]">
-          {p.single && view === "idees" ? p.single.plural : "Explorer"}
-        </h1>
-        {view === "idees" && (
+      <PageHeader
+        title={p.single && view === "idees" ? p.single.plural : "Explorer"}
+        subtitle={explorerSubtitle(view)}
+        action={view === "idees" && (
           <button
             type="button"
             onClick={() => setFiltersOpen(true)}
@@ -281,7 +283,7 @@ function ExplorerMobile(p: LayoutProps) {
             )}
           </button>
         )}
-      </div>
+      />
 
       <SearchBox {...p} className="h-[52px] shrink-0 rounded-medium text-[15px] shadow-card" />
       <ViewTabs {...p} />
@@ -434,14 +436,7 @@ function ExplorerDesktop(p: LayoutProps) {
   return (
     <Page className="gap-7 pb-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="font-display text-[44px] leading-none font-extrabold tracking-[-1.2px]">
-            {p.single && view === "idees" ? p.single.plural : "Explorer"}
-          </h1>
-          <span className="text-base text-sec">
-            {view === "idees" ? "Les idées partagées par les tribus de la communauté" : "Les listes publiées par les tribus de la communauté"}
-          </span>
-        </div>
+        <PageHeader title={p.single && view === "idees" ? p.single.plural : "Explorer"} subtitle={explorerSubtitle(view)} />
         <div className="flex flex-[0_1_560px] items-center gap-3">
           <ViewTabs {...p} className="w-52 shrink-0" />
           <SearchBox {...p} className="h-[54px] min-w-0 flex-1 rounded-[18px] text-base shadow-card" />
