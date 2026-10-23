@@ -622,7 +622,7 @@ private fun FolderChoice(folder: Folder, reason: String, on: Boolean, delayMs: I
 /** « Choisir un dossier » : recherche, création à la volée, dossiers par groupe. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FolderPickerSheet(
+internal fun FolderPickerSheet(
     folders: List<Folder>, links: List<Link>, current: String?, me: String?,
     onDismiss: () -> Unit, onPick: (String?) -> Unit, onCreate: (String) -> Unit,
 ) {

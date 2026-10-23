@@ -378,7 +378,7 @@ export default function Tribe() {
           onClose={() => setKid(undefined)}
           onIdeas={(c) => {
             setKid(undefined);
-            openAi({ prompt: `Des idées pour ${c.name}, ${formatAge(c.birthDate)}` });
+            openAi({ childId: c.id });
           }}
         />
       )}

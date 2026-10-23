@@ -36,7 +36,7 @@ func TestBench(t *testing.T) {
 		for _, prompt := range benchPrompts {
 			n := wantedCount(prompt)
 			start := time.Now()
-			raw, err := o.generate(context.Background(), systemPrompt(n), userPrompt(prompt), n)
+			raw, err := o.generate(context.Background(), systemPrompt(n), userPrompt(prompt, nil), n)
 			took := time.Since(start)
 			if err != nil {
 				t.Errorf("%s | %s | ERREUR %v", model, prompt, err)

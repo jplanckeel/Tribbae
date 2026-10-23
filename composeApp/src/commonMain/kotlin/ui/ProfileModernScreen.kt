@@ -95,6 +95,7 @@ fun ProfileModernScreen(
     onNavigateToFaq: () -> Unit = {},
     onOpenShopping: () -> Unit = {},
     onOpenAdmin: () -> Unit = {},
+    /** Idées de l'IA pour un enfant (son id). */
     onOpenAi: (String) -> Unit = {},
     onOpenFolder: (data.Folder) -> Unit = {},
 ) {
@@ -596,7 +597,7 @@ private fun TribeContent(
             viewModel = viewModel,
             now = now,
             onDismiss = { kidTarget = null },
-            onIdeas = { c -> kidTarget = null; onOpenAi("Des idées pour ${c.name}, ${formatAge(c.birthDate)}") },
+            onIdeas = { c -> kidTarget = null; onOpenAi(c.id) },
             onOpenFolder = { f -> kidTarget = null; onOpenFolder(f) },
         )
     }

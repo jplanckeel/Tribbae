@@ -457,54 +457,25 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     private val aiRepository = AiRepository()
 
-    private val _aiIdeas = MutableStateFlow<List<AiSuggestedLink>>(emptyList())
-    val aiIdeas: StateFlow<List<AiSuggestedLink>> = _aiIdeas.asStateFlow()
-
-    private val _aiLoading = MutableStateFlow(false)
-    val aiLoading: StateFlow<Boolean> = _aiLoading.asStateFlow()
-
-    private val _aiError = MutableStateFlow<String?>(null)
-    val aiError: StateFlow<String?> = _aiError.asStateFlow()
-
-    fun generateAiIdeas(prompt: String) {
-        val token = authToken
-        if (token == null) {
-            _aiError.value = "Vous devez être connecté pour utiliser l'IA. Allez dans Profil pour vous connecter."
-            return
-        }
-        viewModelScope.launch {
-            _aiLoading.value = true
-            _aiError.value = null
-            _aiIdeas.value = emptyList()
-            try {
-                val result = aiRepository.generateIdeas(prompt, token)
-                _aiIdeas.value = result.ideas
-            } catch (e: Exception) {
-                val errorMsg = when {
-                    e.message?.contains("timeout") == true || e.message?.contains("timed out") == true ->
-                        "Timeout : la génération prend trop de temps. Vérifiez que le backend et Ollama sont lancés."
-                    e.message?.contains("Connection refused") == true ->
-                        "Impossible de se connecter au backend. Vérifiez votre connexion internet."
-                    e.message?.contains("401") == true || e.message?.contains("403") == true ->
-                        "Session expirée. Reconnectez-vous dans Profil."
-                    e.message?.contains("AI is busy") == true ->
-                        "L'IA prépare déjà des idées pour une autre tribu. Réessayez dans une trentaine de secondes."
-                    e.message?.contains("(429)") == true ->
-                        "Trop de demandes, réessayez dans une minute."
-                    e.message?.contains("idea generation failed") == true ->
-                        "L'IA n'a pas réussi à préparer d'idées. Réessayez ou reformulez votre demande."
-                    else -> e.message ?: "Erreur inconnue"
-                }
-                _aiError.value = errorMsg
-            } finally {
-                _aiLoading.value = false
-            }
-        }
+    /**
+     * Demande des idées à l'IA pour la phrase composée. count : combien (0 :
+     * selon la demande) ; exclude : titres déjà proposés, à ne pas répéter.
+     * Renvoie les idées, ou un message d'erreur en français.
+     */
+    suspend fun requestAiIdeas(prompt: String, count: Int = 0, exclude: List<String> = emptyList()): Result<List<AiSuggestedLink>> {
+        val token = authToken ?: return Result.failure(Exception("Connectez-vous pour demander des idées à l'IA."))
+        return runCatching { aiRepository.generateIdeas(prompt, token, count, exclude).ideas }
+            .recoverCatching { e -> if (e is kotlinx.coroutines.CancellationException) throw e else throw Exception(aiErrorMessage(e.message.orEmpty())) }
     }
 
-    fun clearAiIdeas() {
-        _aiIdeas.value = emptyList()
-        _aiError.value = null
+    private fun aiErrorMessage(m: String): String = when {
+        m.contains("timeout") || m.contains("timed out") -> "La génération prend trop de temps, réessayez dans un instant."
+        m.contains("Connection refused") || m.contains("Unable to resolve host") -> "Impossible de joindre Tribbae. Vérifiez votre connexion internet."
+        m.contains("401") || m.contains("403") -> "Session expirée. Reconnectez-vous dans « Ma tribu »."
+        m.contains("AI is busy", ignoreCase = true) -> "L'IA prépare déjà des idées pour une autre tribu. Réessayez dans une trentaine de secondes."
+        m.contains("(429)") -> "Trop de demandes, réessayez dans une minute."
+        m.contains("idea generation failed") -> "L'IA n'a pas réussi à préparer d'idées. Réessayez ou changez un mot de la phrase."
+        else -> m.ifEmpty { "Erreur inconnue" }
     }
 
     fun saveAiIdeas(ideas: List<AiSuggestedLink>, folderId: String?) {

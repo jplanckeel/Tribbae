@@ -69,7 +69,7 @@ export default function Sheet({ open, onClose, title, children, tone = "sable", 
 
   if (!open) return null;
 
-  const surface = tone === "prune" ? "bg-prune text-sable" : "bg-sable text-ecorce";
+  const surface = `transition-colors duration-300 ${tone === "prune" ? "bg-prune text-sable" : "bg-sable text-ecorce"}`;
   return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-6">
       <div aria-hidden="true" className="absolute inset-0 animate-fade-in bg-[rgba(42,22,18,0.45)]" onClick={onClose} />

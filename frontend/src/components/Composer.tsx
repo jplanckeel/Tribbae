@@ -20,7 +20,7 @@ interface ComposerApi {
   editLink: (link: Link, onSaved?: (l: Link) => void) => void;
   newFolder: () => void;
   editFolder: (folder: Folder, onSaved?: (f: Folder) => void) => void;
-  openAi: (opts?: { folderId?: string; prompt?: string }) => void;
+  openAi: (opts?: { folderId?: string; prompt?: string; childId?: string }) => void;
 }
 
 const ComposerContext = createContext<ComposerApi | null>(null);
@@ -42,7 +42,7 @@ export function ComposerProvider({ children }: { children: ReactNode }) {
   const [add, setAdd] = useState<{ folderId?: string } | null>(null);
   const [linkForm, setLinkForm] = useState<LinkState | null>(null);
   const [folderForm, setFolderForm] = useState<FolderState | null>(null);
-  const [ai, setAi] = useState<{ folderId?: string; prompt?: string } | null>(null);
+  const [ai, setAi] = useState<{ folderId?: string; prompt?: string; childId?: string } | null>(null);
 
   // Les actions de création demandent un compte
   const guard = useCallback(
@@ -138,9 +138,11 @@ export function ComposerProvider({ children }: { children: ReactNode }) {
           onClose={() => setAi(null)}
           folderId={ai.folderId}
           prompt={ai.prompt}
+          childId={ai.childId}
           onSaved={(fid) => {
             setAi(null);
-            if (fid && location.pathname !== `/dossiers/${fid}`) navigate(`/dossiers/${fid}`);
+            const to = fid ? `/dossiers/${fid}` : "/mes-idees";
+            if (location.pathname !== to) navigate(to);
           }}
         />
       )}

@@ -101,7 +101,7 @@ private sealed class Screen {
     /** `fromLinkId` : idée d'où l'on a « creusé » vers ce dossier, surlignée. */
     data class FolderDetail(val folder: Folder, val fromLinkId: String? = null) : Screen()
     data class Category(val category: LinkCategory?) : Screen()
-    data class Ai(val folderId: String? = null, val prompt: String = "") : Screen()
+    data class Ai(val folderId: String? = null, val prompt: String = "", val childId: String? = null) : Screen()
     object Shopping : Screen()
     object Faq : Screen()
     object Admin : Screen()
@@ -283,7 +283,7 @@ private fun ModernMainApp(
                         onNavigateToFaq = { push(Screen.Faq) },
                         onOpenShopping = { push(Screen.Shopping) },
                         onOpenAdmin = { push(Screen.Admin) },
-                        onOpenAi = { push(Screen.Ai(prompt = it)) },
+                        onOpenAi = { push(Screen.Ai(childId = it)) },
                         onOpenFolder = { push(Screen.FolderDetail(it)) },
                     )
                 }
@@ -413,6 +413,7 @@ private fun ModernMainApp(
                 onBack = ::pop,
                 initialFolderId = screen.folderId,
                 initialPrompt = screen.prompt,
+                childId = screen.childId,
                 onSavedInFolder = { id ->
                     pop()
                     val target = folders.find { it.id == id }

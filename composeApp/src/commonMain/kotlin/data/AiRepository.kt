@@ -16,7 +16,9 @@ data class AiSuggestedLink(
     val description: String = "",
     val category: String = "LINK_CATEGORY_IDEE",
     val tags: List<String> = emptyList(),
-    val ageRange: String = ""
+    val ageRange: String = "",
+    /** Pourquoi l'idée colle à la demande (« Parfait pour un jour de pluie »). */
+    val why: String = "",
 )
 
 @Serializable
@@ -27,7 +29,8 @@ data class AiGenerateResponse(
 class AiRepository(private val baseUrl: String = Backend.url) {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
-    suspend fun generateIdeas(prompt: String, token: String): AiGenerateResponse =
+    /** count : nombre d'idées (0 : déduit de la demande) ; exclude : titres déjà proposés. */
+    suspend fun generateIdeas(prompt: String, token: String, count: Int = 0, exclude: List<String> = emptyList()): AiGenerateResponse =
         withContext(Dispatchers.IO) {
             val conn = URL("$baseUrl/v1/ai/generate").openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
@@ -37,7 +40,11 @@ class AiRepository(private val baseUrl: String = Backend.url) {
             conn.connectTimeout = 180_000 // 3 minutes - Ollama peut être très lent
             conn.readTimeout = 180_000 // 3 minutes
 
-            val body = """{"prompt":${json.encodeToString(kotlinx.serialization.serializer(), prompt)}}"""
+            val body = kotlinx.serialization.json.buildJsonObject {
+                put("prompt", kotlinx.serialization.json.JsonPrimitive(prompt))
+                if (count > 0) put("count", kotlinx.serialization.json.JsonPrimitive(count))
+                if (exclude.isNotEmpty()) put("exclude", kotlinx.serialization.json.JsonArray(exclude.map { kotlinx.serialization.json.JsonPrimitive(it) }))
+            }.toString()
             OutputStreamWriter(conn.outputStream).use { it.write(body) }
 
             try {

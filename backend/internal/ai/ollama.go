@@ -35,9 +35,9 @@ var errModelMissing = errors.New("ollama model not found")
 
 const (
 	ollamaNumCtx = 2048
-	// Une idée en JSON (clés comprises, en français) coûte ~90 jetons ; marge
-	// pour ne pas tronquer la dernière idée.
-	tokensPerIdea     = 115
+	// Une idée en JSON (clés comprises, en français, avec son « pourquoi »)
+	// coûte ~105 jetons ; marge pour ne pas tronquer la dernière idée.
+	tokensPerIdea     = 130
 	ollamaTemperature = 0.4
 )
 
