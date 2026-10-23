@@ -38,6 +38,8 @@ const DATED: CategoryKey[] = ["LINK_CATEGORY_EVENEMENT", "LINK_CATEGORY_ACTIVITE
 
 type PreviewState = {
   status: "idle" | "loading" | "done" | "failed";
+  /** Resynchronisation d'une idée existante : les infos de la page remplacent les siennes. */
+  resync?: boolean;
   /** Adresse dont l'aperçu est en cours ou affiché. */
   url?: string;
   images: string[];
@@ -48,10 +50,13 @@ type PreviewState = {
 type AutoFilled = Partial<Pick<LinkInput, "title" | "description" | "imageUrl" | "price" | "location" | "eventDate">> & { ingredients?: string };
 
 // Remplace la valeur si elle est vide ou si elle venait de l'aperçu précédent
-function fill<T>(current: T | undefined, previousAuto: T | undefined, next: T | undefined): T | undefined {
+function fillEmpty<T>(current: T | undefined, previousAuto: T | undefined, next: T | undefined): T | undefined {
   if (!next) return current;
   return !current || current === previousAuto ? next : current;
 }
+
+// Resynchronisation : ce que la page donne remplace la valeur, le reste est gardé
+const replace = <T,>(current: T | undefined, _previousAuto: T | undefined, next: T | undefined): T | undefined => next || current;
 
 const NEW_FOLDER = "__new__";
 
@@ -85,9 +90,10 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
   const isRecipe = form.category === "LINK_CATEGORY_RECETTE";
   const isDated = DATED.includes(form.category) || !!form.eventDate;
 
-  const applyPreview = (p: LinkPreview, url: string) => {
+  const applyPreview = (p: LinkPreview, url: string, resync = false) => {
     const prev = autoFilled.current;
     const ingredientsText = (p.ingredients ?? []).join("\n");
+    const fill = resync ? replace : fillEmpty;
     setForm((f) => ({
       ...f,
       title: fill(f.title, prev.title, p.title) ?? "",
@@ -106,6 +112,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
     if (p.price || p.location) setMore(true);
     setPreview({
       status: "done",
+      resync,
       url,
       images: p.images?.length ? p.images : p.image ? [p.image] : [],
       site: p.siteName || hostname(url),
@@ -113,11 +120,11 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
   };
 
   // Seules les réponses de la dernière requête comptent (l'adresse a pu changer)
-  const loadPreview = async (url: string) => {
+  const loadPreview = async (url: string, resync = false) => {
     const id = ++requestId.current;
     try {
       const p = await api.links.preview(url);
-      if (id === requestId.current) applyPreview(p, url);
+      if (id === requestId.current) applyPreview(p, url, resync);
     } catch {
       if (id === requestId.current) setPreview((s) => ({ ...s, status: "failed" }));
     }
@@ -130,6 +137,15 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
     if (!force && preview.url === url && preview.status !== "failed") return;
     setPreview({ status: "loading", url, images: [] });
     void loadPreview(url);
+  };
+
+  // Relit la page d'une idée existante et remplace ses infos par celles du lien
+  const resync = () => {
+    const url = extractUrl(form.url);
+    if (!url) return;
+    if (url !== form.url) set("url", url);
+    setPreview({ status: "loading", resync: true, url, images: [] });
+    void loadPreview(url, true);
   };
 
   const loadInitialPreview = useEffectEvent(() => {
@@ -244,7 +260,17 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
               }
             }}
           />
-          <PreviewStatus preview={preview} onRetry={() => startPreview(form.url, true)} />
+          <PreviewStatus preview={preview} onRetry={() => (preview.resync ? resync() : startPreview(form.url, true))} />
+          {editing && extractUrl(form.url) && preview.status !== "loading" && (
+            <button
+              type="button"
+              onClick={resync}
+              className="flex items-center gap-1.5 self-start text-[13px] font-bold text-terracotta hover:underline"
+            >
+              <Icon name="refresh" size={16} />
+              Resynchroniser depuis le lien
+            </button>
+          )}
         </div>
 
         <ImageChooser
@@ -470,7 +496,7 @@ function PreviewStatus({ preview, onRetry }: { preview: PreviewState; onRetry: (
     return (
       <span role="status" className="flex items-center gap-1.5 text-xs text-sec">
         <Spinner size={14} className="text-terracotta" />
-        Lecture de la page…
+        {preview.resync ? "Resynchronisation depuis la page…" : "Lecture de la page…"}
       </span>
     );
   }
@@ -486,7 +512,9 @@ function PreviewStatus({ preview, onRetry }: { preview: PreviewState; onRetry: (
     return (
       <span role="status" className="flex items-center gap-1.5 text-xs text-sec">
         <Icon name="check" size={14} className="text-activite-ic" />
-        Infos récupérées{preview.site ? ` depuis ${preview.site}` : ""}
+        {preview.resync
+          ? `Infos mises à jour${preview.site ? ` depuis ${preview.site}` : ""} : vérifiez puis enregistrez`
+          : `Infos récupérées${preview.site ? ` depuis ${preview.site}` : ""}`}
       </span>
     );
   }

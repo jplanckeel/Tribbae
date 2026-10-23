@@ -54,6 +54,10 @@ private class AutoFilled {
 private fun fill(current: String, previousAuto: String, next: String): String =
     if (next.isNotBlank() && (current.isBlank() || current == previousAuto)) next else current
 
+// Resynchronisation : ce que la page donne remplace la valeur, le reste est gardé
+private fun replace(current: String, @Suppress("UNUSED_PARAMETER") previousAuto: String, next: String): String =
+    next.ifBlank { current }
+
 /**
  * Formulaire d'idée « feu de camp », pour la création comme pour l'édition.
  * Remplit titre / description / images (et catégorie, ingrédients, prix, lieu,
@@ -98,6 +102,8 @@ fun IdeaFormScreen(
     var previewUrl by remember { mutableStateOf<String?>(null) }
     var previewImages by remember { mutableStateOf(emptyList<String>()) }
     var previewSite by remember { mutableStateOf("") }
+    // Resynchronisation d'une idée existante : les infos de la page remplacent les siennes
+    var previewResync by remember { mutableStateOf(false) }
     // La catégorie suggérée par la page ne remplace pas un choix explicite
     var categoryChosen by remember { mutableStateOf(existing != null || (initialCategory != null && initialCategory != LinkCategory.IDEE)) }
     val autoFilled = remember { AutoFilled() }
@@ -111,9 +117,10 @@ fun IdeaFormScreen(
     val knownTags = remember(allLinks) { allLinks.flatMap { it.tags }.distinct() }
     val isDated = category == LinkCategory.EVENEMENT || category == LinkCategory.ACTIVITE || eventDate != null
 
-    fun applyPreview(p: LinkPreview, forUrl: String) {
+    fun applyPreview(p: LinkPreview, forUrl: String, resync: Boolean = false) {
         val prev = autoFilled
         val ingredientsText = p.ingredients.joinToString("\n")
+        val fill: (String, String, String) -> String = if (resync) ::replace else ::fill
         title = fill(title, prev.title, p.title)
         description = fill(description, prev.description, p.description)
         imageUrl = fill(imageUrl, prev.imageUrl, p.image)
@@ -121,7 +128,7 @@ fun IdeaFormScreen(
         location = fill(location, prev.location, p.location)
         ingredients = fill(ingredients, prev.ingredients, ingredientsText)
         val date = p.eventDate.takeIf { it > 0 }
-        if (date != null && (eventDate == null || eventDate == prev.eventDate)) eventDate = date
+        if (date != null && (resync || eventDate == null || eventDate == prev.eventDate)) eventDate = date
         if (!categoryChosen) p.suggestedCategory?.let { category = it }
         prev.title = p.title; prev.description = p.description; prev.imageUrl = p.image; prev.price = p.price
         prev.location = p.location; prev.eventDate = date; prev.ingredients = ingredientsText
@@ -131,11 +138,12 @@ fun IdeaFormScreen(
         previewStatus = PreviewStatus.Done
     }
 
-    fun fetchPreview(force: Boolean = false) {
+    fun fetchPreview(force: Boolean = false, resync: Boolean = false) {
         val target = extractUrl(url) ?: return
         if (target != url) url = target
         if (!force && previewUrl == target && previewStatus != PreviewStatus.Failed) return
         previewUrl = target
+        previewResync = resync
         previewStatus = PreviewStatus.Loading
         previewImages = emptyList()
         // Seule la réponse de la dernière requête compte (l'adresse a pu changer)
@@ -143,7 +151,7 @@ fun IdeaFormScreen(
         scope.launch {
             val p = viewModel.previewLink(target)
             if (id != requestId) return@launch
-            if (p != null) applyPreview(p, target) else previewStatus = PreviewStatus.Failed
+            if (p != null) applyPreview(p, target, resync) else previewStatus = PreviewStatus.Failed
         }
     }
 
@@ -218,7 +226,19 @@ fun IdeaFormScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     onFocusLost = { fetchPreview() }
                 )
-                PreviewStatusRow(previewStatus, previewSite) { fetchPreview(force = true) }
+                PreviewStatusRow(previewStatus, previewSite, previewResync) { fetchPreview(force = true, resync = previewResync) }
+                if (existing != null && extractUrl(url) != null && previewStatus != PreviewStatus.Loading) {
+                    // Relit la page et remplace les infos de l'idée par celles du lien
+                    Row(
+                        Modifier.clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button) { fetchPreview(force = true, resync = true) }
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(Icons.Outlined.Refresh, null, tint = Terracotta, modifier = Modifier.size(16.dp))
+                        Text("Resynchroniser depuis le lien", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Terracotta)
+                    }
+                }
             }
 
             ImagePickerSection(imageUrl = imageUrl, viewModel = viewModel, onImageSelected = { imageUrl = it })
@@ -497,11 +517,11 @@ private fun DateChip(icon: androidx.compose.ui.graphics.vector.ImageVector, text
 
 /** État de la lecture du lien, sous le champ « Lien ». */
 @Composable
-private fun PreviewStatusRow(status: PreviewStatus, site: String, onRetry: () -> Unit) {
+private fun PreviewStatusRow(status: PreviewStatus, site: String, resync: Boolean, onRetry: () -> Unit) {
     when (status) {
         PreviewStatus.Loading -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             CircularProgressIndicator(Modifier.size(14.dp), color = Terracotta, strokeWidth = 2.dp)
-            Text("Lecture de la page…", fontSize = 12.sp, color = TextSec)
+            Text(if (resync) "Resynchronisation depuis la page…" else "Lecture de la page…", fontSize = 12.sp, color = TextSec)
         }
         PreviewStatus.Failed -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Impossible de lire cette page : complétez à la main.", fontSize = 12.sp, color = TextSec, modifier = Modifier.weight(1f, fill = false))
@@ -512,7 +532,11 @@ private fun PreviewStatusRow(status: PreviewStatus, site: String, onRetry: () ->
         }
         PreviewStatus.Done -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Icon(Icons.Outlined.Check, null, tint = Color(0xFF2F7393), modifier = Modifier.size(14.dp))
-            Text(if (site.isNotBlank()) "Infos récupérées depuis $site" else "Infos récupérées", fontSize = 12.sp, color = TextSec)
+            val from = if (site.isNotBlank()) " depuis $site" else ""
+            Text(
+                if (resync) "Infos mises à jour$from : vérifiez puis enregistrez" else "Infos récupérées$from",
+                fontSize = 12.sp, color = TextSec
+            )
         }
         PreviewStatus.Idle -> Unit
     }
