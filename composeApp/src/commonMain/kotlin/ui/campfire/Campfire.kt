@@ -808,7 +808,9 @@ fun CampField(
                 if (value.isEmpty()) Text(placeholder, color = TextMuted, fontSize = 15.sp, maxLines = if (singleLine) 1 else 4)
                 BasicTextField(
                     value = value,
-                    onValueChange = { if (it.length <= maxLength) onValueChange(it) },
+                    // Un texte trop long (venu d'une page web) se raccourcit toujours : sinon
+                    // chaque frappe, effacement compris, serait refusée
+                    onValueChange = { if (it.length <= maxLength || it.length < value.length) onValueChange(it) },
                     singleLine = singleLine,
                     minLines = minLines,
                     textStyle = TextStyle(color = Ecorce, fontSize = 15.sp, fontWeight = FontWeight.Medium, lineHeight = 21.sp),

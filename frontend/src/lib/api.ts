@@ -1,4 +1,5 @@
 import { clearSession, getSession } from "./session";
+import { withinLimits } from "./preview";
 import type {
   AdminUser, AiIdea, Child, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole,
 } from "./types";
@@ -104,7 +105,7 @@ export const links = {
       method: "PUT", body: json({ linkId: id, ...data }),
     }).then((r) => r.link),
   delete: (id: string) => request<void>(`/links/${encodeURIComponent(id)}`, { method: "DELETE" }),
-  preview: (url: string) => request<LinkPreview>(`/links/preview${qs({ url })}`),
+  preview: (url: string) => request<LinkPreview>(`/links/preview${qs({ url })}`).then(withinLimits),
   like: (id: string) =>
     request<{ likeCount?: number }>(`/links/${encodeURIComponent(id)}/like`, { method: "POST", body: "{}" }),
   unlike: (id: string) =>
