@@ -146,6 +146,24 @@ data class LinkPreview(
     /** Images candidates, la meilleure d'abord. */
     val allImages: List<String>
         get() = images.ifEmpty { listOfNotNull(image.takeIf { it.isNotBlank() }) }
+
+    /**
+     * Textes ramenés aux limites des champs et du serveur (titre 300, description
+     * 5000, prix / lieu / ingrédient 200) : une page au titre trop long (ou lue sur
+     * le téléphone, sans coupe) donnerait une idée qu'on ne peut plus modifier.
+     */
+    fun withinLimits(): LinkPreview = copy(
+        title = title.limitTo(300), description = description.limitTo(5000),
+        price = price.limitTo(200), location = location.limitTo(200),
+        ingredients = ingredients.map { it.limitTo(200) },
+    )
+}
+
+/** Coupe à [max] unités sans casser un émoji (paire de substitution). */
+fun String.limitTo(max: Int): String {
+    if (length <= max) return this
+    val cut = if (this[max - 1].isHighSurrogate()) max - 1 else max
+    return take(cut).trimEnd()
 }
 
 @Serializable
