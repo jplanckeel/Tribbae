@@ -332,6 +332,8 @@ func TestArticleMetaOnlyOnIdeas(t *testing.T) {
 	}
 	if body := get(t, h, "/").Body.String(); strings.Contains(body, "article:") {
 		t.Error("l'accueil n'est pas un article")
+	}
+}
 
 func TestAboutPage(t *testing.T) {
 	h := newTestHandler(t)
