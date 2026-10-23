@@ -1,43 +1,66 @@
 package ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.ChevronRight
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material.icons.outlined.PersonAdd
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.ShoppingCart
-import androidx.compose.material.icons.outlined.ChildCare
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -47,16 +70,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.linkkeeper.app.R
+import data.FolderStyle
 import data.FollowRepository
+import data.TribePage
 import data.UserProfile
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ui.campfire.*
 import viewmodel.LinkViewModel
 
-private data class Member(val key: String, val name: String, val sub: String? = null)
-
-/** « Ma tribu » : profil, statistiques, membres, invitations, réglages. Sans compte : écran Bienvenue. */
+/**
+ * « Ma tribu » (maquette « Ma tribu v2 ») : la tribu autour du feu, le foyer
+ * (comptes et enfants), le cercle (proches qui ont accès à des dossiers), les
+ * invitations, l'année en idées et les réglages. Sans compte : écran Bienvenue.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileModernScreen(
@@ -68,6 +95,8 @@ fun ProfileModernScreen(
     onNavigateToFaq: () -> Unit = {},
     onOpenShopping: () -> Unit = {},
     onOpenAdmin: () -> Unit = {},
+    onOpenAi: (String) -> Unit = {},
+    onOpenFolder: (data.Folder) -> Unit = {},
 ) {
     val isLoggedIn by sessionManager.isLoggedIn.collectAsState()
     var authMode by remember { mutableStateOf<Boolean?>(null) } // true = inscription
@@ -80,7 +109,7 @@ fun ProfileModernScreen(
             onFaq = onNavigateToFaq
         )
     } else {
-        TribeContent(viewModel, sessionManager, modifier, onNavigateToFaq, onOpenShopping, onOpenAdmin)
+        TribeContent(viewModel, sessionManager, modifier, onNavigateToFaq, onOpenShopping, onOpenAdmin, onOpenAi, onOpenFolder)
     }
 
     authMode?.let { register ->
@@ -132,8 +161,43 @@ private fun WelcomeScreen(modifier: Modifier, onRegister: () -> Unit, onLogin: (
         }
     }
 }
+private val CardShape = RoundedCornerShape(22.dp)
+private val RecetteBg = Color(0xFFE2EDD9)
+private val RecetteInk = Color(0xFF3E6630)
+private val CadeauInk = Color(0xFFA04812)
+private val SortieInk = Color(0xFF9A3420)
+private val YearSky = Color(0xFF9FD3E6)
+private val BraiseSoft = Color(0xFFF7B57F)
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** Carte blanche de la maquette (ombre douce). */
+private fun Modifier.tribeCard(shape: androidx.compose.ui.graphics.Shape = CardShape) =
+    shadow(10.dp, shape, ambientColor = Ecorce.copy(alpha = 0.06f), spotColor = Ecorce.copy(alpha = 0.10f)).clip(shape).background(Color.White)
+
+/** Entrée de la maquette : « rise » (ressort, depuis 60 %) ou « fadeup » (10 dp plus bas). */
+private fun Modifier.entrance(delayMs: Int, rise: Boolean = false): Modifier = composed {
+    val p = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(delayMs.toLong())
+        p.animateTo(1f, if (rise) spring(dampingRatio = 0.55f, stiffness = 280f) else tween(500, easing = EaseSoft))
+    }
+    graphicsLayer {
+        val v = p.value
+        alpha = v.coerceIn(0f, 1f)
+        translationY = (1f - v) * (if (rise) 18 else 10).dp.toPx()
+        if (rise) { val s = 0.6f + 0.4f * v; scaleX = s; scaleY = s }
+    }
+}
+
+/** Une place autour du feu : un compte de la tribu ou un enfant. */
+private data class Seat(val key: String, val name: String, val colors: Pair<Color, Color>, val badge: String?, val onClick: () -> Unit, val label: String)
+
+/** Fiche enfant ouverte : un enfant existant ou un ajout. */
+private sealed interface KidTarget {
+    data object New : KidTarget
+    data class Existing(val id: String) : KidTarget
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun TribeContent(
     viewModel: LinkViewModel,
@@ -142,6 +206,8 @@ private fun TribeContent(
     onFaq: () -> Unit,
     onOpenShopping: () -> Unit,
     onOpenAdmin: () -> Unit,
+    onOpenAi: (String) -> Unit,
+    onOpenFolder: (data.Folder) -> Unit,
 ) {
     val links by viewModel.repository.links.collectAsState()
     val folders by viewModel.folders.collectAsState()
@@ -152,10 +218,11 @@ private fun TribeContent(
     var following by remember { mutableStateOf<List<UserProfile>?>(null) }
     val scope = rememberCoroutineScope()
 
-    var showFamily by remember { mutableStateOf(false) }
+    var tab by remember { mutableIntStateOf(0) } // 0 = le foyer, 1 = le cercle
     var showMembers by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
     var showInvite by remember { mutableStateOf(false) }
+    var kidTarget by remember { mutableStateOf<KidTarget?>(null) }
     val tribe by viewModel.tribe.collectAsState()
     var tribeError by remember { mutableStateOf<String?>(null) }
     var tribeBusy by remember { mutableStateOf(false) }
@@ -165,6 +232,7 @@ private fun TribeContent(
     var showLogout by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     var dataMessage by remember { mutableStateOf<String?>(null) }
+    val now = remember { System.currentTimeMillis() }
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
     val context = androidx.compose.ui.platform.LocalContext.current
     // Export RGPD : l'utilisateur choisit où enregistrer le fichier JSON
@@ -189,185 +257,421 @@ private fun TribeContent(
     }
 
     val name = displayName?.ifBlank { null } ?: "Moi"
-    // Tribu du compte connecté (sinon : tribu d'un seul membre, nommée d'après lui)
-    val accounts = tribe?.members?.takeIf { m -> m.any { it.userId == userId } }
-        ?: listOf(data.ApiTribeMember(userId = userId.orEmpty(), displayName = name, role = "TRIBE_ROLE_OWNER", sharing = true))
+    // Tribu du compte connecté (sinon : tribu d'un seul membre, nommée d'après lui), moi d'abord
+    val accounts = (tribe?.members?.takeIf { m -> m.any { it.userId == userId } }
+        ?: listOf(data.ApiTribeMember(userId = userId.orEmpty(), displayName = name, role = "TRIBE_ROLE_OWNER", sharing = true)))
+        .sortedBy { if (it.userId == userId) 0 else 1 }
     val me = accounts.find { it.userId == userId }
     val tribeName = tribe?.takeIf { t -> t.members.any { it.userId == userId } }?.name?.trim()?.ifEmpty { null } ?: name
-    val myLinks = links.count { it.ownerId.isBlank() || it.ownerId == userId }
-    val myFolders = folders.size
-    val likesReceived = links.sumOf { it.likeCount } + folders.sumOf { it.likeCount }
-    val members = remember(accounts, children, name) {
-        buildList {
-            accounts.sortedBy { if (it.userId == userId) 0 else 1 }.forEach { m ->
-                val label = if (m.userId == userId) "${m.displayName.ifBlank { name }} (vous)" else m.displayName.ifBlank { m.email.ifBlank { "Membre" } }
-                add(Member(m.userId, label, if (m.sharing) null else "en attente"))
-            }
-            children.forEach { add(Member("child-${it.id}", it.name, formatAge(it.birthDate))) }
+    val invitations = tribe?.invitations.orEmpty()
+    fun accountName(m: data.ApiTribeMember) =
+        if (m.userId == userId) m.displayName.ifBlank { name } else m.displayName.ifBlank { m.email.ifBlank { "Membre" } }
+    val isMine = { ownerId: String -> ownerId.isBlank() || ownerId == userId }
+    val myLinks = links.count { isMine(it.ownerId) }
+    val myFolders = folders.filter { isMine(it.ownerId) }
+    val likesReceived = links.filter { isMine(it.ownerId) }.sumOf { it.likeCount } + myFolders.sumOf { it.likeCount }
+    val circle = remember(folders, accounts, userId) {
+        TribePage.circleOf(folders) { id -> id == userId || accounts.any { it.userId == id } || viewModel.isTribePeer(id) }
+    }
+    val year = remember(now) { java.util.Calendar.getInstance().apply { timeInMillis = now }.get(java.util.Calendar.YEAR) }
+    val yearStats = remember(links, year) { TribePage.yearInIdeas(links, year) }
+    val foyerCount = accounts.size + children.size
+
+    // Autour du feu : les comptes, puis les enfants
+    val seats = buildList {
+        accounts.forEachIndexed { i, m ->
+            add(Seat(m.userId, accountName(m), AvatarColors[i % AvatarColors.size], null, { showMembers = true }, "${accountName(m)}, gérer les membres"))
+        }
+        children.forEach { c ->
+            val cd = FolderStyle.countdown(c.birthDate, "anniv", now)
+            val badge = cd?.takeIf { it.days <= 30 }?.let { if (it.days == 0) "Anniv." else "J-${it.days}" }
+            add(Seat("child-${c.id}", c.name, childColors(children, c.id), badge, { kidTarget = KidTarget.Existing(c.id) }, "Voir le profil de ${c.name}"))
         }
     }
+    val shown = if (seats.size > TribePage.RING_SLOTS) seats.take(TribePage.RING_SLOTS - 1) else seats
+    val extra = seats.size - shown.size
 
     Column(modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = ui.components.bottomNavClearance())) {
-        // ── Bandeau orange : soleil + tipi ──
-        Box(Modifier.fillMaxWidth().background(Braise)) {
-            Box(Modifier.align(Alignment.BottomCenter).offset(y = 170.dp).size(360.dp).clip(CircleShape).background(Soleil))
-            Column(Modifier.fillMaxWidth().statusBarsPadding()) {
-                Row(
-                    Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+        // ── En-tête : la tribu installée autour du feu ──
+        Box(Modifier.fillMaxWidth().statusBarsPadding().height(300.dp).clipToBounds()) {
+            val sun = remember { Animatable(0f) }
+            LaunchedEffect(Unit) { sun.animateTo(1f, tween(1100, easing = EaseSoft)) }
+            Box(
+                Modifier.align(Alignment.TopCenter).offset(y = 96.dp).size(340.dp)
+                    .graphicsLayer { translationY = (1f - sun.value) * 60.dp.toPx() }
+                    .clip(CircleShape).background(Soleil)
+            )
+            Row(
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Ma tribu", style = display(26.sp))
+                CircleIconButton(Icons.Outlined.Tune, "Paramètres", { showSettings = true })
+            }
+            CampfireTipi(Modifier.align(Alignment.TopCenter).offset(y = 140.dp).size(104.dp).entrance(150))
+            CampfireFlame(Modifier.align(Alignment.TopCenter).offset(x = 70.dp, y = 206.dp).size(26.dp, 30.dp))
+
+            val total = shown.size + if (extra > 0) 1 else 0
+            (0 until total).forEach { i ->
+                val (dx, dy) = TribePage.ringPosition(i, total)
+                val seat = shown.getOrNull(i)
+                Column(
+                    Modifier.align(Alignment.TopCenter).offset(x = dx.dp, y = (205 + dy - 40).dp).width(64.dp)
+                        .entrance(200 + i * 90, rise = true)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(role = Role.Button, onClickLabel = seat?.label ?: "Voir le foyer") { seat?.onClick?.invoke() ?: run { tab = 0 } },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text("Ma tribu", style = display(26.sp))
-                    CircleIconButton(Icons.Outlined.Settings, "Paramètres", { showSettings = true }, background = Color.White.copy(alpha = 0.6f))
-                }
-                Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.BottomCenter) {
-                    TipiMark(110.dp, stroke = 1.8f)
-                }
-            }
-        }
-
-        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("La tribu $tribeName", style = display(24.sp))
-                    Icon(
-                        Icons.Outlined.Edit, "Renommer la tribu", tint = TextSec,
-                        modifier = Modifier.size(32.dp).clip(CircleShape).clickable { showRename = true }.padding(7.dp)
-                    )
-                }
-                val pending = tribe?.invitations?.size ?: 0
-                Text(
-                    "${members.size} membre${if (members.size > 1) "s" else ""}" +
-                        if (pending > 0) " · $pending invitation${if (pending > 1) "s" else ""} en attente" else "",
-                    fontSize = 14.sp, color = TextSec
-                )
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Stat(links.size, if (links.size > 1) "idées" else "idée", Modifier.weight(1f))
-                Stat(folders.size, if (folders.size > 1) "dossiers" else "dossier", Modifier.weight(1f))
-                Stat(likesReceived, "j'aime reçus", Modifier.weight(1f))
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SectionHeader("Les membres", "Gérer") { showMembers = true }
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    members.forEachIndexed { i, m ->
-                        Column(Modifier.width(70.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            InitialAvatar(m.name, i)
+                    Box {
+                        Box(
+                            Modifier.size(56.dp)
+                                .shadow(8.dp, RoundedCornerShape(20.dp), spotColor = Ecorce.copy(alpha = 0.25f))
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(seat?.colors?.first ?: Sable2)
+                                .border(3.dp, Sable, RoundedCornerShape(20.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                m.name + (m.sub?.let { " · $it" } ?: ""),
-                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce, textAlign = TextAlign.Center,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 16.sp
+                                seat?.name?.trim()?.take(1)?.uppercase()?.ifEmpty { "?" } ?: "+$extra",
+                                style = display(22.sp, color = seat?.colors?.second ?: TextSec)
+                            )
+                        }
+                        seat?.badge?.let {
+                            Text(
+                                it, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1,
+                                modifier = Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = (-8).dp)
+                                    .clip(RoundedCornerShape(8.dp)).background(CadeauInk).padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                     }
-                    Column(
-                        Modifier.width(70.dp).clip(RoundedCornerShape(16.dp)).clickable { showFamily = true },
-                        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Box(Modifier.size(58.dp).clip(RoundedCornerShape(20.dp)).dashedBorder(Dash, 20.dp), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Outlined.ChildCare, null, tint = Terracotta, modifier = Modifier.size(24.dp))
+                    Text(seat?.name ?: "la suite", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+
+            Column(
+                Modifier.align(Alignment.BottomCenter).padding(bottom = 14.dp, start = 20.dp, end = 20.dp).entrance(350),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("La tribu $tribeName", style = display(24.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Icon(
+                        Icons.Outlined.Edit, "Renommer la tribu", tint = TextMuted,
+                        modifier = Modifier.size(32.dp).clip(CircleShape).clickable { showRename = true }.padding(8.dp)
+                    )
+                }
+                Text(
+                    "$foyerCount au foyer · ${circle.size} dans le cercle" +
+                        (if (invitations.isNotEmpty()) " · ${invitations.size} invitation${if (invitations.size > 1) "s" else ""} en attente" else "") +
+                        (if (sessionManager.isAdmin()) " · administrateur" else ""),
+                    fontSize = 14.sp, color = TextSec, textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            // ── Onglets ──
+            BoxWithConstraints(Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(18.dp)).background(Sable2).padding(4.dp)) {
+                val half = maxWidth / 2
+                val x by androidx.compose.animation.core.animateDpAsState(
+                    if (tab == 0) 0.dp else half, spring(dampingRatio = 0.6f, stiffness = 400f), label = "tribe-tab"
+                )
+                Box(Modifier.offset(x = x).width(half).fillMaxHeight().shadow(3.dp, RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).background(Color.White))
+                Row(Modifier.fillMaxSize()) {
+                    listOf("Le foyer" to foyerCount, "Le cercle" to circle.size).forEachIndexed { i, (label, n) ->
+                        Row(
+                            Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp)).clickable(role = Role.Tab) { tab = i },
+                            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(label, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (tab == i) Ecorce else TextSec)
+                            Text("$n", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextMuted)
                         }
-                        Text("Enfant", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextSec)
                     }
                 }
             }
 
-            // Nouveau membre : il voit la tribu et choisit d'y verser son propre contenu
-            if (me != null && !me.sharing && accounts.size > 1) {
-                Column(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Soleil).padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text("Bienvenue dans la tribu $tribeName !", style = display(18.sp, FontWeight.Bold))
-                    val what = listOfNotNull(
-                        myLinks.takeIf { it > 0 }?.let { "$it idée${if (it > 1) "s" else ""}" },
-                        children.size.takeIf { it > 0 }?.let { "$it enfant${if (it > 1) "s" else ""}" },
-                    ).joinToString(", ")
+            if (tab == 0) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Nouveau membre : il voit la tribu et choisit d'y verser son propre contenu
+                    if (me != null && !me.sharing && accounts.size > 1) {
+                        Column(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Soleil).padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Text("Bienvenue dans la tribu $tribeName !", style = display(18.sp, FontWeight.Bold))
+                            val what = listOfNotNull(
+                                myLinks.takeIf { it > 0 }?.let { "$it idée${if (it > 1) "s" else ""}" },
+                                myFolders.size.takeIf { it > 0 }?.let { "$it dossier${if (it > 1) "s" else ""}" },
+                                children.size.takeIf { it > 0 }?.let { "$it enfant${if (it > 1) "s" else ""}" },
+                            ).joinToString(", ")
+                            Text(
+                                "Vous voyez déjà tout ce que la tribu partage. Partagez aussi votre contenu" +
+                                    (if (what.isNotEmpty()) " ($what)" else "") +
+                                    " : les autres membres pourront le voir et le modifier. Vos idées restent signées de votre nom.",
+                                fontSize = 14.sp, color = Ecorce2
+                            )
+                            CampButton("Partager avec la tribu", {
+                                tribeBusy = true
+                                viewModel.setTribeSharing(true) { err -> tribeBusy = false; tribeError = err }
+                            }, icon = Icons.Outlined.Check, height = 44.dp)
+                        }
+                    }
+                    accounts.forEachIndexed { i, m ->
+                        val (bg, ink) = AvatarColors[i % AvatarColors.size]
+                        val count = links.count { it.ownerId == m.userId || (m.userId == userId && it.ownerId.isBlank()) }
+                        Row(
+                            Modifier.fillMaxWidth().entrance(i * 60).tribeCard().clickable(role = Role.Button) { showMembers = true }.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(Modifier.size(48.dp).clip(RoundedCornerShape(17.dp)).background(bg), contentAlignment = Alignment.Center) {
+                                Text(accountName(m).trim().take(1).uppercase().ifEmpty { "?" }, style = display(20.sp, color = ink))
+                            }
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(accountName(m) + if (m.userId == userId) " (vous)" else "", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    if (m.sharing) "$count idée${if (count > 1) "s" else ""} ajoutée${if (count > 1) "s" else ""}" else "Partage de son contenu en attente",
+                                    fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Text(
+                                if (m.isOwner) "Créateur" else "Parent", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSec,
+                                modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Sable2).padding(horizontal = 9.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                    invitations.forEach { inv -> PendingInvitationRow(inv, now, viewModel) }
+
+                    Text("Les enfants", style = display(20.sp, FontWeight.Bold), modifier = Modifier.padding(top = 10.dp))
+                    if (children.isEmpty()) {
+                        Text("L'âge des enfants sert à filtrer les idées adaptées dans l'Explorer et à guider l'IA.", fontSize = 14.sp, color = TextSec)
+                    }
+                    children.chunked(2).forEachIndexed { row, pair ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            pair.forEachIndexed { j, c ->
+                                KidCard(
+                                    c, childColors(children, c.id), TribePage.ideasForChild(links, folders, c, now), now,
+                                    Modifier.weight(1f).entrance(120 + (row * 2 + j) * 60)
+                                ) { kidTarget = KidTarget.Existing(c.id) }
+                            }
+                            if (pair.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
+                    Row(
+                        Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(18.dp)).dashedBorder(Dash, 18.dp)
+                            .clickable(role = Role.Button) { kidTarget = KidTarget.New },
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Outlined.Add, null, tint = TextSec, modifier = Modifier.size(18.dp))
+                        Text("Ajouter un enfant", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextSec)
+                    }
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "Vous voyez déjà tout ce que la tribu partage. Partagez aussi votre contenu" +
-                            (if (what.isNotEmpty()) " ($what)" else "") +
-                            " : les autres membres pourront le voir et le modifier. Vos idées restent signées de votre nom.",
-                        fontSize = 14.sp, color = Ecorce2
+                        "Grands-parents, parrains, cousins : ils voient seulement les dossiers que vous leur ouvrez.",
+                        fontSize = 14.sp, lineHeight = 20.sp, color = TextSec
                     )
-                    CampButton("Partager avec la tribu", {
-                        tribeBusy = true
-                        viewModel.setTribeSharing(true) { err -> tribeBusy = false; tribeError = err }
-                    }, icon = Icons.Outlined.Check, height = 44.dp)
+                    circle.forEachIndexed { i, c ->
+                        val (bg, ink) = AvatarColors[(i + 3) % AvatarColors.size]
+                        Column(
+                            Modifier.fillMaxWidth().entrance(i * 70).tribeCard().padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Box(Modifier.size(44.dp).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
+                                    Text(c.name.trim().take(1).uppercase().ifEmpty { "?" }, style = display(18.sp, color = ink))
+                                }
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(c.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    val n = c.folders.size
+                                    Text("$n dossier${if (n > 1) "s" else ""} ouvert${if (n > 1) "s" else ""}", fontSize = 13.sp, color = TextSec)
+                                }
+                                Text(
+                                    if (c.editor) "Éditeur" else "Lecteur", fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                    color = if (c.editor) RecetteInk else TextSec,
+                                    modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (c.editor) RecetteBg else Sable2).padding(horizontal = 9.dp, vertical = 4.dp)
+                                )
+                            }
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                c.folders.forEach { f ->
+                                    val manage = isMine(f.ownerId)
+                                    Text(
+                                        f.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = folderSolid(f.color), maxLines = 1,
+                                        modifier = Modifier.height(28.dp).clip(RoundedCornerShape(10.dp)).background(folderBg(f.color))
+                                            .then(if (manage) Modifier.clickable(role = Role.Button, onClickLabel = "Gérer l'accès à ${f.name}") { shareFolder = f } else Modifier)
+                                            .wrapContentHeight().padding(horizontal = 10.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (circle.isEmpty()) {
+                        Row(
+                            Modifier.fillMaxWidth().clip(CardShape).dashedBorder(Dash, 22.dp).padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(Modifier.size(44.dp).clip(CircleShape).background(Sable2), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Outlined.Folder, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                            }
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text("Personne dans le cercle", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+                                Text("Ouvrez un dossier à un proche : il ne verra que celui-là.", fontSize = 13.sp, color = TextSec)
+                            }
+                        }
+                    }
                 }
             }
+            tribeError?.takeIf { !showMembers && !showInvite && !showRename }?.let { Text(it, color = SortieInk, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
 
+            // ── Inviter autour du feu ──
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Ecorce).clickable { showInvite = true }.padding(14.dp),
+                Modifier.fillMaxWidth().clip(CardShape).background(Ecorce).clickable(role = Role.Button) { tribeError = null; showInvite = true }.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Braise), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(46.dp).clip(RoundedCornerShape(15.dp)).background(Braise), contentAlignment = Alignment.Center) {
                     Icon(Icons.Outlined.PersonAdd, null, tint = Ecorce, modifier = Modifier.size(22.dp))
                 }
-                Column(Modifier.weight(1f)) {
-                    Text("Inviter dans la tribu", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Sable)
-                    Text("Partagez toute la tribu avec un proche, par email", fontSize = 13.sp, color = BarkSoft)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text("Inviter autour du feu", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Sable)
+                    Text("Un parent au foyer, ou un proche dans le cercle", fontSize = 13.sp, color = BarkSoft)
                 }
-                Icon(Icons.Outlined.ChevronRight, null, tint = BarkSoft)
+                Icon(Icons.Outlined.ChevronRight, null, tint = Sable)
             }
 
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color.White)) {
-                ListRow(Icons.Outlined.FavoriteBorder, "Tribus suivies", following?.size?.toString()) { showFollowing = true }
-                ListRow(Icons.Outlined.ShoppingCart, "Liste de courses", onClick = onOpenShopping)
-                ListRow(Icons.Outlined.HelpOutline, "Aide & FAQ", onClick = onFaq)
-                ListRow(Icons.Outlined.Lock, "Confidentialité & mes données") { uriHandler.openUri(PRIVACY_URL) }
-                ListRow(Icons.Outlined.Info, "À propos de Tribbae") { uriHandler.openUri(ABOUT_URL) }
-                if (sessionManager.isAdmin()) ListRow(Icons.Outlined.AdminPanelSettings, "Administration", onClick = onOpenAdmin)
-                ListRow(Icons.Outlined.Logout, "Se déconnecter", last = true) { showLogout = true }
+            // ── Notre année en idées ──
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                    Text("Notre année en idées", style = display(20.sp, FontWeight.Bold))
+                    Text("$year", fontSize = 13.sp, color = TextSec)
+                }
+                Box(Modifier.fillMaxWidth().clip(CardShape).background(YearSky)) {
+                    Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(26.dp).background(BraiseSoft))
+                    Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp).fillMaxWidth().height(2.dp).background(Ecorce))
+                    TipiMark(34.dp, stroke = 2.4f, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 22.dp))
+                    Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 18.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            YearTile(yearStats.outings, if (yearStats.outings > 1) "sorties gardées" else "sortie gardée", SortieInk, Modifier.weight(1f))
+                            YearTile(yearStats.recipes, if (yearStats.recipes > 1) "recettes gardées" else "recette gardée", RecetteInk, Modifier.weight(1f))
+                            YearTile(yearStats.gifts, if (yearStats.gifts > 1) "idées cadeaux" else "idée cadeau", CadeauInk, Modifier.weight(1f))
+                        }
+                        Text(
+                            yearStats.bestMonth?.let { (m, n) -> "Votre meilleur mois : ${TribePage.monthName(m)}, $n idée${if (n > 1) "s" else ""} gardée${if (n > 1) "s" else ""}." }
+                                ?: "Gardez vos premières idées : elles rempliront votre année.",
+                            fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ecorce,
+                            modifier = Modifier.padding(top = 12.dp, end = 56.dp, bottom = 18.dp)
+                        )
+                    }
+                }
+                Text(
+                    "En tout : ${links.size} idée${if (links.size > 1) "s" else ""} · ${folders.size} dossier${if (folders.size > 1) "s" else ""} · $likesReceived j'aime reçus",
+                    fontSize = 13.sp, color = TextSec
+                )
+            }
+
+            // ── Réglages ──
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Réglages", style = display(20.sp, FontWeight.Bold))
+                Column(Modifier.fillMaxWidth().clip(CardShape).background(Color.White)) {
+                    ListRow(Icons.Outlined.FavoriteBorder, "Tribus suivies", following?.size?.toString()) { showFollowing = true }
+                    ListRow(Icons.Outlined.ShoppingCart, "Liste de courses", onClick = onOpenShopping)
+                    ListRow(Icons.Outlined.Lock, "Confidentialité & mes données") { uriHandler.openUri(PRIVACY_URL) }
+                    ListRow(Icons.Outlined.HelpOutline, "Aide & FAQ", onClick = onFaq)
+                    ListRow(Icons.Outlined.Info, "À propos de Tribbae", last = !sessionManager.isAdmin()) { uriHandler.openUri(ABOUT_URL) }
+                    if (sessionManager.isAdmin()) ListRow(Icons.Outlined.AdminPanelSettings, "Administration", last = true, onClick = onOpenAdmin)
+                }
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Connecté en tant que $name · ", fontSize = 12.sp, color = TextMuted)
+                    Text(
+                        "Se déconnecter", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextSec,
+                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button) { showLogout = true }.padding(4.dp)
+                    )
+                }
             }
         }
     }
 
-    if (showFamily) FamilyManagementDialog(viewModel = viewModel, onDismiss = { showFamily = false })
+    kidTarget?.let { target ->
+        KidSheet(
+            target = target,
+            viewModel = viewModel,
+            now = now,
+            onDismiss = { kidTarget = null },
+            onIdeas = { c -> kidTarget = null; onOpenAi("Des idées pour ${c.name}, ${formatAge(c.birthDate)}") },
+            onOpenFolder = { f -> kidTarget = null; onOpenFolder(f) },
+        )
+    }
 
     if (showInvite) {
         ModalBottomSheet(onDismissRequest = { showInvite = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
-            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Inviter dans la tribu", style = display(24.sp))
-                var email by remember { mutableStateOf("") }
-                Text(
-                    "Votre proche reçoit un lien pour rejoindre la tribu et tout gérer avec vous : idées, dossiers, enfants et liste de courses.",
-                    fontSize = 15.sp, color = Ecorce2
-                )
-                CampField(
-                    "Son adresse email", email, { email = it; tribeError = null },
-                    placeholder = "camille@exemple.fr", icon = Icons.Outlined.Email,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
-                )
-                Text(
-                    "L'invitation est valable 7 jours. Pas encore de compte ? Il pourra en créer un depuis le lien. Ses propres idées ne rejoindront la tribu qu'une fois qu'il l'aura confirmé depuis « Ma tribu ».",
-                    fontSize = 12.sp, color = TextSec
-                )
-                tribeError?.let { Text(it, color = Color(0xFF9A3420), fontSize = 14.sp, fontWeight = FontWeight.Medium) }
-                CampButton(if (tribeBusy) "Envoi…" else "Envoyer l'invitation", {
-                    if (email.isBlank()) { tribeError = "Saisissez l'adresse email de votre proche."; return@CampButton }
-                    tribeBusy = true
-                    viewModel.inviteTribeMember(email) { err ->
-                        tribeBusy = false
-                        tribeError = err
-                        if (err == null) {
-                            android.widget.Toast.makeText(context, "Invitation envoyée", android.widget.Toast.LENGTH_SHORT).show()
-                            email = ""; showInvite = false
+            var role by remember { mutableIntStateOf(0) } // 0 = au foyer, 1 = dans le cercle
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text("Inviter autour du feu", style = display(22.sp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.selectableGroup()) {
+                    listOf(
+                        "Au foyer" to "Un parent : voit et modifie tout.",
+                        "Dans le cercle" to "Un proche : seulement les dossiers choisis.",
+                    ).forEachIndexed { i, (title, desc) ->
+                        val on = role == i
+                        val scale by androidx.compose.animation.core.animateFloatAsState(if (on) 1.02f else 1f, spring(dampingRatio = 0.5f), label = "invite-role")
+                        Column(
+                            Modifier.weight(1f).graphicsLayer { scaleX = scale; scaleY = scale }
+                                .clip(RoundedCornerShape(18.dp)).background(Color.White)
+                                .border(if (on) 2.dp else 1.dp, if (on) Terracotta else Line, RoundedCornerShape(18.dp))
+                                .selectable(selected = on, role = Role.RadioButton) { role = i; tribeError = null }
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(title, style = display(16.sp))
+                            Text(desc, fontSize = 12.sp, lineHeight = 16.sp, color = TextSec)
                         }
                     }
-                }, Modifier.fillMaxWidth(), icon = Icons.Outlined.Email)
-                Text("Ou partager un seul dossier", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec, modifier = Modifier.padding(top = 16.dp))
-                Text(
-                    "Vos proches pourront le consulter par lien ou y ajouter leurs idées, sans accéder au reste de la tribu.",
-                    fontSize = 14.sp, color = TextSec, modifier = Modifier.padding(bottom = 4.dp)
-                )
-                if (folders.isEmpty()) {
-                    EmptyBlock(Icons.Filled.CreateNewFolder, "Aucun dossier à partager", "Créez d'abord un dossier dans « Mes idées ».")
                 }
-                folders.forEach { f ->
-                    MenuRow(folderIconVector(f), f.name, tint = folderSolid(f.color)) { showInvite = false; shareFolder = f }
+                if (role == 0) {
+                    var email by remember { mutableStateOf("") }
+                    Text(
+                        "Votre proche reçoit un lien pour rejoindre la tribu et tout gérer avec vous : idées, dossiers, enfants et liste de courses.",
+                        fontSize = 15.sp, color = Ecorce2
+                    )
+                    CampField(
+                        "Son adresse email", email, { email = it; tribeError = null },
+                        placeholder = "camille@exemple.fr", icon = Icons.Outlined.Email,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
+                    )
+                    tribeError?.let { Text(it, color = SortieInk, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
+                    CampButton(if (tribeBusy) "Envoi…" else "Envoyer l'invitation", {
+                        if (email.isBlank()) { tribeError = "Saisissez l'adresse email de votre proche."; return@CampButton }
+                        tribeBusy = true
+                        viewModel.inviteTribeMember(email) { err ->
+                            tribeBusy = false
+                            tribeError = err
+                            if (err == null) {
+                                android.widget.Toast.makeText(context, "Invitation envoyée", android.widget.Toast.LENGTH_SHORT).show()
+                                email = ""; showInvite = false; tab = 0
+                            }
+                        }
+                    }, Modifier.fillMaxWidth(), kind = ButtonKind.Ai, icon = Icons.Outlined.Share)
+                    Text(
+                        "Le lien expire dans 7 jours. Pas encore de compte ? Il pourra en créer un depuis le lien. Ses propres idées ne rejoindront la tribu qu'une fois qu'il l'aura confirmé depuis « Ma tribu ».",
+                        fontSize = 12.sp, color = TextMuted, textAlign = TextAlign.Center
+                    )
+                } else if (myFolders.isEmpty()) {
+                    EmptyBlock(Icons.Filled.CreateNewFolder, "Aucun dossier à ouvrir", "Le cercle voit seulement les dossiers que vous lui ouvrez : créez-en un d'abord dans « Mes idées ».")
+                } else {
+                    CircleInviteForm(myFolders, viewModel) {
+                        android.widget.Toast.makeText(context, "Dossiers ouverts à votre proche", android.widget.Toast.LENGTH_SHORT).show()
+                        showInvite = false; tab = 1
+                    }
+                    Text("Ou partager un dossier par lien", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec, modifier = Modifier.padding(top = 8.dp))
+                    myFolders.forEach { f ->
+                        MenuRow(folderIconVector(f), f.name, tint = folderSolid(f.color)) { showInvite = false; shareFolder = f }
+                    }
                 }
             }
         }
@@ -446,7 +750,7 @@ private fun TribeContent(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     CampField("La tribu…", newName, { newName = it; tribeError = null }, placeholder = "Dupont", maxLength = 60)
                     Text("Affiché dans l'accueil et pour tous les membres. Vos idées restent signées de votre nom.", fontSize = 13.sp, color = TextSec)
-                    tribeError?.let { Text(it, color = Color(0xFF9A3420), fontSize = 13.sp) }
+                    tribeError?.let { Text(it, color = SortieInk, fontSize = 13.sp) }
                 }
             },
             confirmButton = {
@@ -465,7 +769,7 @@ private fun TribeContent(
         val iAmOwner = me?.isOwner == true
         ModalBottomSheet(onDismissRequest = { showMembers = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Les membres", style = display(24.sp))
+                Text("Le foyer", style = display(24.sp))
                 accounts.forEachIndexed { i, m ->
                     val self = m.userId == userId
                     Row(
@@ -478,7 +782,7 @@ private fun TribeContent(
                             Text(label + if (self) " (vous)" else "", fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
                                 listOfNotNull(
-                                    if (m.isOwner) "Créateur" else "Membre",
+                                    if (m.isOwner) "Créateur" else "Parent",
                                     if (!m.sharing) "partage de son contenu en attente" else null,
                                     m.email.takeIf { !self && it.isNotBlank() },
                                 ).joinToString(" · "),
@@ -490,7 +794,6 @@ private fun TribeContent(
                         }
                     }
                 }
-                val invitations = tribe?.invitations.orEmpty()
                 if (invitations.isNotEmpty()) {
                     Text("Invitations en attente", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec, modifier = Modifier.padding(top = 6.dp))
                     invitations.forEach { inv ->
@@ -520,9 +823,8 @@ private fun TribeContent(
                         }
                     }
                 }
-                tribeError?.let { Text(it, color = Color(0xFF9A3420), fontSize = 14.sp) }
+                tribeError?.let { Text(it, color = SortieInk, fontSize = 14.sp) }
                 CampButton("Inviter un proche", { showMembers = false; showInvite = true }, Modifier.fillMaxWidth(), kind = ButtonKind.Secondary, icon = Icons.Outlined.PersonAdd)
-                CampButton("Les enfants", { showMembers = false; showFamily = true }, Modifier.fillMaxWidth(), kind = ButtonKind.Ghost, icon = Icons.Outlined.ChildCare)
                 if (me?.sharing == true && accounts.size > 1) {
                     Text(
                         "Ne plus partager mon contenu", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec,
@@ -588,6 +890,352 @@ private fun TribeContent(
     if (showDelete) DeleteAccountDialog(viewModel, onDismiss = { showDelete = false })
 }
 
+/** Le tipi au centre du feu (SVG de la maquette, viewBox 100×100). */
+@Composable
+private fun CampfireTipi(modifier: Modifier) {
+    val paths = remember {
+        fun p(d: String) = PathParser().parsePathString(d).toPath()
+        listOf(p("M50 24L81 80H19Z"), p("M50 50L64 80H36Z"), p("M34 52H50L42 68Z"), p("M43 13L54 30M57 13L46 30"),
+            p("M49 43l2.7-3 2.7 3 2.6-3M58 62l2.7-3 2.7 3 2.6-3"), p("M6 80H94"))
+    }
+    Canvas(modifier) {
+        val s = size.width / 100f
+        scale(s, s, pivot = Offset.Zero) {
+            fun stroke(w: Float) = Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            drawPath(paths[0], Tipi); drawPath(paths[0], Ecorce, style = stroke(4f))
+            drawPath(paths[3], Ecorce, style = stroke(4f))
+            drawPath(paths[1], Prune); drawPath(paths[1], Ecorce, style = stroke(4f))
+            drawPath(paths[2], Braise); drawPath(paths[2], Ecorce, style = stroke(3.5f))
+            drawPath(paths[4], Ecorce, style = stroke(2.6f))
+            drawPath(paths[5], Ecorce, style = stroke(4f))
+        }
+    }
+}
+
+/** La flamme qui danse à côté du tipi. */
+@Composable
+private fun CampfireFlame(modifier: Modifier) {
+    val flame = remember { PathParser().parsePathString("M13 2c4 6 9 9 9 16a9 9 0 0 1-18 0c0-4 2-6 4-8 0 3 1 5 3 5 0-5-1-9 2-13z").toPath() }
+    val t = rememberInfiniteTransition(label = "flame")
+    val sy by t.animateFloat(1f, 1.12f, infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "flame-scale")
+    Canvas(modifier) {
+        val s = size.width / 26f
+        scale(s, s, pivot = Offset.Zero) {
+            scale(1f, sy, pivot = Offset(13f, 28f)) {
+                drawPath(flame, Braise)
+                drawPath(flame, Ecorce, style = Stroke(2f, join = StrokeJoin.Round))
+            }
+            drawLine(Ecorce, Offset(3f, 28f), Offset(23f, 28f), 2.4f, StrokeCap.Round)
+        }
+    }
+}
+
+@Composable
+private fun YearTile(value: Int, label: String, color: Color, modifier: Modifier) {
+    Column(
+        modifier.clip(RoundedCornerShape(16.dp)).background(Color.White).padding(vertical = 10.dp, horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text("$value", style = display(24.sp, color = color))
+        Text(label, fontSize = 12.sp, lineHeight = 15.sp, color = TextSec, textAlign = TextAlign.Center)
+    }
+}
+
+/** Invitation au foyer en attente : « Relancer » renvoie l'email (au plus toutes les 10 min côté serveur). */
+@Composable
+private fun PendingInvitationRow(inv: data.ApiTribeInvitation, now: Long, viewModel: LinkViewModel) {
+    var state by remember(inv.id) { mutableIntStateOf(0) } // 0 = à relancer, 1 = envoi, 2 = relancé
+    val context = androidx.compose.ui.platform.LocalContext.current
+    Row(
+        Modifier.fillMaxWidth().clip(CardShape).dashedBorder(Dash, 22.dp).padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(Modifier.size(44.dp).clip(CircleShape).background(Sable2), contentAlignment = Alignment.Center) {
+            Icon(Icons.Outlined.Email, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(inv.email, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val days = if (inv.createdAt > 0) ((now - inv.createdAt) / 86_400_000L).toInt() else -1
+            Text(
+                when {
+                    days < 0 -> "Invitation envoyée"
+                    days == 0 -> "Invitation envoyée aujourd'hui"
+                    days == 1 -> "Invitation envoyée hier"
+                    else -> "Invitation envoyée il y a $days jours"
+                },
+                fontSize = 13.sp, color = TextSec, maxLines = 1
+            )
+        }
+        Text(
+            when (state) { 2 -> "Relancé ✓"; 1 -> "Envoi…"; else -> "Relancer" },
+            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (state == 2) RecetteInk else Sable,
+            modifier = Modifier.height(36.dp).clip(RoundedCornerShape(12.dp)).background(if (state == 2) RecetteBg else Ecorce)
+                .clickable(enabled = state == 0, role = Role.Button) {
+                    state = 1
+                    viewModel.inviteTribeMember(inv.email) { err ->
+                        state = if (err == null) 2 else 0
+                        android.widget.Toast.makeText(context, err ?: "Invitation renvoyée", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .wrapContentHeight().padding(horizontal = 12.dp)
+        )
+    }
+}
+
+@Composable
+private fun KidCard(child: data.Child, colors: Pair<Color, Color>, ideas: Int, now: Long, modifier: Modifier, onClick: () -> Unit) {
+    val (bg, ink) = colors
+    val cd = FolderStyle.countdown(child.birthDate, "anniv", now)
+    val soon = cd != null && cd.days <= 30
+    Column(modifier.tribeCard().clickable(role = Role.Button, onClickLabel = "Voir le profil de ${child.name}", onClick = onClick)) {
+        Box(Modifier.fillMaxWidth().height(74.dp).background(bg)) {
+            cd?.let {
+                Text(
+                    it.label, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = if (soon) Color.White else ink, maxLines = 1,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(10.dp).clip(RoundedCornerShape(9.dp))
+                        .background(if (soon) CadeauInk else Color.White).padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
+        }
+        Box {
+            Box(
+                Modifier.offset(x = 12.dp, y = (-20).dp).size(48.dp).clip(RoundedCornerShape(17.dp)).background(Color.White).padding(3.dp)
+                    .clip(RoundedCornerShape(14.dp)).background(ink),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(child.name.trim().take(1).uppercase().ifEmpty { "?" }, style = display(20.sp, color = Color.White))
+            }
+            Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 26.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(child.name, style = display(17.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text("${formatAge(child.birthDate)} · $ideas idée${if (ideas > 1) "s" else ""}", fontSize = 13.sp, color = TextSec)
+            }
+        }
+    }
+}
+
+/** Ouvre des dossiers à un proche qui a déjà un compte Tribbae. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CircleInviteForm(folders: List<data.Folder>, viewModel: LinkViewModel, onDone: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var picked by remember { mutableStateOf(folders.take(1).map { it.id }.toSet()) }
+    var editor by remember { mutableStateOf(false) }
+    var email by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Dossiers ouverts", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            folders.forEach { f ->
+                val on = f.id in picked
+                Text(
+                    (if (on) "✓ " else "+ ") + f.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (on) Sable else TextSec, maxLines = 1,
+                    modifier = Modifier.height(34.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Ecorce else Color.White)
+                        .then(if (on) Modifier else Modifier.border(1.dp, Line, RoundedCornerShape(12.dp)))
+                        .toggleable(on, role = Role.Checkbox) { picked = if (it) picked + f.id else picked - f.id; error = null }
+                        .wrapContentHeight().padding(horizontal = 12.dp)
+                )
+            }
+        }
+        Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Sable2).padding(3.dp).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            listOf(false to "Lecteur", true to "Éditeur").forEach { (value, label) ->
+                Text(
+                    label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (editor == value) Ecorce else TextSec,
+                    modifier = Modifier.height(30.dp).clip(RoundedCornerShape(9.dp)).background(if (editor == value) Color.White else Color.Transparent)
+                        .selectable(editor == value, role = Role.RadioButton) { editor = value }
+                        .wrapContentHeight().padding(horizontal = 12.dp)
+                )
+            }
+        }
+        CampField(
+            "Son adresse email", email, { email = it; error = null },
+            placeholder = "mamie.jo@exemple.fr", icon = Icons.Outlined.Email,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
+        )
+        error?.let { Text(it, color = SortieInk, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
+        CampButton(if (busy) "Envoi…" else "Ouvrir les dossiers", {
+            if (picked.isEmpty()) { error = "Choisissez au moins un dossier à ouvrir."; return@CampButton }
+            if (!email.contains("@")) { error = "Saisissez l'adresse email de votre proche."; return@CampButton }
+            busy = true
+            scope.launch {
+                val role = if (editor) "COLLABORATOR_ROLE_EDITOR" else "COLLABORATOR_ROLE_VIEWER"
+                val failed = folders.filter { it.id in picked }.filter { viewModel.addCollaborator(it.id, email.trim(), role) == null }
+                busy = false
+                when {
+                    failed.size == picked.size -> error = "Invitation impossible : vérifiez l'email (compte Tribbae requis)."
+                    failed.isNotEmpty() -> error = "Pas ajouté à : ${failed.joinToString { it.name }}."
+                    else -> onDone()
+                }
+            }
+        }, Modifier.fillMaxWidth(), kind = ButtonKind.Ai, icon = Icons.Outlined.Share, enabled = !busy)
+        Text(
+            "Votre proche doit avoir un compte Tribbae. " + (if (editor) "Il pourra ajouter ses idées" else "Il pourra consulter") +
+                " sans voir le reste de la tribu. Vous pourrez changer les accès à tout moment.",
+            fontSize = 12.sp, color = TextMuted, textAlign = TextAlign.Center
+        )
+    }
+}
+
+/** Fiche d'un enfant (anniversaire, ses dossiers, idées de l'IA) ou formulaire d'ajout / de modification. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun KidSheet(
+    target: KidTarget,
+    viewModel: LinkViewModel,
+    now: Long,
+    onDismiss: () -> Unit,
+    onIdeas: (data.Child) -> Unit,
+    onOpenFolder: (data.Folder) -> Unit,
+) {
+    val children by viewModel.children.collectAsState()
+    val folders by viewModel.folders.collectAsState()
+    val child = (target as? KidTarget.Existing)?.let { t -> children.find { it.id == t.id } }
+    var editing by remember { mutableStateOf(child == null) }
+    var name by remember { mutableStateOf(child?.name.orEmpty()) }
+    var birth by remember { mutableStateOf(child?.birthDate) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var showDate by remember { mutableStateOf(false) }
+    var confirmRemove by remember { mutableStateOf(false) }
+    val dateFmt = remember { java.text.SimpleDateFormat("d MMMM yyyy", java.util.Locale.FRENCH) }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            if (child == null || editing) {
+                Text(if (child != null) "Modifier ${child.name}" else "Ajouter un enfant", style = display(22.sp))
+                CampField("Prénom", name, { name = it; error = null }, placeholder = "Emma", maxLength = 60)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Date de naissance", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
+                    Row(
+                        Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(18.dp)).background(Color.White)
+                            .border(1.5.dp, Color(0xFFE6D3C0), RoundedCornerShape(18.dp))
+                            .clickable(role = Role.Button) { showDate = true }.padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(Icons.Outlined.Cake, null, tint = TextMuted, modifier = Modifier.size(19.dp))
+                        Text(birth?.let { dateFmt.format(java.util.Date(it)) } ?: "Choisir une date", fontSize = 15.sp, color = if (birth != null) Ecorce else TextMuted)
+                    }
+                }
+                Text("L'âge sert à filtrer l'Explorer et à guider les idées de l'IA. Rien n'est public.", fontSize = 12.sp, color = TextMuted)
+                error?.let { Text(it, color = SortieInk, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CampButton("Annuler", { if (child != null) editing = false else onDismiss() }, kind = ButtonKind.Ghost)
+                    CampButton(if (child != null) "Enregistrer" else "Ajouter", {
+                        val b = birth
+                        when {
+                            name.isBlank() || b == null -> error = "Le prénom et la date de naissance sont nécessaires."
+                            b > System.currentTimeMillis() -> error = "La date de naissance est dans le futur."
+                            child != null -> { viewModel.updateChild(child.copy(name = name.trim(), birthDate = b)); editing = false }
+                            else -> { viewModel.addChild(name.trim(), b); onDismiss() }
+                        }
+                    }, Modifier.weight(1f))
+                }
+                if (child != null) {
+                    Text(
+                        "Retirer ${child.name} de la tribu", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec,
+                        modifier = Modifier.align(Alignment.CenterHorizontally).clip(RoundedCornerShape(10.dp)).clickable(role = Role.Button) { confirmRemove = true }.padding(8.dp)
+                    )
+                }
+            } else {
+                val (bg, ink) = childColors(children, child.id)
+                val cd = FolderStyle.countdown(child.birthDate, "anniv", now)
+                val pop = remember { Animatable(0.7f) }
+                LaunchedEffect(Unit) { pop.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 400f)) }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Box(
+                        Modifier.size(64.dp).graphicsLayer { scaleX = pop.value; scaleY = pop.value }.clip(RoundedCornerShape(22.dp)).background(ink),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(child.name.trim().take(1).uppercase().ifEmpty { "?" }, style = display(28.sp, color = Color.White))
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(child.name, style = display(24.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("${formatAge(child.birthDate)} · né·e le ${dateFmt.format(java.util.Date(child.birthDate))}", fontSize = 14.sp, color = TextSec)
+                    }
+                    CircleIconButton(Icons.Outlined.Close, "Fermer", onDismiss, background = Sable2)
+                }
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(bg).padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(Icons.Outlined.Cake, null, tint = ink, modifier = Modifier.size(22.dp))
+                    Text(TribePage.birthdayLabel(child.birthDate), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ink, modifier = Modifier.weight(1f))
+                    cd?.let { Text(it.label, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, color = ink) }
+                }
+                val theirFolders = folders.filter { child.id in it.childIds }
+                if (theirFolders.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Ses dossiers", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            theirFolders.forEach { f ->
+                                Row(
+                                    Modifier.height(34.dp).clip(RoundedCornerShape(12.dp)).background(folderBg(f.color))
+                                        .clickable(role = Role.Button) { onOpenFolder(f) }.padding(horizontal = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(folderIconVector(f), null, tint = folderSolid(f.color), modifier = Modifier.size(15.dp))
+                                    Text(f.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = folderSolid(f.color), maxLines = 1)
+                                }
+                            }
+                        }
+                    }
+                }
+                Text("L'âge sert à filtrer l'Explorer et à guider les idées de l'IA. Rien n'est public.", fontSize = 12.sp, color = TextMuted)
+                CampButton("Des idées pour ${child.name}", { onIdeas(child) }, Modifier.fillMaxWidth(), icon = Icons.Outlined.AutoAwesome)
+                CampButton("Modifier le profil", { editing = true }, Modifier.fillMaxWidth(), kind = ButtonKind.Ghost, icon = Icons.Outlined.Edit)
+            }
+        }
+    }
+
+    if (showDate) {
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = birth?.let { local ->
+                // Le sélecteur travaille en minuit UTC
+                val c = java.util.Calendar.getInstance().apply { timeInMillis = local }
+                java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { clear(); set(c.get(java.util.Calendar.YEAR), c.get(java.util.Calendar.MONTH), c.get(java.util.Calendar.DAY_OF_MONTH)) }.timeInMillis
+            },
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= System.currentTimeMillis()
+            }
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDate = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { utc ->
+                        val day = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { timeInMillis = utc }
+                        // Midi local, comme le web : la date ne glisse pas d'un jour selon le fuseau
+                        birth = java.util.Calendar.getInstance().apply {
+                            clear(); set(day.get(java.util.Calendar.YEAR), day.get(java.util.Calendar.MONTH), day.get(java.util.Calendar.DAY_OF_MONTH), 12, 0)
+                        }.timeInMillis
+                        error = null
+                    }
+                    showDate = false
+                }) { Text("Valider", color = Terracotta, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { showDate = false }) { Text("Annuler", color = Ecorce) } }
+        ) { DatePicker(state) }
+    }
+
+    if (confirmRemove && child != null) {
+        AlertDialog(
+            onDismissRequest = { confirmRemove = false },
+            containerColor = Sable,
+            title = { Text("Retirer ${child.name} ?", style = display(20.sp, FontWeight.Bold)) },
+            confirmButton = {
+                TextButton(onClick = { confirmRemove = false; viewModel.deleteChild(child.id); onDismiss() }) {
+                    Text("Retirer", color = Terracotta, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmRemove = false }) { Text("Annuler", color = Ecorce) } }
+        )
+    }
+}
+
 /** Politique de confidentialité, publiée sur le site. */
 private const val PRIVACY_URL = "${data.Backend.PRODUCTION}/confidentialite"
 
@@ -643,17 +1291,6 @@ private fun DeleteAccountDialog(viewModel: LinkViewModel, onDismiss: () -> Unit)
         },
         dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("Annuler", color = Ecorce) } }
     )
-}
-
-@Composable
-private fun Stat(value: Int, label: String, modifier: Modifier) {
-    Column(
-        modifier.clip(RoundedCornerShape(16.dp)).background(Color.White).padding(vertical = 12.dp, horizontal = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text("$value", style = display(22.sp))
-        Text(label, fontSize = 12.sp, color = TextSec)
-    }
 }
 
 @Composable
@@ -877,257 +1514,6 @@ private fun SimpleAuthDialog(
 
                 TextButton(onClick = { if (!isLoading) onDismiss() }) {
                     Text("Annuler", color = Color(0xFF6B5047))
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FamilyManagementDialog(
-    viewModel: LinkViewModel,
-    onDismiss: () -> Unit
-) {
-    val children by viewModel.children.collectAsState()
-    var showAddDialog by remember { mutableStateOf(false) }
-    var editingChild by remember { mutableStateOf<data.Child?>(null) }
-    val scope = rememberCoroutineScope()
-    
-    AlertDialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-               verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Ma famille",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    IconButton(
-                        onClick = { showAddDialog = true },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFC8492C))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Add,
-                            contentDescription = "Ajouter",
-                            tint = Color.White,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-                
-                if (children.isEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "👨‍👩‍👧‍👦",
-                            fontSize = 48.sp
-                        )
-                        Text(
-                            text = "Aucun membre pour l'instant",
-                            fontSize = 14.sp,
-                            color = Color(0xFF8A6F64)
-                        )
-                    }
-                } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        children.forEach { child ->
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color(0xFFFBF3E7)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFFDE6BD)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = child.name.firstOrNull()?.uppercase() ?: "?",
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFC8492C)
-                                        )
-                                    }
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = child.name,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFF3A211B)
-                                        )
-                                        val age = remember(child.birthDate) {
-                                            val now = System.currentTimeMillis()
-                                            val diff = now - child.birthDate
-                                            val years = diff / (365.25 * 24 * 60 * 60 * 1000)
-                                            years.toInt()
-                                        }
-                                        Text(
-                                            text = "$age ans",
-                                            fontSize = 12.sp,
-                                            color = Color(0xFF8A6F64)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = { editingChild = child },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Edit,
-                                            contentDescription = "Modifier",
-                                            tint = Color(0xFF6B5047),
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            scope.launch {
-                                                viewModel.deleteChild(child.id)
-                                            }
-                                        },
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Delete,
-                                            contentDescription = "Supprimer",
-                                            tint = Color(0xFFB2412A),
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Fermer")
-                }
-            }
-        }
-    }
-    
-    if (showAddDialog) {
-        ChildDialog(
-            title = "Ajouter un membre",
-            onDismiss = { showAddDialog = false },
-            onConfirm = { name, birthDate ->
-                viewModel.addChild(name, birthDate)
-                showAddDialog = false
-            }
-        )
-    }
-    
-    editingChild?.let { child ->
-        ChildDialog(
-            title = "Modifier",
-            initialName = child.name,
-            initialBirthDate = child.birthDate,
-            onDismiss = { editingChild = null },
-            onConfirm = { name, birthDate ->
-                viewModel.updateChild(child.copy(name = name, birthDate = birthDate))
-                editingChild = null
-            }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ChildDialog(
-    title: String,
-    initialName: String = "",
-    initialBirthDate: Long? = null,
-    onDismiss: () -> Unit,
-    onConfirm: (String, Long) -> Unit
-) {
-    var name by remember { mutableStateOf(initialName) }
-    var birthDate by remember { mutableStateOf(initialBirthDate ?: System.currentTimeMillis()) }
-    
-    AlertDialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color.White
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = title,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Prénom") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                
-                Text(
-                    text = "Date de naissance: ${java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date(birthDate))}",
-                    fontSize = 14.sp,
-                    color = Color(0xFF6B5047)
-                )
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    TextButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Annuler")
-                    }
-                    Button(
-                        onClick = {
-                            if (name.isNotBlank()) {
-                                onConfirm(name, birthDate)
-                            }
-                        },
-                        enabled = name.isNotBlank(),
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFC8492C)
-                        )
-                    ) {
-                        Text("Confirmer")
-                    }
                 }
             }
         }

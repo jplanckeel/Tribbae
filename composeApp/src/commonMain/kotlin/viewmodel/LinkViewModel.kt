@@ -1293,6 +1293,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         return Folder(
             id = apiFolder.id,
             name = apiFolder.name,
+            ownerId = apiFolder.ownerId,
             icon = try { FolderIcon.valueOf(apiFolder.icon) } catch (_: Exception) { FolderIcon.FOLDER },
             color = try { FolderColor.valueOf(apiFolder.color) } catch (_: Exception) { FolderColor.ORANGE },
             bannerUrl = apiFolder.bannerUrl,

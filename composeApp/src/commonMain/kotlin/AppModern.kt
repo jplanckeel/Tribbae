@@ -283,6 +283,8 @@ private fun ModernMainApp(
                         onNavigateToFaq = { push(Screen.Faq) },
                         onOpenShopping = { push(Screen.Shopping) },
                         onOpenAdmin = { push(Screen.Admin) },
+                        onOpenAi = { push(Screen.Ai(prompt = it)) },
+                        onOpenFolder = { push(Screen.FolderDetail(it)) },
                     )
                 }
                 }
