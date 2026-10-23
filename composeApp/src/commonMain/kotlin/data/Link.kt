@@ -37,6 +37,7 @@ data class Folder(
     val viewMode: String = "",         // grid | list | mosaic
     val sort: String = "",             // recent | date | category
     val pinned: Boolean = false,
+    val ownerId: String = "",          // "" = dossier local pas encore synchronisé (le mien)
 )
 
 @Serializable
