@@ -1,8 +1,28 @@
 package ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -16,74 +36,80 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import data.AiRequests
+import data.AiRequests.Blank
+import data.AiSuggestedLink
+import data.Folder
 import data.LinkCategory
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import ui.campfire.*
 import viewmodel.LinkViewModel
 
-private val SUGGESTIONS = listOf(
-    "10 activités d'intérieur pour un jour de pluie",
-    "Goûters sans sucre ajouté",
-    "Cadeaux de Noël pour une ado de 13 ans",
-    "Jeux en plein air pour un anniversaire de 6 ans",
-    "Recettes à cuisiner avec un enfant de 4 ans",
-    "Bricolages avec des rouleaux en carton",
-    "Activités calmes avant le coucher",
-    "Idées de sorties en forêt avec des petits",
-    "Repas rapides pour les soirs de semaine",
-    "Livres pour un enfant qui commence à lire",
-    "Cadeaux faits maison pour la fête des mères",
-    "Jeux de société coopératifs pour les 5–8 ans",
-    "Activités pour occuper les enfants en voiture",
-    "Déco de chambre pour une petite fille de 7 ans",
-    "Expériences scientifiques faciles à la maison",
-    "Idées de pique-nique originales",
-    "Activités manuelles pour Halloween",
-    "Desserts sans four pour l'été",
-    "Cadeaux à moins de 20 € pour un garçon de 10 ans",
-    "Jeux d'eau pour les journées de canicule",
-    "Activités Montessori pour un bébé de 18 mois",
-    "Romans d'aventure pour les 9–12 ans",
-    "Idées de week-end en famille à la campagne",
-    "Recettes de légumes que les enfants aiment",
-    "Chasse au trésor à organiser dans le jardin",
-    "Activités pour les vacances de la Toussaint",
-    "Décorations de Noël à fabriquer ensemble",
-    "Petits-déjeuners équilibrés et gourmands",
-    "Jeux pour apprendre les lettres en s'amusant",
-    "Cadeaux de naissance utiles",
-    "Sorties culturelles pour des ados",
-    "Activités sportives à faire en famille",
-    "Recettes de crêpes et galettes pour la Chandeleur",
-    "Albums jeunesse sur les émotions",
-    "Jeux de rôle pour les 3–5 ans",
-    "Idées pour un anniversaire à la maison",
-    "Plantes faciles à faire pousser avec les enfants",
-    "Activités pour un dimanche après-midi d'hiver",
-    "Goûters d'anniversaire faits maison",
-    "Rituels du soir pour aider à s'endormir",
-    "Idées de cabane à construire",
-    "Cadeaux pour remercier la maîtresse",
-)
+// « Idées avec l'IA » (maquette « Idées avec l'IA v2 ») : une phrase à
+// compléter → le tipi s'illumine pendant la rédaction → les idées arrivent une
+// à une, chacune avec son « pourquoi », on garde ou on écarte (une autre
+// arrive) → les idées gardées s'envolent dans le dossier.
+// Même parcours côté web : frontend/src/components/AiSheet.tsx.
 
-private const val SHOWN_SUGGESTIONS = 4
+private enum class AiStep { Compose, Gen, Results, Done }
 
-/** Quelques suggestions tirées au hasard. */
-private fun pickSuggestions(): List<String> = SUGGESTIONS.shuffled().take(SHOWN_SUGGESTIONS)
+/** Idées demandées, et combien en redemander quand on en écarte. */
+private const val FIRST = 5
+private const val REFILL = 3
+private const val NEW_FOLDER = "__new__"
+
+private val PruneBg = Color(0xFFECE1EA)
+private val Gold = Color(0xFFFFC857)
+
+private class IdeaCard(val id: Int, val idea: AiSuggestedLink) {
+    var kept by mutableStateOf(false)
+    var gone by mutableStateOf(false)
+}
 
 private fun toCategory(raw: String) =
     runCatching { LinkCategory.valueOf(raw.removePrefix("LINK_CATEGORY_")) }.getOrDefault(LinkCategory.IDEE)
 
-/** « Demander à l'IA » : écran prune de la maquette, idées à cocher puis à ranger. */
+private fun blankColors(b: Blank): Pair<Color, Color> = when (b) {
+    Blank.What -> Color(0xFFFCE3D0) to Color(0xFFA04812)
+    Blank.Who -> Color(0xFFDCEDF3) to Color(0xFF235C77)
+    Blank.When -> Color(0xFFFBEACB) to Color(0xFF85560C)
+    Blank.Where -> Color(0xFFE2EDD9) to Color(0xFF3E6630)
+    Blank.Budget -> PruneBg to Prune
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AiGenerateScreen(
@@ -91,198 +117,637 @@ fun AiGenerateScreen(
     onBack: () -> Unit,
     initialFolderId: String? = null,
     initialPrompt: String = "",
+    childId: String? = null,
     onSavedInFolder: (String?) -> Unit = { onBack() },
 ) {
-    val ideas by viewModel.aiIdeas.collectAsState()
-    val loading by viewModel.aiLoading.collectAsState()
-    val error by viewModel.aiError.collectAsState()
+    val children by viewModel.children.collectAsState()
     val folders by viewModel.folders.collectAsState()
-    var prompt by remember { mutableStateOf(initialPrompt) }
-    var suggestions by remember { mutableStateOf(pickSuggestions()) }
-    var selected by remember(ideas) { mutableStateOf(ideas.indices.toSet()) }
-    val categories = remember(ideas) { mutableStateMapOf<Int, LinkCategory>() }
-    var target by remember { mutableStateOf(initialFolderId) } // null = nouveau dossier
-    var showTarget by remember { mutableStateOf(false) }
+    val links by viewModel.repository.links.collectAsState()
+    val scope = rememberCoroutineScope()
+    val now = remember { System.currentTimeMillis() }
 
-    DisposableEffect(Unit) { onDispose { viewModel.clearAiIdeas() } }
+    var step by remember { mutableStateOf(AiStep.Compose) }
+    var req by remember { mutableStateOf(AiRequests.defaultRequest(children, childId, initialPrompt)) }
+    var edit by remember { mutableStateOf<Blank?>(null) }
+    var cascade by remember { mutableIntStateOf(0) }
+    var inspiration by remember { mutableStateOf<String?>(null) }
+    val cards = remember { mutableStateListOf<IdeaCard>() }
+    val reserve = remember { mutableListOf<AiSuggestedLink>() }
+    var pending by remember { mutableIntStateOf(0) }
+    val seen = remember { mutableListOf<String>() }
+    var nextId by remember { mutableIntStateOf(0) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var target by remember { mutableStateOf(initialFolderId.orEmpty()) }
+    var picking by remember { mutableStateOf(false) }
+    var confirmClose by remember { mutableStateOf(false) }
+    var saved by remember { mutableStateOf<Pair<List<AiSuggestedLink>, String?>?>(null) }
+    var genJob by remember { mutableStateOf<Job?>(null) }
+    var refillJob by remember { mutableStateOf<Job?>(null) }
+
+    val newName = AiRequests.folderNameFor(req, children, inspiration, now)
+    // Par défaut : le dossier d'où l'on vient, sinon un dossier existant du même nom, sinon un nouveau
+    val folderTarget = target.ifEmpty { folders.find { it.name.equals(newName, ignoreCase = true) }?.id ?: NEW_FOLDER }
+    val targetFolder = folders.find { it.id == folderTarget }
+    val kept = cards.filter { it.kept && !it.gone }
+    val shownCount = cards.count { !it.gone }
+
+    fun toCards(ideas: List<AiSuggestedLink>) = ideas.map { IdeaCard(nextId++, it) }
 
     fun generate() {
-        if (prompt.isNotBlank() && !loading) viewModel.generateAiIdeas(prompt.trim())
+        genJob?.cancel()
+        refillJob?.cancel()
+        step = AiStep.Gen
+        edit = null
+        error = null
+        genJob = scope.launch {
+            viewModel.requestAiIdeas(AiRequests.promptOf(req, children, now), FIRST, seen.toList())
+                .onSuccess { ideas ->
+                    seen += ideas.map { it.title }
+                    val stay = cards.filter { it.kept && !it.gone }
+                    cards.clear(); cards += stay; cards += toCards(ideas)
+                    reserve.clear(); pending = 0
+                    step = if (cards.isNotEmpty()) AiStep.Results else AiStep.Compose
+                    if (ideas.isEmpty()) error = "Aucune idée trouvée : changez un mot de la phrase et réessayez."
+                }
+                .onFailure { e ->
+                    error = e.message
+                    step = if (kept.isNotEmpty()) AiStep.Results else AiStep.Compose
+                }
+        }
+    }
+
+    fun cancel() {
+        genJob?.cancel()
+        step = AiStep.Compose
+    }
+
+    /** « Pas pour nous » : la carte s'en va, une autre arrive. */
+    fun drop(card: IdeaCard) {
+        card.gone = true
+        card.kept = false
+        if (reserve.isNotEmpty()) {
+            cards += toCards(listOf(reserve.removeAt(0)))
+            return
+        }
+        pending++
+        if (refillJob?.isActive == true) return
+        refillJob = scope.launch {
+            viewModel.requestAiIdeas(AiRequests.promptOf(req, children, now), REFILL, seen.toList())
+                .onSuccess { ideas ->
+                    seen += ideas.map { it.title }
+                    val take = minOf(pending, ideas.size)
+                    cards += toCards(ideas.take(take))
+                    reserve += ideas.drop(take)
+                    if (ideas.isEmpty()) error = "Pas d'autre idée pour cette demande."
+                }
+                .onFailure { e -> error = e.message }
+            pending = 0
+        }
     }
 
     fun save() {
-        val chosen = ideas.mapIndexedNotNull { i, idea ->
-            if (i in selected) idea.copy(category = "LINK_CATEGORY_" + (categories[i] ?: toCategory(idea.category)).name) else null
-        }
-        if (chosen.isEmpty()) return
-        val t = target
-        if (t == null) {
-            viewModel.saveAiIdeasInNewFolder(chosen, prompt.trim()) { id -> onSavedInFolder(id) }
+        if (kept.isEmpty()) return
+        val ideas = kept.map { c -> c.idea }
+        if (folderTarget == NEW_FOLDER) {
+            viewModel.saveAiIdeasInNewFolder(ideas, newName) { id -> saved = ideas to id; step = AiStep.Done }
         } else {
-            viewModel.saveAiIdeas(chosen, t)
-            onSavedInFolder(t)
+            val id = targetFolder?.id
+            viewModel.saveAiIdeas(ideas, id)
+            saved = ideas to id
+            step = AiStep.Done
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Prune)) {
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = if (ideas.isNotEmpty()) 160.dp else 40.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    fun restart() {
+        cards.clear(); reserve.clear(); seen.clear(); pending = 0
+        saved = null; error = null
+        step = AiStep.Compose
+    }
+
+    fun close() {
+        if (step != AiStep.Done && kept.isNotEmpty()) confirmClose = true
+        else { genJob?.cancel(); refillJob?.cancel(); onBack() }
+    }
+
+    val gen = step == AiStep.Gen
+    val bg by animateColorAsState(if (gen) Prune else Sable, tween(280, easing = EaseSoft), label = "ai-bg")
+    val fg = if (gen) Sable else Ecorce
+
+    Column(Modifier.fillMaxSize().background(bg).statusBarsPadding()) {
+        // ── En-tête ──
+        Row(
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Demander à l'IA", style = display(26.sp, color = Sable))
-                CircleIconButton(Icons.Outlined.Close, "Fermer", onBack, background = Color.White.copy(alpha = 0.12f), tint = Sable)
+            CircleIconButton(Icons.Outlined.Close, "Fermer", ::close, background = if (gen) Color.White.copy(alpha = 0.14f) else Sable2, tint = fg)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(Icons.Outlined.AutoAwesome, null, tint = if (gen) Gold else Prune, modifier = Modifier.size(18.dp).twinkle())
+                Text("Idées avec l'IA", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = fg)
             }
-            Text("Décrivez ce que vous cherchez : l'IA prépare des idées prêtes à ranger.", fontSize = 14.sp, color = PruneSoft)
+            Spacer(Modifier.width(44.dp))
+        }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    Modifier.weight(1f).heightIn(min = 64.dp).clip(RoundedCornerShape(18.dp)).background(Color.White.copy(alpha = 0.1f))
-                        .padding(horizontal = 16.dp, vertical = 14.dp)
-                ) {
-                    if (prompt.isEmpty()) Text("« 10 activités d'intérieur pour un jour de pluie »", color = Color.White.copy(alpha = 0.45f), fontSize = 15.sp)
-                    BasicTextField(
-                        value = prompt,
-                        onValueChange = { if (it.length <= 500) prompt = it },
-                        textStyle = TextStyle(color = Sable, fontSize = 15.sp),
-                        cursorBrush = SolidColor(Soleil),
-                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Votre demande" }
-                    )
-                }
-                Box(
-                    Modifier.size(64.dp).clip(RoundedCornerShape(18.dp)).background(if (prompt.isBlank()) Soleil.copy(alpha = 0.5f) else Soleil)
-                        .clickable(enabled = prompt.isNotBlank() && !loading, role = Role.Button, onClick = ::generate)
-                        .semantics { contentDescription = "Générer des idées" },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (loading) CircularProgressIndicator(color = Prune, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
-                    else Icon(Icons.Outlined.AutoAwesome, null, tint = Prune, modifier = Modifier.size(26.dp))
-                }
-            }
-
-            if (ideas.isEmpty() && !loading) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    suggestions.forEach { s ->
-                        Text(
-                            s, fontSize = 13.sp, color = PruneSoft,
-                            modifier = Modifier.clip(CircleShape).border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                                .clickable { prompt = s }.padding(horizontal = 12.dp, vertical = 7.dp)
-                        )
-                    }
-                    Row(
-                        Modifier.clip(CircleShape).clickable(role = Role.Button) { suggestions = pickSuggestions() }
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        Crossfade(step, Modifier.weight(1f), animationSpec = tween(280), label = "ai-step") { s ->
+            when (s) {
+                AiStep.Compose -> ComposeStep(
+                    req = req, children = children, now = now, edit = edit, cascade = cascade, error = error,
+                    onEdit = { edit = if (edit == it) null else it },
+                    onPick = { b, key ->
+                        req = req.with(b, key); inspiration = null
+                        if (b != Blank.Who) edit = null
+                    },
+                    onDetail = { req = req.copy(detail = it.take(200)) },
+                    onInspiration = { i -> req = i.apply(req); inspiration = i.label; edit = null; cascade++ },
+                    onGenerate = ::generate,
+                )
+                AiStep.Gen -> WaitingStep(AiRequests.waitingMessages(req, children, now), ::cancel)
+                AiStep.Results -> Column(Modifier.fillMaxSize()) {
+                    Column(
+                        Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.size(14.dp))
-                        Text("D'autres idées", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Soleil)
-                    }
-                }
-            }
-
-            if (loading) {
-                Column(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White.copy(alpha = 0.06f)).padding(vertical = 40.dp, horizontal = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.size(32.dp))
-                    Text("L'IA prépare vos idées…", style = display(18.sp, FontWeight.Bold, Sable))
-                    Text("Rédaction en cours, comptez 20 à 60 secondes.", fontSize = 14.sp, color = PruneSoft)
-                }
-            }
-
-            error?.let {
-                Text(it, fontSize = 14.sp, color = Soleil, fontWeight = FontWeight.Medium,
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.1f)).padding(14.dp))
-            }
-
-            ideas.forEachIndexed { i, idea ->
-                val on = i in selected
-                val cat = categoryUi(categories[i] ?: toCategory(idea.category))
-                var showCats by remember { mutableStateOf(false) }
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(if (on) Color.White else Color.White.copy(alpha = 0.06f))
-                        .clickable(role = Role.Checkbox) { selected = if (on) selected - i else selected + i }.padding(14.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        Modifier.size(24.dp).clip(RoundedCornerShape(8.dp)).background(if (on) Terracotta else Color.Transparent)
-                            .then(if (on) Modifier else Modifier.border(2.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(8.dp))),
-                        contentAlignment = Alignment.Center
-                    ) { if (on) Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(14.dp)) }
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(idea.title, style = display(16.sp, FontWeight.Bold, if (on) Ecorce else Sable))
-                        if (idea.description.isNotBlank()) {
-                            Text(idea.description, fontSize = 13.sp, color = if (on) TextSec else PruneSoft, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(AiRequests.resultTitle(shownCount + pending, req, children, now), style = display(25.sp))
+                                Text(
+                                    "${AiRequests.resultSubtitle(req)} — modifier", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextSec,
+                                    textDecoration = TextDecoration.Underline,
+                                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button) { step = AiStep.Compose }.padding(vertical = 4.dp)
+                                )
+                            }
+                            val spin = remember { Animatable(0f) }
+                            Box(
+                                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(PruneBg)
+                                    .clickable(role = Role.Button) { scope.launch { spin.snapTo(-360f); spin.animateTo(0f, spring(0.5f)) }; generate() }
+                                    .semantics { contentDescription = "Proposer d'autres idées" },
+                                contentAlignment = Alignment.Center
+                            ) { Icon(Icons.Outlined.Refresh, null, tint = Prune, modifier = Modifier.size(20.dp).rotate(spin.value)) }
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Box {
-                                Row(
-                                    Modifier.clip(CircleShape).background(cat.bg).clickable { showCats = true }.padding(start = 10.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                        error?.let { ErrorText(it) }
+                        cards.forEachIndexed { i, c ->
+                            key(c.id) {
+                                AnimatedVisibility(
+                                    !c.gone,
+                                    exit = slideOutHorizontally(tween(300)) { it } + fadeOut(tween(250)) + shrinkVertically(tween(300, delayMillis = 250))
                                 ) {
-                                    Text(cat.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = cat.ink)
-                                    Icon(Icons.Outlined.ExpandMore, "Changer la catégorie", tint = cat.ink, modifier = Modifier.size(16.dp))
-                                }
-                                DropdownMenu(showCats, { showCats = false }, containerColor = Sable) {
-                                    CategoryOrder.forEach { c ->
-                                        DropdownMenuItem(
-                                            text = { Text(c.label, color = Ecorce) },
-                                            leadingIcon = { Icon(c.icon, null, tint = c.tint) },
-                                            onClick = { categories[i] = c.category; showCats = false }
-                                        )
-                                    }
+                                    IdeaCardView(c, if (i < FIRST) i * 220 else 80, onKeep = { c.kept = !c.kept }, onDrop = { drop(c) })
                                 }
                             }
-                            val meta = idea.ageRange
-                            if (meta.isNotEmpty()) Text(meta, fontSize = 12.sp, color = if (on) TextSec else PruneSoft, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        repeat(pending) {
+                            Row(
+                                Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(22.dp)).background(Sable2)
+                                    .semantics { liveRegion = LiveRegionMode.Polite },
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Outlined.AutoAwesome, null, tint = Prune, modifier = Modifier.size(16.dp).twinkle())
+                                Text("Une autre idée arrive…", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec)
+                            }
+                        }
+                    }
+                    Column(
+                        Modifier.fillMaxWidth().background(Sable).border(1.dp, Line).navigationBarsPadding()
+                            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            buildAnnotatedString {
+                                append("Ranger dans ")
+                                withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Ecorce)) {
+                                    append(targetFolder?.name ?: if (folderTarget == NEW_FOLDER) "« $newName » (nouveau)" else "vos idées non rangées")
+                                }
+                                append(" · ")
+                                withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Terracotta)) { append("changer") }
+                            },
+                            fontSize = 13.sp, color = TextSec,
+                            modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button, onClickLabel = "Changer de dossier") { picking = true }
+                        )
+                        Box(
+                            Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp)).background(if (kept.isEmpty()) BarkMute else Terracotta)
+                                .clickable(enabled = kept.isNotEmpty(), role = Role.Button, onClick = ::save),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                if (kept.isEmpty()) "Gardez au moins une idée" else "Ranger ${kept.size} idée${if (kept.size > 1) "s" else ""}",
+                                fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White
+                            )
+                        }
+                    }
+                }
+                AiStep.Done -> saved?.let { (ideas, id) ->
+                    DoneStep(ideas, folders.find { it.id == id }, onRestart = ::restart, onOpen = { onSavedInFolder(id) })
+                }
+            }
+        }
+    }
+
+    if (picking) {
+        FolderPickerSheet(
+            folders = folders, links = links, current = if (folderTarget == NEW_FOLDER) null else targetFolder?.id, me = viewModel.currentUserId(),
+            onDismiss = { picking = false },
+            onPick = { target = it ?: "none"; picking = false },
+            onCreate = { name -> viewModel.createFolderQuick(name) { id -> target = id; picking = false } },
+        )
+    }
+
+    if (confirmClose) {
+        AlertDialog(
+            onDismissRequest = { confirmClose = false },
+            containerColor = Sable,
+            title = { Text("Abandonner ces idées ?", style = display(20.sp, FontWeight.Bold)) },
+            text = { Text("Les idées gardées ne seront pas rangées.", color = Ecorce2) },
+            confirmButton = {
+                TextButton(onClick = { confirmClose = false; genJob?.cancel(); refillJob?.cancel(); onBack() }) {
+                    Text("Abandonner", color = Terracotta, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmClose = false }) { Text("Annuler", color = Ecorce) } }
+        )
+    }
+}
+
+// ── Composer la phrase ─────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ComposeStep(
+    req: AiRequests.Request,
+    children: List<data.Child>,
+    now: Long,
+    edit: Blank?,
+    cascade: Int,
+    error: String?,
+    onEdit: (Blank) -> Unit,
+    onPick: (Blank, String) -> Unit,
+    onDetail: (String) -> Unit,
+    onInspiration: (AiRequests.Inspiration) -> Unit,
+    onGenerate: () -> Unit,
+) {
+    val sentence = display(23.sp, FontWeight.Bold)
+    Column(Modifier.fillMaxSize()) {
+        Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
+        ) {
+            Text("Racontez-moi votre envie, je m'occupe du reste.", fontSize = 15.sp, color = TextSec)
+            error?.let { ErrorText(it) }
+
+            Column(Modifier.fillMaxWidth().card(RoundedCornerShape(26.dp), 4.dp).padding(horizontal = 18.dp, vertical = 20.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                    @Composable fun word(t: String) = Text(t, style = sentence)
+                    @Composable fun blank(b: Blank, i: Int, after: String = "") = Row(verticalAlignment = Alignment.CenterVertically) {
+                        BlankChip(AiRequests.blankLabel(b, req, children, now).ifEmpty { "…" }, b, edit == b, cascade, i * 90) { onEdit(b) }
+                        if (after.isNotEmpty()) Text(after, style = sentence)
+                    }
+                    word("Je cherche"); blank(Blank.What, 0); word("pour"); blank(Blank.Who, 1); blank(Blank.When, 2, ",")
+                    blank(Blank.Where, 3, ","); word("budget"); blank(Blank.Budget, 4, ".")
+                }
+                edit?.let { b ->
+                    key(b) {
+                        Column(
+                            Modifier.padding(top = 14.dp).fillMaxWidth().slideIn().dashedTop().padding(top = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(AiRequests.HINTS.getValue(b), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextSec)
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                AiRequests.optionsFor(b, children, now).forEach { o ->
+                                    val on = if (b == Blank.Who) o.key in req.who else req.valueOf(b) == o.key
+                                    val (cbg, cfg) = blankColors(b)
+                                    val scale by androidx.compose.animation.core.animateFloatAsState(if (on) 1.04f else 1f, spring(0.5f), label = "opt")
+                                    Text(
+                                        if (b == Blank.Who) o.label else o.label.replaceFirstChar { it.uppercase() },
+                                        fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (on) cfg else Ecorce,
+                                        modifier = Modifier.scale(scale).height(38.dp).clip(RoundedCornerShape(12.dp))
+                                            .background(if (on) cbg else Color.White)
+                                            .border(2.dp, if (on) Ecorce else Line, RoundedCornerShape(12.dp))
+                                            .clickable(role = if (b == Blank.Who) Role.Checkbox else Role.RadioButton) { onPick(b, o.key) }
+                                            .semantics { stateDescription = if (on) "choisi" else "non choisi" }
+                                            .wrapContentHeight().padding(horizontal = 12.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            if (ideas.isNotEmpty()) {
-                CampButton("Relancer", ::generate, kind = ButtonKind.Ghost, icon = Icons.Outlined.Refresh, height = 40.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row {
+                    Text("Un détail en plus ? ", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
+                    Text("(facultatif)", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = TextSec)
+                }
+                Row(
+                    Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(16.dp)).background(Color.White)
+                        .border(1.5.dp, Line, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(Icons.Outlined.Edit, null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                    Box(Modifier.weight(1f)) {
+                        if (req.detail.isEmpty()) Text("« ${children.firstOrNull()?.name ?: "Il"} adore l'espace en ce moment »", fontSize = 15.sp, color = TextMuted, maxLines = 1)
+                        BasicTextField(
+                            req.detail, onDetail, singleLine = true,
+                            textStyle = TextStyle(color = Ecorce, fontSize = 15.sp, fontWeight = FontWeight.Medium),
+                            cursorBrush = SolidColor(Terracotta),
+                            modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Un détail en plus, facultatif" }
+                        )
+                    }
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Ou partir d'une inspiration", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AiRequests.inspirations(children, now).forEach { i ->
+                        val ink = Color(i.ink)
+                        Row(
+                            Modifier.height(44.dp).clip(RoundedCornerShape(14.dp)).background(Color(i.bg))
+                                .clickable(role = Role.Button) { onInspiration(i) }.padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            PathIcon(i.d, ink, 17.dp)
+                            Text(i.label, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = ink, maxLines = 1)
+                        }
+                    }
+                }
             }
         }
-
-        if (ideas.isNotEmpty()) {
-            Column(
-                Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Prune).navigationBarsPadding().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+        Box(Modifier.fillMaxWidth().border(1.dp, Line).navigationBarsPadding().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp)) {
+            Row(
+                Modifier.fillMaxWidth().height(58.dp).clip(RoundedCornerShape(20.dp)).background(Prune).clickable(role = Role.Button, onClick = onGenerate),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
             ) {
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = 0.1f)).clickable { showTarget = true }.padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Ranger dans", fontSize = 13.sp, color = PruneSoft)
-                    Text(
-                        folders.find { it.id == target }?.name ?: "Nouveau dossier « ${prompt.trim().take(30)} »",
-                        fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Sable, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
-                    )
-                    Icon(Icons.Outlined.ExpandMore, null, tint = Sable)
-                }
-                Row(
-                    Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(18.dp)).background(if (selected.isEmpty()) Soleil.copy(alpha = 0.5f) else Soleil)
-                        .clickable(enabled = selected.isNotEmpty(), role = Role.Button, onClick = ::save),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-                ) {
-                    Icon(Icons.Outlined.Check, null, tint = Ecorce, modifier = Modifier.size(18.dp))
-                    Text("Garder ${selected.size} idée${if (selected.size > 1) "s" else ""}", fontWeight = FontWeight.Bold, color = Ecorce, fontSize = 15.sp)
-                }
+                Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.size(20.dp).twinkle())
+                Text("Trouver $FIRST idées", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Sable)
             }
         }
     }
+}
 
-    if (showTarget) {
-        ModalBottomSheet(onDismissRequest = { showTarget = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
-            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Ranger dans…", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
-                MenuRow(Icons.Outlined.AutoAwesome, "Nouveau dossier", tint = Prune) { target = null; showTarget = false }
-                folders.forEach { f -> MenuRow(folderIconVector(f), f.name, tint = folderSolid(f.color)) { target = f.id; showTarget = false } }
+/** Un mot de la phrase à toucher ; il « saute » quand une inspiration remplit la phrase. */
+@Composable
+private fun BlankChip(label: String, b: Blank, open: Boolean, cascade: Int, delayMs: Int, onClick: () -> Unit) {
+    val (cbg, cfg) = blankColors(b)
+    val pop = remember { Animatable(1f) }
+    LaunchedEffect(cascade) {
+        if (cascade == 0) return@LaunchedEffect
+        pop.snapTo(0.7f); delay(delayMs.toLong())
+        pop.animateTo(1f, keyframes { durationMillis = 500; 1.12f at 300 using FastOutSlowInEasing })
+    }
+    Text(
+        label, style = display(22.sp, FontWeight.Bold, cfg),
+        modifier = Modifier.scale(pop.value).clip(RoundedCornerShape(12.dp)).background(cbg)
+            .border(2.dp, if (open) Ecorce else Color.Transparent, RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClickLabel = "Changer") { onClick() }
+            .semantics { stateDescription = if (open) "choix ouverts" else "" }
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    )
+}
+
+// ── Pendant la rédaction ───────────────────────────────────────────────────────
+
+@Composable
+private fun WaitingStep(messages: List<String>, onCancel: () -> Unit) {
+    var i by remember { mutableIntStateOf(0) }
+    LaunchedEffect(messages.size) { while (i < messages.size - 1) { delay(2700); i++ } }
+    // La rédaction prend 20 à 60 s : la barre avance vite puis ralentit, sans jamais finir seule
+    val bar = remember { Animatable(0.04f) }
+    LaunchedEffect(Unit) { bar.animateTo(0.92f, tween(45_000, easing = CubicBezierEasing(0.1f, 0.6f, 0.2f, 1f))) }
+    val t = rememberInfiniteTransition(label = "ai-wait")
+    val glow by t.animateFloat(0.55f, 1f, infiniteRepeatable(tween(800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "glow")
+    val orbit by t.animateFloat(0f, 360f, infiniteRepeatable(tween(6000, easing = LinearEasing)), label = "orbit")
+    val flap by t.animateFloat(0f, 30f, infiniteRepeatable(tween(800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "flap")
+
+    Column(
+        Modifier.fillMaxSize().padding(horizontal = 30.dp).navigationBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(30.dp, Alignment.CenterVertically)
+    ) {
+        Box(Modifier.size(200.dp), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.padding(20.dp).fillMaxSize().graphicsLayer { alpha = glow }
+                    .background(Brush.radialGradient(listOf(Gold.copy(alpha = 0.45f), Gold.copy(alpha = 0f))), CircleShape)
+            )
+            Box(Modifier.fillMaxSize().rotate(orbit)) {
+                Icon(Icons.Outlined.AutoAwesome, null, tint = Gold, modifier = Modifier.offset(x = 89.dp).size(22.dp))
+                Icon(Icons.Outlined.AutoAwesome, null, tint = Braise, modifier = Modifier.align(Alignment.TopEnd).offset(x = (-8).dp, y = 120.dp).size(16.dp))
+                Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.offset(x = 10.dp, y = 130.dp).size(18.dp))
             }
+            GlowingTipi(glow, flap, Modifier.size(130.dp, 113.dp))
+        }
+        Crossfade(i, Modifier.fillMaxWidth().height(50.dp).semantics { liveRegion = LiveRegionMode.Polite }, label = "ai-msg") { n ->
+            Text(messages[n], style = display(20.sp, FontWeight.Bold, Sable), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        }
+        Box(Modifier.fillMaxWidth(0.7f).height(6.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f))) {
+            Box(Modifier.fillMaxWidth(bar.value).fillMaxHeight().clip(CircleShape).background(Gold))
+        }
+        Text(
+            "Modifier ma demande", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Sable,
+            modifier = Modifier.height(44.dp).clip(RoundedCornerShape(14.dp)).border(1.5.dp, Sable.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                .clickable(role = Role.Button, onClick = onCancel).wrapContentHeight().padding(horizontal = 18.dp)
+        )
+    }
+}
+
+/** Le tipi de la maquette (viewBox 76×66) : l'entrée s'illumine, les pans s'ouvrent. */
+@Composable
+private fun GlowingTipi(glow: Float, flap: Float, modifier: Modifier) {
+    val paths = remember {
+        fun p(d: String) = PathParser().parsePathString(d).toPath()
+        listOf(p("M31 4L44 22M45 4L32 22"), p("M38 12L70 62H6Z"), p("M38 34L52 62H24Z"), p("M38 34L38 62H24Z"), p("M38 34L52 62H38Z"))
+    }
+    Canvas(modifier) {
+        val s = size.width / 76f
+        scale(s, s, pivot = Offset.Zero) {
+            fun stroke(w: Float) = Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            drawPath(paths[0], Sable, style = stroke(2.6f))
+            drawPath(paths[1], Tipi); drawPath(paths[1], Sable, style = stroke(2.6f))
+            drawPath(paths[2], Gold, alpha = glow)
+            rotate(-flap, pivot = Offset(38f, 34f)) { drawPath(paths[3], Ecorce); drawPath(paths[3], Sable, style = stroke(1.8f)) }
+            rotate(flap, pivot = Offset(38f, 34f)) { drawPath(paths[4], Braise); drawPath(paths[4], Sable, style = stroke(1.8f)) }
         }
     }
+}
+
+// ── Les idées ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun IdeaCardView(card: IdeaCard, delayMs: Int, onKeep: () -> Unit, onDrop: () -> Unit) {
+    val cat = categoryUi(toCategory(card.idea.category))
+    Column(
+        Modifier.fillMaxWidth().appearUp(delayMs).card(RoundedCornerShape(22.dp), 3.dp)
+            .border(2.dp, if (card.kept) Prune else Color.Transparent, RoundedCornerShape(22.dp)).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.size(48.dp).clip(RoundedCornerShape(15.dp)).background(cat.bg), contentAlignment = Alignment.Center) {
+                Icon(cat.icon, null, tint = cat.ink, modifier = Modifier.size(24.dp))
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(card.idea.title, style = display(17.sp, FontWeight.Bold))
+                Text(listOf(cat.label, card.idea.ageRange).filter { it.isNotBlank() }.joinToString(" · "), fontSize = 13.sp, color = TextSec)
+                if (card.idea.description.isNotBlank()) Text(card.idea.description, fontSize = 13.sp, color = Ecorce2)
+            }
+        }
+        if (card.idea.why.isNotBlank()) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(Icons.Outlined.AutoAwesome, null, tint = Prune, modifier = Modifier.size(14.dp))
+                Text(card.idea.why, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Prune)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(14.dp)).background(if (card.kept) Prune else Sable2)
+                    .clickable(role = Role.Checkbox, onClick = onKeep).semantics { stateDescription = if (card.kept) "gardée" else "pas encore gardée" },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
+            ) {
+                if (card.kept) Icon(Icons.Outlined.Check, null, tint = Sable, modifier = Modifier.size(17.dp).popIn())
+                Text(if (card.kept) "Gardée" else "Je garde", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (card.kept) Sable else Ecorce)
+            }
+            Box(
+                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Sable).border(1.5.dp, Color(0xFFE6D3C0), RoundedCornerShape(14.dp))
+                    .clickable(role = Role.Button, onClick = onDrop)
+                    .semantics { contentDescription = "Pas pour nous : écarter « ${card.idea.title} » et proposer autre chose" },
+                contentAlignment = Alignment.Center
+            ) { Icon(Icons.Outlined.Close, null, tint = TextSec, modifier = Modifier.size(18.dp)) }
+        }
+    }
+}
+
+// ── C'est rangé ────────────────────────────────────────────────────────────────
+
+/** Les idées gardées s'envolent dans le dossier. */
+@Composable
+private fun DoneStep(ideas: List<AiSuggestedLink>, folder: Folder?, onRestart: () -> Unit, onOpen: () -> Unit) {
+    val ink = folder?.let { folderSolid(it.color) } ?: Prune
+    val flights = ideas.take(3).map { remember { Animatable(0f) } }
+    val bump = remember { Animatable(1f) }
+    val spark = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        flights.forEachIndexed { j, a -> launch { delay(250L + j * 160); a.animateTo(1f, tween(850, easing = CubicBezierEasing(0.5f, 0f, 0.3f, 1f))) } }
+        launch { delay(800); bump.animateTo(1f, keyframes { durationMillis = 800; 1f at 320; 1.22f at 560 }) }
+        launch { delay(1200); spark.animateTo(1f, tween(750, easing = EaseSoft)) }
+    }
+    Column(Modifier.fillMaxSize().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Box(Modifier.fillMaxWidth().height(260.dp).clip(RoundedCornerShape(26.dp)).background(PruneBg)) {
+            Box(Modifier.align(Alignment.BottomCenter).offset(y = 120.dp).size(300.dp).clip(CircleShape).background(Soleil))
+            ideas.take(3).forEachIndexed { j, idea ->
+                val cat = categoryUi(toCategory(idea.category))
+                Column(
+                    Modifier.align(Alignment.TopCenter).offset(x = (-109 + j * 22).dp, y = (50 + j * 26).dp).width(92.dp).graphicsLayer {
+                        val t = flights[j].value
+                        val a = (t / 0.55f).coerceAtMost(1f)
+                        val b = ((t - 0.55f) / 0.45f).coerceIn(0f, 1f)
+                        translationX = (70f * a + 48f * b).dp.toPx()
+                        translationY = (-50f * a + 80f * b).dp.toPx()
+                        val s = if (t < 0.55f) 1f - 0.45f * a else 0.55f - 0.45f * b
+                        scaleX = s; scaleY = s
+                        rotationZ = -8f * a
+                        alpha = if (t < 0.55f) 1f else 1f - b
+                    }.card(RoundedCornerShape(12.dp), 8.dp)
+                ) {
+                    Box(Modifier.fillMaxWidth().height(36.dp).background(cat.bg))
+                    Text(idea.title, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp))
+                }
+            }
+            Box(Modifier.align(Alignment.BottomCenter).offset(x = 69.dp, y = (-46).dp).size(78.dp, 68.dp).scale(bump.value)) {
+                Box(Modifier.size(34.dp, 14.dp).clip(RoundedCornerShape(topStart = 7.dp, topEnd = 9.dp)).background(ink))
+                Box(
+                    Modifier.padding(top = 10.dp).fillMaxSize().clip(RoundedCornerShape(0.dp, 16.dp, 16.dp, 16.dp)).background(ink),
+                    contentAlignment = Alignment.Center
+                ) { Icon(folder?.let { folderGlyph(it.icon) } ?: Icons.Outlined.Lightbulb, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
+                if (spark.value in 0.001f..0.999f) {
+                    listOf(Triple(0f, -52f, Braise), Triple(40f, -34f, Gold), Triple(50f, 4f, Terracotta), Triple(-40f, -34f, Ecorce), Triple(-50f, 2f, Braise))
+                        .forEach { (dx, dy, c) ->
+                            Box(
+                                Modifier.align(Alignment.Center).graphicsLayer {
+                                    translationX = (dx * spark.value).dp.toPx(); translationY = (dy * spark.value).dp.toPx()
+                                    val s = 0.3f + 0.7f * spark.value
+                                    scaleX = s; scaleY = s; rotationZ = 90f * spark.value; alpha = 1f - spark.value
+                                }.size(9.dp).clip(CircleShape).background(c)
+                            )
+                        }
+                }
+            }
+        }
+        val n = ideas.size
+        Column(Modifier.fillMaxWidth().appearUp(1300), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("$n idée${if (n > 1) "s rangées" else " rangée"} !", style = display(28.sp))
+            Text(
+                buildAnnotatedString {
+                    append("dans ")
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(folder?.name ?: "vos idées non rangées") }
+                    append(". Bonne aventure à la tribu !")
+                },
+                fontSize = 15.sp, color = Ecorce2, textAlign = TextAlign.Center
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        Row(Modifier.fillMaxWidth().appearUp(1300), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            CampButton("Nouvelle demande", onRestart, kind = ButtonKind.Secondary, height = 56.dp)
+            CampButton(if (folder != null) "Voir le dossier" else "Voir mes idées", onOpen, Modifier.weight(1f), kind = ButtonKind.Dark, height = 56.dp)
+        }
+    }
+}
+
+// ── Morceaux ───────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ErrorText(text: String) {
+    Text(
+        text, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF9A3420),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFFF8DCD3)).padding(horizontal = 16.dp, vertical = 10.dp)
+            .semantics { liveRegion = LiveRegionMode.Polite }
+    )
+}
+
+/** Icône dessinée d'un chemin SVG (viewBox 24, trait 1,9). */
+@Composable
+private fun PathIcon(d: String, tint: Color, size: Dp) {
+    val path = remember(d) { PathParser().parsePathString(d).toPath() }
+    Canvas(Modifier.size(size)) {
+        val s = this.size.width / 24f
+        scale(s, s, pivot = Offset.Zero) { drawPath(path, tint, style = Stroke(1.9f, cap = StrokeCap.Round, join = StrokeJoin.Round)) }
+    }
+}
+
+/** Scintillement de l'étincelle IA (grossit et tourne un peu). */
+@Composable
+private fun Modifier.twinkle(): Modifier {
+    val t = rememberInfiniteTransition(label = "twinkle")
+    val p by t.animateFloat(0f, 1f, infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "twinkle-p")
+    return graphicsLayer { val s = 1f + 0.2f * p; scaleX = s; scaleY = s; rotationZ = 18f * p }
+}
+
+/** Apparition « up » : monte de 18 dp avec un léger rebond, après `delayMs`. */
+@Composable
+private fun Modifier.appearUp(delayMs: Int): Modifier {
+    val p = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { delay(delayMs.toLong()); p.animateTo(1f, spring(0.62f, Spring.StiffnessLow)) }
+    return graphicsLayer {
+        alpha = p.value.coerceIn(0f, 1f)
+        translationY = (1f - p.value) * 18.dp.toPx()
+        val s = 0.96f + 0.04f * p.value
+        scaleX = s; scaleY = s
+    }
+}
+
+/** Éclat « pop » : 0.3 → 1.25 → 1. */
+@Composable
+private fun Modifier.popIn(): Modifier {
+    val p = remember { Animatable(0.3f) }
+    LaunchedEffect(Unit) { p.animateTo(1f, keyframes { durationMillis = 450; 1.25f at 270 using FastOutSlowInEasing }) }
+    return scale(p.value)
+}
+
+/** Les choix d'un mot glissent de 8 dp en apparaissant. */
+@Composable
+private fun Modifier.slideIn(): Modifier {
+    val p = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { p.animateTo(1f, tween(380, easing = EaseSoft)) }
+    return graphicsLayer { alpha = p.value; translationY = (1f - p.value) * (-8).dp.toPx() }
+}
+
+/** Trait pointillé au-dessus des choix (1,5 dp, couleur Line). */
+private fun Modifier.dashedTop(): Modifier = drawBehind {
+    drawLine(Line, Offset(0f, 0f), Offset(size.width, 0f), 1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f)))
 }

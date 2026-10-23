@@ -21,7 +21,7 @@ func NewHandler(svc *Service, tokenParser func(r *http.Request) (string, error))
 }
 
 const (
-	maxRequestBytes = 4 << 10
+	maxRequestBytes = 8 << 10
 	maxPromptRunes  = 500
 )
 
@@ -59,7 +59,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.svc.Generate(r.Context(), req.Prompt)
+	if req.Count < 0 || req.Count > maxIdeas {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"message": "count must be 0 to 8"})
+		return
+	}
+	if len(req.Exclude) > maxExcluded {
+		req.Exclude = req.Exclude[len(req.Exclude)-maxExcluded:]
+	}
+
+	result, err := h.svc.Generate(r.Context(), req)
 	switch {
 	case errors.Is(err, ErrBusy):
 		w.Header().Set("Retry-After", "30")

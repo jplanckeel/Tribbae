@@ -288,3 +288,37 @@
 @media (prefers-reduced-motion: reduce) {
   .like-pop { animation: none; }
 }
+
+/* ── Idées avec l'IA (maquette « Idées avec l'IA v2 ») ───────────────────── */
+.ai-blank { animation: ai-blank 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.ai-opts { animation: ai-opts 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.ai-twinkle { animation: ai-twinkle 1.8s ease-in-out infinite; }
+.ai-orbit { animation: ai-orbit 6s linear infinite; }
+.ai-glow { animation: ai-glow 1.6s ease-in-out infinite; }
+.ai-flap-l { transform-origin: 38px 34px; animation: ai-flap-l 1.6s ease-in-out infinite; }
+.ai-flap-r { transform-origin: 38px 34px; animation: ai-flap-r 1.6s ease-in-out infinite; }
+.ai-msg { animation: ai-msg 2.7s ease both; }
+.ai-bar { animation: ai-bar 45s cubic-bezier(0.1, 0.6, 0.2, 1) both; }
+.ai-out { animation: ai-out 0.55s cubic-bezier(0.5, 0, 0.3, 1) forwards; overflow: hidden; }
+.ai-spin { animation: ai-spin 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes ai-blank { 0% { transform: scale(0.7); opacity: 0.3; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes ai-opts { from { opacity: 0; transform: translateY(-8px); } }
+@keyframes ai-twinkle { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.2) rotate(18deg); } }
+@keyframes ai-orbit { to { transform: rotate(360deg); } }
+@keyframes ai-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes ai-flap-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-30deg); } }
+@keyframes ai-flap-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(30deg); } }
+@keyframes ai-msg { 0% { opacity: 0; transform: translateY(8px); } 12%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
+/* La rédaction prend 20 à 60 s : la barre avance vite puis ralentit, sans jamais finir seule */
+@keyframes ai-bar { from { width: 4%; } to { width: 92%; } }
+@keyframes ai-out {
+  0% { transform: none; opacity: 1; max-height: 260px; }
+  45% { transform: translateX(110%) rotate(6deg); opacity: 0; max-height: 260px; }
+  100% { transform: translateX(110%); opacity: 0; max-height: 0; margin-bottom: -12px; padding-top: 0; padding-bottom: 0; }
+}
+@keyframes ai-spin { from { transform: rotate(-360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ai-blank, .ai-opts, .ai-twinkle, .ai-orbit, .ai-glow, .ai-flap-l, .ai-flap-r, .ai-bar, .ai-spin { animation: none !important; }
+  .ai-msg { animation: none !important; opacity: 1; }
+  .ai-out { animation-duration: 0.01ms !important; }
+}

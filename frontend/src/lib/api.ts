@@ -210,8 +210,13 @@ export const follows = {
 };
 
 export const ai = {
-  generate: (prompt: string) =>
-    request<{ ideas?: AiIdea[] }>("/ai/generate", { method: "POST", body: json({ prompt }) }).then((r) => r.ideas ?? []),
+  /** count : nombre d'idées (sinon déduit de la demande) ; exclude : titres déjà proposés. */
+  generate: (prompt: string, opts: { count?: number; exclude?: string[]; signal?: AbortSignal } = {}) =>
+    request<{ ideas?: AiIdea[] }>("/ai/generate", {
+      method: "POST",
+      body: json({ prompt, count: opts.count, exclude: opts.exclude }),
+      signal: opts.signal,
+    }).then((r) => r.ideas ?? []),
 };
 
 export const admin = {

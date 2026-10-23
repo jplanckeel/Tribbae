@@ -105,7 +105,7 @@ func TestGenerateEndToEnd(t *testing.T) {
 	defer ollama.Close()
 
 	svc := NewService(Config{OllamaURL: ollama.URL, OllamaModel: "test"})
-	res, err := svc.Generate(context.Background(), "Goûters sans sucre ajouté")
+	res, err := svc.Generate(context.Background(), GenerateRequest{Prompt: "Goûters sans sucre ajouté"})
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestGenerateOmitsThinkForPlainModels(t *testing.T) {
 	ollama := fakeOllama(t, false, `{"ideas":[{"title":"Cabane","description":"","category":"activite","tags":[],"ageRange":""}]}`, 0, &think)
 	defer ollama.Close()
 	svc := NewService(Config{OllamaURL: ollama.URL, OllamaModel: "test"})
-	if _, err := svc.Generate(context.Background(), "Activités en forêt"); err != nil {
+	if _, err := svc.Generate(context.Background(), GenerateRequest{Prompt: "Activités en forêt"}); err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
 	if got := think.Load().([2]any); got[0] != false {
@@ -138,18 +138,75 @@ func TestGenerateBusy(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		_, err := svc.Generate(context.Background(), "première demande")
+		_, err := svc.Generate(context.Background(), GenerateRequest{Prompt: "première demande"})
 		done <- err
 	}()
 	time.Sleep(100 * time.Millisecond)
-	if _, err := svc.Generate(context.Background(), "seconde demande"); !errors.Is(err, ErrBusy) {
+	if _, err := svc.Generate(context.Background(), GenerateRequest{Prompt: "seconde demande"}); !errors.Is(err, ErrBusy) {
 		t.Errorf("seconde demande simultanée : err = %v, want ErrBusy", err)
 	}
 	if err := <-done; err != nil {
 		t.Fatalf("première demande : %v", err)
 	}
 	// Le créneau est libéré : une nouvelle demande passe
-	if _, err := svc.Generate(context.Background(), "troisième demande"); err != nil {
+	if _, err := svc.Generate(context.Background(), GenerateRequest{Prompt: "troisième demande"}); err != nil {
 		t.Errorf("après libération : %v", err)
+	}
+}
+
+func TestParseIdeasKeepsWhyAndSkipsExcluded(t *testing.T) {
+	raw := `{"ideas":[
+		{"title":"Cabane de couvertures","description":"","category":"activite","tags":[],"ageRange":"","why":"  Parfait   pour un jour de pluie. "},
+		{"title":"Volcan au bicarbonate","description":"","category":"activite","tags":[],"ageRange":"","why":""}
+	]}`
+	ideas, err := parseIdeas(raw, 5, "cabane de couvertures")
+	if err != nil {
+		t.Fatalf("parseIdeas: %v", err)
+	}
+	if len(ideas) != 1 || ideas[0].Title != "Volcan au bicarbonate" {
+		t.Fatalf("l'idée déjà proposée doit être écartée : %+v", ideas)
+	}
+	ideas, _ = parseIdeas(raw, 5)
+	if ideas[0].Why != "Parfait pour un jour de pluie" {
+		t.Errorf("why = %q", ideas[0].Why)
+	}
+}
+
+func TestUserPromptListsExcluded(t *testing.T) {
+	got := userPrompt("Je cherche des recettes pour Léo (9 ans).", []string{"Crêpes", "Banana bread"})
+	want := "Demande : Je cherche des recettes pour Léo (9 ans).\nCatégorie probable : recette\nDéjà proposé, propose autre chose :\n- Crêpes\n- Banana bread\n"
+	if got != want {
+		t.Errorf("userPrompt =\n%s\nwant\n%s", got, want)
+	}
+}
+
+func TestGenerateHonorsCount(t *testing.T) {
+	var think atomic.Value
+	answer := `{"ideas":[{"title":"A","description":"","category":"idee","tags":[],"ageRange":"","why":""},{"title":"B","description":"","category":"idee","tags":[],"ageRange":"","why":""},{"title":"C","description":"","category":"idee","tags":[],"ageRange":"","why":""}]}`
+	ollama := fakeOllama(t, false, answer, 0, &think)
+	defer ollama.Close()
+	svc := NewService(Config{OllamaURL: ollama.URL, OllamaModel: "test"})
+	res, err := svc.Generate(context.Background(), GenerateRequest{Prompt: "Je cherche des activités", Count: 2, Exclude: []string{"A"}})
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	if len(res.Ideas) != 2 || res.Ideas[0].Title != "B" || res.Ideas[1].Title != "C" {
+		t.Errorf("ideas = %+v", res.Ideas)
+	}
+}
+
+func TestExpectedCategoryPrefersFirstHint(t *testing.T) {
+	cases := map[string]string{
+		"Je cherche des activités pour Léo (9 ans) ce week-end, à la maison, budget gratuit.":           "activite",
+		"Je cherche des idées cadeaux pour Emma (5 ans) pour un anniversaire, près de chez nous.":       "cadeau",
+		"Je cherche des recettes pour toute la tribu mercredi après-midi, à la maison, budget gratuit.": "recette",
+		"Je cherche des sorties pour Léo (9 ans) ce week-end, dehors, budget peu importe.":              "sortie",
+		"Goûters sans sucre ajouté":               "recette",
+		"Rituels du soir pour aider à s'endormir": "",
+	}
+	for in, want := range cases {
+		if got := expectedCategory(in); got != want {
+			t.Errorf("expectedCategory(%q) = %q, want %q", in, got, want)
+		}
 	}
 }

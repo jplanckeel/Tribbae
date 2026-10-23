@@ -207,6 +207,8 @@ export interface AiIdea {
   category: CategoryKey;
   tags?: string[];
   ageRange?: string;
+  /** Pourquoi l'idée colle à la demande (« Parfait pour un jour de pluie »). */
+  why?: string;
 }
 
 export interface AdminUser {

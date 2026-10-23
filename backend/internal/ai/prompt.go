@@ -47,8 +47,9 @@ func ideaSchema(n int) map[string]any {
 						"category":    map[string]any{"type": "string", "enum": categoryEnum},
 						"tags":        map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "maxItems": 3},
 						"ageRange":    map[string]any{"type": "string"},
+						"why":         map[string]any{"type": "string"},
 					},
-					"required": []string{"title", "description", "category", "tags", "ageRange"},
+					"required": []string{"title", "description", "category", "tags", "ageRange", "why"},
 				},
 			},
 		},
@@ -66,6 +67,7 @@ Règles :
 - category : la catégorie la plus juste.
 - tags : 1 à 3 mots-clés en minuscules.
 - ageRange : tranche d'âge adaptée (ex. "3-6 ans"), "" si l'idée convient à tous.
+- why : pourquoi cette idée colle à la demande, 8 mots maximum, sans point final (ex. "Parfait pour un après-midi de pluie").
 - N'invente ni adresse, ni prix, ni date, ni nom de lieu précis que tu ne connais pas.
 - Réponds uniquement en français.`, n)
 }
@@ -78,29 +80,44 @@ var queryHints = []struct {
 	{[]string{"recette", "cuisine", "goûter", "gouter", "repas", "dessert", "gâteau", "gateau", "menu"}, "recette"},
 	{[]string{"cadeau", "offrir", "anniversaire", "noël", "noel"}, "cadeau"},
 	{[]string{"livre", "lecture", "roman", "album"}, "livre"},
+	{[]string{"activité", "activite", "jeux", "bricolage"}, "activite"},
 	{[]string{"sortie", "visite", "autour de", "près de", "pres de", "week-end", "weekend", "balade"}, "sortie"},
 	{[]string{"déco", "deco", "décoration", "decoration", "chambre"}, "deco"},
 }
 
-// expectedCategory retourne la catégorie évidente d'une demande, ou "".
+// expectedCategory retourne la catégorie évidente d'une demande, ou "". Le
+// premier mot révélateur l'emporte : dans « Je cherche des activités pour Léo
+// ce week-end », c'est « activités » qui dit ce qu'on cherche, pas « week-end ».
 func expectedCategory(prompt string) string {
 	lower := strings.ToLower(prompt)
+	best, at := "", len(lower)
 	for _, h := range queryHints {
 		for _, w := range h.words {
-			if strings.Contains(lower, w) {
-				return h.category
+			if i := strings.Index(lower, w); i >= 0 && i < at {
+				best, at = h.category, i
 			}
 		}
 	}
-	return ""
+	return best
 }
 
-// userPrompt présente la demande, avec la catégorie probable si elle est évidente.
-func userPrompt(prompt string) string {
+// maxExcluded : titres déjà proposés rappelés au modèle (au-delà, la demande
+// s'allonge pour rien : le filtre de parseIdeas écarte de toute façon les doublons).
+const maxExcluded = 20
+
+// userPrompt présente la demande, avec la catégorie probable si elle est
+// évidente et les idées déjà proposées à ne pas répéter.
+func userPrompt(prompt string, exclude []string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Demande : %s\n", prompt)
 	if c := expectedCategory(prompt); c != "" {
 		fmt.Fprintf(&b, "Catégorie probable : %s\n", c)
+	}
+	if len(exclude) > 0 {
+		b.WriteString("Déjà proposé, propose autre chose :\n")
+		for _, t := range exclude[:min(len(exclude), maxExcluded)] {
+			fmt.Fprintf(&b, "- %s\n", truncate(clean(t), maxTitleRunes))
+		}
 	}
 	return b.String()
 }

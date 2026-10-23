@@ -18,10 +18,18 @@ type SuggestedLink struct {
 	Category    string   `json:"category"`
 	Tags        []string `json:"tags"`
 	AgeRange    string   `json:"ageRange,omitempty"`
+	// Why : pourquoi cette idée colle à la demande, en quelques mots.
+	Why string `json:"why,omitempty"`
 }
 
 type GenerateRequest struct {
+	// Prompt : la demande telle que l'utilisateur l'a composée.
 	Prompt string `json:"prompt"`
+	// Count : nombre d'idées voulu (0 : déduit de la demande). Les clients en
+	// redemandent quelques-unes quand l'utilisateur en écarte.
+	Count int `json:"count,omitempty"`
+	// Exclude : titres déjà proposés, à ne pas reproposer.
+	Exclude []string `json:"exclude,omitempty"`
 }
 
 type GenerateResponse struct {
@@ -44,6 +52,7 @@ const (
 	generateBudget = 100 * time.Second
 	maxTitleRunes  = 80
 	maxDescRunes   = 300
+	maxWhyRunes    = 90
 )
 
 type Service struct {
@@ -87,7 +96,7 @@ func (s *Service) Warmup(ctx context.Context) {
 // Generate fait rédiger des idées par le modèle local d'Ollama. Un petit CPU
 // ne mène bien qu'une génération à la fois : une demande concurrente reçoit
 // ErrBusy plutôt que d'attendre.
-func (s *Service) Generate(ctx context.Context, prompt string) (*GenerateResponse, error) {
+func (s *Service) Generate(ctx context.Context, req GenerateRequest) (*GenerateResponse, error) {
 	select {
 	case s.localSlot <- struct{}{}:
 		defer func() { <-s.localSlot }()
@@ -98,12 +107,15 @@ func (s *Service) Generate(ctx context.Context, prompt string) (*GenerateRespons
 	ctx, cancel := context.WithTimeout(ctx, generateBudget)
 	defer cancel()
 
-	n := wantedCount(prompt)
-	raw, err := s.ollama.generate(ctx, systemPrompt(n), userPrompt(prompt), n)
+	n := wantedCount(req.Prompt)
+	if req.Count > 0 {
+		n = min(req.Count, maxIdeas)
+	}
+	raw, err := s.ollama.generate(ctx, systemPrompt(n), userPrompt(req.Prompt, req.Exclude), n)
 	if err != nil {
 		return nil, err
 	}
-	ideas, err := parseIdeas(raw, n)
+	ideas, err := parseIdeas(raw, n, req.Exclude...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +131,12 @@ type rawIdea struct {
 	Category    string   `json:"category"`
 	Tags        []string `json:"tags"`
 	AgeRange    string   `json:"ageRange"`
+	Why         string   `json:"why"`
 }
 
-// parseIdeas valide et normalise la réponse du modèle.
-func parseIdeas(raw string, n int) ([]SuggestedLink, error) {
+// parseIdeas valide et normalise la réponse du modèle, sans les idées dont le
+// titre est dans exclude (déjà proposées : les petits modèles se répètent).
+func parseIdeas(raw string, n int, exclude ...string) ([]SuggestedLink, error) {
 	var out struct {
 		Ideas []rawIdea `json:"ideas"`
 	}
@@ -136,6 +150,9 @@ func parseIdeas(raw string, n int) ([]SuggestedLink, error) {
 		}
 	}
 	seen := map[string]bool{}
+	for _, t := range exclude {
+		seen[strings.ToLower(truncate(clean(t), maxTitleRunes))] = true
+	}
 	ideas := make([]SuggestedLink, 0, len(out.Ideas))
 	for _, r := range out.Ideas {
 		title := truncate(clean(r.Title), maxTitleRunes)
@@ -150,6 +167,7 @@ func parseIdeas(raw string, n int) ([]SuggestedLink, error) {
 			Category:    categoryFor(r.Category),
 			Tags:        cleanTags(r.Tags),
 			AgeRange:    known(r.AgeRange),
+			Why:         truncate(strings.TrimRight(clean(r.Why), "."), maxWhyRunes),
 		}
 		ideas = append(ideas, idea)
 		if len(ideas) == n {
