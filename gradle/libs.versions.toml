@@ -1,15 +1,15 @@
 [versions]
 agp = "9.4.1"
-kotlin = "2.2.21"
+kotlin = "2.4.21"
 compose = "1.9.4"
 compose-material3 = "1.4.0"
 androidx-activityCompose = "1.11.0"
 lifecycle = "2.9.4"
-serialization = "1.9.0"
+serialization = "1.11.0"
 coil = "2.7.0"
-coroutines = "1.10.2"
-core-splashscreen = "1.0.1"
-jsoup = "1.18.3"
+coroutines = "1.11.0"
+core-splashscreen = "1.2.0"
+jsoup = "1.23.2"
 # Plus publié après 1.7.x : version propre
 compose-icons = "1.7.8"
 
