@@ -65,7 +65,7 @@ function HomeMobile() {
       <div aria-hidden="true" className="pointer-events-none absolute -top-[110px] -right-[120px] h-[330px] w-[330px] rounded-full bg-soleil md:right-[8%]" />
       <span aria-hidden="true" className="pointer-events-none absolute top-[118px] right-10 h-[9px] w-[9px] rounded-full border-2 border-terracotta md:right-[22%]" />
       <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" className="pointer-events-none absolute top-[70px] right-[150px] md:right-[30%]">
-        <path d="M2 2l8 8M10 2l-8 8" stroke="#3A211B" strokeWidth="2" strokeLinecap="round" />
+        <path d="M2 2l8 8M10 2l-8 8" stroke="var(--color-ecorce)" strokeWidth="2" strokeLinecap="round" />
       </svg>
 
       <Page className="relative gap-6">
@@ -91,7 +91,7 @@ function HomeMobile() {
         </div>
 
         <form onSubmit={search} role="search" className="flex max-w-2xl gap-2">
-          <label className="flex h-[52px] flex-1 items-center gap-2.5 rounded-medium bg-white px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
+          <label className="flex h-[52px] flex-1 items-center gap-2.5 rounded-medium bg-card px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
             <Icon name="search" size={20} />
             <span className="sr-only">Rechercher une idée</span>
             <input
@@ -267,7 +267,7 @@ function HomeDesktop() {
             on fait quoi ce week-end ?
           </h1>
           <form onSubmit={search} role="search" className="flex flex-wrap gap-2.5">
-            <label className="flex h-[60px] min-w-0 flex-[1_1_320px] items-center gap-3 rounded-[20px] bg-white px-5 text-muted shadow-[0_4px_16px_rgba(58,33,27,0.08)] focus-within:ring-2 focus-within:ring-terracotta">
+            <label className="flex h-[60px] min-w-0 flex-[1_1_320px] items-center gap-3 rounded-[20px] bg-card px-5 text-muted shadow-[0_4px_16px_rgba(58,33,27,0.08)] focus-within:ring-2 focus-within:ring-terracotta">
               <Icon name="search" size={22} />
               <span className="sr-only">Rechercher une idée</span>
               <input
@@ -290,11 +290,11 @@ function HomeDesktop() {
           <div className="flex flex-wrap gap-2">
             {QUICK.map((c) =>
               c.to ? (
-                <RouterLink key={c.label} to={c.to} className="rounded-full border-[1.5px] border-line-2 bg-white px-3.5 py-[9px] text-sm font-semibold transition-colors hover:border-ecorce">
+                <RouterLink key={c.label} to={c.to} className="rounded-full border-[1.5px] border-line-2 bg-card px-3.5 py-[9px] text-sm font-semibold transition-colors hover:border-ecorce">
                   {c.label}
                 </RouterLink>
               ) : (
-                <button key={c.label} type="button" onClick={() => openAi({ prompt: c.prompt })} className="rounded-full border-[1.5px] border-line-2 bg-white px-3.5 py-[9px] text-sm font-semibold transition-colors hover:border-ecorce">
+                <button key={c.label} type="button" onClick={() => openAi({ prompt: c.prompt })} className="rounded-full border-[1.5px] border-line-2 bg-card px-3.5 py-[9px] text-sm font-semibold transition-colors hover:border-ecorce">
                   {c.label}
                 </button>
               ),
@@ -411,10 +411,10 @@ function BellButton({ count, onClick }: { count: number; onClick: () => void }) 
       type="button"
       onClick={onClick}
       aria-label={count ? `À venir, ${count} rappel${count > 1 ? "s" : ""} cette semaine` : "À venir"}
-      className="relative flex h-11 w-11 items-center justify-center rounded-full bg-white text-ecorce shadow-soft transition-colors hover:bg-sable-2"
+      className="relative flex h-11 w-11 items-center justify-center rounded-full bg-card text-ecorce shadow-soft transition-colors hover:bg-sable-2"
     >
       <Icon name="bell" size={21} />
-      {count > 0 && <span className="absolute top-2.5 right-[11px] h-2 w-2 rounded-full border-2 border-white bg-terracotta" />}
+      {count > 0 && <span className="absolute top-2.5 right-[11px] h-2 w-2 rounded-full border-2 border-card bg-terracotta" />}
     </button>
   );
 }

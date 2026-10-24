@@ -19,13 +19,13 @@ export interface CategoryMeta {
 
 // Ordre d'affichage de la maquette : Activités, Cadeaux, Recettes, Sorties, Idées, Livres, Déco
 export const CATEGORIES: CategoryMeta[] = [
-  { key: "LINK_CATEGORY_ACTIVITE", slug: "activite", label: "Activité", plural: "Activités", intro: "Activités à faire en famille : jeux, bricolages, sorties nature et idées pour occuper les enfants, repérées et partagées par les familles de Tribbae.", icon: "activite", bg: "bg-activite-bg", ink: "text-activite-ink", ic: "text-activite-ic", solid: "#2F7393" },
-  { key: "LINK_CATEGORY_CADEAU", slug: "cadeau", label: "Cadeau", plural: "Cadeaux", intro: "Idées de cadeaux pour enfants, ados et parents : des trouvailles testées et partagées par les familles de Tribbae.", icon: "cadeau", bg: "bg-cadeau-bg", ink: "text-cadeau-ink", ic: "text-cadeau-ic", solid: "#C35A1C" },
-  { key: "LINK_CATEGORY_RECETTE", slug: "recette", label: "Recette", plural: "Recettes", intro: "Recettes faciles à cuisiner en famille et avec les enfants : goûters, repas et desserts partagés par les familles de Tribbae.", icon: "recette", bg: "bg-recette-bg", ink: "text-recette-ink", ic: "text-recette-ic", solid: "#4C7A3C" },
-  { key: "LINK_CATEGORY_EVENEMENT", slug: "sortie", label: "Sortie", plural: "Sorties", intro: "Sorties et événements en famille : spectacles, visites, fêtes et balades repérés par les familles de Tribbae.", icon: "calendar", bg: "bg-sortie-bg", ink: "text-sortie-ink", ic: "text-sortie-ic", solid: "#B2412A" },
-  { key: "LINK_CATEGORY_IDEE", slug: "idee", label: "Idée", plural: "Idées", intro: "Idées pour la vie de famille : astuces, inspirations et bons plans partagés par les familles de Tribbae.", icon: "idee", bg: "bg-idee-bg", ink: "text-idee-ink", ic: "text-idee-ic", solid: "#9A6510" },
-  { key: "LINK_CATEGORY_LIVRE", slug: "livre", label: "Livre", plural: "Livres", intro: "Livres pour enfants et ados : albums, romans et BD recommandés par les familles de Tribbae.", icon: "livre", bg: "bg-livre-bg", ink: "text-livre-ink", ic: "text-livre-ic", solid: "#5E4558" },
-  { key: "LINK_CATEGORY_DECORATION", slug: "deco", label: "Déco", plural: "Déco", intro: "Idées déco pour la maison et la chambre des enfants, partagées par les familles de Tribbae.", icon: "deco", bg: "bg-deco-bg", ink: "text-deco-ink", ic: "text-deco-ic", solid: "#9C3A5C" },
+  { key: "LINK_CATEGORY_ACTIVITE", slug: "activite", label: "Activité", plural: "Activités", intro: "Activités à faire en famille : jeux, bricolages, sorties nature et idées pour occuper les enfants, repérées et partagées par les familles de Tribbae.", icon: "activite", bg: "bg-activite-bg", ink: "text-activite-ink", ic: "text-activite-ic", solid: "var(--color-activite-ic)" },
+  { key: "LINK_CATEGORY_CADEAU", slug: "cadeau", label: "Cadeau", plural: "Cadeaux", intro: "Idées de cadeaux pour enfants, ados et parents : des trouvailles testées et partagées par les familles de Tribbae.", icon: "cadeau", bg: "bg-cadeau-bg", ink: "text-cadeau-ink", ic: "text-cadeau-ic", solid: "var(--color-cadeau-ic)" },
+  { key: "LINK_CATEGORY_RECETTE", slug: "recette", label: "Recette", plural: "Recettes", intro: "Recettes faciles à cuisiner en famille et avec les enfants : goûters, repas et desserts partagés par les familles de Tribbae.", icon: "recette", bg: "bg-recette-bg", ink: "text-recette-ink", ic: "text-recette-ic", solid: "var(--color-recette-ic)" },
+  { key: "LINK_CATEGORY_EVENEMENT", slug: "sortie", label: "Sortie", plural: "Sorties", intro: "Sorties et événements en famille : spectacles, visites, fêtes et balades repérés par les familles de Tribbae.", icon: "calendar", bg: "bg-sortie-bg", ink: "text-sortie-ink", ic: "text-sortie-ic", solid: "var(--color-sortie-ic)" },
+  { key: "LINK_CATEGORY_IDEE", slug: "idee", label: "Idée", plural: "Idées", intro: "Idées pour la vie de famille : astuces, inspirations et bons plans partagés par les familles de Tribbae.", icon: "idee", bg: "bg-idee-bg", ink: "text-idee-ink", ic: "text-idee-ic", solid: "var(--color-idee-ic)" },
+  { key: "LINK_CATEGORY_LIVRE", slug: "livre", label: "Livre", plural: "Livres", intro: "Livres pour enfants et ados : albums, romans et BD recommandés par les familles de Tribbae.", icon: "livre", bg: "bg-livre-bg", ink: "text-livre-ink", ic: "text-livre-ic", solid: "var(--color-livre-ic)" },
+  { key: "LINK_CATEGORY_DECORATION", slug: "deco", label: "Déco", plural: "Déco", intro: "Idées déco pour la maison et la chambre des enfants, partagées par les familles de Tribbae.", icon: "deco", bg: "bg-deco-bg", ink: "text-deco-ink", ic: "text-deco-ic", solid: "var(--color-deco-ic)" },
 ];
 
 const BY_KEY = new Map(CATEGORIES.map((c) => [c.key, c]));
@@ -67,17 +67,18 @@ export interface FolderColorMeta {
   solid: string;
 }
 
-// Palette de la maquette « Personnaliser un dossier » (ui/campfire/FolderStyle.kt côté Android)
+// Palette de la maquette « Personnaliser un dossier » (ui/campfire/FolderStyle.kt côté Android),
+// en variables CSS : valeurs claires et sombres dans index.css
 export const FOLDER_COLORS: FolderColorMeta[] = [
-  { key: "ORANGE", label: "Orange", bg: "#FCE3D0", mid: "#F8CDAE", solid: "#A04812" },
-  { key: "RED", label: "Corail", bg: "#F8DCD3", mid: "#F2C1B2", solid: "#9A3420" },
-  { key: "YELLOW", label: "Miel", bg: "#FBEACB", mid: "#F6DAA3", solid: "#85560C" },
-  { key: "GREEN", label: "Vert", bg: "#E2EDD9", mid: "#CCE0BE", solid: "#3E6630" },
-  { key: "TEAL", label: "Sarcelle", bg: "#D5ECE8", mid: "#B5DDD6", solid: "#1F6B60" },
-  { key: "BLUE", label: "Bleu", bg: "#DCEDF3", mid: "#BFE0EC", solid: "#235C77" },
-  { key: "PURPLE", label: "Prune", bg: "#ECE1EA", mid: "#DCC8D8", solid: "#5E4558" },
-  { key: "PINK", label: "Rose", bg: "#F7DDE6", mid: "#EFC3D3", solid: "#9C3A5C" },
-  { key: "SABLE", label: "Sable", bg: "#F1E3D1", mid: "#E6D3C0", solid: "#6B5047" },
+  { key: "ORANGE", label: "Orange", bg: "var(--fc-orange-bg)", mid: "var(--fc-orange-mid)", solid: "var(--fc-orange-solid)" },
+  { key: "RED", label: "Corail", bg: "var(--fc-red-bg)", mid: "var(--fc-red-mid)", solid: "var(--fc-red-solid)" },
+  { key: "YELLOW", label: "Miel", bg: "var(--fc-yellow-bg)", mid: "var(--fc-yellow-mid)", solid: "var(--fc-yellow-solid)" },
+  { key: "GREEN", label: "Vert", bg: "var(--fc-green-bg)", mid: "var(--fc-green-mid)", solid: "var(--fc-green-solid)" },
+  { key: "TEAL", label: "Sarcelle", bg: "var(--fc-teal-bg)", mid: "var(--fc-teal-mid)", solid: "var(--fc-teal-solid)" },
+  { key: "BLUE", label: "Bleu", bg: "var(--fc-blue-bg)", mid: "var(--fc-blue-mid)", solid: "var(--fc-blue-solid)" },
+  { key: "PURPLE", label: "Prune", bg: "var(--fc-purple-bg)", mid: "var(--fc-purple-mid)", solid: "var(--fc-purple-solid)" },
+  { key: "PINK", label: "Rose", bg: "var(--fc-pink-bg)", mid: "var(--fc-pink-mid)", solid: "var(--fc-pink-solid)" },
+  { key: "SABLE", label: "Sable", bg: "var(--fc-sable-bg)", mid: "var(--fc-sable-mid)", solid: "var(--fc-sable-solid)" },
 ];
 
 export function folderColor(key: string | undefined): FolderColorMeta {
@@ -126,7 +127,5 @@ export function folderIconPath(key: string | undefined): string {
 }
 
 // Couleurs d'avatars (fond, encre), dans l'ordre de la maquette « Ma tribu »
-export const AVATAR_COLORS: [string, string][] = [
-  ["#F28C38", "#3A211B"], ["#5E4558", "#FBF3E7"], ["#DCEDF3", "#235C77"], ["#E2EDD9", "#3E6630"],
-  ["#FBEACB", "#85560C"], ["#F7DDE6", "#9C3A5C"],
-];
+// (variables CSS : elles changent avec le mode sombre, cf. index.css)
+export const AVATAR_COLORS: [string, string][] = [0, 1, 2, 3, 4, 5].map((i) => [`var(--av-${i}-bg)`, `var(--av-${i}-ink)`]);

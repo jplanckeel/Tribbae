@@ -98,7 +98,7 @@ fun ShoppingListScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(Modifier.size(24.dp).clip(CircleShape).background(if (on) Color.White.copy(alpha = 0.25f) else Color.White), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(24.dp).clip(CircleShape).background(if (on) Color.White.copy(alpha = 0.25f) else CardColor), contentAlignment = Alignment.Center) {
                             Icon(if (on) Icons.Outlined.Check else Icons.Outlined.Add, null, tint = if (on) Color.White else rc.ink, modifier = Modifier.size(14.dp))
                         }
                         Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (on) Color.White else rc.ink, maxLines = 1)
@@ -120,7 +120,7 @@ fun ShoppingListScreen(
                     )
                 }
             }
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White)) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(CardColor)) {
                 items.forEachIndexed { i, (key, value) ->
                     val (name, from) = value
                     val done = key in checked

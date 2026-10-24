@@ -166,13 +166,13 @@ function FolderView({ folder, links, virtual, onFolder }: {
               type="button"
               onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/mes-idees"))}
               aria-label="Retour"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-white"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-card"
             >
               <Icon name="chevronLeft" size={22} />
             </button>
             <div className="flex gap-2">
               {isOwner && (
-                <button type="button" onClick={() => setShareOpen(true)} aria-label="Inviter et partager" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-white">
+                <button type="button" onClick={() => setShareOpen(true)} aria-label="Inviter et partager" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-card">
                   <Icon name="personPlus" size={21} />
                 </button>
               )}
@@ -182,14 +182,14 @@ function FolderView({ folder, links, virtual, onFolder }: {
                   onClick={like}
                   aria-pressed={liked}
                   aria-label={`J'aime ce dossier (${likes})`}
-                  className="flex h-11 items-center gap-1.5 rounded-full bg-white/90 px-3.5 font-bold text-terracotta hover:bg-white"
+                  className="flex h-11 items-center gap-1.5 rounded-full bg-white/90 px-3.5 font-bold text-terracotta hover:bg-card"
                 >
                   <LikeHeart liked={liked} size={20} />
                   {likes}
                 </button>
               )}
               {isOwner && (
-                <button type="button" onClick={() => setMenuOpen(true)} aria-label="Plus d'actions" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-white">
+                <button type="button" onClick={() => setMenuOpen(true)} aria-label="Plus d'actions" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-card">
                   <Icon name="dots" size={21} />
                 </button>
               )}
@@ -198,7 +198,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
           {cd && (
             <span
               className="absolute right-5 bottom-10 rounded-[10px] px-2.5 py-[5px] text-xs font-extrabold md:right-[max(2rem,calc((100%-1200px)/2+2rem))]"
-              style={folder.keyDateType === "vacances" ? { background: "#3A211B", color: "#FBF3E7" } : { background: color.solid, color: "#FFFFFF" }}
+              style={folder.keyDateType === "vacances" ? { background: "var(--color-ecorce)", color: "var(--color-sable)" } : { background: color.solid, color: "var(--color-on-solid)" }}
             >
               {cd.label}
             </span>
@@ -207,7 +207,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
 
         <div className="relative mx-auto -mt-7 flex max-w-[1200px] flex-col gap-3 rounded-t-xl bg-sable px-5 pt-0 md:px-8">
           <div className="flex items-end gap-4">
-            <span className="-mt-5 flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] border-4 border-sable text-white" style={{ background: virtual ? "#6B5047" : color.solid }}>
+            <span className="-mt-5 flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] border-4 border-sable text-on-solid" style={{ background: virtual ? "var(--color-sec)" : color.solid }}>
               {virtual ? <Icon name="bookmark" size={30} /> : <FolderGlyph icon={folder.icon} size={30} />}
             </span>
             {kids.length > 0 && (

@@ -119,7 +119,7 @@ fun MyIdeasScreen(
                                 Text(FOLDER_SORTS.first { it.first == folderSort }.second, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextSec)
                                 Icon(Icons.Outlined.ExpandMore, "Trier les dossiers", tint = TextSec, modifier = Modifier.size(16.dp))
                             }
-                            DropdownMenu(open, { open = false }, containerColor = Color.White) {
+                            DropdownMenu(open, { open = false }, containerColor = CardColor) {
                                 FOLDER_SORTS.forEach { (k, label) ->
                                     DropdownMenuItem(
                                         text = { Text(label, fontWeight = if (k == folderSort) FontWeight.Bold else FontWeight.Normal, color = Ecorce) },

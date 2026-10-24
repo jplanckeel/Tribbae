@@ -69,7 +69,7 @@ export default function MyIdeas() {
       <Page>
         <Seo title={`Mes ${cat.plural.toLowerCase()} · Tribbae`} noindex />
         <div className="flex items-center gap-3">
-          <RouterLink to="/mes-idees" aria-label="Retour à mes idées" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-soft hover:bg-sable-2">
+          <RouterLink to="/mes-idees" aria-label="Retour à mes idées" className="flex h-11 w-11 items-center justify-center rounded-full bg-card shadow-soft hover:bg-sable-2">
             <Icon name="chevronLeft" size={22} />
           </RouterLink>
           <span className={`flex h-11 w-11 items-center justify-center rounded-[14px] ${cat.bg} ${cat.ic}`}>
@@ -121,7 +121,7 @@ export default function MyIdeas() {
             role="tab"
             aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center justify-center gap-1.5 rounded-small text-sm transition-colors ${tab === t.key ? "bg-white font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec hover:text-ecorce"}`}
+            className={`flex items-center justify-center gap-1.5 rounded-small text-sm transition-colors ${tab === t.key ? "bg-card font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec hover:text-ecorce"}`}
           >
             {t.key === "dossiers" && <Icon name="tipi" size={17} className={tab === t.key ? "text-terracotta" : ""} />}
             {t.label}
@@ -132,7 +132,7 @@ export default function MyIdeas() {
 
       {tab === "dossiers" && (
         <>
-          <RouterLink to="/courses" className="flex items-center gap-3 rounded-[18px] bg-white px-3.5 py-3 shadow-card transition-transform hover:-translate-y-0.5 md:max-w-md">
+          <RouterLink to="/courses" className="flex items-center gap-3 rounded-[18px] bg-card px-3.5 py-3 shadow-card transition-transform hover:-translate-y-0.5 md:max-w-md">
             <span className="flex h-10 w-10 items-center justify-center rounded-small bg-recette-bg text-recette-ic">
               <Icon name="cart" size={20} />
             </span>
@@ -176,7 +176,7 @@ export default function MyIdeas() {
             {loose.length > 0 && (
               <RouterLink
                 to="/dossiers/non-rangees"
-                className="relative flex flex-col gap-3.5 overflow-hidden rounded-large bg-white p-3.5 shadow-card transition-transform hover:-translate-y-0.5"
+                className="relative flex flex-col gap-3.5 overflow-hidden rounded-large bg-card p-3.5 shadow-card transition-transform hover:-translate-y-0.5"
               >
                 <span aria-hidden="true" className="absolute -top-3.5 -right-3.5 h-16 w-16 rounded-full bg-sable-2" />
                 <span className="relative flex h-11 w-11 items-center justify-center rounded-[14px] bg-sec text-white">

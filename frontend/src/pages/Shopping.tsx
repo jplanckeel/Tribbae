@@ -73,7 +73,7 @@ export default function Shopping() {
     <Page className="max-w-3xl">
       <Seo title="Liste de courses · Tribbae" noindex />
       <div className="flex items-center gap-3">
-        <button type="button" onClick={() => navigate(-1)} aria-label="Retour" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-soft hover:bg-sable-2">
+        <button type="button" onClick={() => navigate(-1)} aria-label="Retour" className="flex h-11 w-11 items-center justify-center rounded-full bg-card shadow-soft hover:bg-sable-2">
           <Icon name="chevronLeft" size={22} />
         </button>
         <div className="flex flex-col">
@@ -106,7 +106,7 @@ export default function Shopping() {
                     onClick={() => toggleRecipe(r.id)}
                     className={`flex shrink-0 items-center gap-2 rounded-full py-2 pr-4 pl-2 text-sm font-semibold transition-colors ${on ? "bg-recette-ic text-white" : "bg-recette-bg text-recette-ink"}`}
                   >
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full ${on ? "bg-white/25" : "bg-white"}`}>
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full ${on ? "bg-white/25" : "bg-card"}`}>
                       <Icon name={on ? "check" : "plus"} size={14} strokeWidth={2.6} />
                     </span>
                     {r.title}
@@ -127,7 +127,7 @@ export default function Shopping() {
                   </button>
                 )}
               </div>
-              <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-large bg-white">
+              <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-large bg-card">
                 {items.map(([k, it]) => {
                   const done = state.checked.includes(k);
                   return (

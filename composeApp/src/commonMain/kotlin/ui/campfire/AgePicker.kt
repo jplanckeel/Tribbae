@@ -107,7 +107,7 @@ fun AgePicker(value: String, onChange: (String) -> Unit, kids: List<Child>) {
                 children.forEach { (kid, age) ->
                     val on = range != null && !all && AgeRanges.covers(range, age to age)
                     Box(
-                        Modifier.height(34.dp).clip(CircleShape).background(if (on) Terracotta else Color.White)
+                        Modifier.height(34.dp).clip(CircleShape).background(if (on) Terracotta else CardColor)
                             .clickable(role = Role.Checkbox) { toggleAge(age) }.padding(horizontal = 12.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -119,7 +119,7 @@ fun AgePicker(value: String, onChange: (String) -> Unit, kids: List<Child>) {
 
         if (precise) {
             Column(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(horizontal = 12.dp, vertical = 10.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

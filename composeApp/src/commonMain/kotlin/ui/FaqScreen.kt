@@ -250,7 +250,7 @@ private fun FaqSectionBlock(
             Text(
                 section.title,
                 fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                color = Color(0xFF6B5047), letterSpacing = 0.5.sp
+                color = TextSec, letterSpacing = 0.5.sp
             )
         }
 
@@ -276,7 +276,7 @@ private fun FaqSectionBlock(
                     if (!isLast) {
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
-                            color = Color(0xFFF1E3D1)
+                            color = Sable2
                         )
                     }
                 }
@@ -306,13 +306,13 @@ private fun FaqItemRow(
             Text(
                 item.question,
                 fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF3A211B),
+                color = Ecorce,
                 modifier = Modifier.weight(1f).padding(end = 8.dp)
             )
             Icon(
                 if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                 null,
-                tint = if (isExpanded) accentColor else Color(0xFF8A6F64),
+                tint = if (isExpanded) accentColor else TextMuted,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -324,7 +324,7 @@ private fun FaqItemRow(
         ) {
             Text(
                 item.answer,
-                fontSize = 13.sp, color = Color(0xFF6B5047),
+                fontSize = 13.sp, color = TextSec,
                 lineHeight = 20.sp,
                 modifier = Modifier.padding(top = 10.dp)
             )
@@ -357,11 +357,11 @@ private fun ContactSupportCard() {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     "Vous n'avez pas trouvé votre réponse ?",
-                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF3A211B)
+                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce
                 )
                 Text(
                     "Contactez-nous : contact@tribbae.fr",
-                    fontSize = 12.sp, color = Color(0xFF6B5047)
+                    fontSize = 12.sp, color = TextSec
                 )
             }
         }

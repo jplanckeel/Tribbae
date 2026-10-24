@@ -94,7 +94,7 @@ export default function AgePicker({ value, onChange, kids }: { value: string; on
       )}
 
       {precise ? (
-        <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-medium bg-white px-3 py-2.5 text-sm">
+        <div className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 rounded-medium bg-card px-3 py-2.5 text-sm">
           <span className="text-sec">De</span>
           <Stepper label="Âge minimum" text={shown[0] === 0 ? "Naissance" : ageLabel(shown[0])} onMinus={() => step(0, -1)} onPlus={() => step(0, 1)} />
           <span className="text-sec">à</span>

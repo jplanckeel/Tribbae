@@ -55,11 +55,11 @@ export const HINTS: Record<BlankKey, string> = {
 
 /** Couleurs des mots à toucher (fond, encre). */
 export const BLANK_COLORS: Record<BlankKey, [string, string]> = {
-  what: ["#FCE3D0", "#A04812"],
-  who: ["#DCEDF3", "#235C77"],
-  when: ["#FBEACB", "#85560C"],
-  where: ["#E2EDD9", "#3E6630"],
-  budget: ["#ECE1EA", "#5E4558"],
+  what: ["var(--color-cadeau-bg)", "var(--color-cadeau-ink)"],
+  who: ["var(--color-activite-bg)", "var(--color-activite-ink)"],
+  when: ["var(--color-idee-bg)", "var(--color-idee-ink)"],
+  where: ["var(--color-recette-bg)", "var(--color-recette-ink)"],
+  budget: ["var(--color-livre-bg)", "var(--color-livre-ink)"],
 };
 
 export interface AiRequest {
@@ -167,15 +167,15 @@ export function inspirations(children: Child[], now = Date.now()): Inspiration[]
     .map((c) => ({ c, days: countdown(Number(c.birthDate), "anniv", now)?.days ?? 999 }))
     .sort((a, b) => a.days - b.days)[0]?.c;
   const list: Inspiration[] = [
-    { label: "Jour de pluie", colors: ["#ECE1EA", "#5E4558"], d: "M7 15a4 4 0 0 1 .5-8A6 6 0 0 1 19 9a3 3 0 0 1 0 6z M9 19l-1 2M13 19l-1 2M17 19l-1 2", set: { what: "activites", where: "maison", budget: "gratuit", when: "weekend" } },
+    { label: "Jour de pluie", colors: ["var(--color-livre-bg)", "var(--color-livre-ink)"], d: "M7 15a4 4 0 0 1 .5-8A6 6 0 0 1 19 9a3 3 0 0 1 0 6z M9 19l-1 2M13 19l-1 2M17 19l-1 2", set: { what: "activites", where: "maison", budget: "gratuit", when: "weekend" } },
     {
       label: next ? `Anniversaire de ${next.name}` : "Un anniversaire",
-      colors: ["#FCE3D0", "#A04812"],
+      colors: ["var(--color-cadeau-bg)", "var(--color-cadeau-ink)"],
       d: "M3 8h18v5H3z M5 13v8h14v-8M12 8v13",
       set: { what: "cadeaux", who: [next?.id ?? ALL], budget: "20", when: "anniv", where: "pres" },
     },
-    { label: "Goûter express", colors: ["#E2EDD9", "#3E6630"], d: "M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2 1.5-3 4-3 7h3", set: { what: "recettes", who: [ALL], when: "mercredi", where: "maison", budget: "gratuit" } },
-    { label: "Grand air", colors: ["#DCEDF3", "#235C77"], d: "M3 20l6-11 4 6 3-4 5 9z", set: { what: "sorties", where: "dehors", when: "weekend", budget: "libre" } },
+    { label: "Goûter express", colors: ["var(--color-recette-bg)", "var(--color-recette-ink)"], d: "M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2 1.5-3 4-3 7h3", set: { what: "recettes", who: [ALL], when: "mercredi", where: "maison", budget: "gratuit" } },
+    { label: "Grand air", colors: ["var(--color-activite-bg)", "var(--color-activite-ink)"], d: "M3 20l6-11 4 6 3-4 5 9z", set: { what: "sorties", where: "dehors", when: "weekend", budget: "libre" } },
   ];
   return list;
 }

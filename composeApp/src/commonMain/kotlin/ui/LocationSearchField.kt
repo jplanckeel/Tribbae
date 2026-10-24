@@ -46,7 +46,7 @@ fun LocationSearchField(
             Icon(
                 imageVector = Icons.Filled.LocationOn,
                 contentDescription = null,
-                tint = Color(0xFF8A6F64),
+                tint = TextMuted,
                 modifier = Modifier.size(18.dp)
             )
         },
@@ -59,7 +59,7 @@ fun LocationSearchField(
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = "Effacer",
-                        tint = Color(0xFF8A6F64),
+                        tint = TextMuted,
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -71,13 +71,13 @@ fun LocationSearchField(
             focusedContainerColor = Color(0xFFFBF3E7),
             unfocusedContainerColor = Color(0xFFFBF3E7),
             focusedBorderColor = Color(0xFFC8492C),
-            unfocusedBorderColor = Color(0xFFEADBC8)
+            unfocusedBorderColor = Line
         ),
         supportingText = {
             Text(
                 "Entrez une ville ou une adresse",
                 fontSize = 11.sp,
-                color = Color(0xFF8A6F64)
+                color = TextMuted
             )
         }
     )

@@ -37,7 +37,7 @@ fun childColors(children: List<Child>, id: String): Pair<Color, Color> {
 }
 
 @Composable
-fun ChildAvatar(name: String, colors: Pair<Color, Color>, size: Dp, ring: Color = Color.White, modifier: Modifier = Modifier) {
+fun ChildAvatar(name: String, colors: Pair<Color, Color>, size: Dp, ring: Color = CardColor, modifier: Modifier = Modifier) {
     Box(
         modifier.size(size).clip(CircleShape).background(ring).padding(2.dp).clip(CircleShape).background(colors.first),
         contentAlignment = Alignment.Center
@@ -48,7 +48,7 @@ fun ChildAvatar(name: String, colors: Pair<Color, Color>, size: Dp, ring: Color 
 
 /** Avatars des enfants « Pour qui » d'un dossier. */
 @Composable
-fun ChildAvatars(folder: Folder, children: List<Child>, size: Dp = 26.dp, ring: Color = Color.White) {
+fun ChildAvatars(folder: Folder, children: List<Child>, size: Dp = 26.dp, ring: Color = CardColor) {
     val kids = folder.childIds.mapNotNull { id -> children.find { it.id == id } }
     if (kids.isEmpty()) return
     Row(Modifier.semantics { contentDescription = "Pour " + kids.joinToString(", ") { it.name } }) {
@@ -113,7 +113,7 @@ fun FolderCard(
             }
             Column(Modifier.pullUp(18.dp).padding(start = 12.dp, end = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(
-                    Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(Color.White).padding(3.dp)
+                    Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(CardColor).padding(3.dp)
                         .clip(RoundedCornerShape(10.dp)).background(ink),
                     contentAlignment = Alignment.Center
                 ) {
@@ -151,7 +151,7 @@ fun PinnedFolderCard(folder: Folder, count: Int, onClick: () -> Unit, children: 
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
-                Modifier.size(52.dp).clip(RoundedCornerShape(17.dp)).background(Color.White).padding(3.dp)
+                Modifier.size(52.dp).clip(RoundedCornerShape(17.dp)).background(CardColor).padding(3.dp)
                     .clip(RoundedCornerShape(14.dp)).background(ink),
                 contentAlignment = Alignment.Center
             ) {

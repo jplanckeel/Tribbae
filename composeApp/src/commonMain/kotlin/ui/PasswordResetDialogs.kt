@@ -41,7 +41,7 @@ internal fun resetErrorMessage(e: Exception): String {
 
 @Composable
 private fun ErrorBox(message: String) {
-    Surface(Modifier.fillMaxWidth(), color = Color(0xFFF8DCD3), shape = RoundedCornerShape(8.dp)) {
+    Surface(Modifier.fillMaxWidth(), color = CoralBg, shape = RoundedCornerShape(8.dp)) {
         Text(message, color = Color(0xFFB2412A), fontSize = 12.sp, modifier = Modifier.padding(10.dp))
     }
 }

@@ -78,7 +78,7 @@ fun InvitationDialog(
                         }
                         Text("Rejoignez la tribu «\u00A0$tribeName\u00A0»", style = display(26.sp))
                         Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White)
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(CardColor)
                                 .border(1.dp, Line, RoundedCornerShape(22.dp)).padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
@@ -101,7 +101,7 @@ fun InvitationDialog(
                             "Dans une tribu, chacun ajoute ses idées de sorties, de cadeaux ou de recettes dans des dossiers partagés, et toute la famille les retrouve au même endroit. Vos propres idées restent privées tant que vous n'avez pas confirmé leur partage.",
                             fontSize = 14.sp, color = Ecorce2,
                         )
-                        error?.let { Text(it, color = Color(0xFF9A3420), fontSize = 14.sp, fontWeight = FontWeight.Medium) }
+                        error?.let { Text(it, color = CoralInk, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
                         if (loggedIn) {
                             CampButton(if (busy) "Un instant…" else "Rejoindre la tribu", {
                                 if (busy) return@CampButton

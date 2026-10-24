@@ -317,7 +317,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
                 setNewFolder(null);
                 set("folderId", e.target.value);
               }}
-              className="h-[52px] w-full appearance-none rounded-medium border-[1.5px] border-line-2 bg-white px-4 pr-10 text-[15px] font-medium text-ecorce outline-none focus:border-terracotta"
+              className="h-[52px] w-full appearance-none rounded-medium border-[1.5px] border-line-2 bg-card px-4 pr-10 text-[15px] font-medium text-ecorce outline-none focus:border-terracotta"
             >
               <option value="">Non rangée</option>
               {editableFolders.map((f) => (
@@ -328,7 +328,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             <Icon name="chevronDown" size={18} className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted" />
           </div>
           {newFolder !== null && (
-            <div className="mt-1 flex flex-col gap-2 rounded-medium bg-white p-3">
+            <div className="mt-1 flex flex-col gap-2 rounded-medium bg-card p-3">
               <div className="flex gap-2">
                 <input
                   autoFocus
@@ -363,7 +363,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
 
         <div className="flex flex-col gap-1.5">
           <label htmlFor="f-tags" className="text-[13px] font-bold text-sec">Tags</label>
-          <div className="flex min-h-[52px] flex-wrap items-center gap-1.5 rounded-medium border-[1.5px] border-line-2 bg-white px-3 py-2 focus-within:border-terracotta">
+          <div className="flex min-h-[52px] flex-wrap items-center gap-1.5 rounded-medium border-[1.5px] border-line-2 bg-card px-3 py-2 focus-within:border-terracotta">
             {(form.tags ?? []).map((t) => (
               <span key={t} className="flex items-center gap-1 rounded-[10px] bg-sable-2 py-1 pr-1 pl-2.5 text-[13px] text-sec">
                 #{t}
@@ -459,7 +459,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
         )}
 
         {authorName === undefined ? (
-          <label className="flex items-center gap-3 rounded-medium bg-white px-4 py-3.5 shadow-card">
+          <label className="flex items-center gap-3 rounded-medium bg-card px-4 py-3.5 shadow-card">
             <Icon name="globe" size={20} className="text-activite-ic" />
             <span className="flex flex-1 flex-col">
               <span className="text-sm font-bold">Partager avec la communauté</span>
@@ -472,7 +472,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             />
           </label>
         ) : (
-          <p role="note" className="flex items-start gap-2 rounded-medium bg-white px-4 py-3 text-xs text-sec">
+          <p role="note" className="flex items-start gap-2 rounded-medium bg-card px-4 py-3 text-xs text-sec">
             <Icon name="lock" size={15} className="mt-px shrink-0" />
             Idée de {authorName || "un membre de la tribu"} : seul son auteur peut la partager avec la communauté.
           </p>

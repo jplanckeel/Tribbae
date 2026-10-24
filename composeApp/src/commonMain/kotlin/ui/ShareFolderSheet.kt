@@ -55,7 +55,7 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
         )
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Sable, dragHandle = { SheetHandle() }) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
         Column(
             Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -100,7 +100,7 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                 if (current.collaborators.isEmpty()) {
                     Text("Invitez un proche qui a un compte Tribbae pour remplir ce dossier ensemble.", fontSize = 14.sp, color = TextSec)
                 } else {
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White)) {
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor)) {
                         current.collaborators.forEachIndexed { i, c ->
                             val name = c.displayName.ifBlank { c.email.ifBlank { "Membre" } }
                             Row(
@@ -137,7 +137,7 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                         ) { Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (on) Sable else TextSec) }
                     }
                 }
-                if (message != null) Text(message!!, fontSize = 14.sp, color = Color(0xFF9A3420))
+                if (message != null) Text(message!!, fontSize = 14.sp, color = CoralInk)
                 CampButton(
                     if (busy) "Invitation…" else "Inviter",
                     {

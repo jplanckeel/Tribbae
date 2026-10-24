@@ -12,6 +12,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import ui.TribbaeTheme
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import data.AndroidStorage
@@ -40,6 +42,8 @@ class MainActivity : ComponentActivity() {
         val imagePicker = ImagePickerHelper(this)
 
         val storage = AndroidStorage(applicationContext)
+        ui.Appearance.pref = storage.loadAppearance()
+        ui.Appearance.save = storage::saveAppearance
         val repository = LinkRepository(storage)
         // Une seule fois : à la recréation (rotation…), le partage est déjà ouvert
         if (savedInstanceState == null) incoming.value = parseIncoming(intent)
@@ -74,6 +78,16 @@ class MainActivity : ComponentActivity() {
                     it.imagePickerCamera = { onResult -> imagePicker.pickFromCamera(onResult) }
                     it.fetchMissingImages()
                 }
+            }
+            // Apparence (« Ma tribu ») : jour, soir ou comme l'appareil
+            ui.Appearance.systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+            val dark = ui.Appearance.dark
+            LaunchedEffect(dark) {
+                val transparent = android.graphics.Color.TRANSPARENT
+                enableEdgeToEdge(
+                    statusBarStyle = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent),
+                    navigationBarStyle = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent),
+                )
             }
             TribbaeTheme {
                 AppModern(vm = viewModel, incoming = incoming.value)

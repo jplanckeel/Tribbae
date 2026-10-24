@@ -25,6 +25,17 @@
   --color-line: #eadbc8;
   --color-line-2: #e6d3c0;
   --color-dash: #d9c2ae;
+  /* Surfaces : carte (blanche) ; en mode sombre, les feuilles éclaircissent fond et carte */
+  --color-card: #ffffff;
+  /* Liens et textes d'action (la terracotta reste celle des boutons) */
+  --color-link: #c8492c;
+  /* Texte ou icône posé sur une encre pleine (dossier, catégorie) */
+  --color-on-solid: #ffffff;
+  /* Ciel et sol des petites scènes (célébrations, année en idées) ; fonds teintés de sélection */
+  --color-sky: #9fd3e6;
+  --color-ground: #f7b57f;
+  --color-blush: #fff4ee;
+  --color-peach: #fff4ea;
 
   /* Catégories (fond · encre · icône) */
   --color-idee-bg: #fbeacb;
@@ -103,6 +114,121 @@
   }
 }
 
+/* ── Mode sombre « La veillée » (maquette « Mode sombre · palette veillée ») ──
+   Un sombre chaud, éclairé par le feu : pas d'ombres, la profondeur vient de
+   surfaces de plus en plus claires (fond → carte → feuille) et de bordures
+   fines. Activé par <html data-theme="dark"> (lib/theme.ts, réglage
+   « Apparence » de Ma tribu). Mêmes valeurs côté Android : ui/Theme.kt. */
+:root {
+  /* Couleurs de dossiers (fond, teinte secondaire, encre) — lib/categories.ts */
+  --fc-orange-bg: #fce3d0; --fc-orange-mid: #f8cdae; --fc-orange-solid: #a04812;
+  --fc-red-bg: #f8dcd3; --fc-red-mid: #f2c1b2; --fc-red-solid: #9a3420;
+  --fc-yellow-bg: #fbeacb; --fc-yellow-mid: #f6daa3; --fc-yellow-solid: #85560c;
+  --fc-green-bg: #e2edd9; --fc-green-mid: #cce0be; --fc-green-solid: #3e6630;
+  --fc-teal-bg: #d5ece8; --fc-teal-mid: #b5ddd6; --fc-teal-solid: #1f6b60;
+  --fc-blue-bg: #dcedf3; --fc-blue-mid: #bfe0ec; --fc-blue-solid: #235c77;
+  --fc-purple-bg: #ece1ea; --fc-purple-mid: #dcc8d8; --fc-purple-solid: #5e4558;
+  --fc-pink-bg: #f7dde6; --fc-pink-mid: #efc3d3; --fc-pink-solid: #9c3a5c;
+  --fc-sable-bg: #f1e3d1; --fc-sable-mid: #e6d3c0; --fc-sable-solid: #6b5047;
+  /* Avatars (fond, encre) — lib/categories.ts AVATAR_COLORS */
+  --av-0-bg: #f28c38; --av-0-ink: #3a211b;
+  --av-1-bg: #5e4558; --av-1-ink: #fbf3e7;
+  --av-2-bg: #dcedf3; --av-2-ink: #235c77;
+  --av-3-bg: #e2edd9; --av-3-ink: #3e6630;
+  --av-4-bg: #fbeacb; --av-4-ink: #85560c;
+  --av-5-bg: #f7dde6; --av-5-ink: #9c3a5c;
+  /* Porte du tipi : prune le jour, lumière le soir */
+  --tipi-door: #5e4558;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-sable: #1c1411;
+  --color-sable-2: #33281f;
+  --color-ecorce: #f6ebdd;
+  --color-ecorce-2: #d9c6b8;
+  --color-sec: #c4ae9e;
+  --color-muted: #a38c7c;
+  /* Sur fond « écorce » (devenu clair) : texte sombre */
+  --color-bark-soft: #5c4a3e;
+  --color-bark-mute: #a38c7c;
+  --color-line: #44342b;
+  --color-line-2: #44342b;
+  --color-dash: #5c4a3e;
+  --color-card: #282019;
+  --color-link: #f0855e;
+  --color-on-solid: #1c1411;
+  --color-sky: #17303a;
+  --color-ground: #4a2e1b;
+  --color-blush: #3b201b;
+  --color-peach: #3d2617;
+  --color-terracotta-dark: #f0855e;
+
+  /* Catégories : fond sombre teinté, encre claire (≥ 6,8:1) */
+  --color-idee-bg: #3a2d14; --color-idee-ink: #f2c76b; --color-idee-ic: #f2c76b;
+  --color-cadeau-bg: #3d2617; --color-cadeau-ink: #f5a66e; --color-cadeau-ic: #f5a66e;
+  --color-activite-bg: #17303a; --color-activite-ink: #8ccbe3; --color-activite-ic: #8ccbe3;
+  --color-sortie-bg: #3b201b; --color-sortie-ink: #f09a84; --color-sortie-ic: #f09a84;
+  --color-recette-bg: #1f301b; --color-recette-ink: #a7d08f; --color-recette-ic: #a7d08f;
+  --color-livre-bg: #32232f; --color-livre-ink: #d6b4cf; --color-livre-ic: #d6b4cf;
+  --color-deco-bg: #3b1f29; --color-deco-ink: #ee9db8; --color-deco-ic: #ee9db8;
+
+  --shadow-card: none;
+  --shadow-soft: none;
+  --shadow-nav: none;
+  --shadow-sheet: none;
+
+  --fc-orange-bg: #3d2617; --fc-orange-mid: #4a2e1b; --fc-orange-solid: #f5a66e;
+  --fc-red-bg: #3b201b; --fc-red-mid: #4a2822; --fc-red-solid: #f09a84;
+  --fc-yellow-bg: #3a2d14; --fc-yellow-mid: #4a3a1a; --fc-yellow-solid: #f2c76b;
+  --fc-green-bg: #1f301b; --fc-green-mid: #2a3f24; --fc-green-solid: #a7d08f;
+  --fc-teal-bg: #16302c; --fc-teal-mid: #1e3f3a; --fc-teal-solid: #8fd3c6;
+  --fc-blue-bg: #17303a; --fc-blue-mid: #1f3f4c; --fc-blue-solid: #8ccbe3;
+  --fc-purple-bg: #32232f; --fc-purple-mid: #42303e; --fc-purple-solid: #d6b4cf;
+  --fc-pink-bg: #3b1f29; --fc-pink-mid: #4c2835; --fc-pink-solid: #ee9db8;
+  --fc-sable-bg: #33281f; --fc-sable-mid: #44342b; --fc-sable-solid: #c4ae9e;
+  --av-0-bg: #f28c38; --av-0-ink: #1c1411;
+  --av-1-bg: #5e4558; --av-1-ink: #fde6bd;
+  --av-2-bg: #17303a; --av-2-ink: #8ccbe3;
+  --av-3-bg: #1f301b; --av-3-ink: #a7d08f;
+  --av-4-bg: #3a2d14; --av-4-ink: #f2c76b;
+  --av-5-bg: #3b1f29; --av-5-ink: #ee9db8;
+  --tipi-door: #ffc857;
+}
+
+/* Les feuilles (et la barre de navigation) sont une surface élevée */
+:root[data-theme="dark"] .surface-raised {
+  --color-sable: #282019;
+  --color-card: #33281f;
+  --color-sable-2: #44342b;
+  border-color: #4a3a30;
+}
+/* Barre de navigation : surface élevée ; l'onglet actif devient une pilule claire */
+:root[data-theme="dark"] .nav-bar {
+  --color-sable: #f6ebdd;
+  background-color: #33281f;
+  border: 1px solid #4a3a30;
+}
+:root[data-theme="dark"] .nav-plus { border-color: #1c1411; }
+/* Les disques « soleil » deviennent des halos orangés */
+:root[data-theme="dark"] .bg-soleil {
+  background: radial-gradient(circle, rgba(242, 140, 56, 0.18), rgba(242, 140, 56, 0) 68%);
+}
+/* Prune et terracotta gardent leur couleur : le texte « sable » posé dessus reste clair */
+:root[data-theme="dark"] :is(.bg-prune, .bg-terracotta) { --color-sable: #fbf3e7; }
+/* Pastilles translucides sur les photos (retour, partage, j'aime) : voile sombre */
+:root[data-theme="dark"] :is([class*="bg-white/45"], [class*="bg-white/6"], [class*="bg-white/8"], [class*="bg-white/9"]) {
+  background-color: rgba(28, 20, 17, 0.72);
+}
+/* Texte prune (IA, « pourquoi ») : lavande lisible sur fond sombre */
+:root[data-theme="dark"] .text-prune { color: #d6b4cf; }
+/* Contrôles segmentés : l'élément choisi est plus clair que le rail */
+:root[data-theme="dark"] .bg-sable-2 > .bg-card { background-color: #44342b; }
+/* Liens et textes terracotta plus clairs ; les boutons gardent leur terracotta */
+:root[data-theme="dark"] .text-terracotta { color: var(--color-link); }
+/* Photos adoucies, pour ne pas éblouir le soir */
+:root[data-theme="dark"] img { filter: brightness(0.9); }
+
 @layer base {
   html {
     background: var(--color-sable);
@@ -110,6 +236,8 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
+    background: var(--color-sable);
+    color: var(--color-ecorce);
     font-family: var(--font-sans);
     font-size: 15px;
     line-height: 1.45;

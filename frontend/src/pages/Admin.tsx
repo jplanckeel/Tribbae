@@ -48,7 +48,7 @@ export default function Admin() {
         <h1 className="font-display text-[32px] font-extrabold tracking-[-0.8px]">Administration</h1>
         {users.data && <span className="text-sm text-sec">{users.data.length} comptes · {premium} premium</span>}
       </div>
-      <label className="flex h-[52px] items-center gap-2.5 rounded-medium bg-white px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
+      <label className="flex h-[52px] items-center gap-2.5 rounded-medium bg-card px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
         <Icon name="search" size={20} />
         <input
           type="search"
@@ -64,7 +64,7 @@ export default function Admin() {
       ) : users.error ? (
         <ErrorNote>{users.error.message}</ErrorNote>
       ) : (
-        <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-large bg-white">
+        <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-large bg-card">
           {list.map((u, i) => {
             const [bg, ink] = AVATAR_COLORS[i % AVATAR_COLORS.length];
             return (

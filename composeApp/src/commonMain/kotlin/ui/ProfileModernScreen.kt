@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.PersonAdd
@@ -163,16 +164,16 @@ private fun WelcomeScreen(modifier: Modifier, onRegister: () -> Unit, onLogin: (
     }
 }
 private val CardShape = RoundedCornerShape(22.dp)
-private val RecetteBg = Color(0xFFE2EDD9)
-private val RecetteInk = Color(0xFF3E6630)
-private val CadeauInk = Color(0xFFA04812)
-private val SortieInk = Color(0xFF9A3420)
-private val YearSky = Color(0xFF9FD3E6)
-private val BraiseSoft = Color(0xFFF7B57F)
+private val RecetteBg: Color get() = GreenBg
+private val RecetteInk: Color get() = GreenInk
+private val CadeauInk: Color get() = PeachInk
+private val SortieInk: Color get() = CoralInk
+private val YearSky: Color get() = SceneSky
+private val BraiseSoft: Color get() = SceneGround
 
 /** Carte blanche de la maquette (ombre douce). */
 private fun Modifier.tribeCard(shape: androidx.compose.ui.graphics.Shape = CardShape) =
-    shadow(10.dp, shape, ambientColor = Ecorce.copy(alpha = 0.06f), spotColor = Ecorce.copy(alpha = 0.10f)).clip(shape).background(Color.White)
+    shadow(10.dp, shape, ambientColor = Ecorce.copy(alpha = 0.06f), spotColor = Ecorce.copy(alpha = 0.10f)).clip(shape).background(CardColor)
 
 /** Entrée de la maquette : « rise » (ressort, depuis 60 %) ou « fadeup » (10 dp plus bas). */
 private fun Modifier.entrance(delayMs: Int, rise: Boolean = false): Modifier = composed {
@@ -299,7 +300,7 @@ private fun TribeContent(
             subtitle = "$foyerCount au foyer · ${circle.size} dans le cercle" +
                 (if (invitations.isNotEmpty()) " · ${invitations.size} invitation${if (invitations.size > 1) "s" else ""} en attente" else "") +
                 (if (sessionManager.isAdmin()) " · administrateur" else ""),
-            action = { CircleIconButton(Icons.Outlined.Settings, "Paramètres", { showSettings = true }, background = Color.White) },
+            action = { CircleIconButton(Icons.Outlined.Settings, "Paramètres", { showSettings = true }, background = CardColor) },
         )
 
         // ── La tribu installée autour du feu ──
@@ -309,7 +310,7 @@ private fun TribeContent(
             Box(
                 Modifier.align(Alignment.TopCenter).offset(y = 42.dp).size(340.dp)
                     .graphicsLayer { translationY = (1f - sun.value) * 60.dp.toPx() }
-                    .clip(CircleShape).background(Soleil)
+                    .clip(CircleShape).background(SunDisc)
             )
             CampfireTipi(Modifier.align(Alignment.TopCenter).offset(y = 86.dp).size(104.dp).entrance(150))
             CampfireFlame(Modifier.align(Alignment.TopCenter).offset(x = 70.dp, y = 152.dp).size(26.dp, 30.dp))
@@ -372,7 +373,7 @@ private fun TribeContent(
                 val x by androidx.compose.animation.core.animateDpAsState(
                     if (tab == 0) 0.dp else half, spring(dampingRatio = 0.6f, stiffness = 400f), label = "tribe-tab"
                 )
-                Box(Modifier.offset(x = x).width(half).fillMaxHeight().shadow(3.dp, RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).background(Color.White))
+                Box(Modifier.offset(x = x).width(half).fillMaxHeight().shadow(3.dp, RoundedCornerShape(14.dp)).clip(RoundedCornerShape(14.dp)).background(CardColor))
                 Row(Modifier.fillMaxSize()) {
                     listOf("Le foyer" to foyerCount, "Le cercle" to circle.size).forEachIndexed { i, (label, n) ->
                         Row(
@@ -392,7 +393,7 @@ private fun TribeContent(
                     // Nouveau membre : il voit la tribu et choisit d'y verser son propre contenu
                     if (me != null && !me.sharing && accounts.size > 1) {
                         Column(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Soleil).padding(16.dp),
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(SoleilPanel).padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Text("Bienvenue dans la tribu $tribeName !", style = display(18.sp, FontWeight.Bold))
@@ -572,7 +573,8 @@ private fun TribeContent(
             // ── Réglages ──
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Réglages", style = display(20.sp, FontWeight.Bold))
-                Column(Modifier.fillMaxWidth().clip(CardShape).background(Color.White)) {
+                Column(Modifier.fillMaxWidth().clip(CardShape).background(CardColor)) {
+                    AppearanceRow()
                     ListRow(Icons.Outlined.FavoriteBorder, "Tribus suivies", following?.size?.toString()) { showFollowing = true }
                     ListRow(Icons.Outlined.ShoppingCart, "Liste de courses", onClick = onOpenShopping)
                     ListRow(Icons.Outlined.Lock, "Confidentialité & mes données") { uriHandler.openUri(PRIVACY_URL) }
@@ -603,7 +605,7 @@ private fun TribeContent(
     }
 
     if (showInvite) {
-        ModalBottomSheet(onDismissRequest = { showInvite = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        ModalBottomSheet(onDismissRequest = { showInvite = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             var role by remember { mutableIntStateOf(0) } // 0 = au foyer, 1 = dans le cercle
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text("Inviter autour du feu", style = display(22.sp))
@@ -616,7 +618,7 @@ private fun TribeContent(
                         val scale by androidx.compose.animation.core.animateFloatAsState(if (on) 1.02f else 1f, spring(dampingRatio = 0.5f), label = "invite-role")
                         Column(
                             Modifier.weight(1f).graphicsLayer { scaleX = scale; scaleY = scale }
-                                .clip(RoundedCornerShape(18.dp)).background(Color.White)
+                                .clip(RoundedCornerShape(18.dp)).background(CardColor)
                                 .border(if (on) 2.dp else 1.dp, if (on) Terracotta else Line, RoundedCornerShape(18.dp))
                                 .selectable(selected = on, role = Role.RadioButton) { role = i; tribeError = null }
                                 .padding(12.dp),
@@ -673,7 +675,7 @@ private fun TribeContent(
     shareFolder?.let { ShareFolderSheet(it, viewModel) { shareFolder = null } }
 
     if (showFollowing) {
-        ModalBottomSheet(onDismissRequest = { showFollowing = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        ModalBottomSheet(onDismissRequest = { showFollowing = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Tribus suivies", style = display(24.sp))
                 val list = following.orEmpty()
@@ -682,7 +684,7 @@ private fun TribeContent(
                 } else {
                     list.forEachIndexed { i, u ->
                         Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(12.dp),
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             InitialAvatar(u.displayName, i, 40.dp, 12.dp, 16.sp)
@@ -703,11 +705,11 @@ private fun TribeContent(
     }
 
     if (showSettings) {
-        ModalBottomSheet(onDismissRequest = { showSettings = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        ModalBottomSheet(onDismissRequest = { showSettings = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text("Paramètres", style = display(24.sp))
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(14.dp),
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     InitialAvatar(name, 0, 48.dp, 16.dp, 20.sp)
@@ -738,7 +740,7 @@ private fun TribeContent(
         var newName by remember { mutableStateOf(tribeName) }
         AlertDialog(
             onDismissRequest = { showRename = false },
-            containerColor = Sable,
+            containerColor = SheetColor,
             title = { Text("Nom de la tribu", style = display(20.sp, FontWeight.Bold)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -761,13 +763,13 @@ private fun TribeContent(
         var confirmRemove by remember { mutableStateOf<data.ApiTribeMember?>(null) }
         var confirmStopSharing by remember { mutableStateOf(false) }
         val iAmOwner = me?.isOwner == true
-        ModalBottomSheet(onDismissRequest = { showMembers = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        ModalBottomSheet(onDismissRequest = { showMembers = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Le foyer", style = display(24.sp))
                 accounts.forEachIndexed { i, m ->
                     val self = m.userId == userId
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(12.dp),
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         val label = m.displayName.ifBlank { m.email.ifBlank { "Membre" } }
@@ -792,7 +794,7 @@ private fun TribeContent(
                     Text("Invitations en attente", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec, modifier = Modifier.padding(top = 6.dp))
                     invitations.forEach { inv ->
                         Row(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(12.dp),
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(Sable2), contentAlignment = Alignment.Center) {
@@ -831,7 +833,7 @@ private fun TribeContent(
             val self = m.userId == userId
             AlertDialog(
                 onDismissRequest = { confirmRemove = null },
-                containerColor = Sable,
+                containerColor = SheetColor,
                 title = { Text(if (self) "Quitter la tribu ?" else "Retirer ${m.displayName.ifBlank { m.email }} ?", style = display(20.sp, FontWeight.Bold)) },
                 text = {
                     Text(
@@ -852,7 +854,7 @@ private fun TribeContent(
         if (confirmStopSharing) {
             AlertDialog(
                 onDismissRequest = { confirmStopSharing = false },
-                containerColor = Sable,
+                containerColor = SheetColor,
                 title = { Text("Ne plus partager votre contenu ?", style = display(20.sp, FontWeight.Bold)) },
                 text = { Text("Vos idées, dossiers et enfants ne seront plus visibles des autres membres. Vous continuerez à voir ceux de la tribu.", color = Ecorce2) },
                 confirmButton = {
@@ -869,7 +871,7 @@ private fun TribeContent(
     if (showLogout) {
         AlertDialog(
             onDismissRequest = { showLogout = false },
-            containerColor = Sable,
+            containerColor = SheetColor,
             title = { Text("Se déconnecter ?", style = display(20.sp, FontWeight.Bold)) },
             text = { Text("Vos idées restent sur votre compte. Elles sont retirées de cet appareil jusqu'à votre prochaine connexion.", color = Ecorce2) },
             confirmButton = {
@@ -927,7 +929,7 @@ private fun CampfireFlame(modifier: Modifier) {
 @Composable
 private fun YearTile(value: Int, label: String, color: Color, modifier: Modifier) {
     Column(
-        modifier.clip(RoundedCornerShape(16.dp)).background(Color.White).padding(vertical = 10.dp, horizontal = 8.dp),
+        modifier.clip(RoundedCornerShape(16.dp)).background(CardColor).padding(vertical = 10.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
@@ -987,15 +989,15 @@ private fun KidCard(child: data.Child, colors: Pair<Color, Color>, ideas: Int, n
         Box(Modifier.fillMaxWidth().height(74.dp).background(bg)) {
             cd?.let {
                 Text(
-                    it.label, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = if (soon) Color.White else ink, maxLines = 1,
+                    it.label, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = if (soon) OnSolid else ink, maxLines = 1,
                     modifier = Modifier.align(Alignment.TopEnd).padding(10.dp).clip(RoundedCornerShape(9.dp))
-                        .background(if (soon) CadeauInk else Color.White).padding(horizontal = 8.dp, vertical = 3.dp)
+                        .background(if (soon) CadeauInk else CardColor).padding(horizontal = 8.dp, vertical = 3.dp)
                 )
             }
         }
         Box {
             Box(
-                Modifier.offset(x = 12.dp, y = (-20).dp).size(48.dp).clip(RoundedCornerShape(17.dp)).background(Color.White).padding(3.dp)
+                Modifier.offset(x = 12.dp, y = (-20).dp).size(48.dp).clip(RoundedCornerShape(17.dp)).background(CardColor).padding(3.dp)
                     .clip(RoundedCornerShape(14.dp)).background(ink),
                 contentAlignment = Alignment.Center
             ) {
@@ -1026,7 +1028,7 @@ private fun CircleInviteForm(folders: List<data.Folder>, viewModel: LinkViewMode
                 val on = f.id in picked
                 Text(
                     (if (on) "✓ " else "+ ") + f.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (on) Sable else TextSec, maxLines = 1,
-                    modifier = Modifier.height(34.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Ecorce else Color.White)
+                    modifier = Modifier.height(34.dp).clip(RoundedCornerShape(12.dp)).background(if (on) Ecorce else CardColor)
                         .then(if (on) Modifier else Modifier.border(1.dp, Line, RoundedCornerShape(12.dp)))
                         .toggleable(on, role = Role.Checkbox) { picked = if (it) picked + f.id else picked - f.id; error = null }
                         .wrapContentHeight().padding(horizontal = 12.dp)
@@ -1037,7 +1039,7 @@ private fun CircleInviteForm(folders: List<data.Folder>, viewModel: LinkViewMode
             listOf(false to "Lecteur", true to "Éditeur").forEach { (value, label) ->
                 Text(
                     label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (editor == value) Ecorce else TextSec,
-                    modifier = Modifier.height(30.dp).clip(RoundedCornerShape(9.dp)).background(if (editor == value) Color.White else Color.Transparent)
+                    modifier = Modifier.height(30.dp).clip(RoundedCornerShape(9.dp)).background(if (editor == value) CardColor else Color.Transparent)
                         .selectable(editor == value, role = Role.RadioButton) { editor = value }
                         .wrapContentHeight().padding(horizontal = 12.dp)
                 )
@@ -1094,7 +1096,7 @@ private fun KidSheet(
     var confirmRemove by remember { mutableStateOf(false) }
     val dateFmt = remember { java.text.SimpleDateFormat("d MMMM yyyy", java.util.Locale.FRENCH) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Sable, dragHandle = { SheetHandle() }) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             if (child == null || editing) {
                 Text(if (child != null) "Modifier ${child.name}" else "Ajouter un enfant", style = display(22.sp))
@@ -1102,8 +1104,8 @@ private fun KidSheet(
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Date de naissance", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
                     Row(
-                        Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(18.dp)).background(Color.White)
-                            .border(1.5.dp, Color(0xFFE6D3C0), RoundedCornerShape(18.dp))
+                        Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(18.dp)).background(CardColor)
+                            .border(1.5.dp, Line, RoundedCornerShape(18.dp))
                             .clickable(role = Role.Button) { showDate = true }.padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -1218,7 +1220,7 @@ private fun KidSheet(
     if (confirmRemove && child != null) {
         AlertDialog(
             onDismissRequest = { confirmRemove = false },
-            containerColor = Sable,
+            containerColor = SheetColor,
             title = { Text("Retirer ${child.name} ?", style = display(20.sp, FontWeight.Bold)) },
             confirmButton = {
                 TextButton(onClick = { confirmRemove = false; viewModel.deleteChild(child.id); onDismiss() }) {
@@ -1247,7 +1249,7 @@ private fun DeleteAccountDialog(viewModel: LinkViewModel, onDismiss: () -> Unit)
     var error by remember { mutableStateOf<String?>(null) }
     AlertDialog(
         onDismissRequest = { if (!busy) onDismiss() },
-        containerColor = Sable,
+        containerColor = SheetColor,
         title = { Text("Supprimer mon compte ?", style = display(20.sp, FontWeight.Bold)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1268,7 +1270,7 @@ private fun DeleteAccountDialog(viewModel: LinkViewModel, onDismiss: () -> Unit)
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth()
                 )
-                error?.let { Text(it, color = Color(0xFF9A3420), fontSize = 13.sp, fontWeight = FontWeight.Medium) }
+                error?.let { Text(it, color = CoralInk, fontSize = 13.sp, fontWeight = FontWeight.Medium) }
             }
         },
         confirmButton = {
@@ -1281,10 +1283,41 @@ private fun DeleteAccountDialog(viewModel: LinkViewModel, onDismiss: () -> Unit)
                         if (err == null) onDismiss() else error = err
                     }
                 }
-            ) { Text(if (busy) "Suppression…" else "Supprimer définitivement", color = Color(0xFF9A3420), fontWeight = FontWeight.Bold) }
+            ) { Text(if (busy) "Suppression…" else "Supprimer définitivement", color = CoralInk, fontWeight = FontWeight.Bold) }
         },
         dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text("Annuler", color = Ecorce) } }
     )
+}
+
+/** « Apparence » : jour, soir (mode sombre « veillée ») ou comme l'appareil. Retenue sur cet appareil. */
+@Composable
+private fun AppearanceRow() {
+    Column {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(Icons.Outlined.LightMode, null, tint = TextSec, modifier = Modifier.size(20.dp))
+            Text("Apparence", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ecorce, modifier = Modifier.weight(1f))
+            Row(
+                Modifier.clip(RoundedCornerShape(12.dp)).background(Sable2).padding(3.dp).selectableGroup(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                listOf("jour" to "Jour", "soir" to "Soir", "auto" to "Auto").forEach { (key, label) ->
+                    val on = Appearance.pref == key
+                    Text(
+                        label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (on) Ecorce else TextSec,
+                        modifier = Modifier.height(30.dp).clip(RoundedCornerShape(9.dp))
+                            .background(if (on) (if (Appearance.dark) Line else CardColor) else Color.Transparent)
+                            .selectable(on, role = Role.RadioButton) { Appearance.set(key) }
+                            .wrapContentHeight().padding(horizontal = 10.dp)
+                    )
+                }
+            }
+        }
+        HorizontalDivider(color = Sable2)
+    }
 }
 
 @Composable
@@ -1344,7 +1377,7 @@ private fun SimpleAuthDialog(
                     text = if (isLoginMode) "Connexion" else "Inscription",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF3A211B)
+                    color = Ecorce
                 )
 
                 // Tabs connexion / inscription
@@ -1357,8 +1390,8 @@ private fun SimpleAuthDialog(
                             onClick = { isLoginMode = mode; errorMessage = null },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isLoginMode == mode) Color(0xFFC8492C) else Color(0xFFF1E3D1),
-                                contentColor = if (isLoginMode == mode) Color.White else Color(0xFF6B5047)
+                                containerColor = if (isLoginMode == mode) Color(0xFFC8492C) else Sable2,
+                                contentColor = if (isLoginMode == mode) Color.White else TextSec
                             ),
                             shape = RoundedCornerShape(12.dp),
                             contentPadding = PaddingValues(vertical = 10.dp)
@@ -1441,7 +1474,7 @@ private fun SimpleAuthDialog(
                 if (errorMessage != null) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFFF8DCD3),
+                        color = CoralBg,
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
@@ -1457,7 +1490,7 @@ private fun SimpleAuthDialog(
                     val uri = androidx.compose.ui.platform.LocalUriHandler.current
                     Text(
                         "Vos idées restent privées tant que vous ne les partagez pas. Ce que nous conservons et comment supprimer votre compte : politique de confidentialité.",
-                        fontSize = 12.sp, color = Color(0xFF6B5047),
+                        fontSize = 12.sp, color = TextSec,
                         modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { uri.openUri(PRIVACY_URL) }.padding(4.dp)
                     )
                 }
@@ -1507,7 +1540,7 @@ private fun SimpleAuthDialog(
                 }
 
                 TextButton(onClick = { if (!isLoading) onDismiss() }) {
-                    Text("Annuler", color = Color(0xFF6B5047))
+                    Text("Annuler", color = TextSec)
                 }
             }
         }

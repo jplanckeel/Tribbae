@@ -16,6 +16,17 @@ class AndroidStorage(context: Context) : Storage {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    // Réglages de l'appareil (apparence) : à part, ils survivent à la déconnexion
+    private val settings: SharedPreferences =
+        context.getSharedPreferences("tribbae_settings", Context.MODE_PRIVATE)
+
+    /** Apparence : « jour », « soir » ou « auto » (comme l'appareil). */
+    fun loadAppearance(): String = settings.getString("appearance", null)?.takeIf { it == "jour" || it == "soir" } ?: "auto"
+
+    fun saveAppearance(value: String) {
+        settings.edit().putString("appearance", value).apply()
+    }
+
     override fun saveLinks(links: List<Link>) {
         prefs.edit().putString("links", json.encodeToString(links)).apply()
     }

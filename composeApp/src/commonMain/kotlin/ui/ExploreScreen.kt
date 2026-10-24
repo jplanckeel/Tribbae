@@ -157,7 +157,7 @@ fun ExploreScreen(
                         Modifier
                             .height(44.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(Color.White)
+                            .background(CardColor)
                             .border(ThinBorder, RoundedCornerShape(14.dp))
                             .clickable(role = Role.Button) { showFilters = true }
                             .padding(horizontal = 14.dp),
@@ -254,7 +254,7 @@ fun ExploreScreen(
     }
 
     if (showFilters) {
-        ModalBottomSheet(onDismissRequest = { showFilters = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        ModalBottomSheet(onDismissRequest = { showFilters = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(
                 Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -321,10 +321,10 @@ private fun AiPromoCard(onClick: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.size(26.dp))
-        Text("Pas d'idée ? L'IA prépare un dossier sur mesure.", style = display(16.sp, FontWeight.Bold, Sable))
+        Text("Pas d'idée ? L'IA prépare un dossier sur mesure.", style = display(16.sp, FontWeight.Bold, OnDark))
         Text(
             "Essayer",
-            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ecorce,
+            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF3A211B),
             modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Soleil).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 8.dp)
         )
     }

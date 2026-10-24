@@ -267,7 +267,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialDetail, chil
           <span className="text-[15px] text-sec">Racontez-moi votre envie, je m'occupe du reste.</span>
           {error && <ErrorNote>{error}</ErrorNote>}
 
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-[26px] bg-white px-[18px] py-5 font-display text-[23px] leading-tight font-bold shadow-[0_4px_16px_rgba(58,33,27,0.07)]">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-[26px] bg-card px-[18px] py-5 font-display text-[23px] leading-tight font-bold shadow-[0_4px_16px_rgba(58,33,27,0.07)]">
             <span>Je cherche</span>
             {blank("what")}
             <span>pour</span>
@@ -297,7 +297,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialDetail, chil
                           setEdit(null);
                         }
                       }}
-                      className={`h-[38px] rounded-small border-2 px-3 text-sm font-bold transition-transform duration-[450ms] ease-[cubic-bezier(.34,1.56,.64,1)] ${on ? "scale-[1.04] border-ecorce" : "border-line bg-white text-ecorce"}`}
+                      className={`h-[38px] rounded-small border-2 px-3 text-sm font-bold transition-transform duration-[450ms] ease-[cubic-bezier(.34,1.56,.64,1)] ${on ? "scale-[1.04] border-ecorce" : "border-line bg-card text-ecorce"}`}
                       style={on ? { background: bg, color: fg } : undefined}
                     >
                       {edit === "who" ? o.label : o.label.charAt(0).toUpperCase() + o.label.slice(1)}
@@ -310,7 +310,7 @@ export default function AiSheet({ onClose, folderId, prompt: initialDetail, chil
 
           <label className="flex flex-col gap-1.5">
             <span className="text-[13px] font-bold text-sec">Un détail en plus ? <span className="font-medium">(facultatif)</span></span>
-            <span className="flex h-[50px] items-center gap-2.5 rounded-2xl border-[1.5px] border-line bg-white px-3.5 focus-within:border-terracotta">
+            <span className="flex h-[50px] items-center gap-2.5 rounded-2xl border-[1.5px] border-line bg-card px-3.5 focus-within:border-terracotta">
               <Icon name="pencil" size={18} className="text-muted" />
               <input
                 value={req.detail}
@@ -450,7 +450,7 @@ function Waiting({ messages, onCancel }: { messages: string[]; onCancel: () => v
           <path d="M31 4L44 22M45 4L32 22" stroke="#FBF3E7" strokeWidth="2.6" strokeLinecap="round" />
           <path d="M38 12L70 62H6Z" fill="#D45A43" stroke="#FBF3E7" strokeWidth="2.6" strokeLinejoin="round" />
           <path d="M38 34L52 62H24Z" fill="#FFC857" className="ai-glow" />
-          <path d="M38 34L38 62H24Z" fill="#3A211B" stroke="#FBF3E7" strokeWidth="1.8" strokeLinejoin="round" className="ai-flap-l" />
+          <path d="M38 34L38 62H24Z" fill="var(--color-ecorce)" stroke="#FBF3E7" strokeWidth="1.8" strokeLinejoin="round" className="ai-flap-l" />
           <path d="M38 34L52 62H38Z" fill="#F28C38" stroke="#FBF3E7" strokeWidth="1.8" strokeLinejoin="round" className="ai-flap-r" />
         </svg>
       </div>
@@ -468,7 +468,7 @@ function IdeaCard({ card, delay, onKeep, onDrop }: { card: Card; delay: number; 
   return (
     <div
       aria-hidden={card.gone}
-      className={`flex flex-col gap-2.5 rounded-[22px] border-2 bg-white p-3.5 shadow-[0_3px_12px_rgba(58,33,27,0.06)] transition-colors ${card.gone ? "ai-out" : "add-up"} ${card.kept ? "border-prune" : "border-transparent"}`}
+      className={`flex flex-col gap-2.5 rounded-[22px] border-2 bg-card p-3.5 shadow-[0_3px_12px_rgba(58,33,27,0.06)] transition-colors ${card.gone ? "ai-out" : "add-up"} ${card.kept ? "border-prune" : "border-transparent"}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start gap-3">
@@ -513,7 +513,7 @@ function IdeaCard({ card, delay, onKeep, onDrop }: { card: Card; delay: number; 
 }
 
 const SPARKS: [number, number, string, string?][] = [
-  [0, -52, "#F28C38"], [40, -34, "#FFC857", "2px"], [50, 4, "#C8492C"], [-40, -34, "#3A211B", "tri"], [-50, 2, "#F28C38", "2px"],
+  [0, -52, "#F28C38"], [40, -34, "#FFC857", "2px"], [50, 4, "#C8492C"], [-40, -34, "var(--color-ecorce)", "tri"], [-50, 2, "#F28C38", "2px"],
 ];
 
 /** Les idées gardées s'envolent dans le dossier. */
@@ -528,7 +528,7 @@ function Done({ links, folder, onRestart, onOpen }: { links: Link[]; folder?: Fo
           <div
             key={l.id}
             aria-hidden="true"
-            className="add-fly absolute w-[92px] overflow-hidden rounded-xl bg-white shadow-[0_8px_18px_rgba(58,33,27,0.2)]"
+            className="add-fly absolute w-[92px] overflow-hidden rounded-xl bg-card shadow-[0_8px_18px_rgba(58,33,27,0.2)]"
             style={{ left: `calc(50% - ${155 - j * 22}px)`, top: 50 + j * 26, animationDelay: `${250 + j * 160}ms` }}
           >
             <div className={`h-9 ${categoryMeta(l.category).bg}`} />

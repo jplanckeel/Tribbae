@@ -17,7 +17,7 @@ export default function Faq() {
         path="/aide"
       />
       <div className="flex items-center gap-3">
-        <button type="button" onClick={() => navigate(-1)} aria-label="Retour" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-soft hover:bg-sable-2">
+        <button type="button" onClick={() => navigate(-1)} aria-label="Retour" className="flex h-11 w-11 items-center justify-center rounded-full bg-card shadow-soft hover:bg-sable-2">
           <Icon name="chevronLeft" size={22} />
         </button>
         <h1 className="font-display text-[28px] font-extrabold tracking-[-0.6px]">Aide & FAQ</h1>
@@ -28,7 +28,7 @@ export default function Faq() {
             <Icon name={s.icon} size={20} className="text-terracotta" />
             {s.title}
           </h2>
-          <div className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-large bg-white">
+          <div className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-large bg-card">
             {s.items.map(([q, a]) => (
               <details key={q} className="group">
                 <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 text-[15px] font-semibold [&::-webkit-details-marker]:hidden">

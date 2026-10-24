@@ -42,7 +42,7 @@ export default function SharedFolder() {
         <div className="relative mx-auto flex max-w-4xl flex-col gap-6">
           <RouterLink to="/" aria-label="Tribbae"><Logo /></RouterLink>
           <div className="flex items-end gap-4">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-large text-white" style={{ background: color.solid }}>
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-large text-on-solid" style={{ background: color.solid }}>
               <FolderGlyph icon={folder.icon} size={30} />
             </span>
             <div className="flex flex-col gap-1">
@@ -66,7 +66,7 @@ export default function SharedFolder() {
               const href = safeHref(l.url);
               const meta = metaLine(l);
               return (
-                <li key={l.id} className="flex flex-col overflow-hidden rounded-large bg-white shadow-card">
+                <li key={l.id} className="flex flex-col overflow-hidden rounded-large bg-card shadow-card">
                   <IdeaVisual link={l} height={130} />
                   <div className="flex flex-1 flex-col gap-1.5 p-4">
                     <span className={`self-start rounded-full px-2.5 py-0.5 text-xs font-bold ${cat.bg} ${cat.ink}`}>{cat.label}</span>

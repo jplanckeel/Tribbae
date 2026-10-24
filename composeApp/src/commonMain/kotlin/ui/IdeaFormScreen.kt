@@ -269,7 +269,7 @@ fun IdeaFormScreen(
                 Text("Dossier", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
                 val f = folders.find { it.id == folderId }
                 Row(
-                    Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(18.dp)).background(Color.White)
+                    Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(18.dp)).background(CardColor)
                         .border(ThinBorder, RoundedCornerShape(18.dp)).clickable { showFolders = true }.padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -330,7 +330,7 @@ fun IdeaFormScreen(
                 }
                 if (eventDate != null) {
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Soleil).padding(horizontal = 14.dp, vertical = 12.dp),
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(SoleilPanel).padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -345,7 +345,7 @@ fun IdeaFormScreen(
             val authorIsOther = existing != null && existing.ownerId.isNotBlank() && existing.ownerId != viewModel.currentUserId()
             if (authorIsOther) {
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(horizontal = 16.dp, vertical = 12.dp),
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(Icons.Outlined.Lock, null, tint = TextSec, modifier = Modifier.size(15.dp).padding(top = 1.dp))
@@ -386,8 +386,8 @@ fun IdeaFormScreen(
 
             if (error != null) {
                 Text(
-                    error!!, color = Color(0xFF9A3420), fontSize = 14.sp, fontWeight = FontWeight.Medium,
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFFF8DCD3)).padding(horizontal = 16.dp, vertical = 10.dp)
+                    error!!, color = CoralInk, fontSize = 14.sp, fontWeight = FontWeight.Medium,
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(CoralBg).padding(horizontal = 16.dp, vertical = 10.dp)
                 )
             }
         }
@@ -403,7 +403,7 @@ fun IdeaFormScreen(
     }
 
     if (showFolders) {
-        ModalBottomSheet(onDismissRequest = { showFolders = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        ModalBottomSheet(onDismissRequest = { showFolders = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Dossier", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
                 NewFolderRow(onCreate = { name ->
@@ -446,7 +446,7 @@ fun IdeaFormScreen(
         val state = rememberTimePickerState(c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), is24Hour = true)
         AlertDialog(
             onDismissRequest = { showTime = false },
-            containerColor = Sable,
+            containerColor = SheetColor,
             title = { Text("Heure", style = display(20.sp, FontWeight.Bold)) },
             text = { TimePicker(state) },
             confirmButton = {
@@ -481,7 +481,7 @@ private fun NewFolderRow(onCreate: (String) -> Unit) {
         return
     }
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(14.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         CampField(
@@ -505,7 +505,7 @@ private fun NewFolderRow(onCreate: (String) -> Unit) {
 @Composable
 private fun DateChip(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(
-        modifier.height(52.dp).clip(RoundedCornerShape(18.dp)).background(Color.White).border(ThinBorder, RoundedCornerShape(18.dp))
+        modifier.height(52.dp).clip(RoundedCornerShape(18.dp)).background(CardColor).border(ThinBorder, RoundedCornerShape(18.dp))
             .clickable(onClick = onClick).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
