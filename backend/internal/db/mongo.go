@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type DB struct {
@@ -22,7 +22,7 @@ func Connect(uri, dbName string) (*DB, error) {
 
 	// Timeout : délai maximal de chaque opération (requête, écriture, lecture
 	// d'un curseur), pour qu'une requête lente ne bloque pas indéfiniment.
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri).SetTimeout(OperationTimeout))
+	client, err := mongo.Connect(options.Client().ApplyURI(uri).SetTimeout(OperationTimeout))
 	if err != nil {
 		return nil, err
 	}

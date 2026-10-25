@@ -9,21 +9,20 @@ import (
 	"unicode/utf8"
 
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty"`
-	Email       string             `bson:"email"`
-	Password    string             `bson:"password"` // bcrypt hash
-	DisplayName string             `bson:"display_name"`
-	IsAdmin     bool               `bson:"is_admin"`
-	IsPremium   bool               `bson:"is_premium"` // Tribbae+ (accès Perplexity)
-	CreatedAt   time.Time          `bson:"created_at"`
+	ID          bson.ObjectID `bson:"_id,omitempty"`
+	Email       string        `bson:"email"`
+	Password    string        `bson:"password"` // bcrypt hash
+	DisplayName string        `bson:"display_name"`
+	IsAdmin     bool          `bson:"is_admin"`
+	IsPremium   bool          `bson:"is_premium"` // Tribbae+ (accès Perplexity)
+	CreatedAt   time.Time     `bson:"created_at"`
 	// PasswordChangedAt : les sessions ouvertes avant sont refusées
 	PasswordChangedAt *time.Time `bson:"password_changed_at,omitempty"`
 }
@@ -101,7 +100,7 @@ func (s *Service) Register(ctx context.Context, email, password, displayName str
 	}
 
 	user := User{
-		ID:          primitive.NewObjectID(),
+		ID:          bson.NewObjectID(),
 		Email:       email,
 		Password:    string(hash),
 		DisplayName: displayName,
@@ -166,7 +165,7 @@ func (s *Service) ValidateToken(tokenStr string) (string, error) {
 // passwordChangedAt retourne la date du dernier changement de mot de passe
 // (nil si jamais) et false si le compte n'existe pas.
 func (s *Service) passwordChangedAt(userID string) (*time.Time, bool) {
-	id, err := primitive.ObjectIDFromHex(userID)
+	id, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, false
 	}
@@ -185,7 +184,7 @@ func (s *Service) passwordChangedAt(userID string) (*time.Time, bool) {
 // CheckPassword vérifie le mot de passe d'un compte connecté, avant une
 // action irréversible (suppression du compte).
 func (s *Service) CheckPassword(ctx context.Context, userID, password string) error {
-	id, err := primitive.ObjectIDFromHex(userID)
+	id, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return ErrInvalidCredentials
 	}
@@ -211,7 +210,7 @@ func (s *Service) generateToken(userID string) (string, error) {
 
 // GetUser récupère un utilisateur par son ID
 func (s *Service) GetUser(ctx context.Context, userID string) (*User, error) {
-	id, err := primitive.ObjectIDFromHex(userID)
+	id, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, errors.New("invalid user id")
 	}
@@ -239,7 +238,7 @@ func (s *Service) ListUsers(ctx context.Context) ([]*User, error) {
 
 // UpdateUserPremium met à jour le statut premium d'un utilisateur (admin only)
 func (s *Service) UpdateUserPremium(ctx context.Context, userID string, isPremium bool) error {
-	id, err := primitive.ObjectIDFromHex(userID)
+	id, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.New("invalid user id")
 	}

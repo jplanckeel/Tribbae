@@ -5,9 +5,8 @@ import (
 	"log"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/tribbae/backend/internal/preview"
 )
@@ -68,8 +67,8 @@ func (s *Service) backfillBatch(ctx context.Context, batch int) (filled, tried i
 		return 0, 0
 	}
 	var todo []struct {
-		ID  primitive.ObjectID `bson:"_id"`
-		URL string             `bson:"url"`
+		ID  bson.ObjectID `bson:"_id"`
+		URL string        `bson:"url"`
 	}
 	if err := cur.All(ctx, &todo); err != nil {
 		return 0, 0
@@ -92,7 +91,7 @@ func (s *Service) backfillBatch(ctx context.Context, batch int) (filled, tried i
 
 // backfillOne cherche l'image d'une idée et l'enregistre si l'idée n'en a
 // toujours pas (l'utilisateur a pu en choisir une entre-temps).
-func (s *Service) backfillOne(ctx context.Context, id primitive.ObjectID, url string) bool {
+func (s *Service) backfillOne(ctx context.Context, id bson.ObjectID, url string) bool {
 	fctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	img := fetchImage(fctx, url)
 	cancel()
@@ -106,7 +105,7 @@ func (s *Service) backfillOne(ctx context.Context, id primitive.ObjectID, url st
 
 // backfillSoon relance tout de suite la recherche d'image d'une idée (adresse
 // modifiée, image retirée), sans retarder la réponse à l'utilisateur.
-func (s *Service) backfillSoon(id primitive.ObjectID, url string) {
+func (s *Service) backfillSoon(id bson.ObjectID, url string) {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()

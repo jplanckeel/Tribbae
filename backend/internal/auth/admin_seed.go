@@ -6,9 +6,8 @@ import (
 	"log"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -70,7 +69,7 @@ func EnsureAdminAccount(ctx context.Context, col *mongo.Collection, password str
 		return err
 	}
 	user := User{
-		ID:          primitive.NewObjectID(),
+		ID:          bson.NewObjectID(),
 		Email:       AdminEmail,
 		Password:    string(hash),
 		DisplayName: AdminDisplayName,

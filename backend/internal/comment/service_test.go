@@ -8,10 +8,9 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // setupTestDB creates a test database connection
@@ -24,7 +23,7 @@ func setupTestDB(t *testing.T) (*mongo.Client, *mongo.Database, func()) {
 		ApplyURI("mongodb://localhost:27017").
 		SetServerSelectionTimeout(5 * time.Second)
 
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := mongo.Connect(clientOpts)
 	if err != nil {
 		t.Skipf("Skipping test: Failed to connect to MongoDB: %v", err)
 	}
@@ -35,7 +34,7 @@ func setupTestDB(t *testing.T) (*mongo.Client, *mongo.Database, func()) {
 	}
 
 	// Use a test database
-	dbName := "tribbae_test_" + primitive.NewObjectID().Hex()
+	dbName := "tribbae_test_" + bson.NewObjectID().Hex()
 	db := client.Database(dbName)
 
 	// Cleanup function
@@ -88,7 +87,7 @@ func TestProperty_CommentStorageCompleteness(t *testing.T) {
 			}
 
 			// Create a user
-			userID := primitive.NewObjectID()
+			userID := bson.NewObjectID()
 			user := bson.M{
 				"_id":          userID,
 				"email":        "user@example.com",
@@ -103,7 +102,7 @@ func TestProperty_CommentStorageCompleteness(t *testing.T) {
 			}
 
 			// Create a link
-			linkID := primitive.NewObjectID()
+			linkID := bson.NewObjectID()
 			link := bson.M{
 				"_id":        linkID,
 				"owner_id":   userID.Hex(),
@@ -131,7 +130,7 @@ func TestProperty_CommentStorageCompleteness(t *testing.T) {
 			afterCreate := time.Now()
 
 			// Retrieve the comment directly from database
-			commentOID, err := primitive.ObjectIDFromHex(createdComment.ID)
+			commentOID, err := bson.ObjectIDFromHex(createdComment.ID)
 			if err != nil {
 				t.Logf("Invalid comment ID returned: %v", err)
 				return false
@@ -235,7 +234,7 @@ func TestProperty_CommentDeletionByLinkOwner(t *testing.T) {
 			}
 
 			// Create a link owner
-			linkOwnerID := primitive.NewObjectID()
+			linkOwnerID := bson.NewObjectID()
 			linkOwner := bson.M{
 				"_id":          linkOwnerID,
 				"email":        "owner@example.com",
@@ -250,7 +249,7 @@ func TestProperty_CommentDeletionByLinkOwner(t *testing.T) {
 			}
 
 			// Create a comment author (different from link owner)
-			authorID := primitive.NewObjectID()
+			authorID := bson.NewObjectID()
 			author := bson.M{
 				"_id":          authorID,
 				"email":        "author@example.com",
@@ -265,7 +264,7 @@ func TestProperty_CommentDeletionByLinkOwner(t *testing.T) {
 			}
 
 			// Create a link owned by linkOwner
-			linkID := primitive.NewObjectID()
+			linkID := bson.NewObjectID()
 			link := bson.M{
 				"_id":        linkID,
 				"owner_id":   linkOwnerID.Hex(),
@@ -287,7 +286,7 @@ func TestProperty_CommentDeletionByLinkOwner(t *testing.T) {
 			}
 
 			// Verify comment exists before deletion
-			commentOID, err := primitive.ObjectIDFromHex(createdComment.ID)
+			commentOID, err := bson.ObjectIDFromHex(createdComment.ID)
 			if err != nil {
 				t.Logf("Invalid comment ID: %v", err)
 				return false
@@ -381,7 +380,7 @@ func TestProperty_CommentSortingByDate(t *testing.T) {
 			}
 
 			// Create a user
-			userID := primitive.NewObjectID()
+			userID := bson.NewObjectID()
 			user := bson.M{
 				"_id":          userID,
 				"email":        "user@example.com",
@@ -396,7 +395,7 @@ func TestProperty_CommentSortingByDate(t *testing.T) {
 			}
 
 			// Create a link
-			linkID := primitive.NewObjectID()
+			linkID := bson.NewObjectID()
 			link := bson.M{
 				"_id":        linkID,
 				"owner_id":   userID.Hex(),
@@ -422,7 +421,7 @@ func TestProperty_CommentSortingByDate(t *testing.T) {
 				createdTimestamps[i] = timestamp
 
 				comment := Comment{
-					ID:        primitive.NewObjectID(),
+					ID:        bson.NewObjectID(),
 					LinkID:    linkID.Hex(),
 					UserID:    userID.Hex(),
 					Text:      "Comment " + string(rune('A'+i)),
@@ -522,7 +521,7 @@ func TestProperty_CommentDeletionByAuthor(t *testing.T) {
 			}
 
 			// Create a user (comment author)
-			authorID := primitive.NewObjectID()
+			authorID := bson.NewObjectID()
 			author := bson.M{
 				"_id":          authorID,
 				"email":        "author@example.com",
@@ -537,7 +536,7 @@ func TestProperty_CommentDeletionByAuthor(t *testing.T) {
 			}
 
 			// Create a link owner (different from comment author)
-			linkOwnerID := primitive.NewObjectID()
+			linkOwnerID := bson.NewObjectID()
 			linkOwner := bson.M{
 				"_id":          linkOwnerID,
 				"email":        "owner@example.com",
@@ -552,7 +551,7 @@ func TestProperty_CommentDeletionByAuthor(t *testing.T) {
 			}
 
 			// Create a link
-			linkID := primitive.NewObjectID()
+			linkID := bson.NewObjectID()
 			link := bson.M{
 				"_id":        linkID,
 				"owner_id":   linkOwnerID.Hex(),
@@ -574,7 +573,7 @@ func TestProperty_CommentDeletionByAuthor(t *testing.T) {
 			}
 
 			// Verify comment exists before deletion
-			commentOID, err := primitive.ObjectIDFromHex(createdComment.ID)
+			commentOID, err := bson.ObjectIDFromHex(createdComment.ID)
 			if err != nil {
 				t.Logf("Invalid comment ID: %v", err)
 				return false

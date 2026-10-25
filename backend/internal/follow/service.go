@@ -5,17 +5,16 @@ import (
 	"errors"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // Follow represents a follow relationship between two users
 type Follow struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty"`
-	FollowerID  string             `bson:"follower_id"`  // User who follows
-	FollowingID string             `bson:"following_id"` // User being followed
-	CreatedAt   time.Time          `bson:"created_at"`
+	ID          bson.ObjectID `bson:"_id,omitempty"`
+	FollowerID  string        `bson:"follower_id"`  // User who follows
+	FollowingID string        `bson:"following_id"` // User being followed
+	CreatedAt   time.Time     `bson:"created_at"`
 }
 
 // UserProfile represents a user's public profile information
@@ -69,7 +68,7 @@ func (s *Service) Follow(ctx context.Context, followerID, followingID string) er
 
 	// Create follow relationship
 	follow := &Follow{
-		ID:          primitive.NewObjectID(),
+		ID:          bson.NewObjectID(),
 		FollowerID:  followerID,
 		FollowingID: followingID,
 		CreatedAt:   time.Now(),
@@ -194,7 +193,7 @@ func (s *Service) GetFollowingCount(ctx context.Context, userID string) (int32, 
 
 // validateUserExists checks if a user exists in the database
 func (s *Service) validateUserExists(ctx context.Context, userID string) error {
-	oid, err := primitive.ObjectIDFromHex(userID)
+	oid, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return errors.New("invalid user id")
 	}
@@ -213,16 +212,16 @@ func (s *Service) validateUserExists(ctx context.Context, userID string) error {
 
 // getUserProfile retrieves a user's profile information
 func (s *Service) getUserProfile(ctx context.Context, userID string) (UserProfile, error) {
-	oid, err := primitive.ObjectIDFromHex(userID)
+	oid, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return UserProfile{}, errors.New("invalid user id")
 	}
 
 	var user struct {
-		ID          primitive.ObjectID `bson:"_id"`
-		DisplayName string             `bson:"display_name"`
-		Email       string             `bson:"email"`
-		IsAdmin     bool               `bson:"is_admin"`
+		ID          bson.ObjectID `bson:"_id"`
+		DisplayName string        `bson:"display_name"`
+		Email       string        `bson:"email"`
+		IsAdmin     bool          `bson:"is_admin"`
 	}
 
 	err = s.userCol.FindOne(ctx, bson.M{"_id": oid}).Decode(&user)

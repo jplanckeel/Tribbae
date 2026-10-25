@@ -9,10 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/tribbae/backend/internal/mail"
 )
@@ -21,14 +20,14 @@ func setup(t *testing.T) (*Service, *mongo.Database, func()) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017").SetServerSelectionTimeout(3*time.Second))
+	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://localhost:27017").SetServerSelectionTimeout(3 * time.Second))
 	if err != nil {
 		t.Skipf("MongoDB indisponible : %v", err)
 	}
 	if err := client.Ping(ctx, nil); err != nil {
 		t.Skipf("MongoDB indisponible : %v", err)
 	}
-	db := client.Database("tribbae_test_" + primitive.NewObjectID().Hex())
+	db := client.Database("tribbae_test_" + bson.NewObjectID().Hex())
 	_, _ = db.Collection("tribes").Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys: bson.D{{Key: "members.user_id", Value: 1}}, Options: options.Index().SetUnique(true),
 	})
@@ -42,7 +41,7 @@ func setup(t *testing.T) (*Service, *mongo.Database, func()) {
 
 func addUser(t *testing.T, db *mongo.Database, email, name string) string {
 	t.Helper()
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 	if _, err := db.Collection("users").InsertOne(context.Background(), bson.M{"_id": id, "email": email, "display_name": name}); err != nil {
 		t.Fatal(err)
 	}
@@ -56,7 +55,7 @@ func TestSoloTribeIsVirtualAndNamedAfterAccount(t *testing.T) {
 	alice := addUser(t, db, "alice@ex.fr", "Alice")
 
 	tr, err := svc.Get(ctx, alice)
-	if err != nil || tr.ID != primitive.NilObjectID || tr.Name != "Alice" || len(tr.Members) != 1 {
+	if err != nil || tr.ID != bson.NilObjectID || tr.Name != "Alice" || len(tr.Members) != 1 {
 		t.Fatalf("tribu virtuelle attendue : %+v, %v", tr, err)
 	}
 	if got := svc.Peers(ctx, alice); !slices.Equal(got, []string{alice}) {

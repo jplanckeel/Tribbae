@@ -2,10 +2,10 @@ package child
 
 import (
 	"context"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
 	"github.com/tribbae/backend/internal/interceptor"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -74,7 +74,7 @@ func (h *Handler) UpdateChild(ctx context.Context, req *pb.UpdateChildRequest) (
 		return nil, err
 	}
 
-	childID, err := primitive.ObjectIDFromHex(req.ChildId)
+	childID, err := bson.ObjectIDFromHex(req.ChildId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid child ID")
 	}
@@ -102,7 +102,7 @@ func (h *Handler) DeleteChild(ctx context.Context, req *pb.DeleteChildRequest) (
 		return nil, err
 	}
 
-	childID, err := primitive.ObjectIDFromHex(req.ChildId)
+	childID, err := bson.ObjectIDFromHex(req.ChildId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid child ID")
 	}
@@ -115,14 +115,14 @@ func (h *Handler) DeleteChild(ctx context.Context, req *pb.DeleteChildRequest) (
 }
 
 // ownerIDFromContext extrait le userID du contexte et le convertit en ObjectID.
-func ownerIDFromContext(ctx context.Context) (primitive.ObjectID, error) {
+func ownerIDFromContext(ctx context.Context) (bson.ObjectID, error) {
 	userID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {
-		return primitive.NilObjectID, status.Error(codes.Unauthenticated, "user not authenticated")
+		return bson.NilObjectID, status.Error(codes.Unauthenticated, "user not authenticated")
 	}
-	oid, err := primitive.ObjectIDFromHex(userID)
+	oid, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
-		return primitive.NilObjectID, status.Error(codes.Internal, "invalid user ID format")
+		return bson.NilObjectID, status.Error(codes.Internal, "invalid user ID format")
 	}
 	return oid, nil
 }

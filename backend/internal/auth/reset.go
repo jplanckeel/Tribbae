@@ -11,10 +11,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -40,10 +39,10 @@ type ResetNotifier interface {
 // SHA-256 du jeton est stockée : une fuite de la base ne donne aucun lien
 // utilisable. L'index TTL sur expires_at efface les demandes expirées.
 type passwordReset struct {
-	UserID    primitive.ObjectID `bson:"_id"`
-	TokenHash string             `bson:"token_hash"`
-	ExpiresAt time.Time          `bson:"expires_at"`
-	CreatedAt time.Time          `bson:"created_at"`
+	UserID    bson.ObjectID `bson:"_id"`
+	TokenHash string        `bson:"token_hash"`
+	ExpiresAt time.Time     `bson:"expires_at"`
+	CreatedAt time.Time     `bson:"created_at"`
 }
 
 // SetPasswordReset active le mot de passe oublié : resets stocke les demandes

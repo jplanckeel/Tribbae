@@ -15,9 +15,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/tribbae/backend/internal/mail"
 )
@@ -54,11 +53,11 @@ type Member struct {
 }
 
 type Tribe struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	Name      string             `bson:"name"`
-	Members   []Member           `bson:"members"`
-	CreatedAt time.Time          `bson:"created_at"`
-	UpdatedAt time.Time          `bson:"updated_at"`
+	ID        bson.ObjectID `bson:"_id,omitempty"`
+	Name      string        `bson:"name"`
+	Members   []Member      `bson:"members"`
+	CreatedAt time.Time     `bson:"created_at"`
+	UpdatedAt time.Time     `bson:"updated_at"`
 }
 
 // Member retourne le membre userID, ou nil.
@@ -72,9 +71,9 @@ func (t *Tribe) Member(userID string) *Member {
 }
 
 type userDoc struct {
-	ID          primitive.ObjectID `bson:"_id"`
-	Email       string             `bson:"email"`
-	DisplayName string             `bson:"display_name"`
+	ID          bson.ObjectID `bson:"_id"`
+	Email       string        `bson:"email"`
+	DisplayName string        `bson:"display_name"`
 }
 
 // Notifier envoie les emails d'invitation (mail.Mailer).
@@ -157,7 +156,7 @@ func (s *Service) ensure(ctx context.Context, userID string) (*Tribe, error) {
 	}
 	now := time.Now()
 	t = &Tribe{
-		ID:        primitive.NewObjectID(),
+		ID:        bson.NewObjectID(),
 		Name:      u.DisplayName,
 		Members:   []Member{{UserID: userID, Role: RoleOwner, Sharing: true, AddedAt: now}},
 		CreatedAt: now,
@@ -289,7 +288,7 @@ func (s *Service) SetSharing(ctx context.Context, userID string, sharing bool) (
 }
 
 func (s *Service) user(ctx context.Context, userID string) (*userDoc, error) {
-	id, err := primitive.ObjectIDFromHex(userID)
+	id, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, ErrNotMember
 	}
@@ -302,9 +301,9 @@ func (s *Service) user(ctx context.Context, userID string) (*userDoc, error) {
 
 // Users retourne nom et email des comptes donnés (affichage des membres).
 func (s *Service) Users(ctx context.Context, ids []string) map[string]userDoc {
-	oids := make([]primitive.ObjectID, 0, len(ids))
+	oids := make([]bson.ObjectID, 0, len(ids))
 	for _, id := range ids {
-		if oid, err := primitive.ObjectIDFromHex(id); err == nil {
+		if oid, err := bson.ObjectIDFromHex(id); err == nil {
 			oids = append(oids, oid)
 		}
 	}

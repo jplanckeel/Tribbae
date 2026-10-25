@@ -5,40 +5,39 @@ import (
 	"errors"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type Link struct {
-	ID              primitive.ObjectID `bson:"_id,omitempty"    json:"id"`
-	OwnerID         string             `bson:"owner_id"         json:"owner_id"`
-	FolderID        string             `bson:"folder_id"        json:"folder_id"`
-	Title           string             `bson:"title"            json:"title"`
-	URL             string             `bson:"url"              json:"url"`
-	Description     string             `bson:"description"      json:"description"`
-	Category        string             `bson:"category"         json:"category"`
-	Tags            []string           `bson:"tags"             json:"tags"`
-	AgeRange        string             `bson:"age_range"        json:"age_range"`
-	Location        string             `bson:"location"         json:"location"`
-	Price           string             `bson:"price"            json:"price"`
-	ImageURL        string             `bson:"image_url"        json:"image_url"`
-	EventDate       int64              `bson:"event_date"       json:"event_date"`
-	ReminderEnabled bool               `bson:"reminder_enabled" json:"reminder_enabled"`
-	Rating          int32              `bson:"rating"           json:"rating"`
-	Ingredients     []string           `bson:"ingredients"      json:"ingredients"`
-	Visibility      string             `bson:"visibility"       json:"visibility"` // "private" | "public"
-	Favorite        bool               `bson:"favorite"         json:"favorite"`
-	CreatedAt       time.Time          `bson:"created_at"       json:"created_at"`
-	UpdatedAt       time.Time          `bson:"updated_at"       json:"updated_at"`
+	ID              bson.ObjectID `bson:"_id,omitempty"    json:"id"`
+	OwnerID         string        `bson:"owner_id"         json:"owner_id"`
+	FolderID        string        `bson:"folder_id"        json:"folder_id"`
+	Title           string        `bson:"title"            json:"title"`
+	URL             string        `bson:"url"              json:"url"`
+	Description     string        `bson:"description"      json:"description"`
+	Category        string        `bson:"category"         json:"category"`
+	Tags            []string      `bson:"tags"             json:"tags"`
+	AgeRange        string        `bson:"age_range"        json:"age_range"`
+	Location        string        `bson:"location"         json:"location"`
+	Price           string        `bson:"price"            json:"price"`
+	ImageURL        string        `bson:"image_url"        json:"image_url"`
+	EventDate       int64         `bson:"event_date"       json:"event_date"`
+	ReminderEnabled bool          `bson:"reminder_enabled" json:"reminder_enabled"`
+	Rating          int32         `bson:"rating"           json:"rating"`
+	Ingredients     []string      `bson:"ingredients"      json:"ingredients"`
+	Visibility      string        `bson:"visibility"       json:"visibility"` // "private" | "public"
+	Favorite        bool          `bson:"favorite"         json:"favorite"`
+	CreatedAt       time.Time     `bson:"created_at"       json:"created_at"`
+	UpdatedAt       time.Time     `bson:"updated_at"       json:"updated_at"`
 }
 
 type LinkLike struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	LinkID    string             `bson:"link_id"`
-	UserID    string             `bson:"user_id"`
-	CreatedAt time.Time          `bson:"created_at"`
+	ID        bson.ObjectID `bson:"_id,omitempty"`
+	LinkID    string        `bson:"link_id"`
+	UserID    string        `bson:"user_id"`
+	CreatedAt time.Time     `bson:"created_at"`
 }
 
 type Service struct {
@@ -107,7 +106,7 @@ func (s *Service) accessibleFolderIDs(ctx context.Context, userID string) ([]str
 	var ids []string
 	for cursor.Next(ctx) {
 		var f struct {
-			ID primitive.ObjectID `bson:"_id"`
+			ID bson.ObjectID `bson:"_id"`
 		}
 		if err := cursor.Decode(&f); err == nil {
 			ids = append(ids, f.ID.Hex())
@@ -133,7 +132,7 @@ func (s *Service) canAccessLink(ctx context.Context, l *Link, userID string) boo
 
 // CanView indique si l'utilisateur (éventuellement anonyme) peut voir le lien.
 func (s *Service) CanView(ctx context.Context, linkID, userID string) bool {
-	id, err := primitive.ObjectIDFromHex(linkID)
+	id, err := bson.ObjectIDFromHex(linkID)
 	if err != nil {
 		return false
 	}
@@ -153,7 +152,7 @@ func (s *Service) CanView(ctx context.Context, linkID, userID string) bool {
 // chacun décide seul de publier son contenu). Celles-ci restent réservées aux
 // membres, sauf si leur auteur les a lui-même rendues publiques.
 func (s *Service) folderAccess(ctx context.Context, folderID, userID string) (member bool, publicOwner string) {
-	fid, err := primitive.ObjectIDFromHex(folderID)
+	fid, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return false, ""
 	}
@@ -188,7 +187,7 @@ func (s *Service) canEditFolder(ctx context.Context, folderID, userID string) bo
 	if folderID == "" {
 		return false
 	}
-	fid, err := primitive.ObjectIDFromHex(folderID)
+	fid, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return false
 	}
@@ -204,7 +203,7 @@ func (s *Service) canEditFolder(ctx context.Context, folderID, userID string) bo
 
 // folderIsPublic : le dossier est publié dans la communauté.
 func (s *Service) folderIsPublic(ctx context.Context, folderID string) bool {
-	fid, err := primitive.ObjectIDFromHex(folderID)
+	fid, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return false
 	}
@@ -219,7 +218,7 @@ func (s *Service) Create(ctx context.Context, ownerID string, l *Link) (*Link, e
 	if l.FolderID != "" && !s.canEditFolder(ctx, l.FolderID, ownerID) {
 		return nil, ErrForbidden
 	}
-	l.ID = primitive.NewObjectID()
+	l.ID = bson.NewObjectID()
 	l.OwnerID = ownerID
 	l.CreatedAt = time.Now()
 	l.UpdatedAt = time.Now()
@@ -240,7 +239,7 @@ func (s *Service) Create(ctx context.Context, ownerID string, l *Link) (*Link, e
 }
 
 func (s *Service) Get(ctx context.Context, linkID, userID string) (*Link, error) {
-	id, err := primitive.ObjectIDFromHex(linkID)
+	id, err := bson.ObjectIDFromHex(linkID)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -332,7 +331,7 @@ func (s *Service) listByFolder(ctx context.Context, filter bson.M) ([]*Link, err
 }
 
 func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*Link, error) {
-	id, err := primitive.ObjectIDFromHex(linkID)
+	id, err := bson.ObjectIDFromHex(linkID)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -395,7 +394,7 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 }
 
 func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
-	id, err := primitive.ObjectIDFromHex(linkID)
+	id, err := bson.ObjectIDFromHex(linkID)
 	if err != nil {
 		return ErrNotFound
 	}
@@ -419,7 +418,7 @@ func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 // LikeLink ajoute un like à un lien
 func (s *Service) LikeLink(ctx context.Context, linkID, userID string) (int32, error) {
 	// Vérifier que le lien existe
-	id, err := primitive.ObjectIDFromHex(linkID)
+	id, err := bson.ObjectIDFromHex(linkID)
 	if err != nil {
 		return 0, ErrNotFound
 	}
@@ -432,8 +431,8 @@ func (s *Service) LikeLink(ctx context.Context, linkID, userID string) (int32, e
 	// l'index unique (link_id, user_id) et l'upsert rendent l'opération idempotente)
 	if _, err := s.linkLikeCol.UpdateOne(ctx,
 		bson.M{"link_id": linkID, "user_id": userID},
-		bson.M{"$setOnInsert": bson.M{"_id": primitive.NewObjectID(), "created_at": time.Now()}},
-		options.Update().SetUpsert(true),
+		bson.M{"$setOnInsert": bson.M{"_id": bson.NewObjectID(), "created_at": time.Now()}},
+		options.UpdateOne().SetUpsert(true),
 	); err != nil {
 		return 0, err
 	}
@@ -462,7 +461,7 @@ func (s *Service) GetLikeCount(ctx context.Context, linkID string) (int32, error
 
 // ToggleFavorite bascule le statut favori d'un lien
 func (s *Service) ToggleFavorite(ctx context.Context, linkID, ownerID string) (bool, error) {
-	id, err := primitive.ObjectIDFromHex(linkID)
+	id, err := bson.ObjectIDFromHex(linkID)
 	if err != nil {
 		return false, err
 	}
@@ -575,10 +574,10 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 		return st
 	}
 	ids := make([]string, 0, len(links))
-	ownerSet := map[primitive.ObjectID]struct{}{}
+	ownerSet := map[bson.ObjectID]struct{}{}
 	for _, l := range links {
 		ids = append(ids, l.ID.Hex())
-		if oid, err := primitive.ObjectIDFromHex(l.OwnerID); err == nil {
+		if oid, err := bson.ObjectIDFromHex(l.OwnerID); err == nil {
 			ownerSet[oid] = struct{}{}
 		}
 	}
@@ -613,16 +612,16 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 		}
 	}
 
-	oids := make([]primitive.ObjectID, 0, len(ownerSet))
+	oids := make([]bson.ObjectID, 0, len(ownerSet))
 	for oid := range ownerSet {
 		oids = append(oids, oid)
 	}
 	proj := options.Find().SetProjection(bson.M{"display_name": 1, "is_admin": 1})
 	if cur, err := s.userCol.Find(ctx, bson.M{"_id": bson.M{"$in": oids}}, proj); err == nil {
 		var rows []struct {
-			ID          primitive.ObjectID `bson:"_id"`
-			DisplayName string             `bson:"display_name"`
-			IsAdmin     bool               `bson:"is_admin"`
+			ID          bson.ObjectID `bson:"_id"`
+			DisplayName string        `bson:"display_name"`
+			IsAdmin     bool          `bson:"is_admin"`
 		}
 		if cur.All(ctx, &rows) == nil {
 			for _, r := range rows {

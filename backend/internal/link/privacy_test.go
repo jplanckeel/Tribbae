@@ -5,8 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Confidentialité par défaut (RGPD) : une idée n'est publiée que par la
@@ -14,7 +13,7 @@ import (
 
 func insertFolder(t *testing.T, ctx context.Context, svc *Service, owner, visibility string, collaborators ...string) string {
 	t.Helper()
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 	var collabs bson.A
 	for _, c := range collaborators {
 		collabs = append(collabs, bson.M{"user_id": c, "role": "editor"})
