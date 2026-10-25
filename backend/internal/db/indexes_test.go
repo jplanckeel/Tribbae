@@ -5,10 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func indexNames(t *testing.T, col *mongo.Collection) map[string]bool {
@@ -32,11 +31,11 @@ func indexNames(t *testing.T, col *mongo.Collection) map[string]bool {
 func TestEnsureIndexesDropsReplacedOnes(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017").SetServerSelectionTimeout(3*time.Second))
+	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://localhost:27017").SetServerSelectionTimeout(3 * time.Second))
 	if err != nil || client.Ping(ctx, nil) != nil {
 		t.Skip("Skipping test: MongoDB unavailable")
 	}
-	db := client.Database("tribbae_test_" + primitive.NewObjectID().Hex())
+	db := client.Database("tribbae_test_" + bson.NewObjectID().Hex())
 	t.Cleanup(func() {
 		_ = db.Drop(context.Background())
 		_ = client.Disconnect(context.Background())

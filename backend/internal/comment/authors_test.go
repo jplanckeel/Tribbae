@@ -5,8 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Les auteurs des commentaires sont chargés en une fois : nom et statut admin,
@@ -17,14 +16,14 @@ func TestCommentsCarryTheirAuthors(t *testing.T) {
 	ctx := context.Background()
 	svc := NewService(db.Collection("comments"), db.Collection("links"), db.Collection("users"))
 
-	alice, gone := primitive.NewObjectID(), primitive.NewObjectID()
+	alice, gone := bson.NewObjectID(), bson.NewObjectID()
 	if _, err := db.Collection("users").InsertOne(ctx, bson.M{"_id": alice, "display_name": "Alice", "is_admin": true, "password": "hash"}); err != nil {
 		t.Fatal(err)
 	}
 	now := time.Now()
 	for i, uid := range []string{alice.Hex(), gone.Hex(), "not-an-id", alice.Hex()} {
 		if _, err := db.Collection("comments").InsertOne(ctx, bson.M{
-			"_id": primitive.NewObjectID(), "link_id": "L1", "user_id": uid, "text": "c", "created_at": now.Add(time.Duration(i) * time.Minute),
+			"_id": bson.NewObjectID(), "link_id": "L1", "user_id": uid, "text": "c", "created_at": now.Add(time.Duration(i) * time.Minute),
 		}); err != nil {
 			t.Fatal(err)
 		}

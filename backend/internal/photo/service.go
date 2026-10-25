@@ -18,11 +18,9 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/gridfs"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Bucket : seau GridFS (collections photos.files et photos.chunks).
@@ -46,8 +44,8 @@ func NewService(db *mongo.Database) *Service {
 	return &Service{db: db, sem: make(chan struct{}, 2)}
 }
 
-func bucket(db *mongo.Database) (*gridfs.Bucket, error) {
-	return gridfs.NewBucket(db, options.GridFSBucket().SetName(Bucket))
+func bucket(db *mongo.Database) *mongo.GridFSBucket {
+	return db.GridFSBucket(options.GridFSBucket().SetName(Bucket))
 }
 
 func (s *Service) files() *mongo.Collection { return s.db.Collection(Bucket + ".files") }
@@ -70,28 +68,20 @@ func (s *Service) Save(ctx context.Context, ownerID string, data []byte) (string
 		return "", err
 	}
 	token := hex.EncodeToString(raw)
-	b, err := bucket(s.db)
-	if err != nil {
-		return "", err
-	}
 	meta := bson.M{"owner_id": ownerID, "content_type": "image/jpeg"}
-	if _, err := b.UploadFromStream(token, bytes.NewReader(jpg), options.GridFSUpload().SetMetadata(meta)); err != nil {
+	if _, err := bucket(s.db).UploadFromStream(ctx, token, bytes.NewReader(jpg), options.GridFSUpload().SetMetadata(meta)); err != nil {
 		return "", fmt.Errorf("upload: %w", err)
 	}
 	return token, nil
 }
 
 // Open ouvre la photo du jeton ; l'appelant ferme le flux.
-func (s *Service) Open(ctx context.Context, token string) (*gridfs.DownloadStream, error) {
+func (s *Service) Open(ctx context.Context, token string) (*mongo.GridFSDownloadStream, error) {
 	if !ValidToken(token) {
 		return nil, ErrNotFound
 	}
-	b, err := bucket(s.db)
-	if err != nil {
-		return nil, err
-	}
-	ds, err := b.OpenDownloadStreamByName(token)
-	if errors.Is(err, gridfs.ErrFileNotFound) {
+	ds, err := bucket(s.db).OpenDownloadStreamByName(ctx, token)
+	if errors.Is(err, mongo.ErrFileNotFound) {
 		return nil, ErrNotFound
 	}
 	return ds, err
@@ -99,22 +89,19 @@ func (s *Service) Open(ctx context.Context, token string) (*gridfs.DownloadStrea
 
 // DeleteOwnedBy efface toutes les photos envoyées par userID (suppression du compte).
 func DeleteOwnedBy(ctx context.Context, db *mongo.Database, userID string) error {
-	b, err := bucket(db)
-	if err != nil {
-		return err
-	}
+	b := bucket(db)
 	cur, err := db.Collection(Bucket+".files").Find(ctx, bson.M{"metadata.owner_id": userID}, options.Find().SetProjection(bson.M{"_id": 1}))
 	if err != nil {
 		return err
 	}
 	var docs []struct {
-		ID primitive.ObjectID `bson:"_id"`
+		ID bson.ObjectID `bson:"_id"`
 	}
 	if err := cur.All(ctx, &docs); err != nil {
 		return err
 	}
 	for _, d := range docs {
-		if err := b.DeleteContext(ctx, d.ID); err != nil && !errors.Is(err, gridfs.ErrFileNotFound) {
+		if err := b.Delete(ctx, d.ID); err != nil && !errors.Is(err, mongo.ErrFileNotFound) {
 			return err
 		}
 	}
@@ -145,12 +132,9 @@ func (s *Service) RunCleanup(ctx context.Context, every, grace time.Duration) {
 const cleanupBatch = 100
 
 func (s *Service) cleanup(ctx context.Context, before time.Time) (int, error) {
-	b, err := bucket(s.db)
-	if err != nil {
-		return 0, err
-	}
+	b := bucket(s.db)
 	removed := 0
-	var last primitive.ObjectID
+	var last bson.ObjectID
 	for {
 		filter := bson.M{"uploadDate": bson.M{"$lt": before}}
 		if !last.IsZero() {
@@ -162,8 +146,8 @@ func (s *Service) cleanup(ctx context.Context, before time.Time) (int, error) {
 			return removed, err
 		}
 		var docs []struct {
-			ID       primitive.ObjectID `bson:"_id"`
-			Filename string             `bson:"filename"`
+			ID       bson.ObjectID `bson:"_id"`
+			Filename string        `bson:"filename"`
 		}
 		if err := cur.All(ctx, &docs); err != nil {
 			return removed, err
@@ -187,7 +171,7 @@ func (s *Service) cleanup(ctx context.Context, before time.Time) (int, error) {
 			if used[d.Filename] {
 				continue
 			}
-			if err := b.DeleteContext(ctx, d.ID); err != nil && !errors.Is(err, gridfs.ErrFileNotFound) {
+			if err := b.Delete(ctx, d.ID); err != nil && !errors.Is(err, mongo.ErrFileNotFound) {
 				return removed, err
 			}
 			removed++
@@ -205,7 +189,7 @@ func (s *Service) used(ctx context.Context, tokens []string) (map[string]bool, e
 		return out, nil
 	}
 	re := regexp.MustCompile(Path + `(` + strings.Join(tokens, "|") + `)`)
-	pattern := primitive.Regex{Pattern: re.String()}
+	pattern := bson.Regex{Pattern: re.String()}
 	for _, c := range []struct{ col, field string }{{"links", "image_url"}, {"folders", "banner_url"}} {
 		cur, err := s.db.Collection(c.col).Find(ctx, bson.M{c.field: pattern}, options.Find().SetProjection(bson.M{c.field: 1}))
 		if err != nil {

@@ -5,20 +5,19 @@ import (
 	"errors"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Comment represents a comment on a link
 type Comment struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	LinkID    string             `bson:"link_id"`
-	UserID    string             `bson:"user_id"`
-	Text      string             `bson:"text"`
-	CreatedAt time.Time          `bson:"created_at"`
-	UpdatedAt time.Time          `bson:"updated_at"`
+	ID        bson.ObjectID `bson:"_id,omitempty"`
+	LinkID    string        `bson:"link_id"`
+	UserID    string        `bson:"user_id"`
+	Text      string        `bson:"text"`
+	CreatedAt time.Time     `bson:"created_at"`
+	UpdatedAt time.Time     `bson:"updated_at"`
 }
 
 // CommentWithUser represents a comment with user information
@@ -57,7 +56,7 @@ func (s *Service) CreateComment(ctx context.Context, linkID, userID, text string
 	}
 
 	// Verify link exists
-	linkOID, err := primitive.ObjectIDFromHex(linkID)
+	linkOID, err := bson.ObjectIDFromHex(linkID)
 	if err != nil {
 		return nil, errors.New("invalid link id")
 	}
@@ -72,7 +71,7 @@ func (s *Service) CreateComment(ctx context.Context, linkID, userID, text string
 
 	// Create comment
 	comment := &Comment{
-		ID:        primitive.NewObjectID(),
+		ID:        bson.NewObjectID(),
 		LinkID:    linkID,
 		UserID:    userID,
 		Text:      text,
@@ -112,7 +111,7 @@ func (s *Service) GetComments(ctx context.Context, linkID string) ([]CommentWith
 // Authorization: comment author or link owner can delete
 func (s *Service) DeleteComment(ctx context.Context, commentID, userID string) error {
 	// Get the comment
-	commentOID, err := primitive.ObjectIDFromHex(commentID)
+	commentOID, err := bson.ObjectIDFromHex(commentID)
 	if err != nil {
 		return errors.New("invalid comment id")
 	}
@@ -134,7 +133,7 @@ func (s *Service) DeleteComment(ctx context.Context, commentID, userID string) e
 	}
 
 	// Check if user is the link owner
-	linkOID, err := primitive.ObjectIDFromHex(comment.LinkID)
+	linkOID, err := bson.ObjectIDFromHex(comment.LinkID)
 	if err != nil {
 		return errors.New("invalid link id")
 	}
@@ -181,14 +180,14 @@ func (s *Service) getCommentWithUser(ctx context.Context, comment *Comment) (*Co
 // supprimé) donne un nom vide.
 func (s *Service) withUsers(ctx context.Context, comments []Comment) []CommentWithUser {
 	type author struct {
-		ID          primitive.ObjectID `bson:"_id"`
-		DisplayName string             `bson:"display_name"`
-		IsAdmin     bool               `bson:"is_admin"`
+		ID          bson.ObjectID `bson:"_id"`
+		DisplayName string        `bson:"display_name"`
+		IsAdmin     bool          `bson:"is_admin"`
 	}
-	oids := make([]primitive.ObjectID, 0, len(comments))
-	seen := map[primitive.ObjectID]bool{}
+	oids := make([]bson.ObjectID, 0, len(comments))
+	seen := map[bson.ObjectID]bool{}
 	for _, c := range comments {
-		if oid, err := primitive.ObjectIDFromHex(c.UserID); err == nil && !seen[oid] {
+		if oid, err := bson.ObjectIDFromHex(c.UserID); err == nil && !seen[oid] {
 			seen[oid] = true
 			oids = append(oids, oid)
 		}
@@ -208,7 +207,7 @@ func (s *Service) withUsers(ctx context.Context, comments []Comment) []CommentWi
 
 	result := make([]CommentWithUser, 0, len(comments))
 	for _, c := range comments {
-		if _, err := primitive.ObjectIDFromHex(c.UserID); err != nil {
+		if _, err := bson.ObjectIDFromHex(c.UserID); err != nil {
 			continue
 		}
 		a := authors[c.UserID]

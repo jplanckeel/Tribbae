@@ -5,8 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func TestImageBackfill(t *testing.T) {
@@ -24,15 +23,15 @@ func TestImageBackfill(t *testing.T) {
 	}
 	defer func() { fetchImage = prev }()
 
-	insert := func(url, img string, checked *time.Time) primitive.ObjectID {
-		doc := bson.M{"_id": primitive.NewObjectID(), "owner_id": "u", "title": url, "url": url, "image_url": img, "created_at": time.Now()}
+	insert := func(url, img string, checked *time.Time) bson.ObjectID {
+		doc := bson.M{"_id": bson.NewObjectID(), "owner_id": "u", "title": url, "url": url, "image_url": img, "created_at": time.Now()}
 		if checked != nil {
 			doc["image_checked_at"] = *checked
 		}
 		if _, err := svc.col.InsertOne(ctx, doc); err != nil {
 			t.Fatal(err)
 		}
-		return doc["_id"].(primitive.ObjectID)
+		return doc["_id"].(bson.ObjectID)
 	}
 	recent := time.Now().Add(-time.Hour)
 	old := time.Now().Add(-8 * 24 * time.Hour)

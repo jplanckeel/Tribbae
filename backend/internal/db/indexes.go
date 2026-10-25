@@ -5,9 +5,9 @@ import (
 	"errors"
 	"log"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // indexDef décrit un index à créer sur une collection.
@@ -279,7 +279,7 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 		{"folders", "idx_folders_visibility"},    // remplacé par idx_folders_visibility_id
 	}
 	for _, o := range obsolete {
-		if _, err := db.Collection(o.collection).Indexes().DropOne(ctx, o.name); err != nil {
+		if err := db.Collection(o.collection).Indexes().DropOne(ctx, o.name); err != nil {
 			var cmdErr mongo.CommandError
 			if errors.As(err, &cmdErr) && (cmdErr.Code == 27 || cmdErr.Code == 26) { // IndexNotFound, NamespaceNotFound
 				continue
@@ -294,7 +294,7 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 		col := db.Collection(idx.Collection)
 		name, err := col.Indexes().CreateOne(ctx, idx.Model)
 		if err != nil {
-			log.Printf("⚠️  index %s on %s: %v", *idx.Model.Options.Name, idx.Collection, err)
+			log.Printf("⚠️  index %v on %s: %v", idx.Model.Keys, idx.Collection, err)
 			return err
 		}
 		log.Printf("✅ index %s on %s: ok", name, idx.Collection)

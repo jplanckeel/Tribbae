@@ -3,16 +3,16 @@ package account
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"image"
 	"image/jpeg"
 	"strings"
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/tribbae/backend/internal/mail"
 	"github.com/tribbae/backend/internal/photo"
@@ -23,14 +23,14 @@ func setupTestDB(t *testing.T) *mongo.Database {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017").SetServerSelectionTimeout(3*time.Second))
+	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://localhost:27017").SetServerSelectionTimeout(3 * time.Second))
 	if err != nil {
 		t.Skipf("Skipping test: MongoDB unavailable: %v", err)
 	}
 	if err := client.Ping(ctx, nil); err != nil {
 		t.Skipf("Skipping test: MongoDB unavailable: %v", err)
 	}
-	db := client.Database("tribbae_test_" + primitive.NewObjectID().Hex())
+	db := client.Database("tribbae_test_" + bson.NewObjectID().Hex())
 	t.Cleanup(func() {
 		_ = db.Drop(context.Background())
 		_ = client.Disconnect(context.Background())
@@ -38,9 +38,9 @@ func setupTestDB(t *testing.T) *mongo.Database {
 	return db
 }
 
-func insert(t *testing.T, db *mongo.Database, col string, doc bson.M) primitive.ObjectID {
+func insert(t *testing.T, db *mongo.Database, col string, doc bson.M) bson.ObjectID {
 	t.Helper()
-	id := primitive.NewObjectID()
+	id := bson.NewObjectID()
 	doc["_id"] = id
 	if _, err := db.Collection(col).InsertOne(context.Background(), doc); err != nil {
 		t.Fatal(err)
@@ -116,6 +116,18 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	}
 	if len(export["ideas"].([]bson.M)) != 1 || len(export["children"].([]bson.M)) != 1 || len(export["folderLikes"].([]bson.M)) != 1 || len(export["photos"].([]bson.M)) != 2 {
 		t.Errorf("export incomplet : %v", export)
+	}
+
+	// Sous-documents en objets JSON, pas en listes {Key, Value}
+	members, _ := export["tribe"].([]bson.M)[0]["members"].(bson.A)
+	if len(members) == 0 {
+		t.Fatalf("export de la tribu sans membres : %v", export["tribe"])
+	}
+	if _, ok := members[0].(bson.M); !ok {
+		t.Errorf("membre exporté en %T, want bson.M", members[0])
+	}
+	if raw, _ := json.Marshal(export["tribe"]); strings.Contains(string(raw), `"Key"`) {
+		t.Errorf("export JSON en paires clé/valeur : %s", raw)
 	}
 
 	if err := svc.Delete(ctx, alice); err != nil {
