@@ -422,41 +422,6 @@ func (s *Service) ListCommunity(ctx context.Context, search string, pageSize int
 	return folders, nextToken, nil
 }
 
-// GetOwnerInfo retourne le display_name et le statut admin d'un user par son ID
-func (s *Service) GetOwnerInfo(ctx context.Context, ownerID string) (string, bool) {
-	oid, err := primitive.ObjectIDFromHex(ownerID)
-	if err != nil {
-		return "", false
-	}
-	var user struct {
-		DisplayName string `bson:"display_name"`
-		IsAdmin     bool   `bson:"is_admin"`
-	}
-	if err := s.userCol.FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
-		return "", false
-	}
-	return user.DisplayName, user.IsAdmin
-}
-
-// CountLinks retourne le nombre de liens dans un dossier
-func (s *Service) CountLinks(ctx context.Context, folderID string) int32 {
-	count, err := s.linkCol.CountDocuments(ctx, bson.M{"folder_id": folderID})
-	if err != nil {
-		return 0
-	}
-	return int32(count)
-}
-
-// IsLikedBy vérifie si un utilisateur a liké un dossier
-func (s *Service) IsLikedBy(ctx context.Context, folderID, userID string) bool {
-	id, err := primitive.ObjectIDFromHex(folderID)
-	if err != nil {
-		return false
-	}
-	count, _ := s.col.CountDocuments(ctx, bson.M{"_id": id, "liked_by": userID})
-	return count > 0
-}
-
 // Like ajoute un like d'un utilisateur sur un dossier
 func (s *Service) Like(ctx context.Context, folderID, userID string) (int32, error) {
 	id, err := primitive.ObjectIDFromHex(folderID)

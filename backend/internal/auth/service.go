@@ -224,7 +224,7 @@ func (s *Service) GetUser(ctx context.Context, userID string) (*User, error) {
 
 // ListUsers retourne tous les utilisateurs (admin only)
 func (s *Service) ListUsers(ctx context.Context) ([]*User, error) {
-	cursor, err := s.col.Find(ctx, bson.M{})
+	cursor, err := s.col.Find(ctx, bson.M{}, options.Find().SetProjection(bson.M{"password": 0}))
 	if err != nil {
 		return nil, err
 	}

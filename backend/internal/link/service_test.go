@@ -126,8 +126,9 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 				return false
 			}
 
-			// Call GetOwnerInfo to retrieve the owner's display name
-			retrievedDisplayName, retrievedIsAdmin := svc.GetOwnerInfo(ctx, createdLink.OwnerID)
+			// Auteur tel que le renvoient les listes (LoadStats)
+			owner := svc.LoadStats(ctx, []*Link{createdLink}, "").Owners[createdLink.OwnerID]
+			retrievedDisplayName, retrievedIsAdmin := owner.DisplayName, owner.IsAdmin
 
 			// Verify the display name matches what we stored
 			if retrievedDisplayName != displayName {

@@ -144,7 +144,7 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		// Ce qui est à Bob reste à Bob
 		{"compte de Bob", "users", bson.M{"_id": bobID}, 1},
 		{"idée de Bob, sortie du dossier supprimé", "links", bson.M{"_id": bobInAliceFolder, "folder_id": ""}, 1},
-		{"« j'aime » retiré du compteur", "links", bson.M{"_id": bobIdea, "like_count": 0}, 1},
+		{"« j'aime » d'Alice sur l'idée de Bob", "link_likes", bson.M{"link_id": bobIdea.Hex()}, 0},
 		{"dossier de Bob", "folders", bson.M{"_id": bobFolder, "like_count": 0}, 1},
 		{"enfant de Bob", "children", bson.M{"ownerId": bobID}, 1},
 		{"photo de Bob", "photos.files", bson.M{"metadata.owner_id": bob}, 1},

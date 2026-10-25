@@ -98,7 +98,7 @@ func (s *Service) accessibleFolderIDs(ctx context.Context, userID string) ([]str
 			bson.M{"collaborators.user_id": userID},
 		},
 	}
-	cursor, err := s.folderCol.Find(ctx, filter)
+	cursor, err := s.folderCol.Find(ctx, filter, options.Find().SetProjection(bson.M{"_id": 1}))
 	if err != nil {
 		return nil, err
 	}
@@ -428,21 +428,13 @@ func (s *Service) LikeLink(ctx context.Context, linkID, userID string) (int32, e
 		return 0, ErrNotFound
 	}
 
-	// Vérifier si déjà liké
-	count, _ := s.linkLikeCol.CountDocuments(ctx, bson.M{"link_id": linkID, "user_id": userID})
-	if count > 0 {
-		// Déjà liké, retourner le compteur actuel
-		return s.GetLikeCount(ctx, linkID)
-	}
-
-	// Ajouter le like
-	like := LinkLike{
-		ID:        primitive.NewObjectID(),
-		LinkID:    linkID,
-		UserID:    userID,
-		CreatedAt: time.Now(),
-	}
-	if _, err := s.linkLikeCol.InsertOne(ctx, like); err != nil {
+	// Ajouter le like s'il n'existe pas déjà (un double appui ne crée pas de doublon :
+	// l'index unique (link_id, user_id) et l'upsert rendent l'opération idempotente)
+	if _, err := s.linkLikeCol.UpdateOne(ctx,
+		bson.M{"link_id": linkID, "user_id": userID},
+		bson.M{"$setOnInsert": bson.M{"_id": primitive.NewObjectID(), "created_at": time.Now()}},
+		options.Update().SetUpsert(true),
+	); err != nil {
 		return 0, err
 	}
 
@@ -466,15 +458,6 @@ func (s *Service) GetLikeCount(ctx context.Context, linkID string) (int32, error
 		return 0, err
 	}
 	return int32(count), nil
-}
-
-// IsLikedByUser vérifie si un utilisateur a liké un lien
-func (s *Service) IsLikedByUser(ctx context.Context, linkID, userID string) (bool, error) {
-	count, err := s.linkLikeCol.CountDocuments(ctx, bson.M{"link_id": linkID, "user_id": userID})
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
 }
 
 // ToggleFavorite bascule le statut favori d'un lien
@@ -565,25 +548,6 @@ func (s *Service) ListNew(ctx context.Context, limit int32) ([]*Link, error) {
 		links = []*Link{}
 	}
 	return links, nil
-}
-
-// GetOwnerInfo retourne le display_name et le statut admin d'un user par son ID.
-// Si le display_name n'est pas défini dans la base de données, retourne une chaîne vide (pas null).
-// Cette chaîne vide permet aux clients de gérer l'affichage d'un nom par défaut (ex: "Anonyme").
-func (s *Service) GetOwnerInfo(ctx context.Context, ownerID string) (string, bool) {
-	oid, err := primitive.ObjectIDFromHex(ownerID)
-	if err != nil {
-		return "", false
-	}
-	var user struct {
-		DisplayName string `bson:"display_name"`
-		IsAdmin     bool   `bson:"is_admin"`
-	}
-	if err := s.userCol.FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
-		return "", false
-	}
-	// user.DisplayName sera une chaîne vide si le champ n'existe pas ou est vide dans MongoDB
-	return user.DisplayName, user.IsAdmin
 }
 
 // OwnerInfo contient les informations publiques d'un auteur.

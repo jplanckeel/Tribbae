@@ -193,22 +193,8 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		}
 	}
 
-	// 4. Ses « j'aime » sur les idées des autres : compteurs mis à jour
-	cur, err := s.col("link_likes").Find(ctx, bson.M{"user_id": userID})
-	if err != nil {
-		return err
-	}
-	var likes []struct {
-		LinkID string `bson:"link_id"`
-	}
-	if err := cur.All(ctx, &likes); err != nil {
-		return err
-	}
-	for _, l := range likes {
-		if id, err := primitive.ObjectIDFromHex(l.LinkID); err == nil {
-			_, _ = s.col("links").UpdateOne(ctx, bson.M{"_id": id, "like_count": bson.M{"$gt": 0}}, bson.M{"$inc": bson.M{"like_count": -1}})
-		}
-	}
+	// 4. Ses « j'aime » sur les idées des autres (leur nombre est compté dans
+	// link_likes, il n'y a pas de compteur à mettre à jour)
 	if _, err := s.col("link_likes").DeleteMany(ctx, bson.M{"user_id": userID}); err != nil {
 		return err
 	}

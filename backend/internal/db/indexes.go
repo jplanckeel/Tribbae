@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -90,8 +91,9 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 		{
 			Collection: "folders",
 			Model: mongo.IndexModel{
-				Keys:    bson.D{{Key: "visibility", Value: 1}},
-				Options: options.Index().SetName("idx_folders_visibility"),
+				// Dossiers de la communauté, paginés par _id décroissant (recherche comprise)
+				Keys:    bson.D{{Key: "visibility", Value: 1}, {Key: "_id", Value: -1}},
+				Options: options.Index().SetName("idx_folders_visibility_id"),
 			},
 		},
 		{
@@ -119,6 +121,14 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				Options: options.Index().SetName("idx_folders_visibility_likes_updated"),
 			},
 		},
+		{
+			// Plan du site : dossiers publics, les plus récemment modifiés d'abord
+			Collection: "folders",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "visibility", Value: 1}, {Key: "updated_at", Value: -1}},
+				Options: options.Index().SetName("idx_folders_visibility_updated"),
+			},
+		},
 
 		// ── links ─────────────────────────────────────────────
 		{
@@ -126,20 +136,6 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			Model: mongo.IndexModel{
 				Keys:    bson.D{{Key: "owner_id", Value: 1}},
 				Options: options.Index().SetName("idx_links_owner_id"),
-			},
-		},
-		{
-			Collection: "links",
-			Model: mongo.IndexModel{
-				Keys:    bson.D{{Key: "folder_id", Value: 1}},
-				Options: options.Index().SetName("idx_links_folder_id"),
-			},
-		},
-		{
-			Collection: "links",
-			Model: mongo.IndexModel{
-				Keys:    bson.D{{Key: "category", Value: 1}},
-				Options: options.Index().SetName("idx_links_category"),
 			},
 		},
 		{
@@ -164,6 +160,31 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				Options: options.Index().SetName("idx_links_visibility_category_updated"),
 			},
 		},
+		{
+			// Explorer toutes catégories et plan du site : idées publiées, récentes d'abord
+			Collection: "links",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "visibility", Value: 1}, {Key: "updated_at", Value: -1}},
+				Options: options.Index().SetName("idx_links_visibility_updated"),
+			},
+		},
+		{
+			// « Nouveautés » : idées publiées, les plus récemment créées d'abord
+			Collection: "links",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "visibility", Value: 1}, {Key: "created_at", Value: -1}},
+				Options: options.Index().SetName("idx_links_visibility_created"),
+			},
+		},
+		{
+			// Rattrapage des images (link.backfillBatch) : seulement les idées sans image
+			Collection: "links",
+			Model: mongo.IndexModel{
+				Keys: bson.D{{Key: "created_at", Value: -1}},
+				Options: options.Index().SetName("idx_links_missing_image").
+					SetPartialFilterExpression(bson.M{"image_url": ""}),
+			},
+		},
 
 		// ── link_likes ────────────────────────────────────────
 		{
@@ -179,8 +200,10 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 		{
 			Collection: "link_likes",
 			Model: mongo.IndexModel{
-				Keys:    bson.D{{Key: "link_id", Value: 1}},
-				Options: options.Index().SetName("idx_link_likes_link_id"),
+				// « J'aime » d'un compte (suppression du compte) ; le compte par idée
+				// passe par l'index unique (link_id, user_id)
+				Keys:    bson.D{{Key: "user_id", Value: 1}},
+				Options: options.Index().SetName("idx_link_likes_user_id"),
 			},
 		},
 
@@ -246,6 +269,25 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				Options: options.Index().SetName("idx_photos_owner_id"),
 			},
 		},
+	}
+
+	// Index remplacés : préfixes d'un index composé, ou jamais utilisés seuls
+	obsolete := []struct{ collection, name string }{
+		{"links", "idx_links_folder_id"},         // préfixe de idx_links_folder_id_created_at
+		{"links", "idx_links_category"},          // la catégorie est toujours filtrée avec la visibilité
+		{"link_likes", "idx_link_likes_link_id"}, // préfixe de idx_link_likes_link_user_unique
+		{"folders", "idx_folders_visibility"},    // remplacé par idx_folders_visibility_id
+	}
+	for _, o := range obsolete {
+		if _, err := db.Collection(o.collection).Indexes().DropOne(ctx, o.name); err != nil {
+			var cmdErr mongo.CommandError
+			if errors.As(err, &cmdErr) && (cmdErr.Code == 27 || cmdErr.Code == 26) { // IndexNotFound, NamespaceNotFound
+				continue
+			}
+			log.Printf("⚠️  drop index %s on %s: %v", o.name, o.collection, err)
+			return err
+		}
+		log.Printf("🗑️  index %s on %s: dropped", o.name, o.collection)
 	}
 
 	for _, idx := range indexes {
