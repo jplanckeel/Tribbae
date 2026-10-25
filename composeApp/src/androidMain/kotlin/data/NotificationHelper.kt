@@ -27,8 +27,9 @@ object NotificationHelper {
     }
 
     /**
-     * Planifie un rappel 1 jour avant la date de l'événement.
-     * Si la date est déjà passée ou dans moins de 24h, le rappel est immédiat.
+     * Pose les alarmes des rappels « la veille » d'après la liste des idées
+     * (voir data.Reminders) et annule celles qui n'ont plus lieu d'être. Appelé
+     * à chaque changement de la liste et au redémarrage du téléphone.
      *
      * Alarme inexacte : un rappel de la veille n'a pas besoin de tomber à la
      * minute, et les alarmes exactes demandent une permission spéciale
@@ -36,36 +37,32 @@ object NotificationHelper {
      * SCHEDULE_EXACT_ALARM est refusée par défaut depuis Android 14). Le
      * système peut la décaler de quelques minutes, y compris en veille.
      */
-    fun scheduleReminder(context: Context, linkId: String, title: String, eventDate: Long) {
+    @Synchronized
+    fun reconcile(context: Context, links: List<Link>, now: Long = System.currentTimeMillis()) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val before = prefs.getStringSet(KEY_SCHEDULED, emptySet()).orEmpty()
+        val plan = Reminders.plan(links, before, now)
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        plan.cancel.forEach { alarmManager.cancel(pendingIntent(context, it, null)) }
+        plan.schedule.forEach { a ->
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, a.at, pendingIntent(context, a.linkId, a.title))
+        }
+        prefs.edit().putStringSet(KEY_SCHEDULED, plan.schedule.map { it.linkId }.toSet()).apply()
+    }
+
+    /** Même requestCode et même Intent (les extras ne comptent pas) : remplace ou annule l'alarme de l'idée. */
+    private fun pendingIntent(context: Context, linkId: String, title: String?): PendingIntent {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             putExtra("link_id", linkId)
-            putExtra("link_title", title)
+            title?.let { putExtra("link_title", it) }
         }
-        val requestCode = linkId.hashCode()
-        val pendingIntent = PendingIntent.getBroadcast(
-            context, requestCode, intent,
+        return PendingIntent.getBroadcast(
+            context, linkId.hashCode(), intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Rappel 1 jour avant (24h)
-        val triggerTime = eventDate - 24 * 60 * 60 * 1000L
-        val now = System.currentTimeMillis()
-        val finalTrigger = if (triggerTime > now) triggerTime else now + 5000L
-
-        alarmManager.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP, finalTrigger, pendingIntent
         )
     }
 
-    fun cancelReminder(context: Context, linkId: String) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, ReminderReceiver::class.java)
-        val requestCode = linkId.hashCode()
-        val pendingIntent = PendingIntent.getBroadcast(
-            context, requestCode, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        alarmManager.cancel(pendingIntent)
-    }
+    // Alarmes posées (fichier de l'appareil, hors sauvegarde : les alarmes ne voyagent pas)
+    private const val PREFS = "tribbae_reminders"
+    private const val KEY_SCHEDULED = "scheduled"
 }

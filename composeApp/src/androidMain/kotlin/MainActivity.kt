@@ -16,6 +16,10 @@ import ui.TribbaeTheme
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -69,6 +73,15 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null) incoming.value = parseIncoming(intent)
         val appContext = applicationContext
 
+        // Rappels « la veille » : recalculés à chaque changement de la liste des idées
+        // (création, modification, synchronisation, nouvel identifiant après envoi)
+        lifecycleScope.launch {
+            repository.links.collectLatest { links ->
+                delay(300) // une rafale de changements (synchronisation) ne recalcule qu'une fois
+                NotificationHelper.reconcile(appContext, links)
+            }
+        }
+
         setContent {
             val viewModel = remember {
                 LinkViewModel(repository).also {
@@ -79,17 +92,10 @@ class MainActivity : ComponentActivity() {
                             ?.takeIf { p -> p.title.isNotBlank() || p.images.isNotEmpty() }
                             ?.let { p -> data.LinkPreview(title = p.title, image = p.image.orEmpty(), images = p.images) }
                     }
-                    it.reminderScheduler = { link ->
-                        if (link.eventDate != null) {
-                            ensureNotificationPermission()
-                            NotificationHelper.scheduleReminder(
-                                appContext, link.id, link.title, link.eventDate
-                            )
-                        }
-                    }
-                    it.reminderCanceller = { linkId ->
-                        NotificationHelper.cancelReminder(appContext, linkId)
-                    }
+                    // Les alarmes suivent la liste des idées (voir plus bas) ; ici, seulement
+                    // la demande d'autorisation au moment où un rappel est activé
+                    it.reminderScheduler = { ensureNotificationPermission() }
+                    it.reminderCanceller = { }
                     it.urlOpener = { url ->
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
