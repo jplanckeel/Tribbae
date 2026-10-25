@@ -26,12 +26,12 @@ tasks:
     desc: "Compiler et lancer l'application"
     cmds:
       - ./gradlew :composeApp:installDebug
-      - adb shell am start -n com.linkkeeper.app/MainActivity
+      - adb shell am start -n fr.tribbae.app/com.linkkeeper.app.MainActivity
 
   uninstall:
     desc: "Désinstaller l'application"
     cmds:
-      - adb uninstall com.linkkeeper.app
+      - adb uninstall fr.tribbae.app
 
   devices:
     desc: "Lister les appareils connectés"
@@ -42,7 +42,7 @@ tasks:
     desc: "Afficher les logs de l'application"
     cmds:
       # Logs du processus de l'app (lancée au préalable), plantages compris
-      - adb logcat --pid=$(adb shell pidof -s com.linkkeeper.app)
+      - adb logcat --pid=$(adb shell pidof -s fr.tribbae.app)
 
   check:
     desc: "Vérifier le code (lint, tests)"
