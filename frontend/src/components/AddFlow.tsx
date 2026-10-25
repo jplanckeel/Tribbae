@@ -7,12 +7,14 @@ import { AVATAR_COLORS, CATEGORIES, categoryMeta, folderColor } from "../lib/cat
 import { useMyData } from "../lib/data";
 import { eventDateMs, formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, toInput } from "../lib/links";
+import { usePhotoUpload } from "../lib/photo";
 import { useSession } from "../lib/session";
 import type { Folder, Link, LinkInput, LinkPreview } from "../lib/types";
 import { FolderGlyph } from "./FolderCover";
 import FolderPicker from "./FolderPicker";
 import Icon, { type IconName } from "./Icon";
 import { TipiMark } from "./Logo";
+import { PhotoInput, PhotoPreview } from "./PhotoUpload";
 import Sheet from "./Sheet";
 import { Avatar, ErrorNote, Field, Toggle } from "./ui";
 
@@ -62,6 +64,14 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
   const [created, setCreated] = useState<Link>();
   const request = useRef(0);
   const set = (patch: Partial<LinkInput>) => setDraft((d) => ({ ...d, ...patch }));
+  const { photo, send: sendPhoto, reset: resetPhoto } = usePhotoUpload();
+  const photoInput = useRef<HTMLInputElement>(null);
+  const pickPhoto = () => photoInput.current?.click();
+  const choosePhoto = (file: Blob) => {
+    set({ imageUrl: undefined });
+    sendPhoto(file, (imageUrl) => set({ imageUrl }));
+    if (step === "choose") start("photo");
+  };
 
   // « Lien copié à l'instant » : seulement si le navigateur l'autorise déjà (pas de demande de permission)
   useEffect(() => {
@@ -142,6 +152,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
   const submit = async () => {
     const title = (draft.title || (draft.url ? hostname(draft.url) : "")).trim();
     if (!title) return setError("Donnez un titre à votre idée.");
+    if (mode === "photo" && photo?.status === "failed") return setError("La photo n'est pas partie : réessayez ou changez-la.");
     setSaving(true);
     setError("");
     try {
@@ -163,6 +174,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
     setPreview({ status: "idle" });
     setCreated(undefined);
     setError("");
+    resetPhoto();
     setStep("choose");
   };
 
@@ -226,7 +238,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
     step === "link" ? (
       <Cta onClick={toSort} disabled={!draft.url} label="Ranger cette idée" icon="arrowRight" />
     ) : step === "sort" ? (
-      <Cta onClick={submit} loading={saving} label="Ajouter à la tribu" icon="check" />
+      <Cta onClick={submit} loading={saving || (mode === "photo" && photo?.status === "uploading")} label="Ajouter à la tribu" icon="check" />
     ) : step === "done" && created ? (
       <div className="flex gap-2.5">
         <button type="button" onClick={again} className="h-14 rounded-[18px] border-2 border-ecorce px-4 text-[15px] font-bold transition-transform active:scale-[0.97]">
@@ -246,6 +258,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
 
   return (
     <Sheet open onClose={onClose} title="Ajouter une idée" header={header} footer={footer} tall>
+      <PhotoInput inputRef={photoInput} onFile={choosePhoto} />
       {step === "choose" && (
         <div className="flex flex-col gap-3.5">
           <h2 className="add-up font-display text-[28px] leading-[1.1] font-extrabold tracking-[-0.6px]">
@@ -274,7 +287,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
           <div className="grid grid-cols-3 gap-2.5">
             <Tile delay={180} icon="link" bg="var(--color-activite-bg)" ink="var(--color-activite-ink)" label="Un lien" onClick={() => start("link")} />
             <Tile delay={230} icon="pencil" bg="var(--color-idee-bg)" ink="var(--color-idee-ink)" label="Je l'écris" onClick={() => start("write")} />
-            <Tile delay={280} icon="camera" bg="var(--color-recette-bg)" ink="var(--color-recette-ink)" label="Une photo" onClick={() => start("photo")} />
+            <Tile delay={280} icon="camera" bg="var(--color-recette-bg)" ink="var(--color-recette-ink)" label="Une photo" onClick={pickPhoto} />
           </div>
 
           <button
@@ -383,24 +396,11 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
         <div className="add-enter flex flex-col gap-4">
           <h2 className="font-display text-[26px] font-extrabold tracking-[-0.5px]">Où on la range ?</h2>
 
+          {mode === "photo" && <PhotoPreview photo={photo} onPick={pickPhoto} onRetry={() => photo && choosePhoto(photo.file)} />}
+
           {(mode !== "link" || !draft.title) && (
             <div className="flex flex-col gap-3">
               <Field label="Le titre" autoFocus={mode !== "link"} maxLength={200} placeholder="Cabane dans les bois" value={draft.title} onChange={(e) => { set({ title: e.target.value }); setError(""); }} />
-              {mode === "photo" && (
-                <div className="flex items-end gap-3">
-                  <div className="flex-1">
-                    <Field
-                      label="La photo (adresse web de l'image)"
-                      icon="camera"
-                      type="url"
-                      placeholder="https://…"
-                      value={draft.imageUrl ?? ""}
-                      onChange={(e) => set({ imageUrl: e.target.value.trim() })}
-                    />
-                  </div>
-                  {safeImage(draft.imageUrl) && <img src={safeImage(draft.imageUrl)} alt="" referrerPolicy="no-referrer" className="h-[52px] w-[52px] rounded-medium object-cover" />}
-                </div>
-              )}
             </div>
           )}
 

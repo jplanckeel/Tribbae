@@ -4,10 +4,12 @@ import { CATEGORIES, categoryMeta } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, tagCounts } from "../lib/links";
+import { usePhotoUpload, type PhotoUpload } from "../lib/photo";
 import { useSession } from "../lib/session";
 import type { CategoryKey, LinkInput, LinkPreview } from "../lib/types";
 import AgePicker from "./AgePicker";
 import Icon from "./Icon";
+import { PhotoInput, PhotoPreview } from "./PhotoUpload";
 import Sheet from "./Sheet";
 import { Button, ErrorNote, Field, Spinner, TextArea, Toggle } from "./ui";
 
@@ -73,6 +75,10 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
   const [more, setMore] = useState(!!(initial.price || initial.location || initial.eventDate || initial.rating));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Photo de l'appareil, envoyée au serveur : elle devient l'image de l'idée
+  const { photo, send: sendPhoto } = usePhotoUpload();
+  const photoInput = useRef<HTMLInputElement>(null);
+  const choosePhoto = (file: Blob) => sendPhoto(file, (url) => set("imageUrl", url));
 
   // Aperçu du lien : lancé dès l'ouverture si l'idée arrive avec une adresse
   const initialUrl = editing ? undefined : extractUrl(initial.url);
@@ -212,7 +218,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
       footer={
         <div className="flex gap-2.5">
           <Button type="button" variant="ghost" onClick={onClose}>Annuler</Button>
-          <Button type="submit" form="link-form" block loading={saving}>
+          <Button type="submit" form="link-form" block loading={saving || photo?.status === "uploading"}>
             {editing ? "Enregistrer" : "Ajouter à la tribu"}
           </Button>
         </div>
@@ -273,11 +279,15 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
           )}
         </div>
 
+        <PhotoInput inputRef={photoInput} onFile={choosePhoto} />
         <ImageChooser
           loading={preview.status === "loading"}
           candidates={preview.images}
           value={form.imageUrl}
           onChange={(u) => set("imageUrl", u)}
+          photo={photo}
+          onPhoto={() => photoInput.current?.click()}
+          onRetry={() => photo && choosePhoto(photo.file)}
         />
 
         <Field
@@ -527,11 +537,15 @@ function PreviewStatus({ preview, onRetry }: { preview: PreviewState; onRetry: (
  * chargent pas (liens morts, hotlinking refusé) ou trop petites (icônes,
  * pixels) sont écartées d'office.
  */
-function ImageChooser({ loading, candidates, value, onChange }: {
+function ImageChooser({ loading, candidates, value, onChange, photo, onPhoto, onRetry }: {
   loading: boolean;
   candidates: string[];
   value?: string;
   onChange: (url: string) => void;
+  /** Photo de l'appareil en cours d'envoi (son adresse arrive ensuite dans value). */
+  photo?: PhotoUpload;
+  onPhoto: () => void;
+  onRetry: () => void;
 }) {
   const [broken, setBroken] = useState<ReadonlySet<string>>(() => new Set());
   const list = [...new Set([...(safeImage(value) && value ? [value] : []), ...candidates])].filter((u) => !broken.has(u));
@@ -549,15 +563,19 @@ function ImageChooser({ loading, candidates, value, onChange }: {
     if (w > 0 && (w < 120 || h < 80)) discard(u);
   };
 
-  if (!loading && list.length === 0) return null;
-
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-[13px] font-bold text-sec">Image</span>
         {list.length > 1 && <span className="text-xs text-sec">{list.length} trouvées · touchez pour choisir</span>}
+        <button type="button" onClick={onPhoto} className="ml-auto flex items-center gap-1 text-[13px] font-bold text-link hover:underline">
+          <Icon name="camera" size={15} />
+          {photo || selected ? "Changer de photo" : "Mettre une photo"}
+        </button>
       </div>
-      {selected ? (
+      {photo && photo.status !== "done" ? (
+        <PhotoPreview photo={photo} onPick={onPhoto} onRetry={onRetry} />
+      ) : selected ? (
         <img
           key={selected}
           src={selected}

@@ -39,6 +39,8 @@ function frenchMessage(status: number, message: string): string {
   if (/wrong password/i.test(message)) return "Mot de passe incorrect.";
   if (/invalid or expired reset link/i.test(message)) return "Ce lien n'est plus valable : il a expiré ou a déjà servi. Demandez-en un nouveau.";
   if (/account deletion failed/i.test(message)) return "La suppression n'a pas abouti. Réessayez : elle reprendra là où elle s'est arrêtée.";
+  if (/photo is too large/i.test(message)) return "Cette photo est trop lourde.";
+  if (/photo must be/i.test(message)) return "Ce fichier n'est pas une photo (JPEG, PNG ou WebP).";
   if (status >= 500) return "Le serveur a rencontré un problème, réessayez.";
   return message || "Une erreur est survenue.";
 }
@@ -223,6 +225,12 @@ export const admin = {
   listUsers: () => request<{ users?: AdminUser[] }>("/admin/users").then((r) => r.users ?? []),
   setPremium: (userId: string, isPremium: boolean) =>
     request(`/admin/users/${encodeURIComponent(userId)}/premium`, { method: "PUT", body: json({ isPremium }) }),
+};
+
+/** Photos des idées : envoyées au serveur, qui les garde et renvoie leur adresse. */
+export const photos = {
+  upload: (photo: Blob) =>
+    request<{ url: string }>("/photos", { method: "POST", body: photo, headers: { "Content-Type": photo.type || "image/jpeg" } }).then((r) => r.url),
 };
 
 /** Droits RGPD sur son compte : export de ses données, suppression définitive. */

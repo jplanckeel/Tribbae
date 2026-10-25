@@ -260,6 +260,35 @@ class AuthenticatedApiClient(
         }
     }
 
+    /**
+     * Envoie une photo de l'appareil (JPEG déjà réduit par ImagePickerHelper) ;
+     * renvoie son adresse sur le serveur, à mettre comme image de l'idée.
+     */
+    suspend fun uploadPhoto(bytes: ByteArray): String = withContext(Dispatchers.IO) {
+        val token = sessionManager.getToken() ?: throw Exception("Not authenticated")
+        val conn = URL("$baseUrl/v1/photos").openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "image/jpeg")
+        conn.setRequestProperty("Authorization", "Bearer $token")
+        conn.connectTimeout = 10_000
+        conn.readTimeout = 30_000
+        conn.doOutput = true
+        conn.setFixedLengthStreamingMode(bytes.size)
+        try {
+            conn.outputStream.use { it.write(bytes) }
+            val response = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
+            @Serializable
+            data class PhotoResponse(val url: String)
+            json.decodeFromString<PhotoResponse>(response).url
+        } catch (e: Exception) {
+            val error = conn.errorStream?.let { s -> BufferedReader(InputStreamReader(s)).use { it.readText() } }
+            if (error != null) throw Exception("API error (${conn.responseCode}): $error")
+            throw e
+        } finally {
+            conn.disconnect()
+        }
+    }
+
     // Folders
     suspend fun listFolders(): ApiFolderListResponse {
         return request("/v1/folders", "GET") { response ->

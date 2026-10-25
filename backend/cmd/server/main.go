@@ -29,6 +29,7 @@ import (
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/link"
 	"github.com/tribbae/backend/internal/mail"
+	"github.com/tribbae/backend/internal/photo"
 	"github.com/tribbae/backend/internal/preview"
 	"github.com/tribbae/backend/internal/seo"
 	"github.com/tribbae/backend/internal/tribe"
@@ -117,6 +118,10 @@ func main() {
 	accountSvc := account.NewService(database.DB(), tribeSvc)
 	accountSvc.SetNotifier(mailer)
 	accountH := account.NewHandler(accountSvc, authSvc, bearerUser)
+	// Photos des idées (GridFS) ; celles qu'aucune idée n'utilise sont effacées après un jour
+	photoSvc := photo.NewService(database.DB())
+	photoH := photo.NewHandler(photoSvc, bearerUser)
+	go photoSvc.RunCleanup(context.Background(), 6*time.Hour, 24*time.Hour)
 
 	// Serveur gRPC
 	grpcServer := grpc.NewServer(
@@ -191,6 +196,7 @@ func main() {
 	// Limites de débit par IP sur les routes sensibles (force brute, coût IA, requêtes sortantes)
 	authLimiter := httpx.NewRateLimiter(10, time.Minute)
 	costlyLimiter := httpx.NewRateLimiter(20, time.Minute)
+	photoLimiter := httpx.NewRateLimiter(30, time.Minute)
 
 	var handler http.Handler = withSPA(mux, cfg.SiteURL, seo.NewSource(linkSvc, folderSvc))
 	handler = withPreview(preview.Handler(bearerUser), handler)
@@ -199,6 +205,8 @@ func main() {
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true, "/v1/tribe/members": true}, handler)
 	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, account.DeletePath: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
+	// Les photos ont leur propre limite de taille (photo.MaxUpload), hors MaxBody
+	handler = httpx.Limit(photoLimiter, map[string]bool{photo.UploadPath: true}, withPhotos(photoH, handler))
 	handler = httpx.CORS(cfg.AllowedOrigins, handler)
 	// Ancien domaine et www : tout redirige vers SITE_URL
 	handler = httpx.CanonicalHost(cfg.SiteURL, cfg.RedirectHosts, handler)
@@ -248,6 +256,16 @@ func withAccount(accountH http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == account.ExportPath || r.URL.Path == account.DeletePath {
 			accountH.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func withPhotos(photoH http.Handler, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == photo.UploadPath || strings.HasPrefix(r.URL.Path, photo.Path) {
+			photoH.ServeHTTP(w, r)
 			return
 		}
 		next.ServeHTTP(w, r)

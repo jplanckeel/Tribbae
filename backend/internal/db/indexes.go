@@ -230,6 +230,22 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				Options: options.Index().SetName("idx_comments_user_id"),
 			},
 		},
+
+		// ── photos (GridFS) : une photo par jeton, retrouvées par compte ──
+		{
+			Collection: "photos.files",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "filename", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_photos_filename_unique"),
+			},
+		},
+		{
+			Collection: "photos.files",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "metadata.owner_id", Value: 1}},
+				Options: options.Index().SetName("idx_photos_owner_id"),
+			},
+		},
 	}
 
 	for _, idx := range indexes {

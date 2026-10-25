@@ -13,6 +13,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/tribbae/backend/internal/photo"
 )
 
 var ErrNotFound = errors.New("account not found")
@@ -85,6 +87,7 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 		{"following", "follows", bson.M{"follower_id": userID}},
 		{"followers", "follows", bson.M{"following_id": userID}},
 		{"tribe", "tribes", bson.M{"members.user_id": userID}},
+		{"photos", photo.Bucket + ".files", bson.M{"metadata.owner_id": userID}},
 	}
 	// Demande de mot de passe oublié en cours : sa date seulement, pas le jeton
 	var reset bson.M
@@ -132,7 +135,7 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 }
 
 // Delete efface définitivement le compte et tout ce qui lui appartient :
-// idées (et leurs commentaires et « j'aime »), dossiers, profils enfants,
+// idées (et leurs commentaires et « j'aime »), photos, dossiers, profils enfants,
 // commentaires, « j'aime », abonnements, place dans la tribu et dans les
 // dossiers partagés. Les idées que d'autres ont rangées dans ses dossiers leur
 // restent (elles redeviennent « non rangées »).
@@ -220,7 +223,10 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		return fmt.Errorf("collaborations: %w", err)
 	}
 
-	// 6. Tout le reste de ce qui lui appartient
+	// 6. Ses photos, puis tout le reste de ce qui lui appartient
+	if err := photo.DeleteOwnedBy(ctx, s.db, userID); err != nil {
+		return fmt.Errorf("photos: %w", err)
+	}
 	deletes := []struct {
 		col    string
 		filter bson.M

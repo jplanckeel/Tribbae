@@ -1,7 +1,10 @@
 package account
 
 import (
+	"bytes"
 	"context"
+	"image"
+	"image/jpeg"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/tribbae/backend/internal/mail"
+	"github.com/tribbae/backend/internal/photo"
 	"github.com/tribbae/backend/internal/tribe"
 )
 
@@ -91,6 +95,16 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	insert(t, db, "follows", bson.M{"follower_id": bob, "following_id": alice})
 	insert(t, db, "children", bson.M{"ownerId": aliceID, "name": "Léa"})
 	insert(t, db, "children", bson.M{"ownerId": bobID, "name": "Tom"})
+	var jpg bytes.Buffer
+	if err := jpeg.Encode(&jpg, image.NewRGBA(image.Rect(0, 0, 8, 8)), nil); err != nil {
+		t.Fatal(err)
+	}
+	photos := photo.NewService(db)
+	for _, owner := range []string{alice, alice, bob} {
+		if _, err := photos.Save(ctx, owner, jpg.Bytes()); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	svc := NewService(db, tribes)
 	export, err := svc.Export(ctx, alice)
@@ -100,7 +114,7 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	if acc := export["account"].(bson.M); acc["password"] != nil || acc["email"] != "alice@example.com" {
 		t.Errorf("export du compte : %v (jamais le mot de passe)", acc)
 	}
-	if len(export["ideas"].([]bson.M)) != 1 || len(export["children"].([]bson.M)) != 1 || len(export["folderLikes"].([]bson.M)) != 1 {
+	if len(export["ideas"].([]bson.M)) != 1 || len(export["children"].([]bson.M)) != 1 || len(export["folderLikes"].([]bson.M)) != 1 || len(export["photos"].([]bson.M)) != 2 {
 		t.Errorf("export incomplet : %v", export)
 	}
 
@@ -126,12 +140,15 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		{"« j'aime » de dossiers", "folders", bson.M{"liked_by": alice}, 0},
 		{"tribu", "tribes", bson.M{"members.user_id": alice}, 0},
 		{"invitations envoyées ou reçues", "tribe_invitations", bson.M{}, 0},
+		{"photos d'Alice", "photos.files", bson.M{"metadata.owner_id": alice}, 0},
 		// Ce qui est à Bob reste à Bob
 		{"compte de Bob", "users", bson.M{"_id": bobID}, 1},
 		{"idée de Bob, sortie du dossier supprimé", "links", bson.M{"_id": bobInAliceFolder, "folder_id": ""}, 1},
 		{"« j'aime » retiré du compteur", "links", bson.M{"_id": bobIdea, "like_count": 0}, 1},
 		{"dossier de Bob", "folders", bson.M{"_id": bobFolder, "like_count": 0}, 1},
 		{"enfant de Bob", "children", bson.M{"ownerId": bobID}, 1},
+		{"photo de Bob", "photos.files", bson.M{"metadata.owner_id": bob}, 1},
+		{"morceaux de la photo de Bob seulement", "photos.chunks", bson.M{}, 1},
 		{"Bob reprend la tribu", "tribes", bson.M{"members": bson.M{"$size": 1}, "members.user_id": bob, "members.role": "owner"}, 1},
 	}
 	for _, c := range checks {
