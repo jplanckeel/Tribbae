@@ -17,7 +17,7 @@ import (
 func TestBrowserClientRefusesInternalAddresses(t *testing.T) {
 	c := NewBrowserClient(3 * time.Second)
 	for _, u := range []string{"https://127.0.0.1:1/", "https://169.254.169.254/latest/meta-data/", "http://10.0.0.1/"} {
-		_, err := Get(context.Background(), c, u)
+		_, err := GetWithHeaders(context.Background(), c, u, nil)
 		if !errors.Is(err, ErrForbiddenAddress) {
 			t.Errorf("%s : err = %v, want ErrForbiddenAddress", u, err)
 		}

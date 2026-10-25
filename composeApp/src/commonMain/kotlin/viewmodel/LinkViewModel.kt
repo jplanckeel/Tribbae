@@ -42,7 +42,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     private var followRepository: data.FollowRepository? = null
     
     /** Comment repository */
-    private var commentRepository: data.CommentRepository? = null
     
     private val _syncStatus = MutableStateFlow<String?>(null)
     val syncStatus: StateFlow<String?> = _syncStatus.asStateFlow()
@@ -60,19 +59,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     private val _communityLinks = MutableStateFlow<List<Link>>(emptyList())
     val communityLinks: StateFlow<List<Link>> = _communityLinks.asStateFlow()
     
-    // Follow state
-    private val _followStatus = MutableStateFlow<Map<String, Boolean>>(emptyMap())
-    val followStatus: StateFlow<Map<String, Boolean>> = _followStatus.asStateFlow()
     
     private val _followingCount = MutableStateFlow(0)
     val followingCount: StateFlow<Int> = _followingCount.asStateFlow()
     
     // Comment state
-    private val _comments = MutableStateFlow<Map<String, List<data.Comment>>>(emptyMap())
-    val comments: StateFlow<Map<String, List<data.Comment>>> = _comments.asStateFlow()
     
-    private val _commentCounts = MutableStateFlow<Map<String, Int>>(emptyMap())
-    val commentCounts: StateFlow<Map<String, Int>> = _commentCounts.asStateFlow()
 
     /** Fonction pour récupérer l'image OG — injectée côté Android */
     var ogImageFetcher: (suspend (String) -> String?)? = null
@@ -287,15 +279,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
 
-    fun getLinksForFolder(folderId: String): List<Link> =
-        repository.links.value.filter { it.folderId == folderId }
-
-    fun getLinksForTag(tag: String): List<Link> =
-        repository.links.value.filter { tag in it.tags }
-
-    fun getLinksWithDate(): List<Link> =
-        repository.links.value.filter { it.eventDate != null }.sortedBy { it.eventDate }
-
     fun addFolder(name: String, icon: FolderIcon, color: FolderColor, visibility: String = "PRIVATE") =
         addFolder(Folder(id = "", name = name, icon = icon, color = color, visibility = visibility))
 
@@ -348,18 +331,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     fun addTag(tag: String) { repository.addTag(tag) }
     fun deleteTag(tag: String) { repository.deleteTag(tag) }
 
-    fun searchTags(query: String): List<String> =
-        if (query.isBlank()) repository.tags.value
-        else repository.tags.value.filter { it.contains(query.trim(), ignoreCase = true) }
-
-    fun updateSearchQuery(query: String) { _searchQuery.value = query; updateFilteredLinks() }
-    fun selectCategory(category: LinkCategory?) { _selectedCategory.value = category; updateFilteredLinks() }
-    fun selectFolder(folderId: String?) { _selectedFolderId.value = folderId; updateFilteredLinks() }
-
-    fun selectChild(childId: String?) { _selectedChildId.value = childId; updateFilteredLinks() }
-
-    fun toggleFavorites() { _favoritesOnly.value = !_favoritesOnly.value; updateFilteredLinks() }
-
     /** Toggle le favori d'un lien (étoile personnelle), synchronisé avec le backend */
     fun toggleFavorite(linkId: String) {
         val link = repository.links.value.find { it.id == linkId } ?: return
@@ -399,25 +370,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 println("ERROR: Failed to toggle like for link $linkId - ${e.message}")
             }
         }
-    }
-
-    fun clearAllFilters() {
-        _selectedCategory.value = null
-        _selectedFolderId.value = null
-        _selectedChildId.value = null
-        _favoritesOnly.value = false
-        _searchQuery.value = ""
-        updateFilteredLinks()
-    }
-
-    /** Nombre de filtres actifs (hors recherche texte) */
-    fun activeFilterCount(): Int {
-        var count = 0
-        if (_selectedCategory.value != null) count++
-        if (_selectedFolderId.value != null) count++
-        if (_selectedChildId.value != null) count++
-        if (_favoritesOnly.value) count++
-        return count
     }
 
     fun addChild(name: String, birthDate: Long) {
@@ -617,62 +569,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     // ── Follow Management ─────────────────────────────────────────────────────
     
     /**
-     * Follow a user
-     * @param userId The ID of the user to follow
-     */
-    fun followUser(userId: String) {
-        val repo = followRepository ?: return
-        viewModelScope.launch {
-            try {
-                repo.follow(userId).getOrThrow()
-                // Update local state
-                _followStatus.value = _followStatus.value + (userId to true)
-                // Refresh following count
-                loadFollowingCount()
-            } catch (e: Exception) {
-                println("ERROR: Failed to follow user: ${e.message}")
-                _syncStatus.value = "Erreur: impossible de suivre l'utilisateur"
-            }
-        }
-    }
-    
-    /**
-     * Unfollow a user
-     * @param userId The ID of the user to unfollow
-     */
-    fun unfollowUser(userId: String) {
-        val repo = followRepository ?: return
-        viewModelScope.launch {
-            try {
-                repo.unfollow(userId).getOrThrow()
-                // Update local state
-                _followStatus.value = _followStatus.value + (userId to false)
-                // Refresh following count
-                loadFollowingCount()
-            } catch (e: Exception) {
-                println("ERROR: Failed to unfollow user: ${e.message}")
-                _syncStatus.value = "Erreur: impossible de ne plus suivre l'utilisateur"
-            }
-        }
-    }
-    
-    /**
-     * Check if the current user is following another user
-     * @param userId The ID of the user to check
-     */
-    fun checkFollowStatus(userId: String) {
-        val repo = followRepository ?: return
-        viewModelScope.launch {
-            try {
-                val isFollowing = repo.isFollowing(userId).getOrThrow()
-                _followStatus.value = _followStatus.value + (userId to isFollowing)
-            } catch (e: Exception) {
-                println("ERROR: Failed to check follow status: ${e.message}")
-            }
-        }
-    }
-    
-    /**
      * Load the following count for the current user
      */
     private fun loadFollowingCount() {
@@ -705,103 +601,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     
     // ── Comment Management ────────────────────────────────────────────────────
     
-    /**
-     * Create a new comment on a link
-     * @param linkId The ID of the link to comment on
-     * @param text The comment text
-     */
-    fun createComment(linkId: String, text: String) {
-        val repo = commentRepository ?: return
-        viewModelScope.launch {
-            try {
-                val comment = repo.createComment(linkId, text).getOrThrow()
-                // Update local state - add comment to the list
-                val currentComments = _comments.value[linkId] ?: emptyList()
-                _comments.value = _comments.value + (linkId to listOf(comment) + currentComments)
-                // Update comment count
-                val currentCount = _commentCounts.value[linkId] ?: 0
-                _commentCounts.value = _commentCounts.value + (linkId to currentCount + 1)
-            } catch (e: Exception) {
-                println("ERROR: Failed to create comment: ${e.message}")
-                _syncStatus.value = "Erreur: impossible de créer le commentaire"
-            }
-        }
-    }
-    
-    /**
-     * Load comments for a link
-     * @param linkId The ID of the link
-     */
-    fun loadComments(linkId: String) {
-        val repo = commentRepository ?: return
-        viewModelScope.launch {
-            try {
-                val comments = repo.getComments(linkId).getOrThrow()
-                _comments.value = _comments.value + (linkId to comments)
-                _commentCounts.value = _commentCounts.value + (linkId to comments.size)
-            } catch (e: Exception) {
-                println("ERROR: Failed to load comments: ${e.message}")
-            }
-        }
-    }
-    
-    /**
-     * Delete a comment
-     * @param commentId The ID of the comment to delete
-     * @param linkId The ID of the link the comment belongs to
-     */
-    fun deleteComment(commentId: String, linkId: String) {
-        val repo = commentRepository ?: return
-        viewModelScope.launch {
-            try {
-                repo.deleteComment(commentId).getOrThrow()
-                // Update local state - remove comment from the list
-                val currentComments = _comments.value[linkId] ?: emptyList()
-                _comments.value = _comments.value + (linkId to currentComments.filter { it.id != commentId })
-                // Update comment count
-                val currentCount = _commentCounts.value[linkId] ?: 0
-                _commentCounts.value = _commentCounts.value + (linkId to maxOf(0, currentCount - 1))
-            } catch (e: Exception) {
-                println("ERROR: Failed to delete comment: ${e.message}")
-                _syncStatus.value = "Erreur: impossible de supprimer le commentaire"
-            }
-        }
-    }
-    
-    /**
-     * Load comment count for a link
-     * @param linkId The ID of the link
-     */
-    fun loadCommentCount(linkId: String) {
-        val repo = commentRepository ?: return
-        viewModelScope.launch {
-            try {
-                val count = repo.getCommentCount(linkId).getOrThrow()
-                _commentCounts.value = _commentCounts.value + (linkId to count)
-            } catch (e: Exception) {
-                println("ERROR: Failed to load comment count: ${e.message}")
-            }
-        }
-    }
-    
-    /**
-     * Get comments for a link from state
-     * @param linkId The ID of the link
-     * @return List of comments
-     */
-    fun getCommentsForLink(linkId: String): List<data.Comment> {
-        return _comments.value[linkId] ?: emptyList()
-    }
-    
-    /**
-     * Get comment count for a link from state
-     * @param linkId The ID of the link
-     * @return The number of comments
-     */
-    fun getCommentCountForLink(linkId: String): Int {
-        return _commentCounts.value[linkId] ?: 0
-    }
-    
     // ── Visibility Management ─────────────────────────────────────────────────
     
     /**
@@ -813,36 +612,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         val link = repository.links.value.find { it.id == linkId } ?: return
         val updatedLink = link.copy(visibility = visibility)
         updateLink(updatedLink)
-    }
-    
-    /**
-     * Update folder visibility
-     * @param folderId The ID of the folder
-     * @param visibility The new visibility value ("PRIVATE", "PUBLIC", or "SHARED")
-     */
-    fun updateFolderVisibility(folderId: String, visibility: String) {
-        val folder = repository.folders.value.find { it.id == folderId } ?: return
-        val updatedFolder = folder.copy(visibility = visibility)
-        updateFolder(updatedFolder)
-    }
-    
-    /**
-     * Refresh data after visibility changes
-     * This ensures the UI reflects the latest visibility state
-     */
-    fun refreshAfterVisibilityChange() {
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            try {
-                _syncStatus.value = "Actualisation..."
-                performSync(client)
-                updateFilteredLinks()
-                _syncStatus.value = "Actualisé"
-            } catch (e: Exception) {
-                println("ERROR: Failed to refresh after visibility change: ${e.message}")
-                _syncStatus.value = "Erreur: ${e.message}"
-            }
-        }
     }
     
     // ── Backend Sync ──────────────────────────────────────────────────────────
@@ -921,7 +690,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         this.sessionManager = sessionManager
         authenticatedClient = data.AuthenticatedApiClient(sessionManager = sessionManager)
         followRepository = data.FollowRepository(sessionManager = sessionManager)
-        commentRepository = data.CommentRepository(sessionManager = sessionManager)
         authToken = sessionManager.getToken()
         
         // Mettre à jour les liens existants avec le displayName si vide

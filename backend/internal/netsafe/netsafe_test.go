@@ -53,7 +53,7 @@ func TestClientRefusesLoopback(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	_, err := Get(context.Background(), NewClient(2*time.Second), srv.URL)
+	_, err := GetWithHeaders(context.Background(), NewClient(2*time.Second), srv.URL, nil)
 	if !errors.Is(err, ErrForbiddenAddress) {
 		t.Fatalf("expected ErrForbiddenAddress, got %v", err)
 	}

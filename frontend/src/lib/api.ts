@@ -157,8 +157,6 @@ export const community = {
   top: (limit = 12) => request<{ folders?: Folder[] }>(`/community/top${qs({ limit })}`).then((r) => r.folders ?? []),
   links: (category?: string, limit = 60) =>
     request<{ links?: Link[] }>(`/community/links${qs({ category, limit })}`).then((r) => r.links ?? []),
-  newLinks: (limit = 12) =>
-    request<{ links?: Link[] }>(`/community/new${qs({ limit })}`).then((r) => r.links ?? []),
 };
 
 export const tribe = {

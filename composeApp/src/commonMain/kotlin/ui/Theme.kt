@@ -62,8 +62,6 @@ val CardColor: Color get() = pick(0xFFFFFFFF, 0xFF282019)
 val SheetColor: Color get() = pick(0xFFFBF3E7, 0xFF33281F)
 /** Bordure fine des cartes le soir (le jour, l'ombre suffit). */
 val CardBorder: Color get() = pick(0x00000000, 0xFF3A2D24)
-/** Texte et liens terracotta, plus clairs le soir. */
-val LinkColor: Color get() = pick(0xFFC8492C, 0xFFF0855E)
 /** Texte clair posé sur prune ou terracotta (ces fonds ne changent pas le soir). */
 val OnDark = Color(0xFFFBF3E7)
 /** Texte ou icône posé sur une encre pleine (dossier, catégorie). */
@@ -89,8 +87,6 @@ val PeachBg: Color get() = pick(0xFFFCE3D0, 0xFF3D2617)
 val PeachInk: Color get() = pick(0xFFA04812, 0xFFF5A66E)
 val PlumBg: Color get() = pick(0xFFECE1EA, 0xFF32232F)
 val PlumInk: Color get() = pick(0xFF5E4558, 0xFFD6B4CF)
-val RoseBg: Color get() = pick(0xFFF7DDE6, 0xFF3B1F29)
-val RoseInk: Color get() = pick(0xFF9C3A5C, 0xFFEE9DB8)
 val CoralBg: Color get() = pick(0xFFF8DCD3, 0xFF3B201B)
 val CoralInk: Color get() = pick(0xFF9A3420, 0xFFF09A84)
 /** Fonds teintés de sélection (choix actif). */
@@ -100,14 +96,8 @@ val PeachTint: Color get() = pick(0xFFFFF4EA, 0xFF3D2617)
 // Anciens noms, conservés pour les écrans existants : ils pointent vers la nouvelle palette
 val Orange = Terracotta
 val OrangeLight = Braise
-val Yellow = Color(0xFF9A6510)
-val YellowLight = Soleil
 val BlueSky = Color(0xFF2F7393)
-val BlueSkyLight = Color(0xFFDCEDF3)
-val Coral = Color(0xFFB2412A)
-val Purple = Prune
 
-val SurfaceColor: Color get() = Sable
 val TextPrimary: Color get() = Ecorce
 val TextSecondary: Color get() = TextSec
 
@@ -136,9 +126,6 @@ internal val DarkCategoryPalettes = mapOf(
 )
 
 val CategoryPalettes: Map<String, CategoryPalette> get() = if (Appearance.dark) DarkCategoryPalettes else LightCategoryPalettes
-
-// Couleur pleine par catégorie (icônes, pastilles)
-val CategoryColors: Map<String, Color> get() = CategoryPalettes.mapValues { it.value.icon }
 
 // Couleurs de dossiers (encre) — mêmes teintes que FOLDER_COLORS côté web ;
 // fonds et teintes secondaires dans ui/campfire/Campfire.kt (folderBg, folderMid)

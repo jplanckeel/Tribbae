@@ -179,8 +179,6 @@ fun display(size: TextUnit, weight: FontWeight = FontWeight.ExtraBold, color: Co
     lineHeight = (size.value * 1.08f).sp,
 )
 
-val CardShadow = 10.dp
-
 /** Ombre douce des cartes blanches de la maquette. */
 fun Modifier.card(shape: RoundedCornerShape = RoundedCornerShape(22.dp), elevation: Dp = 6.dp): Modifier =
     this
@@ -636,19 +634,6 @@ fun CategoryTile(cat: CategoryUi, count: Int?, onClick: () -> Unit) {
         }
         Text(cat.plural, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
         if (count != null) Text("$count", fontSize = 12.sp, color = TextMuted, modifier = Modifier.offset(y = (-6).dp))
-    }
-}
-
-/** Tuile de catégorie carrée (feuille « Ajouter »). */
-@Composable
-fun CategorySquare(cat: CategoryUi, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier.height(78.dp).clip(RoundedCornerShape(18.dp)).background(cat.bg).clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)
-    ) {
-        Icon(cat.icon, null, tint = cat.tint, modifier = Modifier.size(22.dp))
-        Text(cat.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = cat.ink)
     }
 }
 

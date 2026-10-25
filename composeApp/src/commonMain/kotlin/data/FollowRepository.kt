@@ -21,11 +21,6 @@ data class ApiUserProfile(
 )
 
 @Serializable
-data class ApiFollowersResponse(
-    val followers: List<ApiUserProfile> = emptyList()
-)
-
-@Serializable
 data class ApiFollowingResponse(
     val following: List<ApiUserProfile> = emptyList()
 )
@@ -117,18 +112,6 @@ class FollowRepository(
     }
 
     /**
-     * Get the list of followers for a user
-     * @param userId The ID of the user
-     * @return List of UserProfile objects representing followers
-     */
-    suspend fun getFollowers(userId: String): Result<List<UserProfile>> = runCatching {
-        request("/v1/users/$userId/followers", "GET") { response ->
-            val apiResponse = json.decodeFromString<ApiFollowersResponse>(response)
-            apiResponse.followers.map { it.toUserProfile() }
-        }
-    }
-
-    /**
      * Get the list of users that a user is following
      * @param userId The ID of the user
      * @return List of UserProfile objects representing following
@@ -138,16 +121,6 @@ class FollowRepository(
             val apiResponse = json.decodeFromString<ApiFollowingResponse>(response)
             apiResponse.following.map { it.toUserProfile() }
         }
-    }
-
-    /**
-     * Get the follower count for a user
-     * @param userId The ID of the user
-     * @return The number of followers
-     */
-    suspend fun getFollowerCount(userId: String): Result<Int> = runCatching {
-        val followers = getFollowers(userId).getOrThrow()
-        followers.size
     }
 
     /**
