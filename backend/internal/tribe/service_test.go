@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
+	"github.com/tribbae/backend/internal/auth"
 	"github.com/tribbae/backend/internal/mail"
 )
 
@@ -313,5 +314,49 @@ func TestRevokeExpireAndFull(t *testing.T) {
 	}
 	if n, _ := db.Collection("tribe_invitations").CountDocuments(ctx, bson.M{}); n != 0 {
 		t.Errorf("%d invitation(s) d'une tribu disparue", n)
+	}
+}
+
+// fakeEmails simule la confirmation d'adresse des comptes.
+type fakeEmails struct{ verified map[string]bool }
+
+func (f *fakeEmails) RequireVerifiedEmail(_ context.Context, userID string) error {
+	if !f.verified[userID] {
+		return auth.ErrEmailNotVerified
+	}
+	return nil
+}
+
+func (f *fakeEmails) MarkEmailVerified(_ context.Context, userID string) error {
+	f.verified[userID] = true
+	return nil
+}
+
+// Inviter exige une adresse confirmée ; accepter une invitation confirme celle
+// de l'invité (le lien est arrivé dans sa boîte).
+func TestInvitingRequiresVerifiedEmailAndAcceptingVerifies(t *testing.T) {
+	svc, db, cleanup := setup(t)
+	defer cleanup()
+	ctx := context.Background()
+	alice := addUser(t, db, "alice@ex.fr", "Alice")
+	bob := addUser(t, db, "bob@ex.fr", "Bob")
+	emails := &fakeEmails{verified: map[string]bool{}}
+	svc.SetEmailVerifier(emails)
+
+	if _, err := svc.Invite(ctx, alice, "bob@ex.fr"); !errors.Is(err, auth.ErrEmailNotVerified) {
+		t.Fatalf("invitation sans adresse confirmée : %v", err)
+	}
+	if len(notifier(svc).sent) != 0 {
+		t.Fatal("email d'invitation envoyé sans adresse confirmée")
+	}
+	emails.verified[alice] = true
+	if _, err := svc.Invite(ctx, alice, "bob@ex.fr"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Accept(ctx, bob, lastToken(t, svc)); err != nil {
+		t.Fatal(err)
+	}
+	if !emails.verified[bob] {
+		t.Error("l'adresse de Bob n'est pas confirmée après avoir accepté l'invitation")
 	}
 }

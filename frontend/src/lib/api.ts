@@ -37,6 +37,8 @@ function frenchMessage(status: number, message: string): string {
   if (/name must be 1 to 60/i.test(message)) return "Le nom de la tribu doit faire entre 1 et 60 caractères.";
   if (/url must be/i.test(message)) return "Le lien doit être une adresse web (https://…).";
   if (/wrong password/i.test(message)) return "Mot de passe incorrect.";
+  if (/email address not verified/i.test(message)) return "Confirmez d'abord votre adresse email : ouvrez le lien reçu par email, ou demandez-en un nouveau avec « Renvoyer l'email ».";
+  if (/invalid or expired verification link/i.test(message)) return "Ce lien n'est plus valable : il a expiré ou a déjà servi. Demandez-en un nouveau.";
   if (/invalid or expired reset link/i.test(message)) return "Ce lien n'est plus valable : il a expiré ou a déjà servi. Demandez-en un nouveau.";
   if (/account deletion failed/i.test(message)) return "La suppression n'a pas abouti. Réessayez : elle reprendra là où elle s'est arrêtée.";
   if (/photo is too large/i.test(message)) return "Cette photo est trop lourde.";
@@ -103,21 +105,68 @@ export function renewSessionIfStale(): Promise<void> {
   return renewing;
 }
 
+let refreshing: Promise<void> | undefined;
+
+/**
+ * Relit l'état du compte tant que l'adresse n'est pas confirmée (au lancement
+ * et au retour sur l'onglet) : le lien a pu être ouvert sur un autre appareil.
+ * Une fois confirmée, plus aucune requête.
+ */
+export function refreshAccount(): Promise<void> {
+  const session = getSession();
+  if (!session || session.emailVerified || refreshing) return refreshing ?? Promise.resolve();
+  refreshing = reloadAccount()
+    .catch(() => {
+      // Hors ligne : on réessaiera au prochain retour
+    })
+    .finally(() => {
+      refreshing = undefined;
+    });
+  return refreshing;
+}
+
+/** Relit le compte connecté et met la session à jour, sans attendre une lecture déjà en cours. */
+export async function reloadAccount(): Promise<void> {
+  const session = getSession();
+  if (!session) return;
+  const me = await auth.me();
+  const current = getSession();
+  // Toujours la même session (pas de déconnexion entre-temps)
+  if (current?.token === session.token) {
+    setSession({ ...current, displayName: me.displayName ?? current.displayName, isAdmin: !!me.isAdmin, emailVerified: !!me.emailVerified });
+  }
+}
+
+/** Note dans la session locale que l'adresse est confirmée. */
+export function markEmailVerified() {
+  const current = getSession();
+  if (current && !current.emailVerified) setSession({ ...current, emailVerified: true });
+}
+
 export const auth = {
   register: (email: string, password: string, displayName: string) =>
-    request<{ userId: string; token: string; isAdmin?: boolean }>("/auth/register", {
+    request<{ userId: string; token: string; isAdmin?: boolean; emailVerified?: boolean }>("/auth/register", {
       method: "POST", body: json({ email, password, displayName }),
     }),
   login: (email: string, password: string) =>
-    request<{ userId: string; token: string; displayName?: string; isAdmin?: boolean }>("/auth/login", {
+    request<{ userId: string; token: string; displayName?: string; isAdmin?: boolean; emailVerified?: boolean }>("/auth/login", {
       method: "POST", body: json({ email, password }),
     }),
+  /** Compte connecté (adresse confirmée…). */
+  me: () =>
+    request<{ userId: string; email?: string; displayName?: string; isAdmin?: boolean; emailVerified?: boolean }>("/auth/me"),
+  /** Confirme l'adresse depuis le lien reçu par email (sans session nécessaire). */
+  verifyEmail: (token: string) =>
+    request<void>("/auth/email/verify", { method: "POST", body: json({ token }) }),
+  /** Renvoie le lien de confirmation ; emailVerified si l'adresse l'était déjà. */
+  resendVerification: () =>
+    request<{ emailVerified?: boolean }>("/auth/email/resend", { method: "POST", body: json({}) }),
   /** Envoie un lien de réinitialisation si l'adresse a un compte (même réponse sinon). */
   forgotPassword: (email: string) =>
     request<void>("/auth/password/forgot", { method: "POST", body: json({ email }) }),
   /** Nouveau mot de passe depuis le lien reçu par email : ouvre une session. */
   resetPassword: (token: string, password: string) =>
-    request<{ userId: string; token: string; displayName?: string; isAdmin?: boolean }>("/auth/password/reset", {
+    request<{ userId: string; token: string; displayName?: string; isAdmin?: boolean; emailVerified?: boolean }>("/auth/password/reset", {
       method: "POST", body: json({ token, password }),
     }),
 };

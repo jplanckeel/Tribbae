@@ -45,11 +45,12 @@ type Folder struct {
 }
 
 type Service struct {
-	peers   func(ctx context.Context, userID string) []string
-	col     *mongo.Collection
-	linkCol *mongo.Collection
-	userCol *mongo.Collection
-	baseURL string
+	peers    func(ctx context.Context, userID string) []string
+	verified func(ctx context.Context, userID string) error
+	col      *mongo.Collection
+	linkCol  *mongo.Collection
+	userCol  *mongo.Collection
+	baseURL  string
 }
 
 func NewService(col *mongo.Collection, linkCol *mongo.Collection, userCol *mongo.Collection, baseURL string) *Service {
@@ -60,6 +61,20 @@ func NewService(col *mongo.Collection, linkCol *mongo.Collection, userCol *mongo
 // userID voit et gère les dossiers (lui compris). Sans tribu : lui seul.
 func (s *Service) SetTribePeers(peers func(ctx context.Context, userID string) []string) {
 	s.peers = peers
+}
+
+// SetEmailCheck branche la confirmation d'adresse : verified(userID) retourne
+// auth.ErrEmailNotVerified tant que l'adresse du compte n'est pas confirmée.
+// Publier un dossier et y ajouter un collaborateur l'exigent.
+func (s *Service) SetEmailCheck(verified func(ctx context.Context, userID string) error) {
+	s.verified = verified
+}
+
+func (s *Service) requireVerified(ctx context.Context, userID string) error {
+	if s.verified == nil {
+		return nil
+	}
+	return s.verified(ctx, userID)
 }
 
 // ownedByTribe : filtre « dossier appartenant à userID ou à sa tribu ».
@@ -119,6 +134,11 @@ func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibi
 	}
 	if style, err = sanitizeStyle(style); err != nil {
 		return nil, err
+	}
+	if visibility == "public" {
+		if err := s.requireVerified(ctx, ownerID); err != nil {
+			return nil, err
+		}
 	}
 	f := &Folder{
 		ID:         bson.NewObjectID(),
@@ -201,6 +221,11 @@ func (s *Service) Update(ctx context.Context, folderID, userID, name, icon, colo
 	// Seul le propriétaire décide de la visibilité (un éditeur ne peut pas publier un dossier privé)
 	if existing.OwnerID != userID {
 		visibility = existing.Visibility
+	}
+	if visibility == "public" && existing.Visibility != "public" {
+		if err := s.requireVerified(ctx, userID); err != nil {
+			return nil, err
+		}
 	}
 	style, err := sanitizeStyle(patch.apply(existing.Style))
 	if err != nil {
@@ -319,6 +344,9 @@ func (s *Service) AddCollaborator(ctx context.Context, folderID, ownerID, email,
 	var f Folder
 	if err := s.col.FindOne(ctx, bson.M{"_id": id, "owner_id": ownerID}).Decode(&f); err != nil {
 		return nil, errors.New("not found or not authorized")
+	}
+	if err := s.requireVerified(ctx, ownerID); err != nil {
+		return nil, err
 	}
 
 	email = strings.TrimSpace(email)

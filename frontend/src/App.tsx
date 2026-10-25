@@ -15,6 +15,7 @@ import SharedFolder from "./pages/SharedFolder";
 import ShareTarget from "./pages/ShareTarget";
 import Shopping from "./pages/Shopping";
 import Tribe from "./pages/Tribe";
+import VerifyEmail from "./pages/VerifyEmail";
 import Welcome, { Auth } from "./pages/Welcome";
 
 const auth = (el: React.ReactNode) => <RequireAuth>{el}</RequireAuth>;
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
       { path: "/invitation", element: <Invitation /> },
       { path: "/mot-de-passe/oublie", element: <ForgotPassword /> },
       { path: "/mot-de-passe/nouveau", element: <NewPassword /> },
+      { path: "/verifier-email", element: <VerifyEmail /> },
       { path: "/share/:token", element: <SharedFolder /> },
     ],
   },

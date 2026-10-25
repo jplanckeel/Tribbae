@@ -443,6 +443,27 @@ class AuthenticatedApiClient(
     suspend fun revokeTribeInvitation(id: String): ApiTribe =
         request("/v1/tribe/invitations/$id", "DELETE") { json.decodeFromString<ApiTribeResponse>(it).tribe }
 
+    // Compte
+
+    @Serializable
+    data class ApiAccount(
+        val userId: String = "",
+        val email: String = "",
+        val displayName: String = "",
+        val isAdmin: Boolean = false,
+        val emailVerified: Boolean = false
+    )
+
+    /** Compte connecté (adresse confirmée…). */
+    suspend fun getAccount(): ApiAccount =
+        request("/v1/auth/me", "GET") { json.decodeFromString<ApiAccount>(it) }
+
+    /** Renvoie le lien de confirmation de l'adresse ; vrai si elle l'était déjà. */
+    suspend fun resendEmailVerification(): Boolean {
+        @Serializable data class ResendResponse(val emailVerified: Boolean = false)
+        return request("/v1/auth/email/resend", "POST", "{}") { json.decodeFromString<ResendResponse>(it).emailVerified }
+    }
+
     /** Accepte le lien d'invitation reçu par email : le compte doit utiliser l'adresse invitée. */
     suspend fun acceptTribeInvitation(token: String): ApiTribe =
         request("/v1/tribe/invitations/accept", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),

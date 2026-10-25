@@ -367,7 +367,11 @@ fun LinkDetailScreen(
                         showMenu = false; viewModel?.toggleFavorite(link.id)
                     }
                     // Seul l'auteur décide de publier son idée (pas un autre membre de la tribu)
-                    if (link.ownerId.isBlank() || link.ownerId == myId) {
+                    val canPublish = viewModel?.emailVerified?.collectAsState()?.value ?: true
+                    if ((link.ownerId.isBlank() || link.ownerId == myId) && !canPublish && link.visibility != "public") {
+                        // Publier attend la confirmation de l'adresse
+                        PublishLockedNote(Modifier.padding(horizontal = 4.dp, vertical = 8.dp))
+                    } else if (link.ownerId.isBlank() || link.ownerId == myId) {
                         MenuRow(
                             if (link.visibility == "public") Icons.Outlined.Lock else Icons.Outlined.Public,
                             if (link.visibility == "public") "Ne plus partager avec la communauté" else "Partager avec la communauté"

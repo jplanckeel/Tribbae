@@ -139,8 +139,9 @@ class MainActivity : ComponentActivity() {
         val token = extractShareToken(intent)
         val inviteToken = extractInviteToken(intent)
         val resetToken = extractResetToken(intent)
-        if (url == null && title == null && token == null && inviteToken == null && resetToken == null) return null
-        return SharedContent(url = url, title = title, folderToken = token, inviteToken = inviteToken, resetToken = resetToken)
+        val verifyToken = extractVerifyToken(intent)
+        if (url == null && title == null && token == null && inviteToken == null && resetToken == null && verifyToken == null) return null
+        return SharedContent(url = url, title = title, folderToken = token, inviteToken = inviteToken, resetToken = resetToken, verifyToken = verifyToken)
     }
 
     private fun installLaunchTransition(launchedFromIcon: Boolean) {
@@ -194,6 +195,14 @@ class MainActivity : ComponentActivity() {
         if (intent?.action != Intent.ACTION_VIEW) return null
         val data = intent.data ?: return null
         if (data.path?.trimEnd('/') != "/mot-de-passe/nouveau") return null
+        return data.fragment?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{20,128}")) }
+    }
+
+    /** Jeton du lien de confirmation de l'adresse email (https://…/verifier-email#<jeton>). */
+    private fun extractVerifyToken(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+        val data = intent.data ?: return null
+        if (data.path?.trimEnd('/') != "/verifier-email") return null
         return data.fragment?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{20,128}")) }
     }
 

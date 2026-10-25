@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log"
 	"net/mail"
 	"strings"
 	"time"
@@ -25,6 +26,8 @@ type User struct {
 	CreatedAt   time.Time     `bson:"created_at"`
 	// PasswordChangedAt : les sessions ouvertes avant sont refusées
 	PasswordChangedAt *time.Time `bson:"password_changed_at,omitempty"`
+	// EmailVerifiedAt : adresse confirmée par un lien reçu par email (verify.go)
+	EmailVerifiedAt *time.Time `bson:"email_verified_at,omitempty"`
 }
 
 type Service struct {
@@ -36,11 +39,17 @@ type Service struct {
 	resets      *mongo.Collection
 	resetURL    string
 	resetNotify ResetNotifier
+
+	// Confirmation de l'adresse email (verify.go)
+	verifications *mongo.Collection
+	verifyURL     string
+	verifyNotify  VerifyNotifier
 }
 
-// Notifier prévient par email (mail.Mailer).
+// Notifier prévient par email (mail.Mailer). verifyURL, le lien de
+// confirmation de l'adresse, est vide si la confirmation n'est pas activée.
 type Notifier interface {
-	Welcome(email, name string)
+	Welcome(email, name, verifyURL string, validity time.Duration)
 }
 
 func NewService(col *mongo.Collection, jwtSecret string) *Service {
@@ -78,25 +87,26 @@ func validateRegistration(email, password, displayName string) error {
 	return nil
 }
 
-func (s *Service) Register(ctx context.Context, email, password, displayName string) (string, string, bool, error) {
+// Register crée un compte (adresse pas encore confirmée) et ouvre une session.
+func (s *Service) Register(ctx context.Context, email, password, displayName string) (*User, string, error) {
 	email = NormalizeEmail(email)
 	displayName = strings.TrimSpace(displayName)
 	if err := validateRegistration(email, password, displayName); err != nil {
-		return "", "", false, err
+		return nil, "", err
 	}
 	// Vérifie si l'email existe déjà
 	var existing User
 	err := s.col.FindOne(ctx, bson.M{"email": email}).Decode(&existing)
 	if err == nil {
-		return "", "", false, errors.New("email already registered")
+		return nil, "", errors.New("email already registered")
 	}
 	if !errors.Is(err, mongo.ErrNoDocuments) {
-		return "", "", false, err
+		return nil, "", err
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", "", false, err
+		return nil, "", err
 	}
 
 	user := User{
@@ -107,30 +117,37 @@ func (s *Service) Register(ctx context.Context, email, password, displayName str
 		CreatedAt:   time.Now(),
 	}
 	if _, err := s.col.InsertOne(ctx, user); err != nil {
-		return "", "", false, err
+		return nil, "", err
+	}
+	// Le lien de confirmation part dans l'email de bienvenue. Sans lui, le
+	// compte reste utilisable : « Renvoyer l'email » en refait un.
+	verifyURL, err := s.newVerification(ctx, &user, user.CreatedAt)
+	if err != nil {
+		log.Printf("auth: email verification link: %v", err)
 	}
 	if s.notify != nil {
-		s.notify.Welcome(user.Email, user.DisplayName)
+		s.notify.Welcome(user.Email, user.DisplayName, verifyURL, VerifyValidity)
 	}
 
 	token, err := s.generateToken(user.ID.Hex())
-	return user.ID.Hex(), token, user.IsAdmin, err
+	return &user, token, err
 }
 
-func (s *Service) Login(ctx context.Context, email, password string) (string, string, string, bool, error) {
+// Login ouvre une session pour l'email et le mot de passe donnés.
+func (s *Service) Login(ctx context.Context, email, password string) (*User, string, error) {
 	var user User
 	// Les comptes historiques peuvent avoir un email avec majuscules : on accepte les deux formes.
 	raw := strings.TrimSpace(email)
 	filter := bson.M{"email": bson.M{"$in": bson.A{NormalizeEmail(raw), raw}}}
 	if err := s.col.FindOne(ctx, filter).Decode(&user); err != nil {
 		_ = bcrypt.CompareHashAndPassword(dummyHash, []byte(password))
-		return "", "", "", false, ErrInvalidCredentials
+		return nil, "", ErrInvalidCredentials
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return "", "", "", false, ErrInvalidCredentials
+		return nil, "", ErrInvalidCredentials
 	}
 	token, err := s.generateToken(user.ID.Hex())
-	return user.ID.Hex(), token, user.DisplayName, user.IsAdmin, err
+	return &user, token, err
 }
 
 func (s *Service) ValidateToken(tokenStr string) (string, error) {

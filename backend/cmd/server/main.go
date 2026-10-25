@@ -79,6 +79,12 @@ func main() {
 	// Mot de passe oublié : lien vers l'écran « Nouveau mot de passe » du site
 	// (ouvert dans l'application Android quand elle est installée)
 	authSvc.SetPasswordReset(database.Col("password_resets"), strings.TrimRight(cfg.SiteURL, "/")+"/mot-de-passe/nouveau", mailer)
+	// Confirmation de l'adresse : lien vers l'écran « Confirmer mon adresse »
+	// du site (ou l'application). Publier et écrire à d'autres l'exigent.
+	authSvc.SetEmailVerification(database.Col("email_verifications"), strings.TrimRight(cfg.SiteURL, "/")+"/verifier-email", mailer)
+	linkSvc.SetEmailCheck(authSvc.RequireVerifiedEmail)
+	folderSvc.SetEmailCheck(authSvc.RequireVerifiedEmail)
+	tribeSvc.SetEmailVerifier(authSvc)
 	// Invitations dans une tribu : lien vers l'écran « Rejoindre la tribu » du site
 	tribeSvc.SetNotifier(mailer, strings.TrimRight(cfg.SiteURL, "/")+"/invitation")
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
@@ -203,7 +209,7 @@ func main() {
 	handler = withAI(aiH, handler)
 	handler = withAccount(accountH, handler)
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true, "/v1/tribe/members": true}, handler)
-	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, account.DeletePath: true}, handler)
+	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, "/v1/auth/email/verify": true, "/v1/auth/email/resend": true, account.DeletePath: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
 	// Les photos ont leur propre limite de taille (photo.MaxUpload), hors MaxBody
 	handler = httpx.Limit(photoLimiter, map[string]bool{photo.UploadPath: true}, withPhotos(photoH, handler))

@@ -45,6 +45,7 @@ const (
 	tmplPasswordChange = "password_changed"
 	tmplTribeInvite    = "tribe_invitation"
 	tmplAccountDeleted = "account_deleted"
+	tmplEmailVerify    = "email_verification"
 )
 
 var (
@@ -53,7 +54,7 @@ var (
 )
 
 func init() {
-	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted} {
+	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify} {
 		htmlTemplates[name] = htmltemplate.Must(htmltemplate.New("").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
@@ -169,14 +170,14 @@ type welcomeData struct {
 	Name    string
 	Heading string
 	AppURL  string
-	// Lien de confirmation de l'adresse (vide tant que la vérification
-	// d'adresse n'existe pas, #20)
+	// Lien de confirmation de l'adresse (vide si la confirmation n'est pas
+	// activée : le bouton ouvre alors Tribbae)
 	VerifyURL      string
 	VerifyValidity string
 	Steps          []step
 }
 
-func welcomeEmail(siteURL, name string) (content, error) {
+func welcomeEmail(siteURL, name, verifyURL string, validity time.Duration) (content, error) {
 	name = oneLine(name)
 	heading := "Bienvenue dans la tribu !"
 	if name != "" {
@@ -189,7 +190,31 @@ func welcomeEmail(siteURL, name string) (content, error) {
 		AppURL:  siteURL + "/",
 		Steps:   welcomeSteps,
 	}
+	if verifyURL != "" {
+		d.VerifyURL, d.VerifyValidity = verifyURL, frenchDuration(validity)
+	}
 	return render(tmplWelcome, d.base, d)
+}
+
+// --- Confirmation de l'adresse ---
+
+type emailVerificationData struct {
+	base
+	Name      string
+	Email     string
+	VerifyURL string
+	Validity  string
+}
+
+func emailVerificationEmail(siteURL, email, name, verifyURL string, validity time.Duration) (content, error) {
+	d := emailVerificationData{
+		base:      newBase(siteURL, "Confirmez votre adresse email Tribbae"),
+		Name:      oneLine(name),
+		Email:     email,
+		VerifyURL: verifyURL,
+		Validity:  frenchDuration(validity),
+	}
+	return render(tmplEmailVerify, d.base, d)
 }
 
 // --- Mot de passe oublié ---

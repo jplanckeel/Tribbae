@@ -54,6 +54,7 @@ const (
 	TagPasswordChange = "password-changed"
 	TagAccountDeleted = "account-deleted"
 	TagTribeInvite    = "tribe-invitation"
+	TagEmailVerify    = "email-verification"
 
 	sendTimeout = 30 * time.Second
 )
@@ -78,10 +79,17 @@ func New(sender Sender, siteURL, supportEmail string) *Mailer {
 	}
 }
 
-// Welcome souhaite la bienvenue à un compte qui vient d'être créé.
-func (m *Mailer) Welcome(email, name string) {
-	c, err := welcomeEmail(m.siteURL, name)
+// Welcome souhaite la bienvenue à un compte qui vient d'être créé, avec le
+// lien de confirmation de son adresse (verifyURL, facultatif).
+func (m *Mailer) Welcome(email, name, verifyURL string, validity time.Duration) {
+	c, err := welcomeEmail(m.siteURL, name, verifyURL, validity)
 	m.send(email, name, TagWelcome, c, err)
+}
+
+// EmailVerification renvoie le lien de confirmation de l'adresse.
+func (m *Mailer) EmailVerification(email, name, verifyURL string, validity time.Duration) {
+	c, err := emailVerificationEmail(m.siteURL, email, name, verifyURL, validity)
+	m.send(email, name, TagEmailVerify, c, err)
 }
 
 // PasswordReset : lien de réinitialisation du mot de passe.

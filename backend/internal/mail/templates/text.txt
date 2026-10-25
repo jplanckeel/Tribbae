@@ -18,6 +18,20 @@ Vous recevez cet email suite à la création de votre compte Tribbae.
 
 {{template "footer" .}}{{end}}
 
+{{define "email_verification"}}Confirmez votre adresse email
+
+{{if .Name}}Bonjour {{.Name}}, ouvrez{{else}}Bonjour, ouvrez{{end}} ce lien pour confirmer que {{.Email}} est bien votre adresse. Vous pourrez ensuite publier vos idées et inviter votre tribu :
+
+{{.VerifyURL}}
+
+Ce lien est valable {{.Validity}} et ne fonctionne qu'une seule fois.
+
+Vous n'avez pas créé de compte Tribbae ? Ignorez simplement cet email : sans confirmation, personne ne peut se servir de votre adresse pour publier ou écrire à d'autres personnes.
+
+Vous recevez cet email car une confirmation d'adresse a été demandée sur Tribbae.
+
+{{template "footer" .}}{{end}}
+
 {{define "password_reset"}}Choisissez un nouveau mot de passe
 
 {{if .Name}}Bonjour {{.Name}}, une{{else}}Bonjour, une{{end}} demande de réinitialisation a été faite pour le compte associé à {{.Email}}. Ouvrez ce lien pour définir votre nouveau mot de passe :

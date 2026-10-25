@@ -88,7 +88,21 @@ type Service struct {
 	invCol    *mongo.Collection
 	notify    Notifier
 	inviteURL string
+	emails    EmailVerifier
 }
+
+// EmailVerifier : confirmation de l'adresse des comptes (auth.Service).
+type EmailVerifier interface {
+	// RequireVerifiedEmail retourne auth.ErrEmailNotVerified si l'adresse
+	// n'est pas confirmée : inviter quelqu'un l'exige.
+	RequireVerifiedEmail(ctx context.Context, userID string) error
+	// MarkEmailVerified confirme l'adresse : accepter une invitation prouve
+	// que l'on reçoit ses emails.
+	MarkEmailVerified(ctx context.Context, userID string) error
+}
+
+// SetEmailVerifier branche la confirmation d'adresse.
+func (s *Service) SetEmailVerifier(v EmailVerifier) { s.emails = v }
 
 func NewService(col, userCol, invCol *mongo.Collection) *Service {
 	return &Service{col: col, userCol: userCol, invCol: invCol}

@@ -42,6 +42,7 @@ type LinkLike struct {
 
 type Service struct {
 	peers       func(ctx context.Context, userID string) []string
+	verified    func(ctx context.Context, userID string) error
 	col         *mongo.Collection
 	folderCol   *mongo.Collection
 	linkLikeCol *mongo.Collection
@@ -61,6 +62,20 @@ func NewService(col *mongo.Collection, folderCol *mongo.Collection) *Service {
 // userID voit et modifie le contenu (lui compris). Sans tribu : lui seul.
 func (s *Service) SetTribePeers(peers func(ctx context.Context, userID string) []string) {
 	s.peers = peers
+}
+
+// SetEmailCheck branche la confirmation d'adresse : verified(userID) retourne
+// auth.ErrEmailNotVerified tant que l'adresse du compte n'est pas confirmée.
+// Publier une idée l'exige.
+func (s *Service) SetEmailCheck(verified func(ctx context.Context, userID string) error) {
+	s.verified = verified
+}
+
+func (s *Service) requireVerified(ctx context.Context, userID string) error {
+	if s.verified == nil {
+		return nil
+	}
+	return s.verified(ctx, userID)
 }
 
 func (s *Service) peerIDs(ctx context.Context, userID string) []string {
@@ -218,6 +233,12 @@ func (s *Service) Create(ctx context.Context, ownerID string, l *Link) (*Link, e
 	if l.FolderID != "" && !s.canEditFolder(ctx, l.FolderID, ownerID) {
 		return nil, ErrForbidden
 	}
+	// Une idée publique, ou rangée dans un dossier public, est publiée
+	if l.Visibility == "public" || (l.FolderID != "" && s.folderIsPublic(ctx, l.FolderID)) {
+		if err := s.requireVerified(ctx, ownerID); err != nil {
+			return nil, err
+		}
+	}
 	l.ID = bson.NewObjectID()
 	l.OwnerID = ownerID
 	l.CreatedAt = time.Now()
@@ -371,6 +392,13 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 	}
 	if l.Visibility == "" {
 		l.Visibility = existing.Visibility
+	}
+	// La publier, ou la ranger dans un dossier public, exige une adresse confirmée
+	publishes := l.Visibility == "public" && existing.Visibility != "public"
+	if publishes || (l.FolderID != existing.FolderID && l.FolderID != "" && s.folderIsPublic(ctx, l.FolderID)) {
+		if err := s.requireVerified(ctx, userID); err != nil {
+			return nil, err
+		}
 	}
 
 	l.UpdatedAt = time.Now()

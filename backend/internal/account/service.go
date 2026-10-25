@@ -99,6 +99,13 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 	} else if !errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, fmt.Errorf("password_resets: %w", err)
 	}
+	// Confirmation d'adresse en attente : idem, ses dates seulement
+	var verification bson.M
+	if err := s.col("email_verifications").FindOne(ctx, bson.M{"_id": oid}).Decode(&verification); err == nil {
+		out["emailVerification"] = bson.M{"createdAt": verification["created_at"], "expiresAt": verification["expires_at"]}
+	} else if !errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, fmt.Errorf("email_verifications: %w", err)
+	}
 	for _, sec := range sections {
 		docs, err := find(sec.col, sec.filter)
 		if err != nil {
@@ -227,6 +234,7 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		{"children", bson.M{"ownerId": oid}},
 		{"tribe_invitations", bson.M{"$or": bson.A{bson.M{"invited_by": userID}, bson.M{"email": strings.ToLower(user.Email)}}}},
 		{"password_resets", bson.M{"_id": oid}},
+		{"email_verifications", bson.M{"_id": oid}},
 	}
 	for _, d := range deletes {
 		if _, err := s.col(d.col).DeleteMany(ctx, d.filter); err != nil {

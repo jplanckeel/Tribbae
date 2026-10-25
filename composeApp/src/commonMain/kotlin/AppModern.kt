@@ -49,8 +49,9 @@ import viewmodel.LinkViewModel
 
 /**
  * Contenu reçu d'une autre application : lien ou texte partagé, lien de partage
- * de dossier, lien d'invitation dans une tribu ou lien « nouveau mot de passe »
- * d'un email. `id` distingue deux partages identiques successifs.
+ * de dossier, lien d'invitation dans une tribu, lien « nouveau mot de passe »
+ * ou de confirmation d'adresse d'un email. `id` distingue deux partages
+ * identiques successifs.
  */
 data class SharedContent(
     val url: String? = null,
@@ -58,6 +59,7 @@ data class SharedContent(
     val folderToken: String? = null,
     val inviteToken: String? = null,
     val resetToken: String? = null,
+    val verifyToken: String? = null,
     val id: Long = System.nanoTime(),
 )
 
@@ -74,11 +76,16 @@ fun AppModern(vm: LinkViewModel = viewModel(), incoming: SharedContent? = null) 
         if (isLoggedIn) {
             vm.initAuthenticatedClient(sessionManager)
             vm.syncWithBackend(sessionManager)
+            vm.refreshAccount(sessionManager)
         }
     }
-    // Session glissante : jeton renouvelé aussi au retour sur l'app
+    // Session glissante : jeton renouvelé aussi au retour sur l'app, et adresse
+    // email relue tant qu'elle n'est pas confirmée (lien ouvert ailleurs)
     LifecycleResumeEffect(isLoggedIn) {
-        if (isLoggedIn) vm.renewSessionIfStale(sessionManager)
+        if (isLoggedIn) {
+            vm.renewSessionIfStale(sessionManager)
+            vm.refreshAccount(sessionManager)
+        }
         onPauseOrDispose { }
     }
 
@@ -139,6 +146,8 @@ private fun ModernMainApp(
     LaunchedEffect(loggedIn) { if (loggedIn) inviteHidden = false }
     // Lien « nouveau mot de passe » ouvert depuis l'email
     var resetToken by remember { mutableStateOf<String?>(null) }
+    // Lien de confirmation de l'adresse email
+    var verifyToken by remember { mutableStateOf<String?>(null) }
     // Partage reçu (au lancement ou app déjà ouverte) : on ouvre l'écran correspondant
     LaunchedEffect(incoming?.id) {
         val s = incoming ?: return@LaunchedEffect
@@ -146,6 +155,7 @@ private fun ModernMainApp(
         if (s.folderToken != null) stack.add(Screen.PublicFolder(shareToken = s.folderToken))
         if (s.inviteToken != null) { inviteToken = s.inviteToken; inviteHidden = false }
         if (s.resetToken != null) resetToken = s.resetToken
+        if (s.verifyToken != null) verifyToken = s.verifyToken
     }
     var showAdd by remember { mutableStateOf(false) }
     var exploreQuery by remember { mutableStateOf("") }
@@ -312,6 +322,15 @@ private fun ModernMainApp(
                         onDismiss = { inviteToken = null },
                     )
                 }
+                verifyToken?.let { token ->
+                    VerifyEmailDialog(
+                        token = token,
+                        authRepository = authRepository,
+                        viewModel = vm,
+                        loggedIn = loggedIn,
+                        onDismiss = { verifyToken = null },
+                    )
+                }
                 resetToken?.let { token ->
                     NewPasswordDialog(
                         token = token,
@@ -320,7 +339,7 @@ private fun ModernMainApp(
                         onDone = { r ->
                             // Lien d'un autre compte que celui connecté : on ne mélange pas leurs données
                             if (sessionManager.isLoggedIn.value && sessionManager.userId.value != r.userId) vm.signOut()
-                            sessionManager.saveSession(r.userId, r.token, r.displayName, r.isAdmin)
+                            sessionManager.saveSession(r.userId, r.token, r.displayName, r.isAdmin, r.emailVerified)
                             vm.initAuthenticatedClient(sessionManager)
                             vm.syncWithBackend(sessionManager)
                             resetToken = null

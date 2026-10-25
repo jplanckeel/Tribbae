@@ -5,6 +5,7 @@ import { tabLink, trackLocation } from "../lib/transitions";
 import { ComposerProvider, useComposer } from "./Composer";
 import Icon, { type IconName } from "./Icon";
 import Logo from "./Logo";
+import VerifyEmailBanner from "./VerifyEmailBanner";
 
 const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
   { to: "/", label: "Accueil", icon: "home", end: true },
@@ -239,6 +240,7 @@ export function AppLayout() {
         <div className="relative flex-1 overflow-x-clip">
           <DesktopSun />
           <TopBar />
+          <VerifyEmailBanner />
           <main id="contenu" className="relative pb-[calc(124px+env(safe-area-inset-bottom))] md:pb-16">
             <ScreenTransitions>
               <Outlet />

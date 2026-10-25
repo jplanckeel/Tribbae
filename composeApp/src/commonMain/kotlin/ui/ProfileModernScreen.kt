@@ -1054,6 +1054,8 @@ private fun CircleInviteForm(folders: List<data.Folder>, viewModel: LinkViewMode
         CampButton(if (busy) "Envoi…" else "Ouvrir les dossiers", {
             if (picked.isEmpty()) { error = "Choisissez au moins un dossier à ouvrir."; return@CampButton }
             if (!email.contains("@")) { error = "Saisissez l'adresse email de votre proche."; return@CampButton }
+            // Ajouter quelqu'un attend la confirmation de l'adresse
+            if (!viewModel.emailVerified.value) { error = data.EmailVerification.VERIFY_FIRST; return@CampButton }
             busy = true
             scope.launch {
                 val role = if (editor) "COLLABORATOR_ROLE_EDITOR" else "COLLABORATOR_ROLE_VIEWER"
@@ -1505,7 +1507,7 @@ private fun SimpleAuthDialog(
                                 } else {
                                     authRepository.register(email, password, displayName)
                                 }
-                                sessionManager.saveSession(response.userId, response.token, response.displayName, response.isAdmin)
+                                sessionManager.saveSession(response.userId, response.token, response.displayName, response.isAdmin, response.emailVerified)
                                 onSuccess()
                             } catch (e: Exception) {
                                 println("ERROR: Auth failed - ${e.message}")
