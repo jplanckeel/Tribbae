@@ -119,6 +119,14 @@ class AuthRepository(private val baseUrl: String = Backend.url) {
     suspend fun resetPassword(token: String, password: String): AuthResponse =
         json.decodeFromString(post("/v1/auth/password/reset", json.encodeToString(ResetPasswordRequest.serializer(), ResetPasswordRequest(token, password))))
 
+    /** Échange un jeton encore valable contre un neuf (voir TokenRenewal). */
+    suspend fun refreshToken(token: String): String {
+        @Serializable data class RefreshRequest(val token: String)
+        @Serializable data class RefreshResponse(val token: String = "")
+        val raw = post("/v1/auth/refresh", json.encodeToString(RefreshRequest.serializer(), RefreshRequest(token)))
+        return json.decodeFromString(RefreshResponse.serializer(), raw).token
+    }
+
     private suspend fun post(path: String, body: String): String = withContext(Dispatchers.IO) {
         val conn = URL("$baseUrl$path").openConnection() as HttpURLConnection
         try {

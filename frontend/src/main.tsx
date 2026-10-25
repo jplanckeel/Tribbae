@@ -7,8 +7,15 @@ import "./lib/transitions";
 import "./lib/theme";
 import App from "./App";
 import { FeedbackProvider } from "./components/feedback";
+import { renewSessionIfStale } from "./lib/api";
 import { DataProvider } from "./lib/data";
 import "./index.css";
+
+// Session glissante : jeton renouvelé au lancement et au retour sur l'onglet
+void renewSessionIfStale();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") void renewSessionIfStale();
+});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

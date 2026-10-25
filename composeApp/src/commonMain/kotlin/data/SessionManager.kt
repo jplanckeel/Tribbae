@@ -41,6 +41,11 @@ class SessionManager(context: Context) {
         println("DEBUG SessionManager.saveSession: StateFlow mis à jour - _displayName.value='${_displayName.value}'")
     }
 
+    /** Jeton renouvelé : le reste de la session ne change pas. */
+    fun updateToken(token: String) {
+        if (hasToken()) prefs.edit().putString("token", token).apply()
+    }
+
     fun getToken(): String? {
         return prefs.getString("token", null)
     }

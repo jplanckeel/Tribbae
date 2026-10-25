@@ -47,6 +47,31 @@ export function clearSession() {
   emit();
 }
 
+/** Âge d'un jeton après lequel on le renouvelle (au plus une fois par jour). */
+export const RENEW_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Date d'émission (ms) lue dans le jeton (champ `iat` du JWT, sans vérifier la
+ * signature : seul le serveur en juge). Null si illisible. Même lecture côté
+ * Android : data/TokenRenewal.kt.
+ */
+export function tokenIssuedAt(token: string): number | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const payload = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=")));
+    return typeof payload.iat === "number" ? payload.iat * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Le jeton a plus d'un jour (ou une date illisible) : à renouveler. */
+export function shouldRenew(token: string, now = Date.now()): boolean {
+  const iat = tokenIssuedAt(token);
+  return iat === null || now - iat > RENEW_AFTER_MS;
+}
+
 function subscribe(cb: () => void) {
   listeners.add(cb);
   // Synchronise les onglets entre eux (déconnexion dans un autre onglet)

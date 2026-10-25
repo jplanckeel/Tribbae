@@ -1,5 +1,6 @@
 package com.linkkeeper.app
 
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedContent
@@ -74,6 +75,11 @@ fun AppModern(vm: LinkViewModel = viewModel(), incoming: SharedContent? = null) 
             vm.initAuthenticatedClient(sessionManager)
             vm.syncWithBackend(sessionManager)
         }
+    }
+    // Session glissante : jeton renouvelé aussi au retour sur l'app
+    LifecycleResumeEffect(isLoggedIn) {
+        if (isLoggedIn) vm.renewSessionIfStale(sessionManager)
+        onPauseOrDispose { }
     }
 
     // Compte connecté : les cartes signent du nom de leur auteur les idées des autres (tribu, communauté)
