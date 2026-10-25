@@ -90,13 +90,9 @@ func NewClient(timeout time.Duration) *http.Client {
 	}
 }
 
-// Get effectue un GET sur une URL utilisateur avec le client sécurisé.
-func Get(ctx context.Context, client *http.Client, raw string) (*http.Response, error) {
-	return GetWithHeaders(ctx, client, raw, nil)
-}
-
-// GetWithHeaders est Get avec des en-têtes supplémentaires (ils remplacent
-// les valeurs par défaut, User-Agent compris).
+// GetWithHeaders effectue un GET sur une URL utilisateur avec le client
+// sécurisé, avec des en-têtes supplémentaires (ils remplacent les valeurs par
+// défaut, User-Agent compris).
 func GetWithHeaders(ctx context.Context, client *http.Client, raw string, headers map[string]string) (*http.Response, error) {
 	u, err := ValidateURL(raw)
 	if err != nil {

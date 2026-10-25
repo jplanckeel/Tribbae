@@ -38,11 +38,6 @@ data class ApiGetCommentsResponse(
     val comments: List<ApiComment> = emptyList()
 )
 
-@Serializable
-data class ApiGetCommentCountResponse(
-    val count: Int = 0
-)
-
 class CommentRepository(
     private val baseUrl: String = Backend.url,
     private val sessionManager: SessionManager
@@ -132,18 +127,6 @@ class CommentRepository(
      */
     suspend fun deleteComment(commentId: String): Result<Unit> = runCatching {
         request("/v1/comments/$commentId", "DELETE", null) { _ -> Unit }
-    }
-
-    /**
-     * Get the comment count for a link
-     * @param linkId The ID of the link
-     * @return The number of comments
-     */
-    suspend fun getCommentCount(linkId: String): Result<Int> = runCatching {
-        request("/v1/links/$linkId/comments/count", "GET") { response ->
-            val apiResponse = json.decodeFromString<ApiGetCommentCountResponse>(response)
-            apiResponse.count
-        }
     }
 
     private fun ApiComment.toComment(): Comment {

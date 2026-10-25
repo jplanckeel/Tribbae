@@ -67,7 +67,4 @@ fun formatAge(birth: Long): String {
     return if (m < 24) "$m mois" else "${m / 12} ans"
 }
 
-/** Tranche d'âge [min, max] en années (voir data.AgeRanges). */
-fun parseAgeRange(text: String): Pair<Float, Float>? = data.AgeRanges.parse(text)
-
 fun matchesAge(text: String, min: Float, max: Float): Boolean = data.AgeRanges.matches(text, min, max)

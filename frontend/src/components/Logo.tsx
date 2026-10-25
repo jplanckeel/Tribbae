@@ -24,15 +24,3 @@ export default function Logo({ size = 34, className = "" }: { size?: number; cla
     </span>
   );
 }
-
-/** Petits motifs décoratifs du logo : rond et croix. */
-export function Sparkles() {
-  return (
-    <>
-      <span aria-hidden="true" className="absolute top-[118px] right-10 h-[9px] w-[9px] rounded-full border-2 border-terracotta" />
-      <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" className="absolute top-[70px] right-[150px]">
-        <path d="M2 2l8 8M10 2l-8 8" stroke="var(--color-ecorce)" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    </>
-  );
-}
