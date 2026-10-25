@@ -82,7 +82,13 @@ android {
             buildConfigField("String", "API_URL", "\"$apiUrl\"")
         }
         getByName("release") {
-            isMinifyEnabled = false
+            // R8 : réduit, optimise et renomme le code, retire les ressources inutilisées
+            // (surtout material-icons-extended, dont seules quelques icônes servent).
+            // Règles propres à l'app dans proguard-rules.pro ; kotlinx.serialization,
+            // Coil, Compose et jsoup apportent les leurs.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "API_URL", "\"\"")
         }
     }

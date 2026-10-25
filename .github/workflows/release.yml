@@ -71,6 +71,9 @@ jobs:
         run: |
           mv composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk \
              "tribbae-${TAG#v}.apk"
+          # Table de correspondance R8 : nécessaire pour relire les traces de
+          # plantage de cette version (noms de classes et de méthodes raccourcis)
+          gzip -c composeApp/build/outputs/mapping/release/mapping.txt > "tribbae-${TAG#v}-mapping.txt.gz"
       
       # Release déjà créée par release-please : on y ajoute l'APK sans toucher à son
       # changelog. Tag poussé à la main : on crée la release avec des notes auto.
@@ -78,7 +81,9 @@ jobs:
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ env.TAG }}
-          files: tribbae-*.apk
+          files: |
+            tribbae-*.apk
+            tribbae-*-mapping.txt.gz
           draft: false
           prerelease: false
           generate_release_notes: ${{ inputs.tag == '' }}
