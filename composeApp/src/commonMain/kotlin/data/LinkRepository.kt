@@ -32,6 +32,50 @@ class LinkRepository(private val storage: Storage? = null) {
         }
     }
 
+    private val _pending = MutableStateFlow(storage?.loadPending() ?: PendingChanges())
+    /** Changements faits ici et pas encore reçus par le serveur. */
+    val pending: PendingChanges get() = _pending.value
+
+    fun updatePending(change: (PendingChanges) -> PendingChanges) {
+        synchronized(_pending) {
+            _pending.value = change(_pending.value)
+            storage?.savePending(_pending.value)
+        }
+    }
+
+    /** Remplace les listes après une synchronisation (sans les effets de bord de deleteFolder). */
+    fun replaceAll(links: List<Link>, folders: List<Folder>, children: List<Child>) {
+        _links.value = links
+        _folders.value = folders
+        _children.value = children
+        storage?.saveLinks(links)
+        storage?.saveFolders(folders)
+        storage?.saveChildren(children)
+        links.flatMap { it.tags }.forEach { addTag(it) }
+    }
+
+    /** Idée créée ici et reçue par le serveur : elle prend l'identifiant du serveur. */
+    fun replaceLinkId(old: String, new: String) {
+        _links.value = _links.value.map { if (it.id == old) it.copy(id = new) else it }
+        storage?.saveLinks(_links.value)
+    }
+
+    /** Dossier reçu par le serveur : ses idées le suivent sous son nouvel identifiant. */
+    fun replaceFolderId(old: String, new: String) {
+        _folders.value = _folders.value.map { if (it.id == old) it.copy(id = new) else it }
+        _links.value = _links.value.map { if (it.folderId == old) it.copy(folderId = new) else it }
+        storage?.saveFolders(_folders.value)
+        storage?.saveLinks(_links.value)
+    }
+
+    /** Enfant reçu par le serveur : les dossiers « pour » lui le suivent. */
+    fun replaceChildId(old: String, new: String) {
+        _children.value = _children.value.map { if (it.id == old) it.copy(id = new) else it }
+        _folders.value = _folders.value.map { f -> if (old in f.childIds) f.copy(childIds = f.childIds.map { if (it == old) new else it }) else f }
+        storage?.saveChildren(_children.value)
+        storage?.saveFolders(_folders.value)
+    }
+
     private val imageChecks: MutableMap<String, Long> by lazy {
         storage?.loadImageChecks()?.toMutableMap() ?: mutableMapOf()
     }
@@ -117,6 +161,8 @@ class LinkRepository(private val storage: Storage? = null) {
         _folders.value = emptyList()
         _children.value = emptyList()
         _tags.value = emptyList()
+        _pending.value = PendingChanges()
+        storage?.savePending(PendingChanges())
         storage?.saveLinks(emptyList())
         storage?.saveFolders(emptyList())
         storage?.saveChildren(emptyList())
