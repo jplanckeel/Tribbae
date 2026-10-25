@@ -84,7 +84,7 @@ export default function Privacy() {
       <Section title="Ce que nous conservons">
         <ul className="list-disc space-y-1 pl-5">
           <li><strong>Votre compte</strong> : email, nom affiché, mot de passe (chiffré de façon irréversible, nous ne le connaissons pas), date d'inscription.</li>
-          <li><strong>Ce que vous créez</strong> : idées (titre, lien, description, image, tags, âge, prix, lieu, date, ingrédients), dossiers, commentaires, « j'aime », tribus suivies.</li>
+          <li><strong>Ce que vous créez</strong> : idées (titre, lien, description, image, tags, âge, prix, lieu, date, ingrédients), dossiers, commentaires, « j'aime », tribus suivies. Les photos que vous ajoutez sont gardées sur notre serveur, réduites et débarrassées de leurs métadonnées (position GPS, appareil) ; seuls ceux qui voient l'idée en ont l'adresse, et une photo qu'aucune idée n'utilise plus est effacée sous deux jours.</li>
           <li><strong>Votre tribu</strong> : son nom et ses membres.</li>
           <li><strong>Les profils enfants</strong> : prénom et date de naissance, saisis par vous, uniquement pour proposer des idées adaptées à leur âge. Ils ne sont jamais publics.</li>
         </ul>
@@ -116,7 +116,8 @@ export default function Privacy() {
         <p>
           Quand vous ajoutez un lien, notre serveur lit la page pour en récupérer le titre et l'image : le site visité
           voit notre serveur, pas vous. En revanche, les images des idées s'affichent depuis le site d'origine, qui
-          reçoit alors, comme pour toute image du web, l'adresse IP de votre appareil.
+          reçoit alors, comme pour toute image du web, l'adresse IP de votre appareil (sauf pour vos photos, servies par
+          Tribbae).
         </p>
         <p>
           Les emails liés à votre compte (bienvenue, ajout à une tribu, confirmation de suppression) sont envoyés par{" "}

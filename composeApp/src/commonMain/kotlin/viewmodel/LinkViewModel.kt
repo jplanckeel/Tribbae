@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.async
@@ -952,6 +954,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 runCatching { client.getTribe() }.onSuccess { _tribe.value = it }
                 performSync(client)
                 _syncStatus.value = "Synchronisé"
+                // Photos prises sur ce téléphone avant leur envoi au serveur
+                uploadPendingPhotos(client)
                 // Les idées arrivées du serveur sans image : on tente de la récupérer
                 fetchMissingImages()
             } catch (e: Exception) {
@@ -1070,10 +1074,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
     
-    fun saveToBackend(link: Link) {
+    fun saveToBackend(local: Link) {
         val client = authenticatedClient ?: return
         viewModelScope.launch {
             try {
+                val link = uploadLocalPhoto(client, local)
                 val req = data.CreateLinkRequest(
                     folderId = link.folderId ?: "",
                     title = link.title,
@@ -1102,6 +1107,42 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
     
+    /**
+     * Photo prise ou choisie sur ce téléphone (file://, voir ImagePickerHelper) :
+     * envoyée au serveur, dont l'adresse remplace le chemin local pour que la
+     * tribu et le web la voient. En cas d'échec, le chemin local reste : le
+     * prochain enregistrement ou la prochaine synchronisation retentera.
+     */
+    private suspend fun uploadLocalPhoto(client: data.AuthenticatedApiClient, link: Link): Link {
+        if (!link.imageUrl.startsWith("file://")) return link
+        val file = runCatching { java.io.File(java.net.URI(link.imageUrl)) }.getOrNull()?.takeIf { it.isFile } ?: return link
+        val url = try {
+            client.uploadPhoto(withContext(Dispatchers.IO) { file.readBytes() })
+        } catch (e: Exception) {
+            _syncStatus.value = "Erreur envoi photo: ${e.message}"
+            return link
+        }
+        repository.links.value.find { it.id == link.id }?.let { repository.updateLink(it.copy(imageUrl = url)) }
+        updateFilteredLinks()
+        // La copie locale ne sert plus ; on la garde le temps que l'écran « C'est rangé ! » l'affiche
+        viewModelScope.launch(Dispatchers.IO) {
+            kotlinx.coroutines.delay(60_000)
+            file.delete()
+        }
+        return link.copy(imageUrl = url)
+    }
+
+    /** Ses idées dont la photo n'est encore que sur ce téléphone (hors ligne, ou d'avant l'envoi des photos). */
+    private suspend fun uploadPendingPhotos(client: data.AuthenticatedApiClient) {
+        val me = currentUserId()
+        repository.links.value
+            .filter { it.imageUrl.startsWith("file://") && (it.ownerId.isBlank() || it.ownerId == me) }
+            .forEach { link ->
+                val sent = uploadLocalPhoto(client, link)
+                if (sent.imageUrl != link.imageUrl) updateLinkOnBackend(sent)
+            }
+    }
+
     fun saveFolderToBackend(folder: Folder) {
         val client = authenticatedClient ?: return
         viewModelScope.launch {
@@ -1149,9 +1190,10 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
 
-    private fun updateLinkOnBackend(link: Link) {
+    private fun updateLinkOnBackend(local: Link) {
         val client = authenticatedClient ?: return
         viewModelScope.launch {
+            val link = uploadLocalPhoto(client, local)
             try {
                 val req = data.UpdateLinkRequest(
                     linkId = link.id,

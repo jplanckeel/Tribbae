@@ -9,6 +9,7 @@ require (
 	github.com/refraction-networking/utls v1.8.2
 	go.mongodb.org/mongo-driver v1.17.10
 	golang.org/x/crypto v0.58.0
+	golang.org/x/image v0.47.0
 	golang.org/x/net v0.61.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20261012220534-4341edf3f941
 	google.golang.org/grpc v1.84.0
