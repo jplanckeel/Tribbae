@@ -225,7 +225,7 @@ fun Logo(modifier: Modifier = Modifier) {
     }
 }
 
-/** Grand soleil crème + petit rond + croix (motifs du logo), en fond d'écran. */
+/** Grand soleil crème (motif du logo), en fond d'écran. */
 @Composable
 fun BoxScope.SunDecor() {
     Box(
@@ -236,23 +236,6 @@ fun BoxScope.SunDecor() {
             .clip(CircleShape)
             .background(SunDisc)
     )
-    Box(
-        Modifier
-            .align(Alignment.TopEnd)
-            .offset(x = (-40).dp, y = 118.dp)
-            .size(9.dp)
-            .border(2.dp, Terracotta, CircleShape)
-    )
-    Canvas(
-        Modifier
-            .align(Alignment.TopEnd)
-            .offset(x = (-150).dp, y = 70.dp)
-            .size(12.dp)
-    ) {
-        val w = size.width
-        drawLine(Ecorce, Offset(2f / 12 * w, 2f / 12 * w), Offset(10f / 12 * w, 10f / 12 * w), 2.dp.toPx(), StrokeCap.Round)
-        drawLine(Ecorce, Offset(10f / 12 * w, 2f / 12 * w), Offset(2f / 12 * w, 10f / 12 * w), 2.dp.toPx(), StrokeCap.Round)
-    }
 }
 
 // ── Boutons ────────────────────────────────────────────────────────────────────

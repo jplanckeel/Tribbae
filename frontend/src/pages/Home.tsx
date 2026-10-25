@@ -61,12 +61,8 @@ function HomeMobile() {
         description="Tribbae, l'appli gratuite des idées en famille : sorties, recettes, cadeaux, livres. Rangez-les en dossiers et partagez-les avec votre tribu."
         path="/"
       />
-      {/* Motifs du logo : grand soleil, petit rond et croix */}
+      {/* Motif du logo : grand soleil */}
       <div aria-hidden="true" className="pointer-events-none absolute -top-[110px] -right-[120px] h-[330px] w-[330px] rounded-full bg-soleil md:right-[8%]" />
-      <span aria-hidden="true" className="pointer-events-none absolute top-[118px] right-10 h-[9px] w-[9px] rounded-full border-2 border-terracotta md:right-[22%]" />
-      <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" className="pointer-events-none absolute top-[70px] right-[150px] md:right-[30%]">
-        <path d="M2 2l8 8M10 2l-8 8" stroke="var(--color-ecorce)" strokeWidth="2" strokeLinecap="round" />
-      </svg>
 
       <Page className="relative gap-6">
         <div className="flex items-center justify-between md:hidden">
