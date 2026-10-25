@@ -82,7 +82,7 @@ fun AdminScreen(
             errorMessage != null -> {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8DCD3)),
+                    colors = CardDefaults.cardColors(containerColor = CoralBg),
                     shape = RoundedCornerShape(18.dp)
                 ) {
                     Column(

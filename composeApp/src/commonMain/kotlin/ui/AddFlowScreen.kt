@@ -199,7 +199,7 @@ fun AddFlowSheet(
     val current = created?.let { c -> links.find { it.id == c.id } ?: links.filter { it.title == c.title && it.url == c.url }.lastOrNull() ?: c }
 
     val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = Sable, dragHandle = { SheetHandle() }) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
         Column(Modifier.fillMaxWidth().heightIn(max = 720.dp).fillMaxHeight(0.92f)) {
             // En-tête : retour, étapes (tipis), fermer
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -243,7 +243,7 @@ fun AddFlowSheet(
 
             // Bouton principal
             if (step != AddStep.Choose) {
-                HorizontalDivider(color = Color(0xFFEADBC8))
+                HorizontalDivider(color = Line)
                 Row(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     when (step) {
                         AddStep.Link -> CampButton("Ranger cette idée", ::toSort, Modifier.fillMaxWidth(), trailingIcon = Icons.Outlined.ArrowForward, enabled = draft.url.isNotBlank(), height = 56.dp)
@@ -326,7 +326,7 @@ private fun ChooseStep(
 
     if (clip != null) {
         Row(
-            Modifier.appear(80).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color(0xFFFFF4EA)).border(2.dp, Braise, RoundedCornerShape(20.dp))
+            Modifier.appear(80).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(PeachTint).border(2.dp, Braise, RoundedCornerShape(20.dp))
                 .clickable(role = Role.Button) { start(Mode.Link, clip) }.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -334,7 +334,7 @@ private fun ChooseStep(
                 Icon(Icons.Outlined.ContentPaste, null, tint = Ecorce, modifier = Modifier.size(22.dp))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Lien copié à l'instant", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA04812))
+                Text("Lien copié à l'instant", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PeachInk)
                 Text(clip.removePrefix("https://").removePrefix("http://").removePrefix("www."), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Text("Utiliser", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Sable, modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Ecorce).padding(horizontal = 12.dp, vertical = 8.dp))
@@ -343,9 +343,9 @@ private fun ChooseStep(
 
     Text("Ou partir de…", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec, modifier = Modifier.appear(140).padding(top = 4.dp))
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        StartTile(Icons.Outlined.Link, Color(0xFFDCEDF3), Color(0xFF235C77), "Un lien", 180, Modifier.weight(1f)) { start(Mode.Link, null) }
-        StartTile(Icons.Outlined.Edit, Color(0xFFFBEACB), Color(0xFF85560C), "Je l'écris", 230, Modifier.weight(1f)) { start(Mode.Write, null) }
-        StartTile(Icons.Outlined.PhotoCamera, Color(0xFFE2EDD9), Color(0xFF3E6630), "Une photo", 280, Modifier.weight(1f)) { start(Mode.Photo, null) }
+        StartTile(Icons.Outlined.Link, BlueBg, BlueInk, "Un lien", 180, Modifier.weight(1f)) { start(Mode.Link, null) }
+        StartTile(Icons.Outlined.Edit, HoneyBg, HoneyInk, "Je l'écris", 230, Modifier.weight(1f)) { start(Mode.Write, null) }
+        StartTile(Icons.Outlined.PhotoCamera, GreenBg, GreenInk, "Une photo", 280, Modifier.weight(1f)) { start(Mode.Photo, null) }
     }
 
     Row(
@@ -356,7 +356,7 @@ private fun ChooseStep(
             Icon(Icons.Outlined.AutoAwesome, null, tint = Prune, modifier = Modifier.size(22.dp))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Pas d'idée ? On en trouve ensemble", style = display(17.sp, FontWeight.Bold, Sable))
+            Text("Pas d'idée ? On en trouve ensemble", style = display(17.sp, FontWeight.Bold, OnDark))
             Text("« Un samedi pluvieux avec un enfant de 6 ans »", fontSize = 13.sp, color = PruneSoft)
         }
     }
@@ -365,7 +365,7 @@ private fun ChooseStep(
         Column(Modifier.appear(400).padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Ajoutée récemment par la tribu", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
             Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White).clickable { onOpenLink(recent.id) }.padding(horizontal = 12.dp, vertical = 10.dp),
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CardColor).clickable { onOpenLink(recent.id) }.padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 InitialAvatar(recent.ownerDisplayName, 3, 32.dp, 11.dp, 13.sp)
@@ -403,7 +403,7 @@ private fun LinkStep(draft: Draft, status: LinkRead, guessed: Boolean, readLink:
     var text by remember { mutableStateOf(draft.url.removePrefix("https://").removePrefix("http://")) }
     Text(if (status == LinkRead.Idle) "Collez le lien" else "On regarde ce lien…", style = display(26.sp))
     Row(
-        Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(16.dp)).background(Color.White).border(2.dp, Terracotta, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp),
+        Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(16.dp)).background(CardColor).border(2.dp, Terracotta, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Icon(Icons.Outlined.Link, null, tint = Terracotta, modifier = Modifier.size(18.dp))
@@ -438,7 +438,7 @@ private fun LinkStep(draft: Draft, status: LinkRead, guessed: Boolean, readLink:
                 Box(Modifier.fillMaxWidth().height(120.dp).background(cat.bg)) {
                     if (draft.imageUrl.isNotBlank()) AsyncImage(draft.imageUrl, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                     else {
-                        Box(Modifier.align(Alignment.BottomCenter).offset(y = 90.dp).size(200.dp).clip(CircleShape).background(Soleil))
+                        Box(Modifier.align(Alignment.BottomCenter).offset(y = 90.dp).size(200.dp).clip(CircleShape).background(SunDisc))
                         TipiMark(70.dp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp))
                     }
                 }
@@ -466,7 +466,7 @@ private fun LinkStep(draft: Draft, status: LinkRead, guessed: Boolean, readLink:
                         }
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (guessed) Chip(cat.label, null, cat.bg, cat.ink, Modifier.pop(330))
-                            chips.forEachIndexed { i, (label, icon) -> Chip(label, icon, Color.White, Ecorce, Modifier.pop(410 + i * 80)) }
+                            chips.forEachIndexed { i, (label, icon) -> Chip(label, icon, CardColor, Ecorce, Modifier.pop(410 + i * 80)) }
                         }
                     }
                 }
@@ -535,7 +535,7 @@ private fun SortStep(
             Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(18.dp))
         }
         val names = folder?.collaborators.orEmpty().map { it.displayName.ifBlank { it.email } }
-        val bg by animateColorAsState(if (names.isNotEmpty()) Color(0xFFFFF4EA) else Sable2, label = "qui")
+        val bg by animateColorAsState(if (names.isNotEmpty()) PeachTint else Sable2, label = "qui")
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(bg).padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (names.isNotEmpty()) {
                 AvatarStack(names)
@@ -570,8 +570,8 @@ private fun SortStep(
             AgeRanges.BANDS.forEach { (key, _) ->
                 val on = key in sel
                 Box(
-                    Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(13.dp)).background(if (on) Color(0xFFFFF4EE) else Color.Transparent)
-                        .border(2.dp, if (on) Terracotta else Color(0xFFE6D3C0), RoundedCornerShape(13.dp))
+                    Modifier.weight(1f).height(44.dp).clip(RoundedCornerShape(13.dp)).background(if (on) Blush else Color.Transparent)
+                        .border(2.dp, if (on) Terracotta else Line, RoundedCornerShape(13.dp))
                         .clickable(role = Role.Checkbox) { onDraft(draft.copy(ageRange = AddFlow.bandsToAge(if (on) sel - key else sel + key))) }
                         .semantics { selected = on },
                     contentAlignment = Alignment.Center
@@ -581,10 +581,10 @@ private fun SortStep(
     }
 
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White).padding(horizontal = 14.dp, vertical = 12.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CardColor).padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Icon(Icons.Outlined.Public, null, tint = Color(0xFF235C77), modifier = Modifier.size(20.dp))
+        Icon(Icons.Outlined.Public, null, tint = BlueInk, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
             Text("Inspirer d'autres familles", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
             Text("Visible aussi dans Explorer", fontSize = 12.sp, color = TextSec)
@@ -593,7 +593,7 @@ private fun SortStep(
     }
 
     Text("Plus de détails (date, prix, lieu, tags…)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta, modifier = Modifier.clickable(role = Role.Button, onClick = onMore).padding(vertical = 4.dp))
-    error?.let { Text(it, color = Color(0xFF9A3420), fontSize = 14.sp) }
+    error?.let { Text(it, color = CoralInk, fontSize = 14.sp) }
 }
 
 @Composable
@@ -638,7 +638,7 @@ internal fun FolderPickerSheet(
     }
     val canCreate = query.length > 1 && folders.none { norm(it.name) == norm(query) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = Sable, dragHandle = { SheetHandle() }) {
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = SheetColor, dragHandle = { SheetHandle() }) {
         Column(
             Modifier.fillMaxWidth().fillMaxHeight(0.92f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 30.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -650,7 +650,7 @@ internal fun FolderPickerSheet(
             CampField("Rechercher ou créer un dossier", q, { q = it }, placeholder = "Vacances, cadeaux…", icon = Icons.Outlined.Search, maxLength = 100)
             if (canCreate) {
                 Row(
-                    Modifier.appear().fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xFFFFF4EE)).dashedBorder(Terracotta, 16.dp)
+                    Modifier.appear().fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Blush).dashedBorder(Terracotta, 16.dp)
                         .clickable(role = Role.Button) { onCreate(query) }.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -661,7 +661,7 @@ internal fun FolderPickerSheet(
                 }
             }
             if (query.isEmpty()) {
-                Column(Modifier.clip(RoundedCornerShape(18.dp)).background(Color.White)) {
+                Column(Modifier.clip(RoundedCornerShape(18.dp)).background(CardColor)) {
                     PickRow("Sans dossier", "Dans « Non rangées »", current == null, false, Icons.Outlined.BookmarkBorder, Sable2, TextSec) { onPick(null) }
                 }
             }
@@ -670,7 +670,7 @@ internal fun FolderPickerSheet(
                 if (items.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("${title.uppercase()} · ${items.size}", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp, color = TextSec)
-                        Column(Modifier.clip(RoundedCornerShape(18.dp)).background(Color.White)) {
+                        Column(Modifier.clip(RoundedCornerShape(18.dp)).background(CardColor)) {
                             items.forEach { f ->
                                 val ro = f.collaborators.any { it.userId == me && it.role == "COLLABORATOR_ROLE_VIEWER" }
                                 val n = counts[f.id] ?: f.linkCount
@@ -696,7 +696,7 @@ internal fun FolderPickerSheet(
 @Composable
 private fun PickRow(label: String, sub: String, on: Boolean, disabled: Boolean, icon: ImageVector, bg: Color, ink: Color, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().background(if (on) Color(0xFFFFF4EA) else Color.White).graphicsLayer { alpha = if (disabled) 0.45f else 1f }
+        Modifier.fillMaxWidth().background(if (on) PeachTint else CardColor).graphicsLayer { alpha = if (disabled) 0.45f else 1f }
             .clickable(enabled = !disabled, role = Role.RadioButton, onClick = onClick).semantics { selected = on }.padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -728,12 +728,12 @@ private fun DoneStep(link: Link, folder: Folder?, onReminder: () -> Unit) {
         launch { delay(870); bump.animateTo(1f, keyframes { durationMillis = 480; 1.22f at 240 }) }
         launch { delay(1000); spark.animateTo(1f, tween(750, easing = EaseSoft)) }
     }
-    Box(Modifier.fillMaxWidth().height(230.dp).clip(RoundedCornerShape(26.dp)).background(Color(0xFF9FD3E6))) {
+    Box(Modifier.fillMaxWidth().height(230.dp).clip(RoundedCornerShape(26.dp)).background(SceneSky)) {
         Box(
             Modifier.align(Alignment.TopEnd).padding(top = 34.dp, end = 58.dp).graphicsLayer { translationY = (1f - sun.value) * 60.dp.toPx() }
                 .size(74.dp).clip(CircleShape).background(Color(0x40FFC857)).padding(10.dp).clip(CircleShape).background(Color(0xFFFFC857))
         )
-        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(52.dp).background(Ecorce).padding(top = 3.dp).background(Color(0xFFF7B57F)))
+        Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(52.dp).background(Ecorce).padding(top = 3.dp).background(SceneGround))
         // La carte de l'idée : monte, puis plonge dans le dossier
         Column(
             Modifier.align(Alignment.TopCenter).offset(x = (-75).dp, y = 70.dp).width(100.dp).graphicsLayer {
@@ -788,7 +788,7 @@ private fun DoneStep(link: Link, folder: Folder?, onReminder: () -> Unit) {
     if (at != null && at > 0) {
         val on = link.reminderEnabled
         Row(
-            Modifier.appear(1300).fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(if (on) Color(0xFFFFF4EE) else Color.White)
+            Modifier.appear(1300).fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(if (on) Blush else CardColor)
                 .border(2.dp, if (on) Terracotta else Color.Transparent, RoundedCornerShape(16.dp))
                 .clickable(role = Role.Switch, onClick = onReminder).semantics { selected = on }.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)

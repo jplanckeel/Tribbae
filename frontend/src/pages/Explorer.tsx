@@ -200,7 +200,7 @@ function ViewTabs({ view, update, className = "" }: Pick<LayoutProps, "view" | "
           role="tab"
           aria-selected={view === v}
           onClick={() => update({ vue: v === "dossiers" ? "dossiers" : undefined })}
-          className={`rounded-small text-sm transition-colors ${view === v ? "bg-white font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec"}`}
+          className={`rounded-small text-sm transition-colors ${view === v ? "bg-card font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec"}`}
         >
           {v === "idees" ? "Idées" : "Dossiers"}
         </button>
@@ -211,7 +211,7 @@ function ViewTabs({ view, update, className = "" }: Pick<LayoutProps, "view" | "
 
 function SearchBox({ view, draft, setDraft, className = "" }: Pick<LayoutProps, "view" | "draft" | "setDraft"> & { className?: string }) {
   return (
-    <label className={`flex items-center gap-2.5 bg-white px-4 text-muted focus-within:ring-2 focus-within:ring-terracotta ${className}`}>
+    <label className={`flex items-center gap-2.5 bg-card px-4 text-muted focus-within:ring-2 focus-within:ring-terracotta ${className}`}>
       <Icon name="search" size={20} />
       <input
         type="search"
@@ -274,7 +274,7 @@ function ExplorerMobile(p: LayoutProps) {
           <button
             type="button"
             onClick={() => setFiltersOpen(true)}
-            className="flex h-11 items-center gap-2 rounded-[14px] border-[1.5px] border-line-2 bg-white px-3.5 text-sm font-semibold transition-colors hover:bg-sable-2"
+            className="flex h-11 items-center gap-2 rounded-[14px] border-[1.5px] border-line-2 bg-card px-3.5 text-sm font-semibold transition-colors hover:bg-sable-2"
           >
             <Icon name="filter" size={20} />
             Filtres
@@ -311,7 +311,7 @@ function ExplorerMobile(p: LayoutProps) {
                   type="button"
                   aria-pressed={on}
                   onClick={() => update({ age: toggle(filters.ages, a.key).join(",") || undefined })}
-                  className={`rounded-full border-[1.5px] px-3 py-1.5 transition-colors ${on ? "border-terracotta bg-white font-semibold text-terracotta-dark" : "border-line-2 hover:bg-sable-2"}`}
+                  className={`rounded-full border-[1.5px] px-3 py-1.5 transition-colors ${on ? "border-terracotta bg-card font-semibold text-terracotta-dark" : "border-line-2 hover:bg-sable-2"}`}
                 >
                   {a.label}
                 </button>
@@ -408,7 +408,7 @@ function AiPromo({ onClick }: { onClick: () => void }) {
     <div className="mb-3 flex break-inside-avoid flex-col gap-2.5 rounded-[20px] bg-prune p-3.5 text-sable">
       <Icon name="sparkles" size={26} className="text-soleil" />
       <span className="font-display text-base leading-tight font-bold">Pas d'idée ? L'IA prépare un dossier sur mesure.</span>
-      <button type="button" onClick={onClick} className="self-start rounded-small bg-soleil px-3 py-2 text-[13px] font-bold text-ecorce transition-colors hover:bg-white">
+      <button type="button" onClick={onClick} className="self-start rounded-small bg-soleil px-3 py-2 text-[13px] font-bold text-ecorce transition-colors hover:bg-card">
         Essayer
       </button>
     </div>
@@ -447,7 +447,7 @@ function ExplorerDesktop(p: LayoutProps) {
         <FoldersView key={filters.q} q={filters.q} desktop />
       ) : (
         <div className="flex flex-wrap items-start gap-7">
-          <aside aria-label="Filtres" className="flex max-w-full flex-[1_1_240px] flex-col gap-[22px] rounded-[24px] bg-white p-[22px] lg:sticky lg:top-6">
+          <aside aria-label="Filtres" className="flex max-w-full flex-[1_1_240px] flex-col gap-[22px] rounded-[24px] bg-card p-[22px] lg:sticky lg:top-6">
             <fieldset className="flex flex-col gap-2">
               <legend className={legend}>Catégorie</legend>
               {CATEGORIES.map((c) => {
@@ -482,7 +482,7 @@ function ExplorerDesktop(p: LayoutProps) {
                       type="button"
                       aria-pressed={on}
                       onClick={() => update({ age: toggle(filters.ages, a.key).join(",") || undefined })}
-                      className={`rounded-full border-[1.5px] px-3 py-2 text-sm transition-colors ${on ? "border-terracotta bg-[#FFF4EE] font-bold text-terracotta-dark" : "border-line-2 font-semibold hover:bg-sable"}`}
+                      className={`rounded-full border-[1.5px] px-3 py-2 text-sm transition-colors ${on ? "border-terracotta bg-blush font-bold text-terracotta-dark" : "border-line-2 font-semibold hover:bg-sable"}`}
                     >
                       {a.label}
                     </button>
@@ -527,7 +527,7 @@ function ExplorerDesktop(p: LayoutProps) {
                 <select
                   value={filters.sort}
                   onChange={(e) => update({ tri: e.target.value === "recent" ? "recent" : e.target.value === "popular" ? "aimees" : undefined })}
-                  className="h-10 rounded-xl border-[1.5px] border-line-2 bg-white px-2.5 text-sm font-semibold text-ecorce outline-none focus:border-terracotta"
+                  className="h-10 rounded-xl border-[1.5px] border-line-2 bg-card px-2.5 text-sm font-semibold text-ecorce outline-none focus:border-terracotta"
                 >
                   <option value="une">À la une</option>
                   <option value="popular">Les plus aimées</option>

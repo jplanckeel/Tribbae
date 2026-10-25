@@ -84,7 +84,7 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
             Toute personne qui a le lien peut consulter ce dossier, même sans compte.
           </p>
           {token ? (
-            <div className="flex items-center gap-2 rounded-medium bg-white p-2 pl-4 shadow-card">
+            <div className="flex items-center gap-2 rounded-medium bg-card p-2 pl-4 shadow-card">
               <input
                 readOnly
                 aria-label="Lien de partage"
@@ -104,7 +104,7 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
         <section className="flex flex-col gap-3">
           <h3 className="text-[13px] font-bold text-sec">Membres invités</h3>
           {collaborators.length > 0 ? (
-            <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-[18px] bg-white">
+            <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-[18px] bg-card">
               {collaborators.map((c, i) => {
                 const [bg, ink] = AVATAR_COLORS[(i + 1) % AVATAR_COLORS.length];
                 const name = c.displayName || c.email || "Membre";

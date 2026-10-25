@@ -15,11 +15,12 @@ import { formatAge, formatLongDate, initial, plural } from "../lib/format";
 import { clearSession, useSession } from "../lib/session";
 import { birthdayLabel, circleOf, ideasForChild, monthName, RING_SLOTS, ringPosition, yearInIdeas, type CircleMember } from "../lib/tribe";
 import type { Child, CollaboratorRole, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
+import { setThemePref, useThemePref, type ThemePref } from "../lib/theme";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
 import { Page } from "../components/Shell";
 
-const CARD = "rounded-large bg-white shadow-[0_1px_0_rgba(58,33,27,0.06),0_8px_24px_rgba(58,33,27,0.06)]";
+const CARD = "rounded-large bg-card shadow-[0_1px_0_rgba(58,33,27,0.06),0_8px_24px_rgba(58,33,27,0.06)]";
 const SPRING = "transition-transform duration-[450ms] ease-[cubic-bezier(.34,1.56,.64,1)]";
 const PRESS = "transition-transform duration-[120ms] ease-[cubic-bezier(.34,1.56,.64,1)] active:scale-[.96]";
 
@@ -139,7 +140,7 @@ export default function Tribe() {
               type="button"
               onClick={() => setSettingsOpen(true)}
               aria-label="Paramètres"
-              className={`flex h-11 w-11 items-center justify-center rounded-full bg-white text-ecorce shadow-soft hover:bg-sable-2 ${PRESS}`}
+              className={`flex h-11 w-11 items-center justify-center rounded-full bg-card text-ecorce shadow-soft hover:bg-sable-2 ${PRESS}`}
             >
               <Icon name="settings" size={21} />
             </button>
@@ -180,16 +181,16 @@ export default function Tribe() {
           </div>
 
           <svg aria-hidden="true" viewBox="0 0 100 100" className="absolute top-[86px] left-1/2 z-[2] -ml-[52px] h-[104px] w-[104px] animate-fade-up" style={{ animationDelay: "150ms" }}>
-            <path d="M50 24L81 80H19Z" fill="#D45A43" stroke="#3A211B" strokeWidth="4" strokeLinejoin="round" />
-            <path d="M43 13L54 30M57 13L46 30" stroke="#3A211B" strokeWidth="4" strokeLinecap="round" />
-            <path d="M50 50L64 80H36Z" fill="#5E4558" stroke="#3A211B" strokeWidth="4" strokeLinejoin="round" />
-            <path d="M34 52H50L42 68Z" fill="#F28C38" stroke="#3A211B" strokeWidth="3.5" strokeLinejoin="round" />
-            <path d="M49 43l2.7-3 2.7 3 2.6-3M58 62l2.7-3 2.7 3 2.6-3" fill="none" stroke="#3A211B" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M6 80H94" stroke="#3A211B" strokeWidth="4" strokeLinecap="round" />
+            <path d="M50 24L81 80H19Z" fill="#D45A43" stroke="var(--color-ecorce)" strokeWidth="4" strokeLinejoin="round" />
+            <path d="M43 13L54 30M57 13L46 30" stroke="var(--color-ecorce)" strokeWidth="4" strokeLinecap="round" />
+            <path d="M50 50L64 80H36Z" fill="#5E4558" stroke="var(--color-ecorce)" strokeWidth="4" strokeLinejoin="round" />
+            <path d="M34 52H50L42 68Z" fill="#F28C38" stroke="var(--color-ecorce)" strokeWidth="3.5" strokeLinejoin="round" />
+            <path d="M49 43l2.7-3 2.7 3 2.6-3M58 62l2.7-3 2.7 3 2.6-3" fill="none" stroke="var(--color-ecorce)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M6 80H94" stroke="var(--color-ecorce)" strokeWidth="4" strokeLinecap="round" />
           </svg>
           <svg aria-hidden="true" width="26" height="30" viewBox="0 0 26 30" className="absolute top-[152px] left-[calc(50%+57px)] z-[2]">
-            <path className="origin-bottom animate-flame" d="M13 2c4 6 9 9 9 16a9 9 0 0 1-18 0c0-4 2-6 4-8 0 3 1 5 3 5 0-5-1-9 2-13z" fill="#F28C38" stroke="#3A211B" strokeWidth="2" strokeLinejoin="round" />
-            <path d="M3 28h20" stroke="#3A211B" strokeWidth="2.4" strokeLinecap="round" />
+            <path className="origin-bottom animate-flame" d="M13 2c4 6 9 9 9 16a9 9 0 0 1-18 0c0-4 2-6 4-8 0 3 1 5 3 5 0-5-1-9 2-13z" fill="#F28C38" stroke="var(--color-ecorce)" strokeWidth="2" strokeLinejoin="round" />
+            <path d="M3 28h20" stroke="var(--color-ecorce)" strokeWidth="2.4" strokeLinecap="round" />
           </svg>
 
           <div className="absolute inset-x-0 bottom-3.5 flex animate-fade-up justify-center px-5" style={{ animationDelay: "350ms" }}>
@@ -209,7 +210,7 @@ export default function Tribe() {
         <div role="tablist" aria-label="Ma tribu" className="relative grid h-[50px] grid-cols-2 rounded-medium bg-sable-2 p-1">
           <span
             aria-hidden="true"
-            className={`absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-[14px] bg-white shadow-[0_2px_6px_rgba(58,33,27,0.12)] ${SPRING}`}
+            className={`absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-[14px] bg-card shadow-[0_2px_6px_rgba(58,33,27,0.12)] ${SPRING}`}
             style={{ transform: `translateX(${tab === "foyer" ? 0 : 100}%)` }}
           />
           {([["foyer", "Le foyer", foyerCount], ["cercle", "Le cercle", circle.length]] as const).map(([k, label, n]) => (
@@ -329,11 +330,11 @@ export default function Tribe() {
             <h2 id="our-year" className="font-display text-xl font-bold">Notre année en idées</h2>
             <span className="text-[13px] text-sec">{year}</span>
           </div>
-          <div className="relative overflow-hidden rounded-large bg-[#9FD3E6] px-4 pt-4 pb-[18px]">
-            <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[26px] border-t-2 border-ecorce bg-braise-soft" />
+          <div className="relative overflow-hidden rounded-large bg-sky px-4 pt-4 pb-[18px]">
+            <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[26px] border-t-2 border-ecorce bg-ground" />
             <svg aria-hidden="true" width="34" height="30" viewBox="0 0 48 42" className="absolute right-[18px] bottom-6">
-              <path d="M24 7L44 41H4z" fill="#D45A43" stroke="#3A211B" strokeWidth="2.4" strokeLinejoin="round" />
-              <path d="M24 22l11 19H13z" fill="#5E4558" stroke="#3A211B" strokeWidth="2.4" strokeLinejoin="round" />
+              <path d="M24 7L44 41H4z" fill="#D45A43" stroke="var(--color-ecorce)" strokeWidth="2.4" strokeLinejoin="round" />
+              <path d="M24 22l11 19H13z" fill="#5E4558" stroke="var(--color-ecorce)" strokeWidth="2.4" strokeLinejoin="round" />
             </svg>
             <div className="relative grid grid-cols-3 gap-2">
               <YearTile n={yearStats.outings} label={yearStats.outings > 1 ? "sorties gardées" : "sortie gardée"} color="text-sortie-ink" />
@@ -353,7 +354,8 @@ export default function Tribe() {
 
         <section className="flex flex-col gap-2.5" aria-labelledby="settings-title">
           <h2 id="settings-title" className="font-display text-xl font-bold">Réglages</h2>
-          <nav aria-label="Réglages" className="overflow-hidden rounded-large bg-white">
+          <nav aria-label="Réglages" className="overflow-hidden rounded-large bg-card">
+            <AppearanceRow />
             <ListRow icon="heart" label="Tribus suivies" value={following.data ? String(following.data.length) : undefined} onClick={() => setFollowingOpen(true)} />
             <ListRow icon="cart" label="Liste de courses" to="/courses" />
             <ListRow icon="lock" label="Confidentialité & mes données" to="/confidentialite" />
@@ -416,7 +418,7 @@ export default function Tribe() {
         {following.loading ? (
           <Spinner className="text-terracotta" />
         ) : following.data?.length ? (
-          <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-[18px] bg-white">
+          <ul className="flex flex-col divide-y divide-sable-2 overflow-hidden rounded-[18px] bg-card">
             {following.data.map((u, i) => {
               const [bg, ink] = AVATAR_COLORS[i % AVATAR_COLORS.length];
               return (
@@ -438,7 +440,7 @@ export default function Tribe() {
 
       <Sheet open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Paramètres">
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 rounded-medium bg-white p-3.5">
+          <div className="flex items-center gap-3 rounded-medium bg-card p-3.5">
             <span className="flex h-12 w-12 items-center justify-center rounded-medium bg-braise font-display text-xl font-extrabold">{initial(session.displayName)}</span>
             <span className="flex flex-col">
               <span className="font-bold">{session.displayName}</span>
@@ -448,7 +450,7 @@ export default function Tribe() {
           <button
             type="button"
             onClick={() => { setSettingsOpen(false); setNameOpen(true); }}
-            className="flex items-center gap-3 rounded-medium bg-white p-3.5 text-left hover:bg-sable-2"
+            className="flex items-center gap-3 rounded-medium bg-card p-3.5 text-left hover:bg-sable-2"
           >
             <Icon name="tipi" size={20} className="text-terracotta" />
             <span className="flex flex-1 flex-col">
@@ -457,7 +459,7 @@ export default function Tribe() {
             </span>
             <Icon name="pencil" size={17} className="text-sec" />
           </button>
-          <section aria-labelledby="my-data" className="flex flex-col gap-2 rounded-medium bg-white p-3.5">
+          <section aria-labelledby="my-data" className="flex flex-col gap-2 rounded-medium bg-card p-3.5">
             <h3 id="my-data" className="font-bold">Mes données</h3>
             <p className="text-sm text-sec">
               Récupérez tout ce que Tribbae conserve sur vous, ou supprimez votre compte. Détails dans la{" "}
@@ -483,9 +485,35 @@ export default function Tribe() {
 
 function YearTile({ n, label, color }: { n: number; label: string; color: string }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-2xl bg-white px-2 py-2.5 text-center">
+    <div className="flex flex-col gap-0.5 rounded-2xl bg-card px-2 py-2.5 text-center">
       <span className={`font-display text-2xl font-extrabold ${color}`}>{n}</span>
       <span className="text-xs leading-[15px] text-sec">{label}</span>
+    </div>
+  );
+}
+
+/** « Apparence » : jour, soir (mode sombre « veillée ») ou comme l'appareil. Retenue sur cet appareil. */
+function AppearanceRow() {
+  const pref = useThemePref();
+  const options: [ThemePref, string][] = [["jour", "Jour"], ["soir", "Soir"], ["auto", "Auto"]];
+  return (
+    <div className="flex items-center gap-3 border-b border-sable-2 px-4 py-3">
+      <Icon name="sun" size={20} className="text-sec" />
+      <span id="appearance-label" className="flex-1 text-[15px] font-semibold">Apparence</span>
+      <div role="radiogroup" aria-labelledby="appearance-label" className="flex gap-0.5 rounded-small bg-sable-2 p-[3px]">
+        {options.map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            role="radio"
+            aria-checked={pref === k}
+            onClick={() => setThemePref(k)}
+            className={`h-[30px] rounded-[9px] px-2.5 text-xs font-bold transition-colors ${pref === k ? "bg-card text-ecorce" : "text-sec"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -582,7 +610,7 @@ function KidCard({ child, colors, ideas, now, delay, onOpen }: {
     <button type="button" onClick={onOpen} className={`${CARD} animate-fade-up overflow-hidden text-left ${PRESS}`} style={{ animationDelay: `${delay}ms` }}>
       <span className="relative block h-[74px]" style={{ background: bg }}>
         <span
-          className="absolute -bottom-5 left-3 flex h-12 w-12 items-center justify-center rounded-[17px] border-[3px] border-white font-display text-xl font-extrabold text-white"
+          className="absolute -bottom-5 left-3 flex h-12 w-12 items-center justify-center rounded-[17px] border-[3px] border-card font-display text-xl font-extrabold text-white"
           style={{ background: ink }}
         >
           {initial(child.name)}
@@ -590,7 +618,7 @@ function KidCard({ child, colors, ideas, now, delay, onOpen }: {
         {cd && (
           <span
             className="absolute top-2.5 right-2.5 rounded-[9px] px-2 py-[3px] text-[11px] font-extrabold"
-            style={soon ? { background: "#A04812", color: "#fff" } : { background: "#fff", color: ink }}
+            style={soon ? { background: "var(--color-cadeau-ink)", color: "#fff" } : { background: "var(--color-card)", color: ink }}
           >
             {cd.label}
           </span>
@@ -833,7 +861,7 @@ function InviteSheet({ folders, onClose, onTribe, onCircle, onShareLink }: {
                 role="radio"
                 aria-checked={on}
                 onClick={() => setRole(r.k)}
-                className={`flex flex-col gap-1 rounded-medium bg-white p-3 text-left ${SPRING} ${on ? "scale-[1.02] shadow-[inset_0_0_0_2px_#C8492C]" : "shadow-[inset_0_0_0_1px_#EADBC8]"}`}
+                className={`flex flex-col gap-1 rounded-medium bg-card p-3 text-left ${SPRING} ${on ? "scale-[1.02] shadow-[inset_0_0_0_2px_#C8492C]" : "shadow-[inset_0_0_0_1px_#EADBC8]"}`}
               >
                 <span className="font-display text-base font-extrabold">{r.title}</span>
                 <span className="text-xs leading-4 text-sec">{r.desc}</span>
@@ -855,9 +883,9 @@ function InviteSheet({ folders, onClose, onTribe, onCircle, onShareLink }: {
                     <button
                       type="button"
                       onClick={() => onShareLink(f)}
-                      className="flex w-full items-center gap-3 rounded-medium bg-white p-3 text-left hover:bg-sable-2"
+                      className="flex w-full items-center gap-3 rounded-medium bg-card p-3 text-left hover:bg-sable-2"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-small text-white" style={{ background: c.solid }}>
+                      <span className="flex h-10 w-10 items-center justify-center rounded-small text-on-solid" style={{ background: c.solid }}>
                         <FolderGlyph icon={f.icon} size={20} />
                       </span>
                       <span className="flex-1 font-bold">{f.name}</span>
@@ -976,7 +1004,7 @@ function CircleInviteForm({ folders, onDone }: { folders: Folder[]; onDone: () =
                 type="button"
                 aria-pressed={on}
                 onClick={() => toggle(f.id)}
-                className={`inline-flex h-[34px] items-center gap-1.5 rounded-small px-3 text-[13px] font-bold transition-colors ${on ? "bg-ecorce text-sable" : "bg-white text-sec shadow-[inset_0_0_0_1px_#EADBC8]"}`}
+                className={`inline-flex h-[34px] items-center gap-1.5 rounded-small px-3 text-[13px] font-bold transition-colors ${on ? "bg-ecorce text-sable" : "bg-card text-sec shadow-[inset_0_0_0_1px_#EADBC8]"}`}
               >
                 {on ? "✓ " : "+ "}{f.name}
               </button>
@@ -992,7 +1020,7 @@ function CircleInviteForm({ folders, onDone }: { folders: Folder[]; onDone: () =
             role="radio"
             aria-checked={role === k}
             onClick={() => setRole(k)}
-            className={`h-[30px] rounded-[9px] px-3 text-xs font-bold transition-colors ${role === k ? "bg-white text-ecorce" : "text-sec"}`}
+            className={`h-[30px] rounded-[9px] px-3 text-xs font-bold transition-colors ${role === k ? "bg-card text-ecorce" : "text-sec"}`}
           >
             {label}
           </button>
@@ -1101,7 +1129,7 @@ function MembersSheet({ open, onClose, accounts, invitations, meId, onChange, on
 
   return (
     <Sheet open={open} onClose={onClose} title="Le foyer">
-      <ul className="mb-4 flex flex-col divide-y divide-sable-2 overflow-hidden rounded-[18px] bg-white">
+      <ul className="mb-4 flex flex-col divide-y divide-sable-2 overflow-hidden rounded-[18px] bg-card">
         {accounts.map((m, i) => {
           const [bg, ink] = AVATAR_COLORS[i % AVATAR_COLORS.length];
           const self = m.userId === meId;
@@ -1126,7 +1154,7 @@ function MembersSheet({ open, onClose, accounts, invitations, meId, onChange, on
       {invitations.length > 0 && (
         <>
           <h3 className="mb-1.5 text-[13px] font-bold text-sec">Invitations en attente</h3>
-          <ul className="mb-4 flex flex-col divide-y divide-sable-2 overflow-hidden rounded-[18px] bg-white">
+          <ul className="mb-4 flex flex-col divide-y divide-sable-2 overflow-hidden rounded-[18px] bg-card">
             {invitations.map((inv) => (
               <li key={inv.id} className="flex items-center gap-3 px-3.5 py-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-small bg-sable-2 text-sec">
@@ -1187,7 +1215,7 @@ function DeleteAccountSheet({ onClose }: { onClose: () => void }) {
   return (
     <Sheet open onClose={onClose} title="Supprimer mon compte">
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2 rounded-medium bg-white p-3.5 text-[15px]">
+        <div className="flex flex-col gap-2 rounded-medium bg-card p-3.5 text-[15px]">
           <p className="font-bold">Seront définitivement effacés :</p>
           <ul className="list-disc space-y-1 pl-5 text-ecorce-2">
             <li>votre compte (nom, email, mot de passe) ;</li>

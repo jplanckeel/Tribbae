@@ -200,16 +200,16 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             type="button"
             onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
             aria-label="Retour"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-card"
           >
             <Icon name="chevronLeft" size={22} />
           </button>
           <div className="flex gap-2">
-            <button type="button" onClick={share} aria-label="Partager" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-white">
+            <button type="button" onClick={share} aria-label="Partager" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-card">
               <Icon name="share" size={21} />
             </button>
             {session && (
-              <button type="button" onClick={() => setMenuOpen(true)} aria-label="Plus d'actions" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-white">
+              <button type="button" onClick={() => setMenuOpen(true)} aria-label="Plus d'actions" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-card">
                 <Icon name="dots" size={21} />
               </button>
             )}
@@ -239,7 +239,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         {infos.length > 0 && (
           <dl className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
             {infos.map((i) => (
-              <div key={i.label} className="flex items-center gap-2.5 rounded-2xl bg-white p-3">
+              <div key={i.label} className="flex items-center gap-2.5 rounded-2xl bg-card p-3">
                 <Icon name={i.icon} size={20} className={cat.ic} />
                 <div className="flex min-w-0 flex-col">
                   <dt className="text-xs text-sec">{i.label}</dt>
@@ -267,7 +267,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         {link.description && <p className="text-[15px] leading-relaxed whitespace-pre-line text-ecorce-2">{link.description}</p>}
 
         {folder && (
-          <RouterLink to={`/dossiers/${folder.id}`} {...pushLink(link.id)} className="flex items-center gap-3 rounded-[18px] bg-white px-3.5 py-3 transition-transform active:scale-[0.97]">
+          <RouterLink to={`/dossiers/${folder.id}`} {...pushLink(link.id)} className="flex items-center gap-3 rounded-[18px] bg-card px-3.5 py-3 transition-transform active:scale-[0.97]">
             <span className="flex h-10 w-10 items-center justify-center rounded-[13px]" style={{ background: folderColor(folder.color).bg, color: folderColor(folder.color).solid }}>
               <FolderGlyph icon={folder.icon} size={20} />
             </span>
@@ -280,7 +280,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         )}
 
         {!!link.ingredients?.length && (
-          <section className="flex flex-col gap-2.5 rounded-large bg-white p-4">
+          <section className="flex flex-col gap-2.5 rounded-large bg-card p-4">
             <h2 className="flex items-center gap-2 text-lg font-bold"><Icon name="cart" size={20} className="text-recette-ic" />Ingrédients</h2>
             <ul className="flex flex-col gap-1.5">
               {link.ingredients.map((ing, i) => (
@@ -333,7 +333,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             onClick={like}
             aria-pressed={liked}
             aria-label={`J'aime, ${likes}`}
-            className="flex h-[54px] items-center gap-1.5 rounded-medium border-[1.5px] border-line-2 bg-white px-4 font-bold text-terracotta transition-colors hover:bg-sable-2"
+            className="flex h-[54px] items-center gap-1.5 rounded-medium border-[1.5px] border-line-2 bg-card px-4 font-bold text-terracotta transition-colors hover:bg-sable-2"
           >
             <LikeHeart liked={liked} size={20} />
             {likes}
@@ -342,7 +342,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             type="button"
             onClick={() => commentsRef.current?.scrollIntoView({ behavior: "smooth" })}
             aria-label={`Commentaires, ${comments.data?.length ?? 0}`}
-            className="flex h-[54px] items-center gap-1.5 rounded-medium border-[1.5px] border-line-2 bg-white px-4 font-bold transition-colors hover:bg-sable-2"
+            className="flex h-[54px] items-center gap-1.5 rounded-medium border-[1.5px] border-line-2 bg-card px-4 font-bold transition-colors hover:bg-sable-2"
           >
             <Icon name="comment" size={20} />
             {comments.data?.length ?? 0}
@@ -402,7 +402,7 @@ function FollowAuthor({ userId, name }: { userId: string; name?: string }) {
     }
   };
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white p-2.5 pr-3">
+    <div className="flex items-center gap-3 rounded-2xl bg-card p-2.5 pr-3">
       <Avatar name={name} size={36} rounded="rounded-small" />
       <span className="flex-1 text-sm"><strong>{name || "Une tribu"}</strong><span className="text-sec"> partage ses idées</span></span>
       <Button size="sm" variant={following ? "ghost" : "dark"} loading={busy} onClick={toggle}>
@@ -461,7 +461,7 @@ function Comments({ linkId, list, loading, onChange, canModerate, onRequireAuth 
             return (
               <li key={c.id} className="flex gap-2.5">
                 <Avatar name={c.userDisplayName} color={bg} ink={ink} size={34} rounded="rounded-small" />
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-2xl rounded-tl-md bg-white px-3.5 py-2.5">
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-2xl rounded-tl-md bg-card px-3.5 py-2.5">
                   <span className="flex items-baseline gap-2 text-[13px]">
                     <strong>{c.userDisplayName || "Membre"}</strong>
                     {c.createdAt && <span className="text-xs text-muted">{timeFmt.format(new Date(c.createdAt))}</span>}
@@ -488,7 +488,7 @@ function Comments({ linkId, list, loading, onChange, canModerate, onRequireAuth 
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Ajouter un commentaire…"
-            className="max-h-40 min-h-[48px] flex-1 resize-y rounded-medium border-[1.5px] border-line-2 bg-white px-4 py-3 text-[15px] outline-none placeholder:text-muted focus:border-terracotta"
+            className="max-h-40 min-h-[48px] flex-1 resize-y rounded-medium border-[1.5px] border-line-2 bg-card px-4 py-3 text-[15px] outline-none placeholder:text-muted focus:border-terracotta"
           />
           <button
             type="submit"

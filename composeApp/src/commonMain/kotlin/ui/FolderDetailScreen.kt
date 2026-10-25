@@ -69,8 +69,8 @@ fun FolderDetailScreen(
         children = children,
         highlight = highlightLinkId,
         actions = {
-            if (viewModel != null) CircleIconButton(Icons.Outlined.PersonAdd, "Inviter et partager", { showShare = true }, background = Color.White.copy(alpha = 0.9f))
-            CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = Color.White.copy(alpha = 0.9f))
+            if (viewModel != null) CircleIconButton(Icons.Outlined.PersonAdd, "Inviter et partager", { showShare = true }, background = PhotoVeil)
+            CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = PhotoVeil)
         },
         extra = {
             if (folder.collaborators.isNotEmpty()) {
@@ -94,7 +94,7 @@ fun FolderDetailScreen(
     )
 
     if (showMenu) {
-        ModalBottomSheet(onDismissRequest = { showMenu = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        ModalBottomSheet(onDismissRequest = { showMenu = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Dossier", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
                 MenuRow(Icons.Outlined.Edit, "Personnaliser") { showMenu = false; onEdit() }
@@ -113,7 +113,7 @@ fun FolderDetailScreen(
     if (showDelete) {
         AlertDialog(
             onDismissRequest = { showDelete = false },
-            containerColor = Sable,
+            containerColor = SheetColor,
             title = { Text("Supprimer « ${folder.name} » ?", style = display(20.sp, FontWeight.Bold)) },
             text = { Text("Le dossier disparaît, ses idées sont conservées dans « Non rangées ».", color = Ecorce2) },
             confirmButton = { TextButton(onClick = { showDelete = false; onDelete() }) { Text("Supprimer", color = Terracotta, fontWeight = FontWeight.Bold) } },
@@ -178,8 +178,8 @@ fun PublicFolderScreen(
         folder = f,
         extra = {
             if (f.aiGenerated) Tag("IA", Prune, Sable, Icons.Outlined.AutoAwesome)
-            if (shareToken != null) Tag("Partagé avec vous", Color.White, Ecorce, Icons.Outlined.Link)
-            else Tag("Public", Color(0xFFDCEDF3), Color(0xFF235C77), Icons.Outlined.Public)
+            if (shareToken != null) Tag("Partagé avec vous", CardColor, Ecorce, Icons.Outlined.Link)
+            else Tag("Public", BlueBg, BlueInk, Icons.Outlined.Public)
         },
         buttons = {
             // Like réservé aux dossiers publics (un lien de partage n'est pas une publication)
@@ -265,7 +265,7 @@ private fun CollectionScaffold(
             Box(Modifier.fillMaxWidth().height(184.dp)) {
                 FolderCover(folder, links)
                 Row(Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = Color.White.copy(alpha = 0.9f))
+                    CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = PhotoVeil)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), content = actions)
                 }
                 if (cd != null) {
@@ -313,7 +313,7 @@ private fun CollectionScaffold(
             Box(Modifier.align(Alignment.BottomEnd).offset(x = 96.dp, y = 160.dp).size(320.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.45f)))
             Column(Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = Color.White.copy(alpha = 0.9f))
+                    CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = PhotoVeil)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), content = actions)
                 }
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -392,7 +392,7 @@ private fun MosaicTile(link: Link, large: Boolean, onClick: () -> Unit, modifier
         IdeaVisual(link, 400.dp, Modifier.fillMaxSize(), iconSize = if (large) 56.dp else 36.dp)
         Text(
             cat.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = cat.tint,
-            modifier = Modifier.padding(10.dp).clip(CircleShape).background(Color.White).padding(horizontal = 10.dp, vertical = 4.dp)
+            modifier = Modifier.padding(10.dp).clip(CircleShape).background(CardColor).padding(horizontal = 10.dp, vertical = 4.dp)
         )
         Box(
             Modifier.align(Alignment.BottomStart).fillMaxWidth()

@@ -77,9 +77,7 @@ data class CategoryUi(
     val tint: Color,
 )
 
-private fun palette(c: LinkCategory) = CategoryPalettes.getValue(c.name)
-
-val CategoryOrder: List<CategoryUi> = listOf(
+private fun categoryOrder(palettes: Map<String, CategoryPalette>): List<CategoryUi> = listOf(
     Triple(LinkCategory.ACTIVITE, "Activités", Icons.Outlined.SportsSoccer),
     Triple(LinkCategory.CADEAU, "Cadeaux", Icons.Outlined.CardGiftcard),
     Triple(LinkCategory.RECETTE, "Recettes", Icons.Outlined.Restaurant),
@@ -88,15 +86,30 @@ val CategoryOrder: List<CategoryUi> = listOf(
     Triple(LinkCategory.LIVRE, "Livres", Icons.Outlined.MenuBook),
     Triple(LinkCategory.DECORATION, "Déco", Icons.Outlined.Palette),
 ).map { (cat, plural, icon) ->
-    val p = palette(cat)
+    val p = palettes.getValue(cat.name)
     CategoryUi(cat, cat.label, plural, icon, p.bg, p.ink, p.icon)
 }
+
+private val LightCategoryOrder by lazy { categoryOrder(LightCategoryPalettes) }
+private val DarkCategoryOrder by lazy { categoryOrder(DarkCategoryPalettes) }
+
+val CategoryOrder: List<CategoryUi> get() = if (Appearance.dark) DarkCategoryOrder else LightCategoryOrder
 
 fun categoryUi(c: LinkCategory): CategoryUi = CategoryOrder.first { it.category == c }
 
 /** Fond pastel / couleur pleine d'un dossier (mêmes teintes que le web). */
 fun folderSolid(c: FolderColor): Color = FolderColors[c.name] ?: Terracotta
-fun folderBg(c: FolderColor): Color = when (c) {
+fun folderBg(c: FolderColor): Color = if (Appearance.dark) when (c) {
+    FolderColor.ORANGE -> Color(0xFF3D2617)
+    FolderColor.RED -> Color(0xFF3B201B)
+    FolderColor.YELLOW -> Color(0xFF3A2D14)
+    FolderColor.GREEN -> Color(0xFF1F301B)
+    FolderColor.TEAL -> Color(0xFF16302C)
+    FolderColor.BLUE -> Color(0xFF17303A)
+    FolderColor.PURPLE -> Color(0xFF32232F)
+    FolderColor.PINK -> Color(0xFF3B1F29)
+    FolderColor.SABLE -> Color(0xFF33281F)
+} else when (c) {
     FolderColor.ORANGE -> Color(0xFFFCE3D0)
     FolderColor.RED -> Color(0xFFF8DCD3)
     FolderColor.YELLOW -> Color(0xFFFBEACB)
@@ -109,7 +122,17 @@ fun folderBg(c: FolderColor): Color = when (c) {
 }
 
 /** Teinte secondaire (motifs des couvertures, dessins teintés, onglet des cartes). */
-fun folderMid(c: FolderColor): Color = when (c) {
+fun folderMid(c: FolderColor): Color = if (Appearance.dark) when (c) {
+    FolderColor.ORANGE -> Color(0xFF4A2E1B)
+    FolderColor.RED -> Color(0xFF4A2822)
+    FolderColor.YELLOW -> Color(0xFF4A3A1A)
+    FolderColor.GREEN -> Color(0xFF2A3F24)
+    FolderColor.TEAL -> Color(0xFF1E3F3A)
+    FolderColor.BLUE -> Color(0xFF1F3F4C)
+    FolderColor.PURPLE -> Color(0xFF42303E)
+    FolderColor.PINK -> Color(0xFF4C2835)
+    FolderColor.SABLE -> Color(0xFF44342B)
+} else when (c) {
     FolderColor.ORANGE -> Color(0xFFF8CDAE)
     FolderColor.RED -> Color(0xFFF2C1B2)
     FolderColor.YELLOW -> Color(0xFFF6DAA3)
@@ -129,7 +152,14 @@ val FolderColorLabels = mapOf(
 )
 
 // Couleurs d'avatars (fond, encre) de la maquette « Ma tribu »
-val AvatarColors = listOf(
+val AvatarColors: List<Pair<Color, Color>> get() = if (Appearance.dark) listOf(
+    Braise to Color(0xFF1C1411),
+    Prune to Color(0xFFFDE6BD),
+    Color(0xFF17303A) to Color(0xFF8CCBE3),
+    Color(0xFF1F301B) to Color(0xFFA7D08F),
+    Color(0xFF3A2D14) to Color(0xFFF2C76B),
+    Color(0xFF3B1F29) to Color(0xFFEE9DB8),
+) else listOf(
     Braise to Ecorce,
     Prune to Sable,
     Color(0xFFDCEDF3) to Color(0xFF235C77),
@@ -154,9 +184,13 @@ val CardShadow = 10.dp
 /** Ombre douce des cartes blanches de la maquette. */
 fun Modifier.card(shape: RoundedCornerShape = RoundedCornerShape(22.dp), elevation: Dp = 6.dp): Modifier =
     this
-        .shadow(elevation, shape, ambientColor = Ecorce.copy(alpha = 0.25f), spotColor = Ecorce.copy(alpha = 0.18f))
+        // Le soir : pas d'ombre, une bordure fine
+        .then(
+            if (Appearance.dark) Modifier.border(1.dp, CardBorder, shape)
+            else Modifier.shadow(elevation, shape, ambientColor = Ecorce.copy(alpha = 0.25f), spotColor = Ecorce.copy(alpha = 0.18f))
+        )
         .clip(shape)
-        .background(Color.White)
+        .background(CardColor)
 
 // ── Logo et motifs ─────────────────────────────────────────────────────────────
 
@@ -191,7 +225,7 @@ fun Logo(modifier: Modifier = Modifier) {
     }
 }
 
-/** Grand soleil crème + petit rond + croix (motifs du logo), en fond d'écran. */
+/** Grand soleil crème (motif du logo), en fond d'écran. */
 @Composable
 fun BoxScope.SunDecor() {
     Box(
@@ -200,25 +234,8 @@ fun BoxScope.SunDecor() {
             .offset(x = 120.dp, y = (-110).dp)
             .size(330.dp)
             .clip(CircleShape)
-            .background(Soleil)
+            .background(SunDisc)
     )
-    Box(
-        Modifier
-            .align(Alignment.TopEnd)
-            .offset(x = (-40).dp, y = 118.dp)
-            .size(9.dp)
-            .border(2.dp, Terracotta, CircleShape)
-    )
-    Canvas(
-        Modifier
-            .align(Alignment.TopEnd)
-            .offset(x = (-150).dp, y = 70.dp)
-            .size(12.dp)
-    ) {
-        val w = size.width
-        drawLine(Ecorce, Offset(2f / 12 * w, 2f / 12 * w), Offset(10f / 12 * w, 10f / 12 * w), 2.dp.toPx(), StrokeCap.Round)
-        drawLine(Ecorce, Offset(10f / 12 * w, 2f / 12 * w), Offset(2f / 12 * w, 10f / 12 * w), 2.dp.toPx(), StrokeCap.Round)
-    }
 }
 
 // ── Boutons ────────────────────────────────────────────────────────────────────
@@ -229,7 +246,7 @@ fun CircleIconButton(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    background: Color = Color.White,
+    background: Color = CardColor,
     tint: Color = Ecorce,
     size: Dp = 44.dp,
     badge: Boolean = false,
@@ -237,7 +254,7 @@ fun CircleIconButton(
     Box(
         modifier
             .size(size)
-            .shadow(if (background == Color.White) 4.dp else 0.dp, CircleShape, spotColor = Ecorce.copy(alpha = 0.2f))
+            .shadow(if (background == CardColor && !Appearance.dark) 4.dp else 0.dp, CircleShape, spotColor = Ecorce.copy(alpha = 0.2f))
             .clip(CircleShape)
             .background(background)
             .clickable(role = Role.Button, onClick = onClick)
@@ -252,7 +269,7 @@ fun CircleIconButton(
                     .offset(x = (-11).dp, y = 10.dp)
                     .size(8.dp)
                     .clip(CircleShape)
-                    .background(Color.White)
+                    .background(CardColor)
                     .padding(2.dp)
                     .clip(CircleShape)
                     .background(Terracotta)
@@ -278,7 +295,7 @@ fun CampButton(
     val (bg, fg) = when (kind) {
         ButtonKind.Primary -> Terracotta to Color.White
         ButtonKind.Secondary -> Color.Transparent to Ecorce
-        ButtonKind.Ai -> Prune to Sable
+        ButtonKind.Ai -> Prune to OnDark
         ButtonKind.Dark -> Ecorce to Sable
         ButtonKind.Ghost -> Color.White to Ecorce
     }
@@ -292,7 +309,7 @@ fun CampButton(
             .then(
                 when (kind) {
                     ButtonKind.Secondary -> Modifier.border(2.dp, Ecorce, shape)
-                    ButtonKind.Ghost -> Modifier.border(1.5.dp, Color(0xFFE6D3C0), shape)
+                    ButtonKind.Ghost -> Modifier.border(1.5.dp, Line, shape)
                     else -> Modifier
                 }
             )
@@ -322,7 +339,7 @@ fun Pill(
             .height(38.dp)
             .clip(CircleShape)
             .background(if (selected) Ecorce else idleBg)
-            .then(if (!selected && bordered) Modifier.border(1.5.dp, Color(0xFFE6D3C0), CircleShape) else Modifier)
+            .then(if (!selected && bordered) Modifier.border(1.5.dp, Line, CircleShape) else Modifier)
             .clickable(role = Role.Checkbox, onClick = onClick)
             .padding(horizontal = 15.dp),
         contentAlignment = Alignment.Center
@@ -337,8 +354,8 @@ fun OutlinePill(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .clip(CircleShape)
-            .background(if (selected) Color.White else Color.Transparent)
-            .border(1.5.dp, if (selected) Terracotta else Color(0xFFE6D3C0), CircleShape)
+            .background(if (selected) CardColor else Color.Transparent)
+            .border(1.5.dp, if (selected) Terracotta else Line, CircleShape)
             .clickable(role = Role.Checkbox, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
@@ -405,7 +422,7 @@ fun SegmentedTabs(tabs: List<String>, selected: Int, onSelect: (Int) -> Unit, mo
                     .fillMaxHeight()
                     .then(if (on) Modifier.shadow(2.dp, RoundedCornerShape(12.dp)) else Modifier)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (on) Color.White else Color.Transparent)
+                    .background(if (on) CardColor else Color.Transparent)
                     .clickable(role = Role.Tab) { onSelect(i) },
                 contentAlignment = Alignment.Center
             ) {
@@ -498,7 +515,7 @@ fun CategoryBadge(cat: CategoryUi, modifier: Modifier = Modifier, onWhite: Boole
         fontWeight = FontWeight.SemiBold,
         modifier = modifier
             .clip(CircleShape)
-            .background(if (onWhite) Color.White else cat.bg)
+            .background(if (onWhite) CardColor else cat.bg)
             .padding(horizontal = 10.dp, vertical = 4.dp)
     )
 }
@@ -647,7 +664,7 @@ fun AvatarStack(names: List<String>, label: String? = null) {
                     .offset(x = (-8 * i).dp)
                     .size(26.dp)
                     .clip(CircleShape)
-                    .background(Color.White)
+                    .background(CardColor)
                     .padding(2.dp)
                     .clip(CircleShape)
                     .background(bg),
@@ -765,7 +782,7 @@ fun InitialAvatar(name: String, index: Int, size: Dp = 58.dp, radius: Dp = 20.dp
     }
 }
 
-val ThinBorder = BorderStroke(1.5.dp, Color(0xFFE6D3C0))
+val ThinBorder = BorderStroke(1.5.dp, Line)
 
 /** Poignée des feuilles du bas (44 × 5, sable foncé). */
 @Composable
@@ -797,8 +814,8 @@ fun CampField(
                 .fillMaxWidth()
                 .heightIn(min = 52.dp)
                 .clip(RoundedCornerShape(18.dp))
-                .background(Color.White)
-                .border(1.5.dp, if (focused) Terracotta else Color(0xFFE6D3C0), RoundedCornerShape(18.dp))
+                .background(CardColor)
+                .border(1.5.dp, if (focused) Terracotta else Line, RoundedCornerShape(18.dp))
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(10.dp)

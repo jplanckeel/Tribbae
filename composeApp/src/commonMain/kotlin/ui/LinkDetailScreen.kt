@@ -123,17 +123,17 @@ fun LinkDetailScreen(
                 if (link.imageUrl.isNotBlank()) {
                     AsyncImage(link.imageUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 } else {
-                    Box(Modifier.align(Alignment.BottomCenter).offset(y = 120.dp).size(320.dp).clip(CircleShape).background(Soleil))
+                    Box(Modifier.align(Alignment.BottomCenter).offset(y = 120.dp).size(320.dp).clip(CircleShape).background(SunDisc))
                     TipiMark(150.dp, stroke = 1.6f, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
                 }
                 Row(
                     Modifier.fillMaxWidth().statusBarsPadding().padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = Color.White.copy(alpha = 0.92f))
+                    CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = PhotoVeil)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CircleIconButton(Icons.Outlined.IosShare, "Partager", share, background = Color.White.copy(alpha = 0.92f))
-                        CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = Color.White.copy(alpha = 0.92f))
+                        CircleIconButton(Icons.Outlined.IosShare, "Partager", share, background = PhotoVeil)
+                        CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = PhotoVeil)
                     }
                 }
             }
@@ -176,7 +176,7 @@ fun LinkDetailScreen(
 
                 if (readOnly && isFollowing != null && link.ownerId.isNotEmpty()) {
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White).padding(10.dp),
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CardColor).padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -209,7 +209,7 @@ fun LinkDetailScreen(
 
                 if (at != null && !readOnly && viewModel != null) {
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Soleil).padding(horizontal = 14.dp, vertical = 12.dp),
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(SoleilPanel).padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -233,7 +233,7 @@ fun LinkDetailScreen(
 
                 if (folder != null && onOpenFolder != null) {
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White)
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor)
                             .clickable(role = Role.Button) { onOpenFolder(folder) }.padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -252,7 +252,7 @@ fun LinkDetailScreen(
                 if (link.ingredients.isNotEmpty()) {
                     val rc = categoryUi(data.LinkCategory.RECETTE)
                     Column(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.White).padding(16.dp),
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(CardColor).padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -358,7 +358,7 @@ fun LinkDetailScreen(
 
     // ── Menu « … » ──
     if (showMenu) {
-        ModalBottomSheet(onDismissRequest = { showMenu = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        ModalBottomSheet(onDismissRequest = { showMenu = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Idée", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
                 if (!readOnly) {
@@ -387,7 +387,7 @@ fun LinkDetailScreen(
 
     // ── Enregistrer une idée de la communauté ──
     if (showSave && onSaveToMyList != null) {
-        ModalBottomSheet(onDismissRequest = { showSave = false }, containerColor = Sable, dragHandle = { SheetHandle() }) {
+        ModalBottomSheet(onDismissRequest = { showSave = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(
                 Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -408,7 +408,7 @@ fun LinkDetailScreen(
     if (showDelete) {
         AlertDialog(
             onDismissRequest = { showDelete = false },
-            containerColor = Sable,
+            containerColor = SheetColor,
             title = { Text("Supprimer cette idée ?", style = display(20.sp, FontWeight.Bold)) },
             text = { Text("« ${link.title} » sera définitivement supprimée.", color = Ecorce2) },
             confirmButton = {
@@ -422,7 +422,7 @@ fun LinkDetailScreen(
 @Composable
 private fun InfoTile(icon: ImageVector, label: String, value: String, tint: Color, modifier: Modifier) {
     Row(
-        modifier.clip(RoundedCornerShape(16.dp)).background(Color.White).padding(12.dp),
+        modifier.clip(RoundedCornerShape(16.dp)).background(CardColor).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -440,7 +440,7 @@ private fun ActionChip(icon: ImageVector, text: String, tint: Color, label: Stri
         Modifier
             .height(54.dp)
             .clip(RoundedCornerShape(18.dp))
-            .background(Color.White)
+            .background(CardColor)
             .border(ThinBorder, RoundedCornerShape(18.dp))
             .clickable(role = Role.Button, onClick = onClick)
             .semantics(mergeDescendants = true) { contentDescription = label }
@@ -456,11 +456,11 @@ private fun ActionChip(icon: ImageVector, text: String, tint: Color, label: Stri
 @Composable
 fun MenuRow(icon: ImageVector, label: String, danger: Boolean = false, tint: Color? = null, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp)).background(Color.White).clickable(onClick = onClick).padding(horizontal = 16.dp),
+        Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp)).background(CardColor).clickable(onClick = onClick).padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        val c = if (danger) Color(0xFF9A3420) else Ecorce
+        val c = if (danger) CoralInk else Ecorce
         Icon(icon, null, tint = tint ?: c, modifier = Modifier.size(20.dp))
         Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = c)
     }
@@ -471,7 +471,7 @@ private fun CommentBubble(c: Comment, index: Int, canDelete: Boolean, onDelete: 
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         InitialAvatar(c.userDisplayName, index, 34.dp, 12.dp, 14.sp)
         Column(
-            Modifier.weight(1f).clip(RoundedCornerShape(topStart = 6.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp)).background(Color.White).padding(horizontal = 14.dp, vertical = 10.dp),
+            Modifier.weight(1f).clip(RoundedCornerShape(topStart = 6.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 16.dp)).background(CardColor).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -494,7 +494,7 @@ private fun CommentInput(onSend: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
     Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(
-            Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(18.dp)).background(Color.White)
+            Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(18.dp)).background(CardColor)
                 .border(ThinBorder, RoundedCornerShape(18.dp)).padding(horizontal = 16.dp, vertical = 13.dp)
         ) {
             if (text.isEmpty()) Text("Ajouter un commentaire…", color = TextMuted, fontSize = 15.sp)

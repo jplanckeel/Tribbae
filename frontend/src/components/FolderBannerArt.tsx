@@ -146,16 +146,16 @@ export const ILLUSTRATION_ART: Record<IllustrationKey, { label: string; tinted: 
       <rect x="222" y="60" width="44" height="38" rx="5" fill="#5E4558" />
       <rect x="246" y="42" width="22" height="22" rx="3" fill="#7A5B73" />
       <rect x="250" y="46" width="14" height="10" rx="2" fill="#FDE6BD" />
-      <rect x="228" y="44" width="9" height="18" rx="2" fill="#3A211B" />
+      <rect x="228" y="44" width="9" height="18" rx="2" fill="var(--color-ecorce)" />
       <circle cx="232" cy="38" r="5" fill="#FFFFFF" opacity=".7" />
       <circle cx="226" cy="28" r="7" fill="#FFFFFF" opacity=".5" />
       <rect x="272" y="70" width="44" height="28" rx="4" fill="#C8492C" />
       <rect x="278" y="76" width="32" height="8" rx="2" fill="#FFC857" />
-      <rect x="266" y="82" width="8" height="3" fill="#3A211B" />
-      <circle cx="233" cy="99" r="7" fill="#3A211B" />
-      <circle cx="257" cy="99" r="7" fill="#3A211B" />
-      <circle cx="283" cy="99" r="6" fill="#3A211B" />
-      <circle cx="305" cy="99" r="6" fill="#3A211B" />
+      <rect x="266" y="82" width="8" height="3" fill="var(--color-ecorce)" />
+      <circle cx="233" cy="99" r="7" fill="var(--color-ecorce)" />
+      <circle cx="257" cy="99" r="7" fill="var(--color-ecorce)" />
+      <circle cx="283" cy="99" r="6" fill="var(--color-ecorce)" />
+      <circle cx="305" cy="99" r="6" fill="var(--color-ecorce)" />
       <circle cx="233" cy="99" r="2.5" fill="#FFC857" />
       <circle cx="257" cy="99" r="2.5" fill="#FFC857" />
       <circle cx="283" cy="99" r="2" fill="#FFC857" />
@@ -177,9 +177,9 @@ export const ILLUSTRATION_ART: Record<IllustrationKey, { label: string; tinted: 
       <path d="M200 110l80-54 80 54z" fill="#2F7393" />
       <path d="M0 92Q90 80 180 90T350 88V110H0Z" fill="#A7D08F" />
       <path d="M120 110q30-14 70-12t70 12z" fill="#DCEDF3" />
-      <path d="M64 72l14 24H50z" fill="#D45A43" stroke="#3A211B" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M64 72l14 24H50z" fill="#D45A43" stroke="var(--color-ecorce)" strokeWidth="1.5" strokeLinejoin="round" />
       <path d="M64 84l6 12h-12z" fill="#5E4558" />
-      <path d="M60 68l8 8M68 68l-8 8" stroke="#3A211B" strokeWidth="1.5" />
+      <path d="M60 68l8 8M68 68l-8 8" stroke="var(--color-ecorce)" strokeWidth="1.5" />
       <path d="M30 76l8 14H22z" fill="#3E6630" />
       <path d="M300 78l9 16h-18z" fill="#3E6630" />
       <path d="M318 84l7 12h-14z" fill="#4C7A3C" />
@@ -204,7 +204,7 @@ export const ILLUSTRATION_ART: Record<IllustrationKey, { label: string; tinted: 
       <path d="M140 94h20M150 84q6 10 0 20" fill="none" stroke="#FFFFFF" strokeWidth="2" />
       <path d="M300 96l4 12h14l4-12z" fill="#5E4558" />
       <path d="M302 96q9-10 18 0" fill="none" stroke="#5E4558" strokeWidth="2" />
-      <path d="M100 40q4-4 8 0q4-4 8 0" fill="none" stroke="#3A211B" strokeWidth="1.5" />
+      <path d="M100 40q4-4 8 0q4-4 8 0" fill="none" stroke="var(--color-ecorce)" strokeWidth="1.5" />
       </>
     ),
   },
@@ -217,7 +217,7 @@ export const ILLUSTRATION_ART: Record<IllustrationKey, { label: string; tinted: 
       <circle cx="300" cy="10" r="48" fill={mid} />
       <rect y="90" width="350" height="20" fill={mid} />
       <rect x="58" y="54" width="30" height="36" rx="6" fill="#C8492C" />
-      <rect x="56" y="48" width="34" height="9" rx="3" fill="#3A211B" />
+      <rect x="56" y="48" width="34" height="9" rx="3" fill="var(--color-ecorce)" />
       <rect x="64" y="66" width="18" height="12" rx="2" fill="#FBF3E7" />
       <ellipse cx="160" cy="90" rx="52" ry="7" fill="#FFFFFF" />
       <rect x="120" y="78" width="80" height="8" rx="4" fill="#F6DAA3" />

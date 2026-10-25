@@ -46,7 +46,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ui.Appearance
 import ui.BarkMute
+import ui.SheetColor
 import ui.Ecorce
 import ui.Sable
 import ui.Terracotta
@@ -134,9 +136,13 @@ fun ModernBottomNav(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(NavBarHeight)
-                    .shadow(18.dp, RoundedCornerShape(26.dp), spotColor = Ecorce)
+                    // Le soir : surface élevée bordée, sans ombre
+                    .then(
+                        if (Appearance.dark) Modifier.border(1.dp, Color(0xFF4A3A30), RoundedCornerShape(26.dp))
+                        else Modifier.shadow(18.dp, RoundedCornerShape(26.dp), spotColor = Ecorce)
+                    )
                     .clip(RoundedCornerShape(26.dp))
-                    .background(Ecorce)
+                    .background(if (Appearance.dark) SheetColor else Ecorce)
                     .padding(horizontal = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -191,9 +197,11 @@ private fun RowScope.NavTab(
     icon: @Composable (Color) -> Unit
 ) {
     val selected = current == destination
-    val pill by animateColorAsState(if (selected) Sable else Sable.copy(alpha = 0f), tween(200), label = "navPill")
+    // Onglet actif : pilule claire (sable le jour, texte clair le soir)
+    val active = if (Appearance.dark) Ecorce else Sable
+    val pill by animateColorAsState(if (selected) active else active.copy(alpha = 0f), tween(200), label = "navPill")
     val tint by animateColorAsState(if (selected) Terracotta else BarkMute, tween(200), label = "navTint")
-    val text by animateColorAsState(if (selected) Sable else BarkMute, tween(200), label = "navText")
+    val text by animateColorAsState(if (selected) active else BarkMute, tween(200), label = "navText")
     Column(
         modifier = Modifier
             .weight(1f)

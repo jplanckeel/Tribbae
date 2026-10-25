@@ -209,7 +209,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
                 className="transition-transform duration-[450ms] ease-[cubic-bezier(.34,1.56,.64,1)]"
                 style={{ transform: `scale(${on ? 1.25 : 1})` }}
               >
-                <path d="M11 2L20 18H2Z" fill={on || done ? "#D45A43" : "transparent"} stroke={on || done ? "#3A211B" : "#CDB8AA"} strokeWidth={2} strokeLinejoin="round" />
+                <path d="M11 2L20 18H2Z" fill={on || done ? "#D45A43" : "transparent"} stroke={on || done ? "var(--color-ecorce)" : "#CDB8AA"} strokeWidth={2} strokeLinejoin="round" />
               </svg>
               <span className={`text-[10px] font-bold transition-colors ${on ? "text-ecorce" : "text-muted"}`}>{d.label}</span>
             </span>
@@ -258,12 +258,12 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
             <button
               type="button"
               onClick={() => start("link", clip)}
-              className="add-up flex items-center gap-3 rounded-[20px] border-2 border-braise bg-[#FFF4EA] p-3.5 text-left transition-transform active:scale-[0.97]"
+              className="add-up flex items-center gap-3 rounded-[20px] border-2 border-braise bg-peach p-3.5 text-left transition-transform active:scale-[0.97]"
               style={{ animationDelay: "80ms" }}
             >
               <span className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[15px] bg-braise"><Icon name="clipboard" size={22} /></span>
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-xs font-bold text-[#A04812]">Lien copié à l'instant</span>
+                <span className="text-xs font-bold text-[var(--color-cadeau-ink)]">Lien copié à l'instant</span>
                 <span className="truncate text-[15px] font-bold">{clip.replace(/^https?:\/\/(www\.)?/, "")}</span>
               </span>
               <span className="rounded-xl bg-ecorce px-3 py-2 text-[13px] font-bold text-sable">Utiliser</span>
@@ -272,9 +272,9 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
 
           <span className="add-up mt-1 text-[13px] font-bold text-sec" style={{ animationDelay: "140ms" }}>Ou partir de…</span>
           <div className="grid grid-cols-3 gap-2.5">
-            <Tile delay={180} icon="link" bg="#DCEDF3" ink="#235C77" label="Un lien" onClick={() => start("link")} />
-            <Tile delay={230} icon="pencil" bg="#FBEACB" ink="#85560C" label="Je l'écris" onClick={() => start("write")} />
-            <Tile delay={280} icon="camera" bg="#E2EDD9" ink="#3E6630" label="Une photo" onClick={() => start("photo")} />
+            <Tile delay={180} icon="link" bg="var(--color-activite-bg)" ink="var(--color-activite-ink)" label="Un lien" onClick={() => start("link")} />
+            <Tile delay={230} icon="pencil" bg="var(--color-idee-bg)" ink="var(--color-idee-ink)" label="Je l'écris" onClick={() => start("write")} />
+            <Tile delay={280} icon="camera" bg="var(--color-recette-bg)" ink="var(--color-recette-ink)" label="Une photo" onClick={() => start("photo")} />
           </div>
 
           <button
@@ -293,7 +293,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
           {recent && (
             <div className="add-up mt-1 flex flex-col gap-2" style={{ animationDelay: "400ms" }}>
               <span className="text-[13px] font-bold text-sec">Ajoutée récemment par la tribu</span>
-              <RouterLink to={`/links/${recent.id}`} onClick={onClose} className="flex items-center gap-2.5 rounded-2xl bg-white px-3 py-2.5 hover:bg-sable-2">
+              <RouterLink to={`/links/${recent.id}`} onClick={onClose} className="flex items-center gap-2.5 rounded-2xl bg-card px-3 py-2.5 hover:bg-sable-2">
                 <Avatar name={recent.ownerDisplayName} color={AVATAR_COLORS[3][0]} ink={AVATAR_COLORS[3][1]} size={32} rounded="rounded-[11px]" />
                 <span className="min-w-0 flex-1 truncate text-[13px]"><strong>{recent.ownerDisplayName || "La tribu"}</strong> · {recent.title}</span>
                 <span className="text-xs text-sec">{agoShort(recent.createdAt)}</span>
@@ -310,7 +310,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
       {step === "link" && (
         <div className="add-enter flex flex-col gap-3.5">
           <h2 className="font-display text-[26px] font-extrabold tracking-[-0.5px]">{preview.status === "idle" ? "Collez le lien" : "On regarde ce lien…"}</h2>
-          <label className="flex h-[50px] items-center gap-2.5 rounded-2xl border-2 border-terracotta bg-white px-3.5 text-terracotta">
+          <label className="flex h-[50px] items-center gap-2.5 rounded-2xl border-2 border-terracotta bg-card px-3.5 text-terracotta">
             <Icon name="link" size={18} />
             <span className="sr-only">Adresse de la page</span>
             <input
@@ -338,7 +338,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
           </label>
 
           {preview.status === "loading" && (
-            <div className="flex gap-3 rounded-[22px] bg-white p-3.5 shadow-card" aria-label="Lecture de la page…">
+            <div className="flex gap-3 rounded-[22px] bg-card p-3.5 shadow-card" aria-label="Lecture de la page…">
               <span className="add-shim h-11 w-11 rounded-xl" />
               <span className="flex flex-1 flex-col gap-2 pt-1">
                 <span className="add-shim h-3 w-4/5 rounded-md" />
@@ -349,7 +349,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
 
           {(preview.status === "done" || preview.status === "failed") && (
             <>
-              <div className="add-fill overflow-hidden rounded-[22px] bg-white shadow-[0_4px_14px_rgba(58,33,27,0.08)]">
+              <div className="add-fill overflow-hidden rounded-[22px] bg-card shadow-[0_4px_14px_rgba(58,33,27,0.08)]">
                 <div className={`relative h-[120px] overflow-hidden ${cat.bg}`}>
                   {safeImage(draft.imageUrl) ? (
                     <img src={safeImage(draft.imageUrl)} alt="" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover" />
@@ -458,7 +458,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
                     type="button"
                     aria-pressed={on}
                     onClick={() => set({ ageRange: bandsToAge(on ? sel.filter((k) => k !== b.key) : [...sel, b.key]) })}
-                    className={`h-11 flex-1 rounded-[13px] border-2 text-sm font-bold transition-colors ${on ? "border-terracotta bg-[#FFF4EE] text-terracotta-dark" : "border-line-2"}`}
+                    className={`h-11 flex-1 rounded-[13px] border-2 text-sm font-bold transition-colors ${on ? "border-terracotta bg-blush text-terracotta-dark" : "border-line-2"}`}
                   >
                     {b.label}
                   </button>
@@ -467,7 +467,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
             </div>
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl bg-white px-3.5 py-3">
+          <div className="flex items-center gap-3 rounded-2xl bg-card px-3.5 py-3">
             <Icon name="globe" size={20} className="text-activite-ink" />
             <span className="flex flex-1 flex-col">
               <span className="text-sm font-bold">Inspirer d'autres familles</span>
@@ -525,7 +525,7 @@ function Tile({ icon, bg, ink, label, delay, onClick }: { icon: IconName; bg: st
     <button
       type="button"
       onClick={onClick}
-      className="add-up flex h-28 flex-col items-center justify-center gap-2 rounded-[20px] bg-white text-[13px] font-bold shadow-[0_3px_10px_rgba(58,33,27,0.06)] transition-transform active:scale-[0.97]"
+      className="add-up flex h-28 flex-col items-center justify-center gap-2 rounded-[20px] bg-card text-[13px] font-bold shadow-[0_3px_10px_rgba(58,33,27,0.06)] transition-transform active:scale-[0.97]"
       style={{ animationDelay: `${delay}ms` }}
     >
       <span className="flex h-11 w-11 items-center justify-center rounded-[14px]" style={{ background: bg, color: ink }}><Icon name={icon} size={22} /></span>
@@ -550,7 +550,7 @@ function Found({ draft, guessed }: { draft: LinkInput; guessed: boolean }) {
       <span className="flex items-center gap-1.5 text-[13px] font-bold text-sec"><Icon name="sparkle" size={14} className="text-terracotta" />Tribbae a trouvé tout seul</span>
       <div className="flex flex-wrap gap-2">
         {chips.map((c, i) => (
-          <span key={c.key} className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-bold ${c.cls ?? "add-pop bg-white"}`} style={{ animationDelay: `${330 + i * 80}ms` }}>
+          <span key={c.key} className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-bold ${c.cls ?? "add-pop bg-card"}`} style={{ animationDelay: `${330 + i * 80}ms` }}>
             {c.node}
           </span>
         ))}
@@ -566,7 +566,7 @@ function FolderChoice({ folder, reason, on, delay, onClick }: { folder: Folder; 
       type="button"
       aria-pressed={on}
       onClick={onClick}
-      className={`add-up flex items-center gap-3 rounded-[18px] border-2 bg-white px-3 py-2.5 text-left transition-all duration-[450ms] ease-[cubic-bezier(.34,1.56,.64,1)] ${on ? "scale-[1.02] border-ecorce shadow-[0_8px_18px_rgba(58,33,27,0.14)]" : "border-transparent shadow-[0_2px_8px_rgba(58,33,27,0.05)]"}`}
+      className={`add-up flex items-center gap-3 rounded-[18px] border-2 bg-card px-3 py-2.5 text-left transition-all duration-[450ms] ease-[cubic-bezier(.34,1.56,.64,1)] ${on ? "scale-[1.02] border-ecorce shadow-[0_8px_18px_rgba(58,33,27,0.14)]" : "border-transparent shadow-[0_2px_8px_rgba(58,33,27,0.05)]"}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px]" style={{ background: c.bg, color: c.solid }}><FolderGlyph icon={folder.icon} size={20} /></span>
@@ -584,7 +584,7 @@ function FolderChoice({ folder, reason, on, delay, onClick }: { folder: Folder; 
 function WhoSees({ folder, isPublic }: { folder?: Folder; isPublic: boolean }) {
   const names = (folder?.collaborators ?? []).map((c) => c.displayName || c.email || "?");
   return (
-    <div className={`flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 transition-colors ${names.length ? "bg-[#FFF4EA]" : "bg-sable-2"}`}>
+    <div className={`flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 transition-colors ${names.length ? "bg-peach" : "bg-sable-2"}`}>
       {names.length > 0 && (
         <span className="mr-1 flex">
           {names.slice(0, 3).map((n, i) => {
@@ -606,14 +606,14 @@ const SPARKS: [number, number, string, string?][] = [
 /** « C'est rangé ! » : la carte s'envole dans son dossier, avec quelques éclats. */
 function Done({ link, folder, onReminder }: { link: Link; folder?: Folder; onReminder: () => void }) {
   const cat = categoryMeta(link.category);
-  const ink = folder ? folderColor(folder.color).solid : "#6B5047";
+  const ink = folder ? folderColor(folder.color).solid : "var(--color-sec)";
   const at = eventDateMs(link.eventDate);
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative h-[230px] overflow-hidden rounded-[26px] bg-[#9FD3E6]">
+      <div className="relative h-[230px] overflow-hidden rounded-[26px] bg-sky">
         <span aria-hidden="true" className="add-sun absolute top-[34px] right-[58px] h-[54px] w-[54px] rounded-full bg-[#FFC857] shadow-[0_0_0_10px_rgba(255,200,87,0.25)]" />
-        <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[52px] border-t-[3px] border-ecorce bg-[#F7B57F]" />
-        <div aria-hidden="true" className="add-fly absolute top-[70px] left-[calc(50%-125px)] w-[100px] overflow-hidden rounded-[14px] bg-white shadow-[0_8px_18px_rgba(58,33,27,0.2)]">
+        <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[52px] border-t-[3px] border-ecorce bg-ground" />
+        <div aria-hidden="true" className="add-fly absolute top-[70px] left-[calc(50%-125px)] w-[100px] overflow-hidden rounded-[14px] bg-card shadow-[0_8px_18px_rgba(58,33,27,0.2)]">
           <div className={`h-[46px] ${cat.bg}`}>
             {safeImage(link.imageUrl) && <img src={safeImage(link.imageUrl)} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />}
           </div>
@@ -648,7 +648,7 @@ function Done({ link, folder, onReminder }: { link: Link; folder?: Folder; onRem
           type="button"
           aria-pressed={!!link.reminderEnabled}
           onClick={onReminder}
-          className={`add-later flex items-center gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-colors ${link.reminderEnabled ? "border-terracotta bg-[#FFF4EE]" : "border-transparent bg-white"}`}
+          className={`add-later flex items-center gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-colors ${link.reminderEnabled ? "border-terracotta bg-blush" : "border-transparent bg-card"}`}
         >
           <Icon name="bell" size={20} className={`text-terracotta ${link.reminderEnabled ? "add-pop" : ""}`} />
           <span className="flex-1 text-sm font-bold">{link.reminderEnabled ? `Rappel la veille, le ${formatShortDate(at - 86_400_000).toLowerCase()}, c'est noté` : "Me le rappeler la veille"}</span>

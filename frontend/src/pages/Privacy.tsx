@@ -15,7 +15,7 @@ const UPDATED = "20 octobre 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-2 rounded-large bg-white px-5 py-4 text-[15px] leading-relaxed text-ecorce-2">
+    <section className="flex flex-col gap-2 rounded-large bg-card px-5 py-4 text-[15px] leading-relaxed text-ecorce-2">
       <h2 className="font-display text-lg font-bold text-ecorce">{title}</h2>
       {children}
     </section>
@@ -67,7 +67,7 @@ export default function Privacy() {
         path="/confidentialite"
       />
       <div className="flex items-center gap-3">
-        <button type="button" onClick={() => navigate(-1)} aria-label="Retour" className="flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-soft hover:bg-sable-2">
+        <button type="button" onClick={() => navigate(-1)} aria-label="Retour" className="flex h-11 w-11 items-center justify-center rounded-full bg-card shadow-soft hover:bg-sable-2">
           <Icon name="chevronLeft" size={22} />
         </button>
         <h1 className="font-display text-[28px] font-extrabold tracking-[-0.6px]">Confidentialité</h1>

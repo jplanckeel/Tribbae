@@ -1,5 +1,6 @@
 package ui.components
 
+import ui.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -123,7 +124,7 @@ fun TagInputWithAutocomplete(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
                         focusedBorderColor = Color(0xFFC8492C),
-                        unfocusedBorderColor = Color(0xFFF1E3D1)
+                        unfocusedBorderColor = Sable2
                     ),
                     singleLine = true
                 )
@@ -181,7 +182,7 @@ fun TagInputWithAutocomplete(
             Text(
                 text = "Tags populaires",
                 fontSize = 11.sp,
-                color = Color(0xFF8A6F64),
+                color = TextMuted,
                 fontWeight = FontWeight.Medium
             )
             Row(
@@ -194,7 +195,7 @@ fun TagInputWithAutocomplete(
                     Surface(
                         onClick = { addTag(suggestion) },
                         shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFF1E3D1)
+                        color = Sable2
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -204,10 +205,10 @@ fun TagInputWithAutocomplete(
                             Icon(
                                 imageVector = Icons.Filled.Add,
                                 contentDescription = null,
-                                tint = Color(0xFF6B5047),
+                                tint = TextSec,
                                 modifier = Modifier.size(12.dp)
                             )
-                            Text(text = suggestion, fontSize = 11.sp, color = Color(0xFF6B5047))
+                            Text(text = suggestion, fontSize = 11.sp, color = TextSec)
                         }
                     }
                 }

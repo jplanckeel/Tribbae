@@ -7,9 +7,9 @@ const VARIANTS: Record<Variant, string> = {
   primary: "bg-terracotta text-white hover:bg-terracotta-dark",
   secondary: "border-2 border-ecorce bg-transparent text-ecorce hover:bg-ecorce/5",
   ai: "bg-prune text-sable hover:bg-[#4d3848]",
-  ghost: "bg-white text-ecorce border-[1.5px] border-line-2 hover:bg-sable-2/60",
+  ghost: "bg-card text-ecorce border-[1.5px] border-line-2 hover:bg-sable-2/60",
   dark: "bg-ecorce text-sable hover:bg-black",
-  danger: "bg-white text-sortie-ink border-[1.5px] border-sortie-bg hover:bg-sortie-bg",
+  danger: "bg-card text-sortie-ink border-[1.5px] border-sortie-bg hover:bg-sortie-bg",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -78,7 +78,7 @@ export const Field = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
     return (
       <div className="flex flex-col gap-1.5">
         <label htmlFor={fid} className="text-[13px] font-bold text-sec">{label}</label>
-        <div className="flex h-[52px] items-center gap-2.5 rounded-medium border-[1.5px] border-line-2 bg-white px-4 text-muted focus-within:border-terracotta">
+        <div className="flex h-[52px] items-center gap-2.5 rounded-medium border-[1.5px] border-line-2 bg-card px-4 text-muted focus-within:border-terracotta">
           {icon && <Icon name={icon} size={19} />}
           <input
             ref={ref}
@@ -100,7 +100,7 @@ export function TextArea({ label, id, ...rest }: TextareaHTMLAttributes<HTMLText
       <label htmlFor={fid} className="text-[13px] font-bold text-sec">{label}</label>
       <textarea
         id={fid}
-        className="min-h-[96px] resize-y rounded-medium border-[1.5px] border-line-2 bg-white px-4 py-3 text-[15px] text-ecorce outline-none placeholder:text-muted focus:border-terracotta"
+        className="min-h-[96px] resize-y rounded-medium border-[1.5px] border-line-2 bg-card px-4 py-3 text-[15px] text-ecorce outline-none placeholder:text-muted focus:border-terracotta"
         {...rest}
       />
     </div>
@@ -109,7 +109,7 @@ export function TextArea({ label, id, ...rest }: TextareaHTMLAttributes<HTMLText
 
 /** Pastille de filtre arrondie. */
 export function Chip({
-  active, onClick, children, activeClass = "bg-ecorce text-sable", idleClass = "bg-white text-ecorce border-[1.5px] border-line-2", className = "",
+  active, onClick, children, activeClass = "bg-ecorce text-sable", idleClass = "bg-card text-ecorce border-[1.5px] border-line-2", className = "",
 }: { active?: boolean; onClick?: () => void; children: ReactNode; activeClass?: string; idleClass?: string; className?: string }) {
   return (
     <button
@@ -187,7 +187,7 @@ export function ErrorNote({ children }: { children: ReactNode }) {
   );
 }
 
-export function Avatar({ name, color = "#F28C38", ink = "#3A211B", size = 26, rounded = "rounded-full", className = "" }: {
+export function Avatar({ name, color = "#F28C38", ink = "var(--color-ecorce)", size = 26, rounded = "rounded-full", className = "" }: {
   name?: string; color?: string; ink?: string; size?: number; rounded?: string; className?: string;
 }) {
   return (
@@ -207,7 +207,7 @@ export function MenuItem({ icon, label, onClick, danger }: { icon: IconName; lab
     <button
       type="button"
       onClick={onClick}
-      className={`flex h-14 items-center gap-3 rounded-medium bg-white px-4 text-left text-[15px] font-semibold transition-colors hover:bg-sable-2 ${danger ? "text-sortie-ink" : ""}`}
+      className={`flex h-14 items-center gap-3 rounded-medium bg-card px-4 text-left text-[15px] font-semibold transition-colors hover:bg-sable-2 ${danger ? "text-sortie-ink" : ""}`}
     >
       <Icon name={icon} size={20} />
       {label}

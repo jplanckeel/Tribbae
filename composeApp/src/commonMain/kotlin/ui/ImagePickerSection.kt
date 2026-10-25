@@ -234,7 +234,7 @@ fun ImagePickerSection(
                         Icon(
                             imageVector = Icons.Default.Link,
                             contentDescription = null,
-                            tint = Color(0xFF8A6F64),
+                            tint = TextMuted,
                             modifier = Modifier.size(18.dp)
                         )
                     }

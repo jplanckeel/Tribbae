@@ -91,7 +91,7 @@ private const val FIRST = 5
 private const val REFILL = 3
 private const val NEW_FOLDER = "__new__"
 
-private val PruneBg = Color(0xFFECE1EA)
+private val PruneBg: Color get() = PlumBg
 private val Gold = Color(0xFFFFC857)
 
 private class IdeaCard(val id: Int, val idea: AiSuggestedLink) {
@@ -103,11 +103,11 @@ private fun toCategory(raw: String) =
     runCatching { LinkCategory.valueOf(raw.removePrefix("LINK_CATEGORY_")) }.getOrDefault(LinkCategory.IDEE)
 
 private fun blankColors(b: Blank): Pair<Color, Color> = when (b) {
-    Blank.What -> Color(0xFFFCE3D0) to Color(0xFFA04812)
-    Blank.Who -> Color(0xFFDCEDF3) to Color(0xFF235C77)
-    Blank.When -> Color(0xFFFBEACB) to Color(0xFF85560C)
-    Blank.Where -> Color(0xFFE2EDD9) to Color(0xFF3E6630)
-    Blank.Budget -> PruneBg to Prune
+    Blank.What -> PeachBg to PeachInk
+    Blank.Who -> BlueBg to BlueInk
+    Blank.When -> HoneyBg to HoneyInk
+    Blank.Where -> GreenBg to GreenInk
+    Blank.Budget -> PlumBg to PlumInk
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -231,7 +231,7 @@ fun AiGenerateScreen(
 
     val gen = step == AiStep.Gen
     val bg by animateColorAsState(if (gen) Prune else Sable, tween(280, easing = EaseSoft), label = "ai-bg")
-    val fg = if (gen) Sable else Ecorce
+    val fg = if (gen) OnDark else Ecorce
 
     Column(Modifier.fillMaxSize().background(bg).statusBarsPadding()) {
         // ── En-tête ──
@@ -353,7 +353,7 @@ fun AiGenerateScreen(
     if (confirmClose) {
         AlertDialog(
             onDismissRequest = { confirmClose = false },
-            containerColor = Sable,
+            containerColor = SheetColor,
             title = { Text("Abandonner ces idées ?", style = display(20.sp, FontWeight.Bold)) },
             text = { Text("Les idées gardées ne seront pas rangées.", color = Ecorce2) },
             confirmButton = {
@@ -418,7 +418,7 @@ private fun ComposeStep(
                                         if (b == Blank.Who) o.label else o.label.replaceFirstChar { it.uppercase() },
                                         fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (on) cfg else Ecorce,
                                         modifier = Modifier.scale(scale).height(38.dp).clip(RoundedCornerShape(12.dp))
-                                            .background(if (on) cbg else Color.White)
+                                            .background(if (on) cbg else CardColor)
                                             .border(2.dp, if (on) Ecorce else Line, RoundedCornerShape(12.dp))
                                             .clickable(role = if (b == Blank.Who) Role.Checkbox else Role.RadioButton) { onPick(b, o.key) }
                                             .semantics { stateDescription = if (on) "choisi" else "non choisi" }
@@ -437,7 +437,7 @@ private fun ComposeStep(
                     Text("(facultatif)", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = TextSec)
                 }
                 Row(
-                    Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(16.dp)).background(Color.White)
+                    Modifier.fillMaxWidth().height(50.dp).clip(RoundedCornerShape(16.dp)).background(CardColor)
                         .border(1.5.dp, Line, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -477,7 +477,7 @@ private fun ComposeStep(
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)
             ) {
                 Icon(Icons.Outlined.AutoAwesome, null, tint = Soleil, modifier = Modifier.size(20.dp).twinkle())
-                Text("Trouver $FIRST idées", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Sable)
+                Text("Trouver $FIRST idées", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = OnDark)
             }
         }
     }
@@ -535,14 +535,14 @@ private fun WaitingStep(messages: List<String>, onCancel: () -> Unit) {
             GlowingTipi(glow, flap, Modifier.size(130.dp, 113.dp))
         }
         Crossfade(i, Modifier.fillMaxWidth().height(50.dp).semantics { liveRegion = LiveRegionMode.Polite }, label = "ai-msg") { n ->
-            Text(messages[n], style = display(20.sp, FontWeight.Bold, Sable), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Text(messages[n], style = display(20.sp, FontWeight.Bold, OnDark), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
         Box(Modifier.fillMaxWidth(0.7f).height(6.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f))) {
             Box(Modifier.fillMaxWidth(bar.value).fillMaxHeight().clip(CircleShape).background(Gold))
         }
         Text(
-            "Modifier ma demande", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Sable,
-            modifier = Modifier.height(44.dp).clip(RoundedCornerShape(14.dp)).border(1.5.dp, Sable.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+            "Modifier ma demande", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = OnDark,
+            modifier = Modifier.height(44.dp).clip(RoundedCornerShape(14.dp)).border(1.5.dp, OnDark.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
                 .clickable(role = Role.Button, onClick = onCancel).wrapContentHeight().padding(horizontal = 18.dp)
         )
     }
@@ -559,11 +559,11 @@ private fun GlowingTipi(glow: Float, flap: Float, modifier: Modifier) {
         val s = size.width / 76f
         scale(s, s, pivot = Offset.Zero) {
             fun stroke(w: Float) = Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            drawPath(paths[0], Sable, style = stroke(2.6f))
-            drawPath(paths[1], Tipi); drawPath(paths[1], Sable, style = stroke(2.6f))
+            drawPath(paths[0], OnDark, style = stroke(2.6f))
+            drawPath(paths[1], Tipi); drawPath(paths[1], OnDark, style = stroke(2.6f))
             drawPath(paths[2], Gold, alpha = glow)
-            rotate(-flap, pivot = Offset(38f, 34f)) { drawPath(paths[3], Ecorce); drawPath(paths[3], Sable, style = stroke(1.8f)) }
-            rotate(flap, pivot = Offset(38f, 34f)) { drawPath(paths[4], Braise); drawPath(paths[4], Sable, style = stroke(1.8f)) }
+            rotate(-flap, pivot = Offset(38f, 34f)) { drawPath(paths[3], Color(0xFF3A211B)); drawPath(paths[3], OnDark, style = stroke(1.8f)) }
+            rotate(flap, pivot = Offset(38f, 34f)) { drawPath(paths[4], Braise); drawPath(paths[4], OnDark, style = stroke(1.8f)) }
         }
     }
 }
@@ -600,11 +600,11 @@ private fun IdeaCardView(card: IdeaCard, delayMs: Int, onKeep: () -> Unit, onDro
                     .clickable(role = Role.Checkbox, onClick = onKeep).semantics { stateDescription = if (card.kept) "gardée" else "pas encore gardée" },
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
             ) {
-                if (card.kept) Icon(Icons.Outlined.Check, null, tint = Sable, modifier = Modifier.size(17.dp).popIn())
-                Text(if (card.kept) "Gardée" else "Je garde", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (card.kept) Sable else Ecorce)
+                if (card.kept) Icon(Icons.Outlined.Check, null, tint = OnDark, modifier = Modifier.size(17.dp).popIn())
+                Text(if (card.kept) "Gardée" else "Je garde", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (card.kept) OnDark else Ecorce)
             }
             Box(
-                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Sable).border(1.5.dp, Color(0xFFE6D3C0), RoundedCornerShape(14.dp))
+                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Sable).border(1.5.dp, Line, RoundedCornerShape(14.dp))
                     .clickable(role = Role.Button, onClick = onDrop)
                     .semantics { contentDescription = "Pas pour nous : écarter « ${card.idea.title} » et proposer autre chose" },
                 contentAlignment = Alignment.Center
@@ -629,7 +629,7 @@ private fun DoneStep(ideas: List<AiSuggestedLink>, folder: Folder?, onRestart: (
     }
     Column(Modifier.fillMaxSize().navigationBarsPadding().padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Box(Modifier.fillMaxWidth().height(260.dp).clip(RoundedCornerShape(26.dp)).background(PruneBg)) {
-            Box(Modifier.align(Alignment.BottomCenter).offset(y = 120.dp).size(300.dp).clip(CircleShape).background(Soleil))
+            Box(Modifier.align(Alignment.BottomCenter).offset(y = 120.dp).size(300.dp).clip(CircleShape).background(SunDisc))
             ideas.take(3).forEachIndexed { j, idea ->
                 val cat = categoryUi(toCategory(idea.category))
                 Column(
@@ -694,8 +694,8 @@ private fun DoneStep(ideas: List<AiSuggestedLink>, folder: Folder?, onRestart: (
 @Composable
 private fun ErrorText(text: String) {
     Text(
-        text, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF9A3420),
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFFF8DCD3)).padding(horizontal = 16.dp, vertical = 10.dp)
+        text, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = CoralInk,
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(CoralBg).padding(horizontal = 16.dp, vertical = 10.dp)
             .semantics { liveRegion = LiveRegionMode.Polite }
     )
 }

@@ -24,6 +24,8 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="alternate" type="text/plain" title="Tribbae pour les assistants IA" href="/llms.txt" />
     <meta name="theme-color" content="#FBF3E7" />
+    <!-- Mode sombre : appliqué avant l'affichage (public/theme.js, lib/theme.ts) -->
+    <script src="/theme.js"></script>
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -51,11 +53,14 @@
       /* Contenu rendu par le serveur, visible le temps que l'application démarre
          (et seul visible pour les robots qui n'exécutent pas le JavaScript) */
       body { margin: 0; background: #fbf3e7; color: #3b2a26; }
+      [data-theme="dark"] body { background: #1c1411; color: #f6ebdd; }
       .seo-fallback { max-width: 720px; margin: 0 auto; padding: 24px 20px 64px; font: 16px/1.6 system-ui, sans-serif; }
       .seo-fallback h1 { font-size: 30px; line-height: 1.15; margin: 20px 0 12px; }
       .seo-fallback h2 { font-size: 19px; margin: 28px 0 8px; }
       .seo-fallback a { color: #c8492c; }
+      [data-theme="dark"] .seo-fallback a { color: #f0855e; }
       .seo-fallback nav, .seo-fallback .crumbs, .seo-fallback .tags { font-size: 14px; color: #6b5047; }
+      [data-theme="dark"] .seo-fallback nav, [data-theme="dark"] .seo-fallback .crumbs, [data-theme="dark"] .seo-fallback .tags { color: #c4ae9e; }
       .seo-fallback ul { padding-left: 20px; }
     </style>
   </head>

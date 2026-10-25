@@ -206,7 +206,7 @@ private fun NextEventCard(link: Link, at: Long, onClick: () -> Unit) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(
                 ("À venir" + if (link.reminderEnabled) " · rappel activé" else "").uppercase(),
-                fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFF7B57F), letterSpacing = 0.8.sp
+                fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = SceneGround, letterSpacing = 0.8.sp
             )
             Text(link.title, style = display(17.sp, FontWeight.Bold, Sable), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
@@ -268,7 +268,7 @@ private fun JoinCard(onClick: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UpcomingSheet(items: List<Pair<Link, Long>>, onDismiss: () -> Unit, onOpen: (String) -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Sable, dragHandle = { SheetHandle() }) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
         Column(
             Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp)

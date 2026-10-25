@@ -102,7 +102,7 @@ function BottomNav() {
       <nav
         aria-label="Navigation principale"
         style={{ viewTransitionName: "bottom-nav" }}
-        className="pointer-events-auto relative mx-4 flex h-[68px] items-center rounded-[26px] bg-ecorce px-1 shadow-nav"
+        className="nav-bar pointer-events-auto relative mx-4 flex h-[68px] items-center rounded-[26px] bg-ecorce px-1 shadow-nav"
       >
         {item(NAV[0])}
         {item(NAV[1])}
@@ -111,7 +111,7 @@ function BottomNav() {
             type="button"
             onClick={() => openAdd()}
             aria-label="Ajouter une idée"
-            className="-mt-[30px] flex h-14 w-14 rotate-45 items-center justify-center rounded-[20px] border-4 border-sable bg-terracotta text-white transition-transform active:scale-95"
+            className="nav-plus -mt-[30px] flex h-14 w-14 rotate-45 items-center justify-center rounded-[20px] border-4 border-sable bg-terracotta text-white transition-transform active:scale-95"
           >
             <Icon name="plus" size={24} strokeWidth={2.6} className="-rotate-45" />
           </button>

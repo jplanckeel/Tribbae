@@ -40,7 +40,7 @@ export default function FolderPicker({ folders, links, current, userId, peers, o
   return (
     <Sheet open onClose={onClose} title="Choisir un dossier" tall>
       <div className="flex flex-col gap-3.5">
-        <label className="flex h-[50px] items-center gap-2.5 rounded-2xl border-2 border-ecorce bg-white px-3.5 text-muted">
+        <label className="flex h-[50px] items-center gap-2.5 rounded-2xl border-2 border-ecorce bg-card px-3.5 text-muted">
           <Icon name="search" size={20} />
           <input
             autoFocus
@@ -59,19 +59,19 @@ export default function FolderPicker({ folders, links, current, userId, peers, o
               setBusy(true);
               try { await onCreate(query); } finally { setBusy(false); }
             }}
-            className="add-up flex items-center gap-3 rounded-2xl border-2 border-dashed border-terracotta bg-[#FFF4EE] p-3 text-left text-[15px] font-bold text-terracotta-dark"
+            className="add-up flex items-center gap-3 rounded-2xl border-2 border-dashed border-terracotta bg-blush p-3 text-left text-[15px] font-bold text-terracotta-dark"
           >
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-terracotta text-white"><Icon name="plus" size={18} strokeWidth={2.6} /></span>
             Créer « {query} »
           </button>
         )}
         {!query && (
-          <PickRow label="Sans dossier" sub="Dans « Non rangées »" on={current === ""} onClick={() => onPick("")} icon={<Icon name="bookmark" size={17} />} bg="#F1E3D1" ink="#6B5047" />
+          <PickRow label="Sans dossier" sub="Dans « Non rangées »" on={current === ""} onClick={() => onPick("")} icon={<Icon name="bookmark" size={17} />} bg="var(--color-sable-2)" ink="var(--color-sec)" />
         )}
         {groups.map((g) => (
           <div key={g.title} className="flex flex-col gap-1.5">
             <span className="text-xs font-extrabold tracking-[0.8px] text-sec uppercase">{g.title} · {g.items.length}</span>
-            <div className="overflow-hidden rounded-[18px] bg-white">
+            <div className="overflow-hidden rounded-[18px] bg-card">
               {g.items.map((f) => {
                 const ro = !canEditFolder(f, userId, peers);
                 const c = folderColor(f.color);
@@ -104,7 +104,7 @@ function PickRow({ label, sub, on, disabled, onClick, icon, bg, ink }: {
       aria-pressed={on}
       disabled={disabled}
       onClick={onClick}
-      className={`flex w-full items-center gap-3 border-b border-sable-2 px-3 py-2.5 text-left transition-colors last:border-b-0 disabled:opacity-45 ${on ? "bg-[#FFF4EA]" : "bg-white hover:bg-sable"}`}
+      className={`flex w-full items-center gap-3 border-b border-sable-2 px-3 py-2.5 text-left transition-colors last:border-b-0 disabled:opacity-45 ${on ? "bg-peach" : "bg-card hover:bg-sable"}`}
     >
       <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[11px]" style={{ background: bg, color: ink }}>{icon}</span>
       <span className="flex min-w-0 flex-1 flex-col">

@@ -4,11 +4,11 @@ export function TipiMark({ size = 40, stroke = 4.5, className = "" }: { size?: n
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true" className={className}>
       <circle cx="76" cy="24" r="8" fill="#FFC857" />
-      <path d="M50 24L81 80H19Z" fill="#D45A43" stroke="#3A211B" strokeWidth={stroke} strokeLinejoin="round" />
-      <path d="M43 13L54 30M57 13L46 30" stroke="#3A211B" strokeWidth={stroke} strokeLinecap="round" />
-      <path d="M50 50L64 80H36Z" fill="#5E4558" stroke="#3A211B" strokeWidth={stroke} strokeLinejoin="round" />
-      <path d="M34 52H50L42 68Z" fill="#F28C38" stroke="#3A211B" strokeWidth={stroke * 0.8} strokeLinejoin="round" />
-      <path d="M10 80H90" stroke="#3A211B" strokeWidth={stroke} strokeLinecap="round" />
+      <path d="M50 24L81 80H19Z" fill="#D45A43" stroke="var(--color-ecorce)" strokeWidth={stroke} strokeLinejoin="round" />
+      <path d="M43 13L54 30M57 13L46 30" stroke="var(--color-ecorce)" strokeWidth={stroke} strokeLinecap="round" />
+      <path d="M50 50L64 80H36Z" fill="var(--tipi-door)" stroke="var(--color-ecorce)" strokeWidth={stroke} strokeLinejoin="round" />
+      <path d="M34 52H50L42 68Z" fill="#F28C38" stroke="var(--color-ecorce)" strokeWidth={stroke * 0.8} strokeLinejoin="round" />
+      <path d="M10 80H90" stroke="var(--color-ecorce)" strokeWidth={stroke} strokeLinecap="round" />
     </svg>
   );
 }
@@ -31,7 +31,7 @@ export function Sparkles() {
     <>
       <span aria-hidden="true" className="absolute top-[118px] right-10 h-[9px] w-[9px] rounded-full border-2 border-terracotta" />
       <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" className="absolute top-[70px] right-[150px]">
-        <path d="M2 2l8 8M10 2l-8 8" stroke="#3A211B" strokeWidth="2" strokeLinecap="round" />
+        <path d="M2 2l8 8M10 2l-8 8" stroke="var(--color-ecorce)" strokeWidth="2" strokeLinecap="round" />
       </svg>
     </>
   );

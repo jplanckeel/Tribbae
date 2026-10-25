@@ -94,7 +94,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                 CoverArt(cover, illustration, draft.color, photo)
             }
             Box(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp).padding(top = 12.dp)) {
-                Box(Modifier.offset(y = (-12).dp).size(64.dp, 24.dp).clip(RoundedCornerShape(topStart = 10.dp, topEnd = 12.dp)).background(Color.White))
+                Box(Modifier.offset(y = (-12).dp).size(64.dp, 24.dp).clip(RoundedCornerShape(topStart = 10.dp, topEnd = 12.dp)).background(CardColor))
                 Row(
                     Modifier.fillMaxWidth().card(RoundedCornerShape(0.dp, 22.dp, 22.dp, 22.dp), 8.dp).padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -174,7 +174,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                                         CoverArt(k, if (k == "illu") illustration ?: suggested ?: "anniv" else null, draft.color, if (k == "photo") photo ?: photos.firstOrNull() else null)
                                         Text(
                                             label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = folderSolid(draft.color),
-                                            modifier = Modifier.padding(bottom = 4.dp).clip(RoundedCornerShape(5.dp)).background(Color.White.copy(alpha = 0.85f)).padding(horizontal = 5.dp, vertical = 1.dp)
+                                            modifier = Modifier.padding(bottom = 4.dp).clip(RoundedCornerShape(5.dp)).background(PhotoVeil).padding(horizontal = 5.dp, vertical = 1.dp)
                                         )
                                     }
                                 }
@@ -231,7 +231,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                                     val on = i == draft.icon
                                     val sc by animateFloatAsState(if (on) 1.08f else 1f, spring(Spring.DampingRatioMediumBouncy))
                                     Box(
-                                        Modifier.weight(1f).height(50.dp).scale(sc).clip(RoundedCornerShape(14.dp)).background(if (on) ink else Color.White)
+                                        Modifier.weight(1f).height(50.dp).scale(sc).clip(RoundedCornerShape(14.dp)).background(if (on) ink else CardColor)
                                             .clickable(role = Role.RadioButton) { draft = draft.copy(icon = i) }
                                             .semantics { contentDescription = FolderIconLabels[i] ?: i.name; selected = on },
                                         contentAlignment = Alignment.Center
@@ -250,7 +250,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                     CampField("Nom", draft.name, { draft = draft.copy(name = it); error = null }, placeholder = "Vacances Drôme", maxLength = 100)
                     CampField("Un petit mot (facultatif)", draft.description, { draft = draft.copy(description = it) }, placeholder = "Ex : pour ses 10 ans", maxLength = 140)
 
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color.White).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Icon(Icons.Outlined.CalendarMonth, null, tint = Terracotta, modifier = Modifier.size(20.dp))
                             Column(Modifier.weight(1f)) {
@@ -271,15 +271,15 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                                     val on = draft.keyDateType == k
                                     Text(
                                         label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Ecorce,
-                                        modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(if (on) folderBg(draft.color) else Color.White)
-                                            .border(2.dp, if (on) Ecorce else Color(0xFFE6D3C0), RoundedCornerShape(12.dp))
+                                        modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(if (on) folderBg(draft.color) else CardColor)
+                                            .border(2.dp, if (on) Ecorce else Line, RoundedCornerShape(12.dp))
                                             .clickable(role = Role.RadioButton) { draft = draft.copy(keyDateType = k) }
                                             .padding(horizontal = 12.dp, vertical = 10.dp)
                                     )
                                 }
                             }
                             Row(
-                                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).border(1.5.dp, Color(0xFFE6D3C0), RoundedCornerShape(12.dp))
+                                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).border(1.5.dp, Line, RoundedCornerShape(12.dp))
                                     .clickable(role = Role.Button) { showDate = true }.padding(horizontal = 12.dp, vertical = 10.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
@@ -316,7 +316,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                             listOf(false to "Privé", true to "Public").forEach { (pub, label) ->
                                 val on = isPublic == pub
                                 Column(
-                                    Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(if (on) Color.White else Sable2)
+                                    Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(if (on) CardColor else Sable2)
                                         .border(2.dp, if (on) Ecorce else Color.Transparent, RoundedCornerShape(18.dp))
                                         .clickable(role = Role.RadioButton) {
                                             // « Partagé » est dérivé des collaborateurs : on le garde tant que le dossier reste privé
@@ -341,7 +341,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                             FolderStyle.VIEW_MODES.forEach { (k, label) ->
                                 val on = draft.viewMode.ifEmpty { "grid" } == k
                                 Column(
-                                    Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(Color.White)
+                                    Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(CardColor)
                                         .border(2.5.dp, if (on) Ecorce else Color.Transparent, RoundedCornerShape(16.dp))
                                         .clickable(role = Role.RadioButton) { draft = draft.copy(viewMode = k) }.padding(10.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -359,7 +359,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                                 val on = draft.sort.ifEmpty { "recent" } == k
                                 Text(
                                     label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (on) Sable else Ecorce,
-                                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(if (on) Ecorce else Color.White)
+                                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(if (on) Ecorce else CardColor)
                                         .clickable(role = Role.RadioButton) { draft = draft.copy(sort = k) }
                                         .padding(horizontal = 14.dp, vertical = 11.dp)
                                 )
@@ -367,7 +367,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                         }
                     }
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.White)
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CardColor)
                             .clickable(role = Role.Switch) { draft = draft.copy(pinned = !draft.pinned) }.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -385,7 +385,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                     }
                 }
             }
-            error?.let { Text(it, color = Color(0xFF9A3420), fontSize = 14.sp) }
+            error?.let { Text(it, color = CoralInk, fontSize = 14.sp) }
         }
 
         Box(Modifier.fillMaxWidth().background(Sable).navigationBarsPadding().imePadding().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp)) {
@@ -431,7 +431,7 @@ private fun Group(label: String, hint: String? = null, content: @Composable Colu
 @Composable
 private fun KidChip(name: String, colors: Pair<Color, Color>, on: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Row(
-        modifier.height(56.dp).clip(RoundedCornerShape(16.dp)).background(Color.White)
+        modifier.height(56.dp).clip(RoundedCornerShape(16.dp)).background(CardColor)
             .border(2.dp, if (on) Ecorce else Color.Transparent, RoundedCornerShape(16.dp))
             .clickable(role = Role.Checkbox, onClick = onClick).semantics { selected = on },
         verticalAlignment = Alignment.CenterVertically,

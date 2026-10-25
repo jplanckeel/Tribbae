@@ -114,9 +114,9 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
               <CoverArt cover={cover} illustration={illustration} color={color} photo={photo} />
             </div>
             <div className="absolute inset-x-4 bottom-0 pt-3">
-              <span className="absolute top-0 left-0 h-6 w-16 rounded-t-[10px] rounded-tr-[12px] bg-white" />
-              <div className="relative flex items-center gap-3 rounded-[22px] rounded-tl-none bg-white p-3.5 shadow-[0_8px_22px_rgba(58,33,27,0.12)]">
-                <span key={form.icon} className="flex h-[54px] w-[54px] shrink-0 animate-pop items-center justify-center rounded-[17px] text-white transition-colors duration-500" style={{ background: color.solid }}>
+              <span className="absolute top-0 left-0 h-6 w-16 rounded-t-[10px] rounded-tr-[12px] bg-card" />
+              <div className="relative flex items-center gap-3 rounded-[22px] rounded-tl-none bg-card p-3.5 shadow-[0_8px_22px_rgba(58,33,27,0.12)]">
+                <span key={form.icon} className="flex h-[54px] w-[54px] shrink-0 animate-pop items-center justify-center rounded-[17px] text-on-solid transition-colors duration-500" style={{ background: color.solid }}>
                   <FolderGlyph icon={form.icon} size={27} />
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
@@ -127,7 +127,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                     <span className="flex">
                       {kids.map((k, i) => {
                         const [bg, ink] = childColors(children, k.id);
-                        return <Avatar key={k.id} name={k.name} color={bg} ink={ink} size={24} className={`border-2 border-white ${i ? "-ml-[7px]" : ""}`} />;
+                        return <Avatar key={k.id} name={k.name} color={bg} ink={ink} size={24} className={`border-2 border-card ${i ? "-ml-[7px]" : ""}`} />;
                       })}
                     </span>
                   </div>
@@ -144,7 +144,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
           <div role="tablist" aria-label="Personnalisation" className="relative mt-3.5 grid h-12 grid-cols-3 rounded-2xl bg-sable-2 p-1">
             <span
               aria-hidden="true"
-              className="absolute top-1 bottom-1 left-1 w-[calc((100%-8px)/3)] rounded-xl bg-white shadow-[0_2px_8px_rgba(58,33,27,0.12)] transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)]"
+              className="absolute top-1 bottom-1 left-1 w-[calc((100%-8px)/3)] rounded-xl bg-card shadow-[0_2px_8px_rgba(58,33,27,0.12)] transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)]"
               style={{ transform: `translateX(${TABS.findIndex((t) => t.key === tab) * 100}%)` }}
             />
             {TABS.map((t) => (
@@ -271,7 +271,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         title={i.label}
                         aria-pressed={on}
                         onClick={() => set({ icon: i.key })}
-                        className={`flex h-[50px] items-center justify-center rounded-[14px] transition-all ${on ? "scale-[1.08] text-white" : "bg-white text-ecorce hover:bg-sable-2"}`}
+                        className={`flex h-[50px] items-center justify-center rounded-[14px] transition-all ${on ? "scale-[1.08] text-white" : "bg-card text-ecorce hover:bg-sable-2"}`}
                         style={on ? { background: color.solid } : undefined}
                       >
                         <FolderGlyph icon={i.key} size={22} />
@@ -294,7 +294,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                 onChange={(e) => set({ description: e.target.value })}
               />
 
-              <div className="flex flex-col gap-2 rounded-[18px] bg-white p-3.5">
+              <div className="flex flex-col gap-2 rounded-[18px] bg-card p-3.5">
                 <div className="flex items-center gap-2.5">
                   <Icon name="calendar" size={20} className="text-terracotta" />
                   <span className="flex flex-1 flex-col">
@@ -318,7 +318,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                             type="button"
                             aria-pressed={on}
                             onClick={() => set({ keyDateType: d.key })}
-                            className={`h-10 rounded-xl border-2 px-3 text-[13px] font-bold transition-colors ${on ? "border-ecorce" : "border-line-2 bg-white"}`}
+                            className={`h-10 rounded-xl border-2 px-3 text-[13px] font-bold transition-colors ${on ? "border-ecorce" : "border-line-2 bg-card"}`}
                             style={on ? { background: color.bg } : undefined}
                           >
                             {d.label}
@@ -333,7 +333,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         required
                         value={toDateInput(keyDate)}
                         onChange={(e) => set({ keyDate: fromDateInput(e.target.value) || keyDate })}
-                        className="h-10 flex-1 rounded-xl border-[1.5px] border-line-2 bg-white px-3 text-[15px] font-semibold text-ecorce outline-none focus:border-terracotta"
+                        className="h-10 flex-1 rounded-xl border-[1.5px] border-line-2 bg-card px-3 text-[15px] font-semibold text-ecorce outline-none focus:border-terracotta"
                       />
                     </label>
                   </div>
@@ -352,7 +352,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                           type="button"
                           aria-pressed={on}
                           onClick={() => set({ childIds: on ? form.childIds!.filter((x) => x !== c.id) : [...(form.childIds ?? []), c.id] })}
-                          className={`flex h-14 min-w-[30%] flex-1 items-center justify-center gap-2 rounded-2xl border-2 bg-white text-sm font-bold transition-transform ${on ? "scale-[1.03] border-ecorce" : "border-transparent"}`}
+                          className={`flex h-14 min-w-[30%] flex-1 items-center justify-center gap-2 rounded-2xl border-2 bg-card text-sm font-bold transition-transform ${on ? "scale-[1.03] border-ecorce" : "border-transparent"}`}
                         >
                           <Avatar name={c.name} color={bg} ink={ink} size={28} />
                           {c.name}
@@ -364,7 +364,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         type="button"
                         aria-pressed={form.childIds?.length === children.length}
                         onClick={() => set({ childIds: form.childIds?.length === children.length ? [] : children.map((c) => c.id) })}
-                        className={`flex h-14 min-w-[30%] flex-1 items-center justify-center gap-2 rounded-2xl border-2 bg-white text-sm font-bold ${form.childIds?.length === children.length ? "border-ecorce" : "border-transparent"}`}
+                        className={`flex h-14 min-w-[30%] flex-1 items-center justify-center gap-2 rounded-2xl border-2 bg-card text-sm font-bold ${form.childIds?.length === children.length ? "border-ecorce" : "border-transparent"}`}
                       >
                         <Avatar name="T" color="#F28C38" size={28} />
                         Tous
@@ -386,7 +386,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         type="button"
                         aria-pressed={active}
                         onClick={() => set({ visibility: v.key })}
-                        className={`flex flex-col items-start gap-1 rounded-medium border-2 p-3 text-left transition-colors ${active ? "border-ecorce bg-white" : "border-transparent bg-sable-2"}`}
+                        className={`flex flex-col items-start gap-1 rounded-medium border-2 p-3 text-left transition-colors ${active ? "border-ecorce bg-card" : "border-transparent bg-sable-2"}`}
                       >
                         <span className="flex items-center gap-1.5 text-sm font-bold"><Icon name={v.icon} size={16} />{v.label}</span>
                         <span className="text-xs text-sec">{v.hint}</span>
@@ -410,7 +410,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         type="button"
                         aria-pressed={on}
                         onClick={() => set({ viewMode: w.key })}
-                        className={`flex flex-col items-center gap-2 rounded-2xl border-[2.5px] bg-white p-2.5 text-[13px] font-bold transition-transform ${on ? "scale-[1.03] border-ecorce" : "border-transparent"}`}
+                        className={`flex flex-col items-center gap-2 rounded-2xl border-[2.5px] bg-card p-2.5 text-[13px] font-bold transition-transform ${on ? "scale-[1.03] border-ecorce" : "border-transparent"}`}
                       >
                         <ViewPreview mode={w.key} ink={color.solid} mid={color.mid} />
                         {w.label}
@@ -429,7 +429,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         type="button"
                         aria-pressed={on}
                         onClick={() => set({ sort: o.key })}
-                        className={`h-10 rounded-xl px-3.5 text-[13px] font-bold transition-colors ${on ? "bg-ecorce text-sable" : "bg-white text-ecorce"}`}
+                        className={`h-10 rounded-xl px-3.5 text-[13px] font-bold transition-colors ${on ? "bg-ecorce text-sable" : "bg-card text-ecorce"}`}
                       >
                         {o.label}
                       </button>
@@ -437,7 +437,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                   })}
                 </div>
               </Group>
-              <div className="flex items-center gap-3 rounded-2xl bg-white p-3.5">
+              <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5">
                 <svg width={20} height={20} viewBox="0 0 24 24" aria-hidden="true" className="icon text-terracotta"><path d="M9 4h6l-1 6 3 3H7l3-3z M12 13v7" /></svg>
                 <span className="flex flex-1 flex-col">
                   <span className="text-[15px] font-bold">Épingler en haut de Mes idées</span>

@@ -49,7 +49,7 @@ export function IdeaVisual({ link, height, iconSize = 46, className = "", style 
 
 function CategoryBadge({ cat }: { cat: CategoryMeta }) {
   return (
-    <span className={`absolute top-2.5 left-2.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold ${cat.ic}`}>
+    <span className={`absolute top-2.5 left-2.5 rounded-full bg-card px-2.5 py-1 text-xs font-semibold ${cat.ic}`}>
       {cat.label}
     </span>
   );
@@ -124,7 +124,7 @@ export function RailCard({ link }: { link: Link }) {
     <RouterLink
       to={`/links/${link.id}`}
       {...morph.linkProps}
-      className="w-[210px] shrink-0 snap-start overflow-hidden rounded-large bg-white shadow-card transition-transform hover:-translate-y-0.5"
+      className="w-[210px] shrink-0 snap-start overflow-hidden rounded-large bg-card shadow-card transition-transform hover:-translate-y-0.5"
     >
       <div className="relative">
         <IdeaVisual link={link} height={120} style={morph.visualStyle} />
@@ -152,7 +152,7 @@ export function GridCard({ link, index = 0, onRequireAuth, highlight }: { link: 
       to={`/links/${link.id}`}
       {...morph.linkProps}
       style={highlightStyle(highlight)}
-      className="mb-3 block break-inside-avoid overflow-hidden rounded-[20px] bg-white shadow-card transition-transform hover:-translate-y-0.5"
+      className="mb-3 block break-inside-avoid overflow-hidden rounded-[20px] bg-card shadow-card transition-transform hover:-translate-y-0.5"
     >
       <div className="relative">
         <IdeaVisual link={link} height={MOSAIC[index % MOSAIC.length]} iconSize={40} style={morph.visualStyle} />
@@ -201,7 +201,7 @@ export function RowCard({ link, trailing, highlight }: { link: Link; trailing?: 
   const morph = useIdeaMorph(link);
   return (
     <RouterLink to={`/links/${link.id}`} {...morph.linkProps}
-      style={highlightStyle(highlight)} className="flex items-center gap-3 rounded-[18px] bg-white p-2.5 pr-3.5 shadow-card">
+      style={highlightStyle(highlight)} className="flex items-center gap-3 rounded-[18px] bg-card p-2.5 pr-3.5 shadow-card">
       <IdeaVisual link={link} height={56} iconSize={24} className="w-14 shrink-0 rounded-[14px]" style={morph.visualStyle} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[15px] font-bold" style={morph.titleStyle}>{link.title}</span>
@@ -231,7 +231,7 @@ export function AvatarStack({ names, label }: { names: string[]; label?: string 
     <span className="flex items-center">
       {names.slice(0, 3).map((n, i) => {
         const [bg, ink] = AVATAR_COLORS[i % AVATAR_COLORS.length];
-        return <Avatar key={i} name={n} color={bg} ink={ink} className={`border-2 border-white ${i ? "-ml-2" : ""}`} />;
+        return <Avatar key={i} name={n} color={bg} ink={ink} className={`border-2 border-card ${i ? "-ml-2" : ""}`} />;
       })}
       {label && <span className="ml-1.5 text-xs text-sec">{label}</span>}
     </span>
@@ -250,9 +250,9 @@ function ChildAvatars({ folder, size = 26 }: { folder: Folder; size?: number }) 
   return (
     <span className="flex" aria-label={`Pour ${kids.map((k) => k.child.name).join(", ")}`}>
       {kids.slice(0, 3).map(({ child, colors: [bg, ink] }, i) => (
-        <Avatar key={child.id} name={child.name} color={bg} ink={ink} size={size} className={`border-2 border-white ${i ? "-ml-2" : ""}`} />
+        <Avatar key={child.id} name={child.name} color={bg} ink={ink} size={size} className={`border-2 border-card ${i ? "-ml-2" : ""}`} />
       ))}
-      {kids.length > 3 && <Avatar name={`+${kids.length - 3}`} color="#F28C38" size={size} className="-ml-2 border-2 border-white" />}
+      {kids.length > 3 && <Avatar name={`+${kids.length - 3}`} color="#F28C38" size={size} className="-ml-2 border-2 border-card" />}
     </span>
   );
 }
@@ -279,11 +279,11 @@ export function FolderCard({ folder, count, showOwner }: { folder: Folder; count
   return (
     <RouterLink to={`/dossiers/${folder.id}`} className="group relative block pt-2.5 transition-transform hover:-translate-y-0.5">
       <span aria-hidden="true" className="absolute top-0 left-0 h-[22px] w-[58px] rounded-t-[10px] rounded-tr-[12px]" style={{ background: color.mid }} />
-      <div className="relative overflow-hidden rounded-[20px] rounded-tl-none bg-white shadow-card">
+      <div className="relative overflow-hidden rounded-[20px] rounded-tl-none bg-card shadow-card">
         <div className="relative h-16 overflow-hidden">
           <FolderCover folder={folder} />
           {cd && (
-            <span className="absolute top-2 right-2 rounded-lg px-[7px] py-[3px] text-[11px] font-extrabold text-white" style={{ background: color.solid }}>
+            <span className="absolute top-2 right-2 rounded-lg px-[7px] py-[3px] text-[11px] font-extrabold text-on-solid" style={{ background: color.solid }}>
               {cd.label}
             </span>
           )}
@@ -294,7 +294,7 @@ export function FolderCard({ folder, count, showOwner }: { folder: Folder; count
           )}
         </div>
         <div className="relative -mt-[18px] flex flex-col gap-2 px-3 pb-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-[13px] border-[3px] border-white text-white" style={{ background: color.solid }}>
+          <span className="flex h-10 w-10 items-center justify-center rounded-[13px] border-[3px] border-card text-on-solid" style={{ background: color.solid }}>
             <FolderGlyph icon={folder.icon} size={20} />
           </span>
           <span className="flex min-w-0 flex-col">
@@ -317,20 +317,20 @@ export function PinnedFolderCard({ folder, count }: { folder: Folder; count?: nu
   const cd = useCountdown(folder);
   const sub = [folder.description, plural(n, "idée", "idées")].filter(Boolean).join(" · ");
   return (
-    <RouterLink to={`/dossiers/${folder.id}`} className="relative block overflow-hidden rounded-[24px] bg-white shadow-card transition-transform hover:-translate-y-0.5">
+    <RouterLink to={`/dossiers/${folder.id}`} className="relative block overflow-hidden rounded-[24px] bg-card shadow-card transition-transform hover:-translate-y-0.5">
       <div className="relative h-24 overflow-hidden">
         <FolderCover folder={folder} />
         {cd && (
           <span
             className="absolute top-3 left-3 rounded-[10px] px-2.5 py-[5px] text-xs font-extrabold"
-            style={folder.keyDateType === "vacances" ? { background: "#3A211B", color: "#FBF3E7" } : { background: color.solid, color: "#FFFFFF" }}
+            style={folder.keyDateType === "vacances" ? { background: "var(--color-ecorce)", color: "var(--color-sable)" } : { background: color.solid, color: "var(--color-on-solid)" }}
           >
             {cd.label}
           </span>
         )}
       </div>
       <div className="relative -mt-[22px] flex items-center gap-3 px-3.5 pb-3.5">
-        <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[17px] border-[3px] border-white text-white" style={{ background: color.solid }}>
+        <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[17px] border-[3px] border-card text-on-solid" style={{ background: color.solid }}>
           <FolderGlyph icon={folder.icon} size={25} />
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5 pt-[22px]">
@@ -359,11 +359,11 @@ export function IdeaCard({ link, onRequireAuth }: { link: Link; onRequireAuth?: 
     <RouterLink
       to={`/links/${link.id}`}
       {...morph.linkProps}
-      className="group overflow-hidden rounded-[22px] bg-white shadow-card transition-transform hover:-translate-y-0.5"
+      className="group overflow-hidden rounded-[22px] bg-card shadow-card transition-transform hover:-translate-y-0.5"
     >
       <div className="relative">
         <IdeaVisual link={link} height={160} iconSize={56} style={morph.visualStyle} />
-        <span className={`absolute top-3 left-3 rounded-full bg-white px-2.5 py-[5px] text-xs font-bold ${cat.ink}`}>{badge}</span>
+        <span className={`absolute top-3 left-3 rounded-full bg-card px-2.5 py-[5px] text-xs font-bold ${cat.ink}`}>{badge}</span>
         <LikeButton link={link} onRequireAuth={onRequireAuth} className="absolute top-2.5 right-2.5" />
       </div>
       <div className="flex flex-col gap-1.5 px-4 pt-3.5 pb-4">
@@ -391,7 +391,7 @@ export function ListCard({ folder }: { folder: Folder }) {
   return (
     <RouterLink
       to={`/dossiers/${folder.id}`}
-      className="overflow-hidden rounded-[24px] bg-white shadow-card transition-transform hover:-translate-y-0.5"
+      className="overflow-hidden rounded-[24px] bg-card shadow-card transition-transform hover:-translate-y-0.5"
     >
       <div className="relative h-[130px] overflow-hidden" style={{ background: color.bg }}>
         {banner && !folder.cover ? (
@@ -423,7 +423,7 @@ export function AiCard({ title, text, onClick, className = "" }: { title: string
       <button
         type="button"
         onClick={onClick}
-        className="self-start rounded-[14px] bg-soleil px-4 py-2.5 text-sm font-bold text-ecorce transition-colors hover:bg-white"
+        className="self-start rounded-[14px] bg-soleil px-4 py-2.5 text-sm font-bold text-ecorce transition-colors hover:bg-card"
       >
         Essayer
       </button>

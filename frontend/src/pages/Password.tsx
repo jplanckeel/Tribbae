@@ -34,7 +34,7 @@ export function ForgotPassword() {
       <Seo title="Mot de passe oublié · Tribbae" noindex />
       {sentTo ? (
         <div className="flex w-full max-w-md flex-col gap-4">
-          <span className="flex h-16 w-16 items-center justify-center rounded-[18px] bg-[#DCEDF3] text-[#235C77]">
+          <span className="flex h-16 w-16 items-center justify-center rounded-[18px] bg-[var(--color-activite-bg)] text-[var(--color-activite-ink)]">
             <Icon name="send" size={30} />
           </span>
           <h1 className="font-display text-[32px] leading-none font-extrabold tracking-[-0.8px]">Regardez vos emails</h1>
