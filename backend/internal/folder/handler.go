@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 	"log"
-	"time"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
 	"github.com/tribbae/backend/internal/interceptor"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -250,33 +248,22 @@ func (h *Handler) GetSharedFolder(ctx context.Context, req *pb.GetSharedFolderRe
 	if err != nil {
 		return nil, toStatus("get shared folder", err)
 	}
-	var pbLinks []*pb.Link
+	pbLinks := make([]*pb.Link, 0, len(rawLinks))
 	for _, m := range rawLinks {
-		l := &pb.Link{}
-		if v, ok := m["_id"]; ok {
-			l.Id = toString(v)
+		l := &pb.Link{
+			Id:          m.ID.Hex(),
+			Title:       m.Title,
+			Url:         m.URL,
+			Description: m.Description,
+			ImageUrl:    m.ImageURL,
+			Category:    pb.LinkCategory(pb.LinkCategory_value[m.Category]),
+			Tags:        m.Tags,
+			AgeRange:    m.AgeRange,
+			Location:    m.Location,
+			Price:       m.Price,
 		}
-		if v, ok := m["title"]; ok {
-			l.Title = toString(v)
-		}
-		if v, ok := m["url"]; ok {
-			l.Url = toString(v)
-		}
-		if v, ok := m["description"]; ok {
-			l.Description = toString(v)
-		}
-		if v, ok := m["image_url"]; ok {
-			l.ImageUrl = toString(v)
-		}
-		l.Category = pb.LinkCategory(pb.LinkCategory_value[toString(m["category"])])
-		l.Tags = toStrings(m["tags"])
-		l.AgeRange = toString(m["age_range"])
-		l.Location = toString(m["location"])
-		l.Price = toString(m["price"])
-		if v, ok := m["created_at"]; ok {
-			if t, ok2 := v.(time.Time); ok2 {
-				l.CreatedAt = timestamppb.New(t)
-			}
+		if !m.CreatedAt.IsZero() {
+			l.CreatedAt = timestamppb.New(m.CreatedAt)
 		}
 		pbLinks = append(pbLinks, l)
 	}
@@ -347,28 +334,4 @@ func (h *Handler) ListTopFolders(ctx context.Context, req *pb.ListTopFoldersRequ
 	}
 	pbFolders := h.many(ctx, folders)
 	return &pb.ListTopFoldersResponse{Folders: pbFolders}, nil
-}
-
-func toString(v any) string {
-	switch t := v.(type) {
-	case string:
-		return t
-	case primitive.ObjectID:
-		return t.Hex()
-	}
-	return ""
-}
-
-func toStrings(v any) []string {
-	arr, ok := v.(primitive.A)
-	if !ok {
-		return nil
-	}
-	out := make([]string, 0, len(arr))
-	for _, x := range arr {
-		if s, ok := x.(string); ok {
-			out = append(out, s)
-		}
-	}
-	return out
 }

@@ -11,10 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	tmail "github.com/tribbae/backend/internal/mail"
 )
@@ -35,13 +34,13 @@ const (
 // expirées. Une seule invitation par tribu et par adresse (une nouvelle
 // remplace la précédente).
 type Invitation struct {
-	ID        primitive.ObjectID `bson:"_id"`
-	TribeID   primitive.ObjectID `bson:"tribe_id"`
-	Email     string             `bson:"email"`
-	InvitedBy string             `bson:"invited_by"`
-	TokenHash string             `bson:"token_hash"`
-	CreatedAt time.Time          `bson:"created_at"`
-	ExpiresAt time.Time          `bson:"expires_at"`
+	ID        bson.ObjectID `bson:"_id"`
+	TribeID   bson.ObjectID `bson:"tribe_id"`
+	Email     string        `bson:"email"`
+	InvitedBy string        `bson:"invited_by"`
+	TokenHash string        `bson:"token_hash"`
+	CreatedAt time.Time     `bson:"created_at"`
+	ExpiresAt time.Time     `bson:"expires_at"`
 }
 
 // InvitationInfo : ce qu'affiche le lien d'invitation avant de l'accepter.
@@ -114,7 +113,7 @@ func (s *Service) Invite(ctx context.Context, userID, email string) (*Tribe, err
 		return nil, err
 	}
 	inv := Invitation{
-		ID:        primitive.NewObjectID(),
+		ID:        bson.NewObjectID(),
 		TribeID:   t.ID,
 		Email:     email,
 		InvitedBy: userID,
@@ -143,7 +142,7 @@ func (s *Service) Invite(ctx context.Context, userID, email string) (*Tribe, err
 }
 
 // Invitations retourne les invitations en attente de la tribu.
-func (s *Service) Invitations(ctx context.Context, tribeID primitive.ObjectID) ([]Invitation, error) {
+func (s *Service) Invitations(ctx context.Context, tribeID bson.ObjectID) ([]Invitation, error) {
 	if tribeID.IsZero() {
 		return nil, nil
 	}
@@ -162,7 +161,7 @@ func (s *Service) Revoke(ctx context.Context, userID, invitationID string) (*Tri
 	if err != nil {
 		return nil, err
 	}
-	id, idErr := primitive.ObjectIDFromHex(invitationID)
+	id, idErr := bson.ObjectIDFromHex(invitationID)
 	if t == nil || idErr != nil {
 		return nil, ErrInvalidInvitation
 	}
@@ -251,6 +250,6 @@ func (s *Service) Accept(ctx context.Context, userID, token string) (*Tribe, err
 }
 
 // dropInvitations efface les invitations d'une tribu qui disparaît.
-func (s *Service) dropInvitations(ctx context.Context, tribeID primitive.ObjectID) {
+func (s *Service) dropInvitations(ctx context.Context, tribeID bson.ObjectID) {
 	_, _ = s.invCol.DeleteMany(ctx, bson.M{"tribe_id": tribeID})
 }

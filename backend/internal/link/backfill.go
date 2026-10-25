@@ -5,9 +5,8 @@ import (
 	"log"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/tribbae/backend/internal/preview"
 )
@@ -28,6 +27,13 @@ var fetchImage = func(ctx context.Context, url string) string { return preview.I
 // RunImageBackfill traite périodiquement un lot d'idées sans image, jusqu'à
 // l'annulation du contexte. À lancer dans une goroutine au démarrage.
 func (s *Service) RunImageBackfill(ctx context.Context, every time.Duration, batch int) {
+	// Anciennes idées sans champ image_url : vides, pour que la recherche des
+	// idées sans image (égalité sur "") les voie
+	if res, err := s.col.UpdateMany(ctx, bson.M{"image_url": nil}, bson.M{"$set": bson.M{"image_url": ""}}); err != nil {
+		log.Printf("link: image_url normalization: %v", err)
+	} else if res.ModifiedCount > 0 {
+		log.Printf("link: image_url normalization: %d links", res.ModifiedCount)
+	}
 	for {
 		if filled, tried := s.backfillBatch(ctx, batch); tried > 0 {
 			log.Printf("link: image backfill: %d/%d links got an image", filled, tried)
@@ -44,8 +50,10 @@ func (s *Service) RunImageBackfill(ctx context.Context, every time.Duration, bat
 // semaine), les plus récentes d'abord.
 func (s *Service) backfillBatch(ctx context.Context, batch int) (filled, tried int) {
 	filter := bson.M{
-		"url":       bson.M{"$nin": bson.A{"", nil}},
-		"image_url": bson.M{"$in": bson.A{"", nil}},
+		"url": bson.M{"$nin": bson.A{"", nil}},
+		// Égalité exacte : c'est ce que couvre l'index partiel idx_links_missing_image
+		// (image_url est toujours écrit, vide quand l'idée n'a pas d'image)
+		"image_url": "",
 		"$or": bson.A{
 			bson.M{"image_checked_at": bson.M{"$exists": false}},
 			bson.M{"image_checked_at": bson.M{"$lt": time.Now().Add(-backfillRetryAfter)}},
@@ -59,8 +67,8 @@ func (s *Service) backfillBatch(ctx context.Context, batch int) (filled, tried i
 		return 0, 0
 	}
 	var todo []struct {
-		ID  primitive.ObjectID `bson:"_id"`
-		URL string             `bson:"url"`
+		ID  bson.ObjectID `bson:"_id"`
+		URL string        `bson:"url"`
 	}
 	if err := cur.All(ctx, &todo); err != nil {
 		return 0, 0
@@ -83,7 +91,7 @@ func (s *Service) backfillBatch(ctx context.Context, batch int) (filled, tried i
 
 // backfillOne cherche l'image d'une idée et l'enregistre si l'idée n'en a
 // toujours pas (l'utilisateur a pu en choisir une entre-temps).
-func (s *Service) backfillOne(ctx context.Context, id primitive.ObjectID, url string) bool {
+func (s *Service) backfillOne(ctx context.Context, id bson.ObjectID, url string) bool {
 	fctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	img := fetchImage(fctx, url)
 	cancel()
@@ -97,7 +105,7 @@ func (s *Service) backfillOne(ctx context.Context, id primitive.ObjectID, url st
 
 // backfillSoon relance tout de suite la recherche d'image d'une idée (adresse
 // modifiée, image retirée), sans retarder la réponse à l'utilisateur.
-func (s *Service) backfillSoon(id primitive.ObjectID, url string) {
+func (s *Service) backfillSoon(id bson.ObjectID, url string) {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()

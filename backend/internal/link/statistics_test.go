@@ -8,8 +8,7 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // **Feature: social-features-fixes, Property 17: Favorite count accuracy**
@@ -35,10 +34,10 @@ func TestProperty_FavoriteCountAccuracy(t *testing.T) {
 			foldersCol.DeleteMany(ctx, bson.M{})
 
 			// Create a test user
-			userID := "test_user_" + primitive.NewObjectID().Hex()
+			userID := "test_user_" + bson.NewObjectID().Hex()
 
 			// Create a folder for the links
-			folderID := primitive.NewObjectID()
+			folderID := bson.NewObjectID()
 			folder := bson.M{
 				"_id":        folderID,
 				"owner_id":   userID,
@@ -58,7 +57,7 @@ func TestProperty_FavoriteCountAccuracy(t *testing.T) {
 			// Create links with the generated favorite flags
 			for i, isFavorite := range favoriteFlags {
 				link := &Link{
-					ID:          primitive.NewObjectID(),
+					ID:          bson.NewObjectID(),
 					OwnerID:     userID,
 					FolderID:    folderID.Hex(),
 					Title:       "Link " + string(rune(i)),
@@ -142,10 +141,10 @@ func TestProperty_PublicLinksCountAccuracy(t *testing.T) {
 			foldersCol.DeleteMany(ctx, bson.M{})
 
 			// Create a test user
-			userID := "test_user_" + primitive.NewObjectID().Hex()
+			userID := "test_user_" + bson.NewObjectID().Hex()
 
 			// Create a folder for the links
-			folderID := primitive.NewObjectID()
+			folderID := bson.NewObjectID()
 			folder := bson.M{
 				"_id":        folderID,
 				"owner_id":   userID,
@@ -172,7 +171,7 @@ func TestProperty_PublicLinksCountAccuracy(t *testing.T) {
 				}
 
 				link := &Link{
-					ID:          primitive.NewObjectID(),
+					ID:          bson.NewObjectID(),
 					OwnerID:     userID,
 					FolderID:    folderID.Hex(),
 					Title:       "Link " + string(rune(i)),

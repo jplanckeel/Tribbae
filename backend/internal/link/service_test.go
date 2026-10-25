@@ -8,10 +8,9 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // setupTestDB creates a test database connection
@@ -24,7 +23,7 @@ func setupTestDB(t *testing.T) (*mongo.Client, *mongo.Database, func()) {
 		ApplyURI("mongodb://localhost:27017").
 		SetServerSelectionTimeout(5 * time.Second)
 
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := mongo.Connect(clientOpts)
 	if err != nil {
 		t.Skipf("Skipping test: Failed to connect to MongoDB: %v", err)
 	}
@@ -35,7 +34,7 @@ func setupTestDB(t *testing.T) (*mongo.Client, *mongo.Database, func()) {
 	}
 
 	// Use a test database
-	dbName := "tribbae_test_" + primitive.NewObjectID().Hex()
+	dbName := "tribbae_test_" + bson.NewObjectID().Hex()
 	db := client.Database(dbName)
 
 	// Cleanup function
@@ -79,7 +78,7 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 			usersCol.DeleteMany(ctx, bson.M{})
 
 			// Create a test user with the generated display name
-			userID := primitive.NewObjectID()
+			userID := bson.NewObjectID()
 			user := bson.M{
 				"_id":          userID,
 				"email":        "test@example.com",
@@ -93,7 +92,7 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 			}
 
 			// Create a folder for the link
-			folderID := primitive.NewObjectID()
+			folderID := bson.NewObjectID()
 			folder := bson.M{
 				"_id":        folderID,
 				"owner_id":   userID.Hex(),
@@ -126,8 +125,9 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 				return false
 			}
 
-			// Call GetOwnerInfo to retrieve the owner's display name
-			retrievedDisplayName, retrievedIsAdmin := svc.GetOwnerInfo(ctx, createdLink.OwnerID)
+			// Auteur tel que le renvoient les listes (LoadStats)
+			owner := svc.LoadStats(ctx, []*Link{createdLink}, "").Owners[createdLink.OwnerID]
+			retrievedDisplayName, retrievedIsAdmin := owner.DisplayName, owner.IsAdmin
 
 			// Verify the display name matches what we stored
 			if retrievedDisplayName != displayName {
@@ -187,13 +187,13 @@ func TestProperty_PublicLinksInCommunityListings(t *testing.T) {
 			foldersCol.DeleteMany(ctx, bson.M{})
 
 			// Create one private and one public folder to mix things up
-			privateFolderID := primitive.NewObjectID()
+			privateFolderID := bson.NewObjectID()
 			foldersCol.InsertOne(ctx, bson.M{
 				"_id": privateFolderID, "owner_id": "test_owner",
 				"name": "Private Folder", "visibility": "private",
 				"created_at": time.Now(), "updated_at": time.Now(),
 			})
-			publicFolderID := primitive.NewObjectID()
+			publicFolderID := bson.NewObjectID()
 			foldersCol.InsertOne(ctx, bson.M{
 				"_id": publicFolderID, "owner_id": "test_owner",
 				"name": "Public Folder", "visibility": "public",
@@ -214,8 +214,8 @@ func TestProperty_PublicLinksInCommunityListings(t *testing.T) {
 					folderID = publicFolderID
 				}
 				link := &Link{
-					ID: primitive.NewObjectID(), OwnerID: "test_owner",
-					FolderID: folderID.Hex(), Title: "Link " + primitive.NewObjectID().Hex(),
+					ID: bson.NewObjectID(), OwnerID: "test_owner",
+					FolderID: folderID.Hex(), Title: "Link " + bson.NewObjectID().Hex(),
 					URL: "https://example.com", Category: "LINK_CATEGORY_IDEE",
 					Tags: []string{}, Ingredients: []string{},
 					Visibility: normalizedVisibility, CreatedAt: time.Now(), UpdatedAt: time.Now(),
@@ -290,10 +290,10 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 			}
 
 			// Create a test user
-			userID := "test_user_" + primitive.NewObjectID().Hex()
+			userID := "test_user_" + bson.NewObjectID().Hex()
 
 			// Create a folder for the link
-			folderID := primitive.NewObjectID()
+			folderID := bson.NewObjectID()
 			folder := bson.M{
 				"_id":        folderID,
 				"owner_id":   userID,

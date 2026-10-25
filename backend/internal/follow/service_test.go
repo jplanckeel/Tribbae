@@ -8,10 +8,9 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // setupTestDB creates a test database connection
@@ -24,7 +23,7 @@ func setupTestDB(t *testing.T) (*mongo.Client, *mongo.Database, func()) {
 		ApplyURI("mongodb://localhost:27017").
 		SetServerSelectionTimeout(5 * time.Second)
 
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := mongo.Connect(clientOpts)
 	if err != nil {
 		t.Skipf("Skipping test: Failed to connect to MongoDB: %v", err)
 	}
@@ -35,7 +34,7 @@ func setupTestDB(t *testing.T) (*mongo.Client, *mongo.Database, func()) {
 	}
 
 	// Use a test database
-	dbName := "tribbae_test_" + primitive.NewObjectID().Hex()
+	dbName := "tribbae_test_" + bson.NewObjectID().Hex()
 	db := client.Database(dbName)
 
 	// Cleanup function
@@ -77,8 +76,8 @@ func TestProperty_FollowRelationshipCreation(t *testing.T) {
 			usersCol.DeleteMany(ctx, bson.M{})
 
 			// Create two distinct users
-			userAID := primitive.NewObjectID()
-			userBID := primitive.NewObjectID()
+			userAID := bson.NewObjectID()
+			userBID := bson.NewObjectID()
 
 			userA := bson.M{
 				"_id":          userAID,
@@ -172,8 +171,8 @@ func TestProperty_FollowUnfollowRoundTrip(t *testing.T) {
 			usersCol.DeleteMany(ctx, bson.M{})
 
 			// Create two distinct users
-			userAID := primitive.NewObjectID()
-			userBID := primitive.NewObjectID()
+			userAID := bson.NewObjectID()
+			userBID := bson.NewObjectID()
 
 			userA := bson.M{
 				"_id":          userAID,
@@ -281,7 +280,7 @@ func TestProperty_FollowerCountConsistency(t *testing.T) {
 			}
 
 			// Create target user (the one being followed)
-			targetUserID := primitive.NewObjectID()
+			targetUserID := bson.NewObjectID()
 			targetUser := bson.M{
 				"_id":          targetUserID,
 				"email":        "target@example.com",
@@ -298,7 +297,7 @@ func TestProperty_FollowerCountConsistency(t *testing.T) {
 			// Create follower users and establish follow relationships
 			followerIDs := make([]string, numFollowers)
 			for i := 0; i < numFollowers; i++ {
-				followerID := primitive.NewObjectID()
+				followerID := bson.NewObjectID()
 				follower := bson.M{
 					"_id":          followerID,
 					"email":        "follower" + followerID.Hex() + "@example.com",
@@ -400,7 +399,7 @@ func TestProperty_FollowingCountAccuracy(t *testing.T) {
 			}
 
 			// Create the user who will follow others
-			followerUserID := primitive.NewObjectID()
+			followerUserID := bson.NewObjectID()
 			followerUser := bson.M{
 				"_id":          followerUserID,
 				"email":        "follower@example.com",
@@ -417,7 +416,7 @@ func TestProperty_FollowingCountAccuracy(t *testing.T) {
 			// Create users to be followed and establish follow relationships
 			followingIDs := make([]string, numFollowing)
 			for i := 0; i < numFollowing; i++ {
-				followingID := primitive.NewObjectID()
+				followingID := bson.NewObjectID()
 				following := bson.M{
 					"_id":          followingID,
 					"email":        "following" + followingID.Hex() + "@example.com",

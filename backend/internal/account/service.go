@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/tribbae/backend/internal/photo"
 )
@@ -48,7 +48,7 @@ func (s *Service) col(name string) *mongo.Collection { return s.db.Collection(na
 // Export rassemble toutes les données liées au compte, dans un format lisible
 // et réutilisable (JSON). Le mot de passe (haché) n'en fait pas partie.
 func (s *Service) Export(ctx context.Context, userID string) (map[string]any, error) {
-	oid, err := primitive.ObjectIDFromHex(userID)
+	oid, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -61,8 +61,11 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 	}
 	delete(user, "password")
 
+	// Sous-documents en bson.M (et non bson.D, défaut du driver v2) : l'export
+	// est écrit en JSON, où un bson.D deviendrait une liste de {Key, Value}
+	asMaps := s.db.Client().Database(s.db.Name(), options.Database().SetBSONOptions(&options.BSONOptions{DefaultDocumentM: true}))
 	find := func(name string, filter bson.M) ([]bson.M, error) {
-		cur, err := s.col(name).Find(ctx, filter)
+		cur, err := asMaps.Collection(name).Find(ctx, filter)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", name, err)
 		}
@@ -145,7 +148,7 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 // compte effacé, un email le confirme à son adresse, qui n'est gardée qu'en
 // mémoire le temps de cet envoi.
 func (s *Service) Delete(ctx context.Context, userID string) error {
-	oid, err := primitive.ObjectIDFromHex(userID)
+	oid, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return ErrNotFound
 	}
@@ -193,22 +196,8 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		}
 	}
 
-	// 4. Ses « j'aime » sur les idées des autres : compteurs mis à jour
-	cur, err := s.col("link_likes").Find(ctx, bson.M{"user_id": userID})
-	if err != nil {
-		return err
-	}
-	var likes []struct {
-		LinkID string `bson:"link_id"`
-	}
-	if err := cur.All(ctx, &likes); err != nil {
-		return err
-	}
-	for _, l := range likes {
-		if id, err := primitive.ObjectIDFromHex(l.LinkID); err == nil {
-			_, _ = s.col("links").UpdateOne(ctx, bson.M{"_id": id, "like_count": bson.M{"$gt": 0}}, bson.M{"$inc": bson.M{"like_count": -1}})
-		}
-	}
+	// 4. Ses « j'aime » sur les idées des autres (leur nombre est compté dans
+	// link_likes, il n'y a pas de compteur à mettre à jour)
 	if _, err := s.col("link_likes").DeleteMany(ctx, bson.M{"user_id": userID}); err != nil {
 		return err
 	}
@@ -262,7 +251,7 @@ func (s *Service) ids(ctx context.Context, col string, filter bson.M) ([]string,
 		return nil, err
 	}
 	var docs []struct {
-		ID primitive.ObjectID `bson:"_id"`
+		ID bson.ObjectID `bson:"_id"`
 	}
 	if err := cur.All(ctx, &docs); err != nil {
 		return nil, err

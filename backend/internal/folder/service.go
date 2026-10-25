@@ -12,10 +12,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type CollaboratorEntry struct {
@@ -27,7 +26,7 @@ type CollaboratorEntry struct {
 }
 
 type Folder struct {
-	ID            primitive.ObjectID  `bson:"_id,omitempty"`
+	ID            bson.ObjectID       `bson:"_id,omitempty"`
 	OwnerID       string              `bson:"owner_id"`
 	Name          string              `bson:"name"`
 	Icon          string              `bson:"icon"`
@@ -122,7 +121,7 @@ func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibi
 		return nil, err
 	}
 	f := &Folder{
-		ID:         primitive.NewObjectID(),
+		ID:         bson.NewObjectID(),
 		OwnerID:    ownerID,
 		Name:       name,
 		Icon:       icon,
@@ -143,7 +142,7 @@ func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibi
 // Get retourne un dossier visible par userID (éventuellement anonyme) :
 // dossier public, ou dont il est propriétaire / collaborateur.
 func (s *Service) Get(ctx context.Context, folderID, userID string) (*Folder, error) {
-	id, err := primitive.ObjectIDFromHex(folderID)
+	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -183,7 +182,7 @@ func (s *Service) Update(ctx context.Context, folderID, userID, name, icon, colo
 	if err != nil {
 		return nil, err
 	}
-	id, err := primitive.ObjectIDFromHex(folderID)
+	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -218,7 +217,7 @@ func (s *Service) Update(ctx context.Context, folderID, userID, name, icon, colo
 }
 
 func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
-	id, err := primitive.ObjectIDFromHex(folderID)
+	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return errors.New("invalid folder id")
 	}
@@ -249,7 +248,7 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 }
 
 func (s *Service) GenerateShareToken(ctx context.Context, folderID, ownerID string) (string, string, error) {
-	id, err := primitive.ObjectIDFromHex(folderID)
+	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return "", "", errors.New("invalid folder id")
 	}
@@ -268,7 +267,23 @@ func (s *Service) GenerateShareToken(ctx context.Context, folderID, ownerID stri
 	return token, s.baseURL + "/share/" + token, nil
 }
 
-func (s *Service) GetByShareToken(ctx context.Context, token string) (*Folder, []map[string]any, error) {
+// SharedLink : ce qu'un lien de partage montre d'une idée du dossier (lu sans
+// dépendre du package link).
+type SharedLink struct {
+	ID          bson.ObjectID `bson:"_id"`
+	Title       string        `bson:"title"`
+	URL         string        `bson:"url"`
+	Description string        `bson:"description"`
+	ImageURL    string        `bson:"image_url"`
+	Category    string        `bson:"category"`
+	Tags        []string      `bson:"tags"`
+	AgeRange    string        `bson:"age_range"`
+	Location    string        `bson:"location"`
+	Price       string        `bson:"price"`
+	CreatedAt   time.Time     `bson:"created_at"`
+}
+
+func (s *Service) GetByShareToken(ctx context.Context, token string) (*Folder, []SharedLink, error) {
 	if len(token) != 32 {
 		return nil, nil, ErrNotFound
 	}
@@ -287,7 +302,7 @@ func (s *Service) GetByShareToken(ctx context.Context, token string) (*Folder, [
 		return &f, nil, nil
 	}
 	defer cursor.Close(ctx)
-	var links []map[string]any
+	var links []SharedLink
 	cursor.All(ctx, &links)
 	return &f, links, nil
 }
@@ -295,7 +310,7 @@ func (s *Service) GetByShareToken(ctx context.Context, token string) (*Folder, [
 // --- Collaborateurs ---
 
 func (s *Service) AddCollaborator(ctx context.Context, folderID, ownerID, email, role string) (*Folder, error) {
-	id, err := primitive.ObjectIDFromHex(folderID)
+	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return nil, errors.New("invalid folder id")
 	}
@@ -309,9 +324,9 @@ func (s *Service) AddCollaborator(ctx context.Context, folderID, ownerID, email,
 	email = strings.TrimSpace(email)
 	// Trouver l'utilisateur par email
 	var user struct {
-		ID          primitive.ObjectID `bson:"_id"`
-		Email       string             `bson:"email"`
-		DisplayName string             `bson:"display_name"`
+		ID          bson.ObjectID `bson:"_id"`
+		Email       string        `bson:"email"`
+		DisplayName string        `bson:"display_name"`
 	}
 	if err := s.userCol.FindOne(ctx, bson.M{"email": bson.M{"$in": bson.A{email, strings.ToLower(email)}}}).Decode(&user); err != nil {
 		return nil, errors.New("user not found with this email")
@@ -358,7 +373,7 @@ func (s *Service) AddCollaborator(ctx context.Context, folderID, ownerID, email,
 }
 
 func (s *Service) RemoveCollaborator(ctx context.Context, folderID, ownerID, targetUserID string) (*Folder, error) {
-	id, err := primitive.ObjectIDFromHex(folderID)
+	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return nil, errors.New("invalid folder id")
 	}
@@ -393,7 +408,7 @@ func (s *Service) ListCommunity(ctx context.Context, search string, pageSize int
 
 	// Pagination par _id décroissant (du plus récent au plus ancien)
 	if pageToken != "" {
-		if oid, err := primitive.ObjectIDFromHex(pageToken); err == nil {
+		if oid, err := bson.ObjectIDFromHex(pageToken); err == nil {
 			filter["_id"] = bson.M{"$lt": oid}
 		}
 	}
@@ -422,44 +437,9 @@ func (s *Service) ListCommunity(ctx context.Context, search string, pageSize int
 	return folders, nextToken, nil
 }
 
-// GetOwnerInfo retourne le display_name et le statut admin d'un user par son ID
-func (s *Service) GetOwnerInfo(ctx context.Context, ownerID string) (string, bool) {
-	oid, err := primitive.ObjectIDFromHex(ownerID)
-	if err != nil {
-		return "", false
-	}
-	var user struct {
-		DisplayName string `bson:"display_name"`
-		IsAdmin     bool   `bson:"is_admin"`
-	}
-	if err := s.userCol.FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
-		return "", false
-	}
-	return user.DisplayName, user.IsAdmin
-}
-
-// CountLinks retourne le nombre de liens dans un dossier
-func (s *Service) CountLinks(ctx context.Context, folderID string) int32 {
-	count, err := s.linkCol.CountDocuments(ctx, bson.M{"folder_id": folderID})
-	if err != nil {
-		return 0
-	}
-	return int32(count)
-}
-
-// IsLikedBy vérifie si un utilisateur a liké un dossier
-func (s *Service) IsLikedBy(ctx context.Context, folderID, userID string) bool {
-	id, err := primitive.ObjectIDFromHex(folderID)
-	if err != nil {
-		return false
-	}
-	count, _ := s.col.CountDocuments(ctx, bson.M{"_id": id, "liked_by": userID})
-	return count > 0
-}
-
 // Like ajoute un like d'un utilisateur sur un dossier
 func (s *Service) Like(ctx context.Context, folderID, userID string) (int32, error) {
-	id, err := primitive.ObjectIDFromHex(folderID)
+	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return 0, errors.New("invalid folder id")
 	}
@@ -486,7 +466,7 @@ func (s *Service) Like(ctx context.Context, folderID, userID string) (int32, err
 
 // Unlike retire un like d'un utilisateur sur un dossier
 func (s *Service) Unlike(ctx context.Context, folderID, userID string) (int32, error) {
-	id, err := primitive.ObjectIDFromHex(folderID)
+	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
 		return 0, errors.New("invalid folder id")
 	}
@@ -530,7 +510,7 @@ func (s *Service) ListTop(ctx context.Context, limit int32) ([]*Folder, error) {
 }
 
 // canView : dossier public, ou utilisateur propriétaire / collaborateur.
-func (s *Service) canView(ctx context.Context, id primitive.ObjectID, userID string) bool {
+func (s *Service) canView(ctx context.Context, id bson.ObjectID, userID string) bool {
 	count, _ := s.col.CountDocuments(ctx, bson.M{
 		"_id": id,
 		"$or": bson.A{
@@ -562,10 +542,10 @@ func (s *Service) LoadStats(ctx context.Context, folders []*Folder) *Stats {
 		return st
 	}
 	ids := make([]string, 0, len(folders))
-	ownerSet := map[primitive.ObjectID]struct{}{}
+	ownerSet := map[bson.ObjectID]struct{}{}
 	for _, f := range folders {
 		ids = append(ids, f.ID.Hex())
-		if oid, err := primitive.ObjectIDFromHex(f.OwnerID); err == nil {
+		if oid, err := bson.ObjectIDFromHex(f.OwnerID); err == nil {
 			ownerSet[oid] = struct{}{}
 		}
 	}
@@ -584,16 +564,16 @@ func (s *Service) LoadStats(ctx context.Context, folders []*Folder) *Stats {
 			}
 		}
 	}
-	oids := make([]primitive.ObjectID, 0, len(ownerSet))
+	oids := make([]bson.ObjectID, 0, len(ownerSet))
 	for oid := range ownerSet {
 		oids = append(oids, oid)
 	}
 	proj := options.Find().SetProjection(bson.M{"display_name": 1, "is_admin": 1})
 	if cur, err := s.userCol.Find(ctx, bson.M{"_id": bson.M{"$in": oids}}, proj); err == nil {
 		var rows []struct {
-			ID          primitive.ObjectID `bson:"_id"`
-			DisplayName string             `bson:"display_name"`
-			IsAdmin     bool               `bson:"is_admin"`
+			ID          bson.ObjectID `bson:"_id"`
+			DisplayName string        `bson:"display_name"`
+			IsAdmin     bool          `bson:"is_admin"`
 		}
 		if cur.All(ctx, &rows) == nil {
 			for _, r := range rows {

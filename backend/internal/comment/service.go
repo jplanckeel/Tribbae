@@ -5,20 +5,19 @@ import (
 	"errors"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Comment represents a comment on a link
 type Comment struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	LinkID    string             `bson:"link_id"`
-	UserID    string             `bson:"user_id"`
-	Text      string             `bson:"text"`
-	CreatedAt time.Time          `bson:"created_at"`
-	UpdatedAt time.Time          `bson:"updated_at"`
+	ID        bson.ObjectID `bson:"_id,omitempty"`
+	LinkID    string        `bson:"link_id"`
+	UserID    string        `bson:"user_id"`
+	Text      string        `bson:"text"`
+	CreatedAt time.Time     `bson:"created_at"`
+	UpdatedAt time.Time     `bson:"updated_at"`
 }
 
 // CommentWithUser represents a comment with user information
@@ -57,7 +56,7 @@ func (s *Service) CreateComment(ctx context.Context, linkID, userID, text string
 	}
 
 	// Verify link exists
-	linkOID, err := primitive.ObjectIDFromHex(linkID)
+	linkOID, err := bson.ObjectIDFromHex(linkID)
 	if err != nil {
 		return nil, errors.New("invalid link id")
 	}
@@ -72,7 +71,7 @@ func (s *Service) CreateComment(ctx context.Context, linkID, userID, text string
 
 	// Create comment
 	comment := &Comment{
-		ID:        primitive.NewObjectID(),
+		ID:        bson.NewObjectID(),
 		LinkID:    linkID,
 		UserID:    userID,
 		Text:      text,
@@ -105,25 +104,14 @@ func (s *Service) GetComments(ctx context.Context, linkID string) ([]CommentWith
 		return nil, err
 	}
 
-	// Convert to CommentWithUser
-	result := make([]CommentWithUser, 0, len(comments))
-	for _, comment := range comments {
-		commentWithUser, err := s.getCommentWithUser(ctx, &comment)
-		if err != nil {
-			// Skip comments where user info cannot be retrieved
-			continue
-		}
-		result = append(result, *commentWithUser)
-	}
-
-	return result, nil
+	return s.withUsers(ctx, comments), nil
 }
 
 // DeleteComment deletes a comment
 // Authorization: comment author or link owner can delete
 func (s *Service) DeleteComment(ctx context.Context, commentID, userID string) error {
 	// Get the comment
-	commentOID, err := primitive.ObjectIDFromHex(commentID)
+	commentOID, err := bson.ObjectIDFromHex(commentID)
 	if err != nil {
 		return errors.New("invalid comment id")
 	}
@@ -145,7 +133,7 @@ func (s *Service) DeleteComment(ctx context.Context, commentID, userID string) e
 	}
 
 	// Check if user is the link owner
-	linkOID, err := primitive.ObjectIDFromHex(comment.LinkID)
+	linkOID, err := bson.ObjectIDFromHex(comment.LinkID)
 	if err != nil {
 		return errors.New("invalid link id")
 	}
@@ -179,31 +167,60 @@ func (s *Service) GetCommentCount(ctx context.Context, linkID string) (int32, er
 
 // getCommentWithUser retrieves user information and combines it with comment data
 func (s *Service) getCommentWithUser(ctx context.Context, comment *Comment) (*CommentWithUser, error) {
-	userOID, err := primitive.ObjectIDFromHex(comment.UserID)
-	if err != nil {
+	out := s.withUsers(ctx, []Comment{*comment})
+	if len(out) == 0 {
 		return nil, errors.New("invalid user id")
 	}
+	return &out[0], nil
+}
 
-	var user struct {
-		DisplayName string `bson:"display_name"`
-		IsAdmin     bool   `bson:"is_admin"`
+// withUsers joint à chaque commentaire le nom et le statut de son auteur, en
+// une seule requête (seulement ces deux champs). Les commentaires dont
+// l'auteur n'a pas un id valide sont écartés ; un auteur introuvable (compte
+// supprimé) donne un nom vide.
+func (s *Service) withUsers(ctx context.Context, comments []Comment) []CommentWithUser {
+	type author struct {
+		ID          bson.ObjectID `bson:"_id"`
+		DisplayName string        `bson:"display_name"`
+		IsAdmin     bool          `bson:"is_admin"`
+	}
+	oids := make([]bson.ObjectID, 0, len(comments))
+	seen := map[bson.ObjectID]bool{}
+	for _, c := range comments {
+		if oid, err := bson.ObjectIDFromHex(c.UserID); err == nil && !seen[oid] {
+			seen[oid] = true
+			oids = append(oids, oid)
+		}
+	}
+	authors := map[string]author{}
+	if len(oids) > 0 {
+		proj := options.Find().SetProjection(bson.M{"display_name": 1, "is_admin": 1})
+		if cur, err := s.userCol.Find(ctx, bson.M{"_id": bson.M{"$in": oids}}, proj); err == nil {
+			var rows []author
+			if cur.All(ctx, &rows) == nil {
+				for _, r := range rows {
+					authors[r.ID.Hex()] = r
+				}
+			}
+		}
 	}
 
-	err = s.userCol.FindOne(ctx, bson.M{"_id": userOID}).Decode(&user)
-	if err != nil {
-		// Return empty display name if user not found
-		user.DisplayName = ""
-		user.IsAdmin = false
+	result := make([]CommentWithUser, 0, len(comments))
+	for _, c := range comments {
+		if _, err := bson.ObjectIDFromHex(c.UserID); err != nil {
+			continue
+		}
+		a := authors[c.UserID]
+		result = append(result, CommentWithUser{
+			ID:              c.ID.Hex(),
+			LinkID:          c.LinkID,
+			UserID:          c.UserID,
+			UserDisplayName: a.DisplayName,
+			UserIsAdmin:     a.IsAdmin,
+			Text:            c.Text,
+			CreatedAt:       c.CreatedAt,
+			UpdatedAt:       c.UpdatedAt,
+		})
 	}
-
-	return &CommentWithUser{
-		ID:              comment.ID.Hex(),
-		LinkID:          comment.LinkID,
-		UserID:          comment.UserID,
-		UserDisplayName: user.DisplayName,
-		UserIsAdmin:     user.IsAdmin,
-		Text:            comment.Text,
-		CreatedAt:       comment.CreatedAt,
-		UpdatedAt:       comment.UpdatedAt,
-	}, nil
+	return result
 }
