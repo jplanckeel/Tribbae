@@ -949,6 +949,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     fun syncWithBackend(sessionManager: data.SessionManager) {
         val client = authenticatedClient ?: return
         viewModelScope.launch {
+            renewTokenIfStale(sessionManager)
             try {
                 _syncStatus.value = "Synchronisation..."
                 runCatching { client.getTribe() }.onSuccess { _tribe.value = it }
@@ -964,6 +965,25 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
     
+    /**
+     * Session glissante (voir data.TokenRenewal) : au plus une fois par jour, le
+     * jeton est échangé contre un neuf. Hors ligne ou jeton déjà refusé : rien,
+     * la prochaine requête dira si la session a expiré.
+     */
+    /** Au retour sur l'app (elle peut rester des jours en arrière-plan sans relancer de synchro). */
+    fun renewSessionIfStale(sessionManager: data.SessionManager) {
+        viewModelScope.launch { renewTokenIfStale(sessionManager) }
+    }
+
+    private suspend fun renewTokenIfStale(sessionManager: data.SessionManager) {
+        val token = sessionManager.getToken() ?: return
+        if (!data.TokenRenewal.shouldRenew(token)) return
+        val fresh = runCatching { data.AuthRepository().refreshToken(token) }.getOrNull()?.takeIf { it.isNotBlank() } ?: return
+        if (sessionManager.getToken() != token) return // déconnexion ou nouvelle session entre-temps
+        sessionManager.updateToken(fresh)
+        authToken = fresh
+    }
+
     /** Force la synchronisation (pull-to-refresh) — fusionne intelligemment */
     fun forceSync() {
         val client = authenticatedClient ?: return

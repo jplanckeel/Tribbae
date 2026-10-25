@@ -1,4 +1,4 @@
-import { clearSession, getSession } from "./session";
+import { clearSession, getSession, setSession, shouldRenew } from "./session";
 import { withinLimits } from "./preview";
 import type {
   AdminUser, AiIdea, Child, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole,
@@ -76,6 +76,32 @@ const qs = (params: Record<string, string | number | undefined>) => {
   const s = p.toString();
   return s ? `?${s}` : "";
 };
+
+let renewing: Promise<void> | undefined;
+
+/**
+ * Session glissante : le jeton dure 30 jours ; on l'échange contre un neuf au
+ * plus une fois par jour (au lancement et au retour sur l'onglet), pour qu'une
+ * personne qui utilise l'app ne soit jamais déconnectée. Un jeton déjà refusé
+ * ne se renouvelle pas : la prochaine requête (401) ferme la session.
+ */
+export function renewSessionIfStale(): Promise<void> {
+  const session = getSession();
+  if (!session || !shouldRenew(session.token) || renewing) return renewing ?? Promise.resolve();
+  renewing = request<{ token: string }>("/auth/refresh", { method: "POST", body: json({ token: session.token }) })
+    .then(({ token }) => {
+      // Toujours la même session (pas de déconnexion entre-temps) : on garde le reste
+      const current = getSession();
+      if (token && current?.token === session.token) setSession({ ...current, token });
+    })
+    .catch(() => {
+      // Hors ligne ou serveur indisponible : on réessaiera au prochain retour
+    })
+    .finally(() => {
+      renewing = undefined;
+    });
+  return renewing;
+}
 
 export const auth = {
   register: (email: string, password: string, displayName: string) =>
