@@ -1,6 +1,8 @@
 package com.linkkeeper.app
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -13,6 +15,8 @@ import androidx.activity.compose.setContent
 import ui.TribbaeTheme
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +31,22 @@ import viewmodel.LinkViewModel
 class MainActivity : ComponentActivity() {
     /** Contenu reçu d'une autre application (partage, lien de dossier), à ouvrir dans l'app. */
     private val incoming = mutableStateOf<SharedContent?>(null)
+
+    /** Android 13+ : les rappels ne s'affichent qu'avec l'autorisation de notifier. */
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private var notificationAsked = false
+
+    /**
+     * Demande l'autorisation d'afficher les notifications au moment où un rappel
+     * est planifié (pas au lancement), une seule fois par ouverture de l'app :
+     * si elle est refusée, Android ne la repropose plus après deux refus.
+     */
+    private fun ensureNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || notificationAsked) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        notificationAsked = true
+        runOnUiThread { notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Build de dev visant un backend local (vide : production)
@@ -61,6 +81,7 @@ class MainActivity : ComponentActivity() {
                     }
                     it.reminderScheduler = { link ->
                         if (link.eventDate != null) {
+                            ensureNotificationPermission()
                             NotificationHelper.scheduleReminder(
                                 appContext, link.id, link.title, link.eventDate
                             )
