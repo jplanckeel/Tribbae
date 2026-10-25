@@ -54,6 +54,15 @@ class AndroidStorage(context: Context) : Storage {
         return try { json.decodeFromString(raw) } catch (_: Exception) { emptyMap() }
     }
 
+    override fun savePending(pending: PendingChanges) {
+        prefs.edit().putString("pending", json.encodeToString(pending)).apply()
+    }
+
+    override fun loadPending(): PendingChanges {
+        val raw = prefs.getString("pending", null) ?: return PendingChanges()
+        return try { json.decodeFromString(raw) } catch (_: Exception) { PendingChanges() }
+    }
+
     override fun saveTags(tags: List<String>) {
         prefs.edit().putString("tags", json.encodeToString(tags)).apply()
     }

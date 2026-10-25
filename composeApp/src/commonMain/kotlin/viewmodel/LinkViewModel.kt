@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.async
@@ -135,10 +137,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         repository.addLink(link)
         updateFilteredLinks()
         
-        // Sauvegarder sur le backend si authentifié
-        if (authenticatedClient != null) {
-            saveToBackend(link)
-        }
+        schedulePush()
 
         // Planifie le rappel si activé
         if (reminderEnabled && eventDate != null) {
@@ -264,10 +263,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         repository.deleteLink(id)
         updateFilteredLinks()
         
-        // Supprimer du backend si authentifié
-        if (authenticatedClient != null) {
-            deleteFromBackend(id)
-        }
+        if (!data.SyncIds.isLocal(id)) repository.updatePending { it.copy(linkDeletes = it.linkDeletes + id, linkUpdates = it.linkUpdates - id) }
+        schedulePush()
     }
 
     fun updateLink(link: Link) {
@@ -281,10 +278,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             reminderCanceller?.invoke(updatedLink.id)
         }
 
-        // Mettre à jour sur le backend si authentifié
-        if (authenticatedClient != null) {
-            updateLinkOnBackend(updatedLink)
-        }
+        markLinkChanged(updatedLink.id)
+        schedulePush()
     }
 
     fun getLinksForFolder(folderId: String): List<Link> =
@@ -304,16 +299,13 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         val folder = draft.copy(id = kotlin.random.Random.nextLong().toString())
         repository.addFolder(folder)
         
-        // Sauvegarder sur le backend si authentifié
-        if (authenticatedClient != null) {
-            saveFolderToBackend(folder)
-        }
+        schedulePush()
     }
 
     fun deleteFolder(id: String, onSuccess: () -> Unit = {}) {
         val client = authenticatedClient
-        if (client == null) {
-            // Mode hors-ligne : suppression locale uniquement
+        if (client == null || data.SyncIds.isLocal(id)) {
+            // Hors connexion, ou dossier pas encore reçu par le serveur : suppression locale uniquement
             repository.deleteFolder(id)
             updateFilteredLinks()
             onSuccess()
@@ -340,9 +332,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         repository.updateFolder(updatedFolder)
         updateFilteredLinks()
         
-        if (authenticatedClient != null) {
-            updateFolderOnBackend(updatedFolder)
-        }
+        if (!data.SyncIds.isLocal(updatedFolder.id)) repository.updatePending { it.copy(folderUpdates = it.folderUpdates + updatedFolder.id) }
+        schedulePush()
     }
 
     fun addTag(tag: String) { repository.addTag(tag) }
@@ -428,20 +419,15 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         )
         repository.addChild(child)
         
-        // Sauvegarder sur le backend si authentifié
-        if (authenticatedClient != null) {
-            saveChildToBackend(child)
-        }
+        schedulePush()
     }
 
     fun updateChild(child: data.Child) {
         val updatedChild = child.copy(updatedAt = "")
         repository.updateChild(updatedChild)
         
-        // Mettre à jour sur le backend si authentifié
-        if (authenticatedClient != null) {
-            updateChildOnBackend(updatedChild)
-        }
+        if (!data.SyncIds.isLocal(updatedChild.id)) repository.updatePending { it.copy(childUpdates = it.childUpdates + updatedChild.id) }
+        schedulePush()
     }
     
     fun deleteChild(id: String) {
@@ -449,10 +435,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         repository.deleteChild(id)
         updateFilteredLinks()
         
-        // Supprimer du backend si authentifié
-        if (authenticatedClient != null) {
-            deleteChildFromBackend(id)
-        }
+        if (!data.SyncIds.isLocal(id)) repository.updatePending { it.copy(childDeletes = it.childDeletes + id, childUpdates = it.childUpdates - id) }
+        schedulePush()
     }
 
     // ── IA ────────────────────────────────────────────────────────────────────
@@ -982,30 +966,13 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
     
     private suspend fun performSync(client: data.AuthenticatedApiClient) {
-        // Le backend est la source de vérité : on remplace tout localement
+        // D'abord ce qui a été fait ici sans atteindre le serveur : la reprise des
+        // données du serveur (qui fait foi) l'effacerait sinon. Sans réseau,
+        // l'envoi échoue et la synchronisation s'arrête là, sans rien perdre.
+        pushPending(client)
 
-        // Dossiers : remplacer la liste locale par celle du backend
-        val foldersResponse = client.listFolders()
-        val backendFolders = foldersResponse.folders.map { apiFolderToFolder(it) }
-        val backendFolderIds = backendFolders.map { it.id }.toSet()
-
-        // Supprimer les dossiers locaux absents du backend (ex: supprimés)
-        repository.folders.value
-            .filter { it.id !in backendFolderIds }
-            .forEach { repository.deleteFolder(it.id) }
-
-        // Ajouter ou mettre à jour les dossiers du backend
-        backendFolders.forEach { folder ->
-            if (repository.folders.value.none { it.id == folder.id }) {
-                repository.addFolder(folder)
-            } else {
-                repository.updateFolder(folder)
-            }
-        }
-
-        // Liens : remplacer la liste locale par celle du backend
-        val linksResponse = client.listLinks()
-        val backendLinks = linksResponse.links.map { apiLink ->
+        val backendFolders = client.listFolders().folders.map { apiFolderToFolder(it) }
+        val backendLinks = client.listLinks().links.map { apiLink ->
             val category = try {
                 LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
             } catch (_: Exception) { LinkCategory.IDEE }
@@ -1036,77 +1003,171 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 visibility = apiLink.visibility.ifBlank { "private" }
             )
         }
-        val backendLinkIds = backendLinks.map { it.id }.toSet()
-
-        // Supprimer les liens locaux absents du backend
-        repository.links.value
-            .filter { it.id !in backendLinkIds }
-            .forEach { repository.deleteLink(it.id) }
-
-        // Ajouter ou mettre à jour les liens du backend
-        backendLinks.forEach { link ->
-            if (repository.links.value.none { it.id == link.id }) {
-                repository.addLink(link)
-            } else {
-                repository.updateLink(link)
-            }
+        val backendChildren = client.listChildren().children.map { apiChild ->
+            data.Child(id = apiChild.id, name = apiChild.name, birthDate = apiChild.birthDate, updatedAt = apiChild.updatedAt)
         }
-        
-        updateFilteredLinks()
-        
-        // Charger les enfants
-        val childrenResponse = client.listChildren()
-        childrenResponse.children.forEach { apiChild ->
-            val localChild = repository.children.value.find { it.id == apiChild.id }
-            
-            // Toujours synchroniser (le backend est la source de vérité)
-            val child = data.Child(
-                id = apiChild.id,
-                name = apiChild.name,
-                birthDate = apiChild.birthDate,
-                updatedAt = apiChild.updatedAt
+
+        // Le serveur fait foi, sauf pour ce qui a été changé ici entre-temps
+        pushLock.withLock {
+            val p = repository.pending
+            repository.replaceAll(
+                links = data.SyncIds.merge(repository.links.value, backendLinks, { it.id }, p.linkUpdates, p.linkDeletes),
+                folders = data.SyncIds.merge(repository.folders.value, backendFolders, { it.id }, p.folderUpdates),
+                children = data.SyncIds.merge(repository.children.value, backendChildren, { it.id }, p.childUpdates, p.childDeletes),
             )
-            if (localChild == null) {
-                repository.addChild(child)
-            } else {
-                repository.updateChild(child)
-            }
         }
+        updateFilteredLinks()
     }
     
-    fun saveToBackend(local: Link) {
+    // ── Envoi des changements faits ici ──────────────────────────────────────
+
+    /** Un seul envoi à la fois : une idée créée ici ne doit pas partir deux fois. */
+    private val pushLock = Mutex()
+
+    /** Idée modifiée ici : à envoyer (une idée encore locale part entière à sa création). */
+    private fun markLinkChanged(id: String) {
+        if (!data.SyncIds.isLocal(id)) repository.updatePending { it.copy(linkUpdates = it.linkUpdates + id) }
+    }
+
+    /** Envoie tout de suite ce qui attend ; hors ligne, ce sera à la prochaine synchronisation. */
+    private fun schedulePush() {
         val client = authenticatedClient ?: return
         viewModelScope.launch {
             try {
-                val link = uploadLocalPhoto(client, local)
-                val req = data.CreateLinkRequest(
-                    folderId = link.folderId ?: "",
-                    title = link.title,
-                    url = link.url,
-                    description = link.description,
-                    category = "LINK_CATEGORY_${link.category.name}",
-                    tags = link.tags,
-                    ageRange = link.ageRange,
-                    location = link.location,
-                    price = link.price,
-                    imageUrl = link.imageUrl,
-                    eventDate = link.eventDate ?: 0,
-                    reminderEnabled = link.reminderEnabled,
-                    rating = link.rating,
-                    ingredients = link.ingredients,
-                    visibility = link.visibility.ifBlank { "private" }.lowercase()
-                )
-                val savedLink = client.createLink(req)
-                // Supprimer l'ancien lien local et ajouter le nouveau avec l'ID du backend
-                repository.deleteLink(link.id)
-                repository.addLink(link.copy(id = savedLink.id))
-                updateFilteredLinks()
+                pushPending(client)
             } catch (e: Exception) {
-                _syncStatus.value = "Erreur sauvegarde: ${e.message}"
+                _syncStatus.value = "Hors ligne : les changements partiront à la prochaine synchronisation"
             }
         }
     }
-    
+
+    /**
+     * Envoie au serveur tout ce qui ne l'a pas encore atteint, dans l'ordre des
+     * dépendances : enfants (cités par les dossiers), dossiers (cités par les
+     * idées), idées, puis modifications et suppressions. Lève une exception au
+     * premier échec réseau : ce qui reste attend la fois suivante.
+     */
+    private suspend fun pushPending(client: data.AuthenticatedApiClient) = pushLock.withLock {
+        repository.children.value.filter { data.SyncIds.isLocal(it.id) }.forEach { local ->
+            val saved = client.createChild(local.name, local.birthDate)
+            val current = repository.children.value.find { it.id == local.id }
+            if (current == null) {
+                client.deleteChild(saved.id) // supprimé ici pendant l'envoi
+            } else {
+                repository.replaceChildId(local.id, saved.id)
+                if (current != local) repository.updatePending { it.copy(childUpdates = it.childUpdates + saved.id) }
+            }
+        }
+        repository.folders.value.filter { data.SyncIds.isLocal(it.id) }.forEach { local ->
+            val saved = client.createFolder(createFolderRequest(local))
+            val current = repository.folders.value.find { it.id == local.id }
+            if (current == null) {
+                client.deleteFolder(saved.id)
+            } else {
+                repository.replaceFolderId(local.id, saved.id)
+                if (current != local) repository.updatePending { it.copy(folderUpdates = it.folderUpdates + saved.id) }
+            }
+        }
+        repository.links.value
+            .filter { data.SyncIds.isLocal(it.id) && it.folderId?.let(data.SyncIds::isLocal) != true }
+            .forEach { local ->
+                val sent = uploadLocalPhoto(client, local)
+                val saved = client.createLink(createLinkRequest(sent))
+                val current = repository.links.value.find { it.id == local.id }
+                if (current == null) {
+                    client.deleteLink(saved.id)
+                } else {
+                    repository.replaceLinkId(local.id, saved.id)
+                    if (current != sent) markLinkChanged(saved.id)
+                    // Le rappel suit l'idée sous son nouvel identifiant
+                    if (current.reminderEnabled && current.eventDate != null) {
+                        reminderCanceller?.invoke(local.id)
+                        reminderScheduler?.invoke(current.copy(id = saved.id))
+                    }
+                }
+            }
+        updateFilteredLinks()
+
+        // Modifications : retirées de la file avant l'envoi (une modification
+        // faite pendant l'envoi les y remet), remises en cas d'échec
+        repository.pending.childUpdates.forEach { id ->
+            repository.updatePending { it.copy(childUpdates = it.childUpdates - id) }
+            val child = repository.children.value.find { it.id == id } ?: return@forEach
+            sendOrRequeue({ it.copy(childUpdates = it.childUpdates + id) }) { client.updateChild(id, child.name, child.birthDate) }
+        }
+        repository.pending.folderUpdates.forEach { id ->
+            repository.updatePending { it.copy(folderUpdates = it.folderUpdates - id) }
+            val folder = repository.folders.value.find { it.id == id } ?: return@forEach
+            sendOrRequeue({ it.copy(folderUpdates = it.folderUpdates + id) }) { client.updateFolder(id, updateFolderRequest(folder)) }
+        }
+        repository.pending.linkUpdates.forEach { id ->
+            repository.updatePending { it.copy(linkUpdates = it.linkUpdates - id) }
+            val local = repository.links.value.find { it.id == id } ?: return@forEach
+            val link = uploadLocalPhoto(client, local)
+            sendOrRequeue({ it.copy(linkUpdates = it.linkUpdates + id) }) { client.updateLink(updateLinkRequest(link)) }
+        }
+
+        // Suppressions (déjà faites ici)
+        repository.pending.linkDeletes.forEach { id ->
+            sendOrRequeue(null) { client.deleteLink(id) }
+            repository.updatePending { it.copy(linkDeletes = it.linkDeletes - id) }
+        }
+        repository.pending.childDeletes.forEach { id ->
+            sendOrRequeue(null) { client.deleteChild(id) }
+            repository.updatePending { it.copy(childDeletes = it.childDeletes - id) }
+        }
+    }
+
+    /**
+     * Envoie un changement. Introuvable sur le serveur (supprimé par un autre
+     * membre de la tribu) : rien à faire, la synchronisation l'enlèvera d'ici.
+     * Autre échec : remis dans la file (requeue) puis relancé.
+     */
+    private suspend fun sendOrRequeue(requeue: ((data.PendingChanges) -> data.PendingChanges)?, send: suspend () -> Unit) {
+        try {
+            send()
+        } catch (e: Exception) {
+            val m = e.message.orEmpty()
+            if (m.contains("API error (404)") || m.contains("not found", ignoreCase = true)) return
+            requeue?.let { repository.updatePending(it) }
+            throw e
+        }
+    }
+
+    private fun visibilityParam(v: String) = when (v.uppercase()) {
+        "PUBLIC" -> "VISIBILITY_PUBLIC"
+        "SHARED" -> "VISIBILITY_SHARED"
+        else -> "VISIBILITY_PRIVATE"
+    }
+
+    private fun createFolderRequest(f: Folder) = data.CreateFolderRequest(
+        name = f.name, icon = f.icon.name, color = f.color.name, visibility = visibilityParam(f.visibility),
+        bannerUrl = f.bannerUrl, tags = f.tags, description = f.description, cover = f.cover,
+        illustration = f.illustration, keyDate = f.keyDate, keyDateType = f.keyDateType, childIds = f.childIds,
+        viewMode = f.viewMode, sort = f.sort, pinned = f.pinned,
+    )
+
+    private fun updateFolderRequest(f: Folder) = data.UpdateFolderRequest(
+        folderId = f.id, name = f.name, icon = f.icon.name, color = f.color.name, visibility = visibilityParam(f.visibility),
+        bannerUrl = f.bannerUrl, tags = f.tags, description = f.description, cover = f.cover,
+        illustration = f.illustration, keyDate = f.keyDate, keyDateType = f.keyDateType, childIds = f.childIds,
+        setChildIds = true, viewMode = f.viewMode, sort = f.sort, pinned = f.pinned,
+    )
+
+    private fun createLinkRequest(l: Link) = data.CreateLinkRequest(
+        folderId = l.folderId ?: "", title = l.title, url = l.url, description = l.description,
+        category = "LINK_CATEGORY_${l.category.name}", tags = l.tags, ageRange = l.ageRange, location = l.location,
+        price = l.price, imageUrl = l.imageUrl, eventDate = l.eventDate ?: 0, reminderEnabled = l.reminderEnabled,
+        rating = l.rating, ingredients = l.ingredients, visibility = l.visibility.ifBlank { "private" }.lowercase(),
+    )
+
+    private fun updateLinkRequest(l: Link) = data.UpdateLinkRequest(
+        linkId = l.id, folderId = l.folderId ?: "", title = l.title, url = l.url, description = l.description,
+        category = "LINK_CATEGORY_${l.category.name}", tags = l.tags, ageRange = l.ageRange, location = l.location,
+        price = l.price, imageUrl = l.imageUrl, eventDate = l.eventDate ?: 0, reminderEnabled = l.reminderEnabled,
+        rating = l.rating, ingredients = l.ingredients, visibility = l.visibility.ifBlank { "private" }.lowercase(),
+    )
+
     /**
      * Photo prise ou choisie sur ce téléphone (file://, voir ImagePickerHelper) :
      * envoyée au serveur, dont l'adresse remplace le chemin local pour que la
@@ -1139,129 +1200,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             .filter { it.imageUrl.startsWith("file://") && (it.ownerId.isBlank() || it.ownerId == me) }
             .forEach { link ->
                 val sent = uploadLocalPhoto(client, link)
-                if (sent.imageUrl != link.imageUrl) updateLinkOnBackend(sent)
-            }
-    }
-
-    fun saveFolderToBackend(folder: Folder) {
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            try {
-                val req = data.CreateFolderRequest(
-                    name = folder.name,
-                    icon = folder.icon.name,
-                    color = folder.color.name,
-                    visibility = when (folder.visibility.uppercase()) {
-                        "PUBLIC" -> "VISIBILITY_PUBLIC"
-                        "SHARED" -> "VISIBILITY_SHARED"
-                        else -> "VISIBILITY_PRIVATE"
-                    },
-                    bannerUrl = folder.bannerUrl,
-                    tags = folder.tags,
-                    description = folder.description,
-                    cover = folder.cover,
-                    illustration = folder.illustration,
-                    keyDate = folder.keyDate,
-                    keyDateType = folder.keyDateType,
-                    childIds = folder.childIds,
-                    viewMode = folder.viewMode,
-                    sort = folder.sort,
-                    pinned = folder.pinned,
-                )
-                val savedFolder = client.createFolder(req)
-                // Mettre à jour l'ID local avec l'ID du backend
-                val updatedFolder = folder.copy(id = savedFolder.id)
-                repository.deleteFolder(folder.id)
-                repository.addFolder(updatedFolder)
-            } catch (e: Exception) {
-                _syncStatus.value = "Erreur sauvegarde dossier: ${e.message}"
-            }
-        }
-    }
-    
-    fun deleteFromBackend(linkId: String) {
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            try {
-                client.deleteLink(linkId)
-            } catch (e: Exception) {
-                _syncStatus.value = "Erreur suppression: ${e.message}"
-            }
-        }
-    }
-
-    private fun updateLinkOnBackend(local: Link) {
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            val link = uploadLocalPhoto(client, local)
-            try {
-                val req = data.UpdateLinkRequest(
-                    linkId = link.id,
-                    folderId = link.folderId ?: "",
-                    title = link.title,
-                    url = link.url,
-                    description = link.description,
-                    category = "LINK_CATEGORY_${link.category.name}",
-                    tags = link.tags,
-                    ageRange = link.ageRange,
-                    location = link.location,
-                    price = link.price,
-                    imageUrl = link.imageUrl,
-                    eventDate = link.eventDate ?: 0,
-                    reminderEnabled = link.reminderEnabled,
-                    rating = link.rating,
-                    ingredients = link.ingredients,
-                    visibility = link.visibility.ifBlank { "private" }.lowercase()
-                )
-                client.updateLink(req)
-            } catch (e: Exception) {
-                // Si le lien n'existe pas sur le backend (créé localement), le créer
-                if (e.message?.contains("404") == true || e.message?.contains("not found") == true) {
-                    saveToBackend(link)
-                } else {
-                    _syncStatus.value = "Erreur mise à jour: ${e.message}"
+                if (sent.imageUrl != link.imageUrl) {
+                    markLinkChanged(sent.id)
+                    schedulePush()
                 }
             }
-        }
-    }
-    
-    private fun updateFolderOnBackend(folder: Folder) {
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            try {
-                val req = data.UpdateFolderRequest(
-                    folderId = folder.id,
-                    name = folder.name,
-                    icon = folder.icon.name,
-                    color = folder.color.name,
-                    visibility = when (folder.visibility.uppercase()) {
-                        "PUBLIC" -> "VISIBILITY_PUBLIC"
-                        "SHARED" -> "VISIBILITY_SHARED"
-                        else -> "VISIBILITY_PRIVATE"
-                    },
-                    bannerUrl = folder.bannerUrl,
-                    tags = folder.tags,
-                    description = folder.description,
-                    cover = folder.cover,
-                    illustration = folder.illustration,
-                    keyDate = folder.keyDate,
-                    keyDateType = folder.keyDateType,
-                    childIds = folder.childIds,
-                    setChildIds = true,
-                    viewMode = folder.viewMode,
-                    sort = folder.sort,
-                    pinned = folder.pinned,
-                )
-                client.updateFolder(folder.id, req)
-            } catch (e: Exception) {
-                // Si le dossier n'existe pas sur le backend (créé localement), le créer
-                if (e.message?.contains("404") == true || e.message?.contains("not found") == true) {
-                    saveFolderToBackend(folder)
-                } else {
-                    _syncStatus.value = "Erreur mise à jour dossier: ${e.message}"
-                }
-            }
-        }
     }
 
     suspend fun shareFolder(folderId: String): data.ShareFolderResponse? {
@@ -1342,46 +1285,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     
     // ── Children Backend Sync ─────────────────────────────────────────────────
     
-    private fun saveChildToBackend(child: data.Child) {
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            try {
-                val savedChild = client.createChild(child.name, child.birthDate)
-                // Mettre à jour l'ID local avec l'ID du backend
-                repository.deleteChild(child.id)
-                repository.addChild(data.Child(
-                    id = savedChild.id,
-                    name = savedChild.name,
-                    birthDate = savedChild.birthDate
-                ))
-            } catch (e: Exception) {
-                _syncStatus.value = "Erreur sauvegarde enfant: ${e.message}"
-            }
-        }
-    }
-    
-    private fun updateChildOnBackend(child: data.Child) {
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            try {
-                client.updateChild(child.id, child.name, child.birthDate)
-            } catch (e: Exception) {
-                _syncStatus.value = "Erreur mise à jour enfant: ${e.message}"
-            }
-        }
-    }
-    
-    private fun deleteChildFromBackend(childId: String) {
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            try {
-                client.deleteChild(childId)
-            } catch (e: Exception) {
-                _syncStatus.value = "Erreur suppression enfant: ${e.message}"
-            }
-        }
-    }
-
     private companion object {
         /** Une même idée sans image n'est retentée qu'une fois par jour… */
         const val IMAGE_RETRY_MS = 24L * 60 * 60 * 1000

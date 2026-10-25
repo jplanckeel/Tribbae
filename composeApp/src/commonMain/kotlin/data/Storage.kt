@@ -18,4 +18,8 @@ interface Storage {
     /** Date (ms) de la dernière recherche d'image par idée : évite de relancer les mêmes sites à chaque ouverture. */
     fun saveImageChecks(checks: Map<String, Long>) {}
     fun loadImageChecks(): Map<String, Long> = emptyMap()
+
+    /** Changements pas encore reçus par le serveur (voir PendingChanges). */
+    fun savePending(pending: PendingChanges) {}
+    fun loadPending(): PendingChanges = PendingChanges()
 }
