@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 et plus : mêmes règles que backup_rules.xml (ignoré sur ces versions) -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="sharedpref" path="tribbae_data.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="sharedpref" path="tribbae_data.xml" />
+    </device-transfer>
+</data-extraction-rules>

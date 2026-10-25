@@ -29,6 +29,12 @@ object NotificationHelper {
     /**
      * Planifie un rappel 1 jour avant la date de l'événement.
      * Si la date est déjà passée ou dans moins de 24h, le rappel est immédiat.
+     *
+     * Alarme inexacte : un rappel de la veille n'a pas besoin de tomber à la
+     * minute, et les alarmes exactes demandent une permission spéciale
+     * (USE_EXACT_ALARM est réservée par le Play Store aux réveils et agendas,
+     * SCHEDULE_EXACT_ALARM est refusée par défaut depuis Android 14). Le
+     * système peut la décaler de quelques minutes, y compris en veille.
      */
     fun scheduleReminder(context: Context, linkId: String, title: String, eventDate: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -47,7 +53,7 @@ object NotificationHelper {
         val now = System.currentTimeMillis()
         val finalTrigger = if (triggerTime > now) triggerTime else now + 5000L
 
-        alarmManager.setExactAndAllowWhileIdle(
+        alarmManager.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP, finalTrigger, pendingIntent
         )
     }

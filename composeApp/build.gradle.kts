@@ -43,16 +43,27 @@ kotlin {
     }
 }
 
+// Version de l'app, montée par release-please. Le Play Store exige un
+// versionCode qui augmente à chaque envoi : il en est calculé
+// (major * 10000 + minor * 100 + patch, ex. 1.4.12 -> 10412).
+val appVersion = "0.0.2" // x-release-please-version
+val appVersionCode = appVersion.split(".").map { it.toInt() }.let { (major, minor, patch) ->
+    require(minor < 100 && patch < 100) { "versionCode: minor et patch doivent rester sous 100 ($appVersion)" }
+    major * 10000 + minor * 100 + patch
+}
+
 android {
+    // Paquet du code Kotlin (R, BuildConfig) ; l'identifiant sur le Play Store est applicationId
     namespace = "com.linkkeeper.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.linkkeeper.app"
+        // Identifiant définitif sur le Play Store (ne peut plus changer après le premier envoi)
+        applicationId = "fr.tribbae.app"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "0.0.2" // x-release-please-version
+        targetSdk = 36
+        versionCode = appVersionCode
+        versionName = appVersion
     }
     
     packaging {
