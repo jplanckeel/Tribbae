@@ -16,6 +16,45 @@
     "application/json"
   ],
   "paths": {
+    "/v1/admin/stats": {
+      "get": {
+        "operationId": "AdminService_GetStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "period",
+            "description": "\"week\" (défaut) ou \"month\"",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "count",
+            "description": "nombre de périodes, 12 par défaut, 52 au plus",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
     "/v1/admin/users": {
       "get": {
         "operationId": "AdminService_ListUsers",
@@ -93,7 +132,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": {}
+      "additionalProperties": true
     },
     "rpcStatus": {
       "type": "object",
@@ -114,6 +153,54 @@
         }
       }
     },
+    "v1GetStatsResponse": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string"
+        },
+        "ideas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1StatsPoint"
+          }
+        },
+        "publicIdeas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1StatsPoint"
+          }
+        },
+        "privateIdeas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1StatsPoint"
+          }
+        },
+        "newUsers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1StatsPoint"
+          }
+        },
+        "activeUsers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1StatsPoint"
+          },
+          "description": "Comptes dont la dernière activité tombe dans la période : on ne garde que\nla dernière, donc les périodes passées sont sous-estimées."
+        },
+        "totals": {
+          "$ref": "#/definitions/v1StatsTotals"
+        }
+      },
+      "description": "Séries alignées : chacune a exactement count points, du plus ancien au plus\nrécent (la dernière période est en cours)."
+    },
     "v1ListUsersResponse": {
       "type": "object",
       "properties": {
@@ -125,6 +212,46 @@
           }
         }
       }
+    },
+    "v1StatsPoint": {
+      "type": "object",
+      "properties": {
+        "bucketStart": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "count": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "description": "Un point d'une série : le nombre d'éléments de la période commençant à\nbucket_start (lundi 0 h ou 1er du mois 0 h, heure de Paris)."
+    },
+    "v1StatsTotals": {
+      "type": "object",
+      "properties": {
+        "ideas": {
+          "type": "string",
+          "format": "int64"
+        },
+        "publicIdeas": {
+          "type": "string",
+          "format": "int64"
+        },
+        "privateIdeas": {
+          "type": "string",
+          "format": "int64"
+        },
+        "newUsers": {
+          "type": "string",
+          "format": "int64"
+        },
+        "activeUsers": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "Totaux sur toute la fenêtre"
     },
     "v1UpdateUserPremiumResponse": {
       "type": "object",

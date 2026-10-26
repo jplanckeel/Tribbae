@@ -113,16 +113,14 @@ type AdminChecker interface {
 	IsAdmin(ctx context.Context, userID string) (bool, error)
 }
 
-// adminMethods sont les méthodes qui nécessitent des droits admin
-var adminMethods = map[string]bool{
-	"/tribbae.v1.AdminService/ListUsers":         true,
-	"/tribbae.v1.AdminService/UpdateUserPremium": true,
-}
+// adminService : toutes ses méthodes exigent des droits admin, y compris
+// celles ajoutées plus tard (rien à déclarer ici)
+const adminService = "/tribbae.v1.AdminService/"
 
 // UnaryAdminAuth vérifie que l'utilisateur est admin pour les méthodes admin
 func UnaryAdminAuth(checker AdminChecker) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		if !adminMethods[info.FullMethod] {
+		if !strings.HasPrefix(info.FullMethod, adminService) {
 			return handler(ctx, req)
 		}
 

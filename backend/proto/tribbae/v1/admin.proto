@@ -3,6 +3,7 @@ syntax = "proto3";
 package tribbae.v1;
 
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
 
@@ -30,6 +31,41 @@ message UpdateUserPremiumResponse {
   User user = 1;
 }
 
+message GetStatsRequest {
+  string period = 1; // "week" (défaut) ou "month"
+  int32 count = 2;   // nombre de périodes, 12 par défaut, 52 au plus
+}
+
+// Un point d'une série : le nombre d'éléments de la période commençant à
+// bucket_start (lundi 0 h ou 1er du mois 0 h, heure de Paris).
+message StatsPoint {
+  google.protobuf.Timestamp bucket_start = 1;
+  int64 count = 2;
+}
+
+// Totaux sur toute la fenêtre
+message StatsTotals {
+  int64 ideas = 1;
+  int64 public_ideas = 2;
+  int64 private_ideas = 3;
+  int64 new_users = 4;
+  int64 active_users = 5;
+}
+
+// Séries alignées : chacune a exactement count points, du plus ancien au plus
+// récent (la dernière période est en cours).
+message GetStatsResponse {
+  string period = 1;
+  repeated StatsPoint ideas = 2;
+  repeated StatsPoint public_ideas = 3;
+  repeated StatsPoint private_ideas = 4;
+  repeated StatsPoint new_users = 5;
+  // Comptes dont la dernière activité tombe dans la période : on ne garde que
+  // la dernière, donc les périodes passées sont sous-estimées.
+  repeated StatsPoint active_users = 6;
+  StatsTotals totals = 7;
+}
+
 service AdminService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
     option (google.api.http) = {
@@ -41,6 +77,12 @@ service AdminService {
     option (google.api.http) = {
       put: "/v1/admin/users/{user_id}/premium"
       body: "*"
+    };
+  }
+
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse) {
+    option (google.api.http) = {
+      get: "/v1/admin/stats"
     };
   }
 }

@@ -1,15 +1,18 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { Navigate } from "react-router";
 import { useFeedback } from "../components/feedback";
 import { AVATAR_COLORS } from "../lib/categories";
 import Icon from "../components/Icon";
 import { Page } from "../components/Shell";
-import { Avatar, ErrorNote, PageSpinner, Toggle } from "../components/ui";
+import { Avatar, ErrorNote, PageSpinner, SectionTitle, Toggle } from "../components/ui";
 import * as api from "../lib/api";
 import { formatLongDate } from "../lib/format";
 import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
+
+// Graphiques (Recharts) chargés seulement sur cette page
+const AdminStats = lazy(() => import("../components/AdminStats"));
 
 export default function Admin() {
   const session = useSession();
@@ -48,6 +51,10 @@ export default function Admin() {
         <h1 className="font-display text-[32px] font-extrabold tracking-[-0.8px]">Administration</h1>
         {users.data && <span className="text-sm text-sec">{users.data.length} comptes · {premium} premium</span>}
       </div>
+      <Suspense fallback={<PageSpinner />}>
+        <AdminStats />
+      </Suspense>
+      <SectionTitle title="Comptes" />
       <label className="flex h-[52px] items-center gap-2.5 rounded-medium bg-card px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
         <Icon name="search" size={20} />
         <input

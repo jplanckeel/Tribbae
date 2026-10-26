@@ -2,6 +2,8 @@ package admin
 
 import (
 	"context"
+	"errors"
+	"log"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
 	"github.com/tribbae/backend/internal/auth"
@@ -12,11 +14,12 @@ import (
 
 type Handler struct {
 	pb.UnimplementedAdminServiceServer
-	authSvc *auth.Service
+	authSvc  *auth.Service
+	statsSvc *StatsService
 }
 
-func NewHandler(authSvc *auth.Service) *Handler {
-	return &Handler{authSvc: authSvc}
+func NewHandler(authSvc *auth.Service, statsSvc *StatsService) *Handler {
+	return &Handler{authSvc: authSvc, statsSvc: statsSvc}
 }
 
 func (h *Handler) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {
@@ -60,4 +63,38 @@ func (h *Handler) UpdateUserPremium(ctx context.Context, req *pb.UpdateUserPremi
 			CreatedAt:   timestamppb.New(user.CreatedAt).AsTime().Unix(),
 		},
 	}, nil
+}
+
+func (h *Handler) GetStats(ctx context.Context, req *pb.GetStatsRequest) (*pb.GetStatsResponse, error) {
+	st, err := h.statsSvc.Stats(ctx, req.Period, int(req.Count))
+	if err != nil {
+		if errors.Is(err, ErrInvalidStatsRequest) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		log.Printf("admin: stats: %v", err)
+		return nil, status.Error(codes.Internal, "failed to compute stats")
+	}
+	return &pb.GetStatsResponse{
+		Period:       st.Period,
+		Ideas:        toPB(st.Ideas),
+		PublicIdeas:  toPB(st.PublicIdeas),
+		PrivateIdeas: toPB(st.PrivateIdeas),
+		NewUsers:     toPB(st.NewUsers),
+		ActiveUsers:  toPB(st.ActiveUsers),
+		Totals: &pb.StatsTotals{
+			Ideas:        Total(st.Ideas),
+			PublicIdeas:  Total(st.PublicIdeas),
+			PrivateIdeas: Total(st.PrivateIdeas),
+			NewUsers:     Total(st.NewUsers),
+			ActiveUsers:  Total(st.ActiveUsers),
+		},
+	}, nil
+}
+
+func toPB(points []Point) []*pb.StatsPoint {
+	out := make([]*pb.StatsPoint, len(points))
+	for i, p := range points {
+		out[i] = &pb.StatsPoint{BucketStart: timestamppb.New(p.Start), Count: p.Count}
+	}
+	return out
 }

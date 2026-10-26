@@ -28,6 +28,22 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				Options: options.Index().SetUnique(true).SetName("idx_users_email_unique"),
 			},
 		},
+		{
+			// Statistiques admin : nouveaux comptes par semaine / mois
+			Collection: "users",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "created_at", Value: 1}},
+				Options: options.Index().SetName("idx_users_created_at"),
+			},
+		},
+		{
+			// Statistiques admin : comptes actifs par semaine / mois
+			Collection: "users",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "last_seen_at", Value: 1}},
+				Options: options.Index().SetName("idx_users_last_seen_at"),
+			},
+		},
 
 		// ── tribe_invitations : invitations dans une tribu ───────
 		{
@@ -232,6 +248,16 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			Model: mongo.IndexModel{
 				Keys:    bson.D{{Key: "visibility", Value: 1}, {Key: "created_at", Value: -1}},
 				Options: options.Index().SetName("idx_links_visibility_created"),
+			},
+		},
+		{
+			// Statistiques admin : nouvelles idées par semaine / mois (les idées
+			// publiques passent par idx_links_visibility_created). Croissant pour
+			// ne pas entrer en conflit avec idx_links_missing_image, partiel.
+			Collection: "links",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "created_at", Value: 1}},
+				Options: options.Index().SetName("idx_links_created_at"),
 			},
 		},
 		{
