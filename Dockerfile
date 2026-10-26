@@ -15,7 +15,7 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Stage 2 : Build backend (compilation croisée vers l'architecture cible)
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS backend
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS backend
 ARG TARGETOS=linux
 ARG TARGETARCH
 WORKDIR /app
@@ -25,7 +25,7 @@ COPY backend/ .
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" -o /server ./cmd/server
 
 # Stage 3 : Image finale, pour l'architecture cible
-FROM alpine:3.22
+FROM alpine:3.24
 RUN apk add --no-cache ca-certificates
 COPY --from=backend /server /server
 COPY --from=frontend /app/dist /public
