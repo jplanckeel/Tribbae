@@ -6,6 +6,7 @@ import (
 	"log"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
+	"github.com/tribbae/backend/internal/auth"
 	"github.com/tribbae/backend/internal/interceptor"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"google.golang.org/grpc/codes"
@@ -140,6 +141,8 @@ func toStatus(op string, err error) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, ErrNotFound), errors.Is(err, mongo.ErrNoDocuments):
 		return status.Error(codes.NotFound, "folder not found")
+	case errors.Is(err, auth.ErrEmailNotVerified):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		log.Printf("folder: %s: %v", op, err)
 		return status.Errorf(codes.Internal, "failed to %s", op)
@@ -276,6 +279,9 @@ func (h *Handler) AddCollaborator(ctx context.Context, req *pb.AddCollaboratorRe
 		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 	}
 	f, err := h.svc.AddCollaborator(ctx, req.FolderId, ownerID, req.Email, collabRoleToStr(req.Role))
+	if errors.Is(err, auth.ErrEmailNotVerified) {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

@@ -17,19 +17,25 @@ class SessionManager(context: Context) {
     
     private val _displayName = MutableStateFlow(getDisplayName())
     val displayName: StateFlow<String?> = _displayName.asStateFlow()
+
+    /** Adresse confirmée par le lien reçu par email (relue au retour sur l'app, voir LinkViewModel.refreshAccount). */
+    private val _emailVerified = MutableStateFlow(prefs.getBoolean("email_verified", false))
+    val emailVerified: StateFlow<Boolean> = _emailVerified.asStateFlow()
     
     init {
         println("DEBUG SessionManager.init: displayName=${getDisplayName()}, userId=${getUserId()}, hasToken=${hasToken()}")
     }
 
-    fun saveSession(userId: String, token: String, displayName: String, isAdmin: Boolean = false) {
+    fun saveSession(userId: String, token: String, displayName: String, isAdmin: Boolean = false, emailVerified: Boolean = false) {
         prefs.edit().apply {
             putString("user_id", userId)
             putString("token", token)
             putString("display_name", displayName)
             putBoolean("is_admin", isAdmin)
+            putBoolean("email_verified", emailVerified)
             apply()
         }
+        _emailVerified.value = emailVerified
         
         // Vérifier que c'est bien sauvegardé
         val savedDisplayName = prefs.getString("display_name", null)
@@ -39,6 +45,13 @@ class SessionManager(context: Context) {
         _userId.value = userId
         _displayName.value = displayName
         println("DEBUG SessionManager.saveSession: StateFlow mis à jour - _displayName.value='${_displayName.value}'")
+    }
+
+    /** Adresse confirmée (lien ouvert ici ou ailleurs, invitation acceptée…). */
+    fun setEmailVerified(verified: Boolean) {
+        if (!hasToken()) return
+        prefs.edit().putBoolean("email_verified", verified).apply()
+        _emailVerified.value = verified
     }
 
     /** Jeton renouvelé : le reste de la session ne change pas. */
@@ -72,5 +85,6 @@ class SessionManager(context: Context) {
         _isLoggedIn.value = false
         _userId.value = null
         _displayName.value = null
+        _emailVerified.value = false
     }
 }

@@ -14,6 +14,7 @@ import data.LinkRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -36,6 +37,17 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     
     /** SessionManager pour accéder au displayName */
     private var sessionManager: data.SessionManager? = null
+
+    /**
+     * Adresse email du compte confirmée. Tant qu'elle ne l'est pas, le serveur
+     * refuse de publier (idée ou dossier public) et d'écrire à d'autres
+     * personnes (inviter dans la tribu, ajouter un collaborateur) : les écrans
+     * l'expliquent au lieu de laisser la synchronisation échouer. Vrai sans
+     * compte (rien à bloquer).
+     */
+    private val _emailVerified = MutableStateFlow(true)
+    val emailVerified: StateFlow<Boolean> = _emailVerified.asStateFlow()
+    private var emailVerifiedWatch: kotlinx.coroutines.Job? = null
     
     /** Client API authentifié */
     private var authenticatedClient: data.AuthenticatedApiClient? = null
@@ -188,7 +200,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     fun renameTribe(name: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.renameTribe(name.trim()) }
     fun inviteTribeMember(email: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.inviteTribeMember(email.trim()) }
     fun revokeTribeInvitation(id: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.revokeTribeInvitation(id) }
-    fun acceptTribeInvitation(token: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.acceptTribeInvitation(token) }
+    fun acceptTribeInvitation(token: String, onDone: (String?) -> Unit) = tribeAction(onDone) { client ->
+        client.acceptTribeInvitation(token).also {
+            // Le lien est arrivé dans la boîte de l'adresse du compte : elle est confirmée
+            sessionManager?.setEmailVerified(true)
+        }
+    }
     fun removeTribeMember(userId: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.removeTribeMember(userId) }
     fun setTribeSharing(sharing: Boolean, onDone: (String?) -> Unit) = tribeAction(onDone) { it.setTribeSharing(sharing) }
 
@@ -202,7 +219,47 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         "only the tribe owner" in raw -> "Seul le créateur de la tribu peut retirer un membre."
         "name must be 1 to 60" in raw -> "Le nom de la tribu doit faire entre 1 et 60 caractères."
         "email is required" in raw -> "Saisissez l'adresse email de votre proche."
+        data.EmailVerification.NOT_VERIFIED in raw -> data.EmailVerification.VERIFY_FIRST
         else -> "Impossible de joindre le serveur, réessayez."
+    }
+
+    /**
+     * Relit l'état du compte tant que l'adresse n'est pas confirmée (le lien a
+     * pu être ouvert sur un autre appareil). Une fois confirmée, la
+     * synchronisation envoie ce qui attendait (idées à publier).
+     */
+    fun refreshAccount(sessionManager: data.SessionManager) {
+        if (sessionManager.emailVerified.value) return
+        val client = authenticatedClient ?: return
+        viewModelScope.launch {
+            val account = runCatching { client.getAccount() }.getOrNull() ?: return@launch
+            if (account.emailVerified) markEmailVerified()
+        }
+    }
+
+    fun refreshAccount() {
+        sessionManager?.let { refreshAccount(it) }
+    }
+
+    /** Adresse confirmée (lien ouvert dans l'app, ailleurs, invitation…) : on envoie ce qui attendait. */
+    fun markEmailVerified() {
+        val sm = sessionManager ?: return
+        if (sm.emailVerified.value) return
+        sm.setEmailVerified(true)
+        syncWithBackend(sm)
+    }
+
+    /** « Renvoyer l'email » de confirmation ; onDone(null) si envoyé (ou déjà confirmée). */
+    fun resendEmailVerification(onDone: (String?) -> Unit) {
+        val client = authenticatedClient ?: return onDone("Connectez-vous d'abord.")
+        viewModelScope.launch {
+            runCatching { client.resendEmailVerification() }
+                .onSuccess { alreadyVerified ->
+                    if (alreadyVerified) markEmailVerified()
+                    onDone(null)
+                }
+                .onFailure { onDone(if ("429" in it.message.orEmpty()) "Trop de tentatives, réessayez dans une minute." else "Impossible de joindre le serveur, réessayez.") }
+        }
     }
 
     /**
@@ -672,6 +729,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     fun initAuthenticatedClient(sessionManager: data.SessionManager) {
         this.sessionManager = sessionManager
+        emailVerifiedWatch?.cancel()
+        emailVerifiedWatch = viewModelScope.launch {
+            // Sans session (déconnexion), rien n'est bloqué
+            sessionManager.emailVerified.combine(sessionManager.isLoggedIn) { verified, loggedIn -> verified || !loggedIn }
+                .collect { _emailVerified.value = it }
+        }
         authenticatedClient = data.AuthenticatedApiClient(sessionManager = sessionManager)
         followRepository = data.FollowRepository(sessionManager = sessionManager)
         authToken = sessionManager.getToken()
@@ -847,7 +910,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             }
         }
         repository.folders.value.filter { data.SyncIds.isLocal(it.id) }.forEach { local ->
-            val saved = client.createFolder(createFolderRequest(local))
+            // Dossier public d'un compte à l'adresse non confirmée : il attend ici
+            // la confirmation (refreshAccount relance la synchronisation)
+            val saved = waitingForVerification { client.createFolder(createFolderRequest(local)) } ?: return@forEach
             val current = repository.folders.value.find { it.id == local.id }
             if (current == null) {
                 client.deleteFolder(saved.id)
@@ -860,7 +925,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             .filter { data.SyncIds.isLocal(it.id) && it.folderId?.let(data.SyncIds::isLocal) != true }
             .forEach { local ->
                 val sent = uploadLocalPhoto(client, local)
-                val saved = client.createLink(createLinkRequest(sent))
+                val saved = waitingForVerification { client.createLink(createLinkRequest(sent)) } ?: return@forEach
                 val current = repository.links.value.find { it.id == local.id }
                 if (current == null) {
                     client.deleteLink(saved.id)
@@ -918,8 +983,26 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             val m = e.message.orEmpty()
             if (m.contains("API error (404)") || m.contains("not found", ignoreCase = true)) return
             requeue?.let { repository.updatePending(it) }
+            // Publication refusée tant que l'adresse n'est pas confirmée : elle
+            // attend dans la file, sans bloquer le reste de la synchronisation
+            if (data.EmailVerification.NOT_VERIFIED in m) return markWaitingForVerification()
             throw e
         }
+    }
+
+    /** null (et la création attend ici) si le serveur la refuse faute d'adresse confirmée. */
+    private suspend fun <T> waitingForVerification(send: suspend () -> T): T? =
+        try {
+            send()
+        } catch (e: Exception) {
+            if (data.EmailVerification.NOT_VERIFIED !in e.message.orEmpty()) throw e
+            markWaitingForVerification()
+            null
+        }
+
+    private fun markWaitingForVerification() {
+        sessionManager?.setEmailVerified(false)
+        _syncStatus.value = data.EmailVerification.VERIFY_FIRST
     }
 
     private fun visibilityParam(v: String) = when (v.uppercase()) {

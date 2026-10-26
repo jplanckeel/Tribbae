@@ -360,12 +360,15 @@ fun IdeaFormScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    val canPublish by viewModel.emailVerified.collectAsState()
                     Icon(Icons.Outlined.Public, null, tint = Color(0xFF2F7393), modifier = Modifier.size(20.dp))
                     Column(Modifier.weight(1f)) {
                         Text("Partager avec la communauté", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
                         Text("Visible dans l'Explorer par toutes les tribus", fontSize = 12.sp, color = TextSec)
+                        if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
                     }
-                    CampSwitch(isPublic, { isPublic = it }, "Partager avec la communauté")
+                    // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible
+                    CampSwitch(isPublic, { if (!it || canPublish) isPublic = it }, "Partager avec la communauté")
                 }
             }
             // Dans son propre dossier public, une idée est visible de tous même sans être partagée

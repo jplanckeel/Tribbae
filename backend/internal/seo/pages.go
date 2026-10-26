@@ -32,6 +32,7 @@ var private = map[string]string{
 	"/invitation":           "Invitation dans une tribu",
 	"/mot-de-passe/oublie":  "Mot de passe oublié",
 	"/mot-de-passe/nouveau": "Nouveau mot de passe",
+	"/verifier-email":       "Confirmer mon adresse",
 }
 
 // redirects : anciennes adresses du site, redirigées définitivement.

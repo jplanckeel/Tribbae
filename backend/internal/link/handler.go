@@ -6,6 +6,7 @@ import (
 	"log"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
+	"github.com/tribbae/backend/internal/auth"
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/preview"
 	"google.golang.org/grpc/codes"
@@ -31,6 +32,8 @@ func toStatus(op string, err error) error {
 		return status.Error(codes.NotFound, "link not found")
 	case errors.Is(err, ErrForbidden):
 		return status.Error(codes.PermissionDenied, "not authorized")
+	case errors.Is(err, auth.ErrEmailNotVerified):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		log.Printf("link: %s: %v", op, err)
 		return status.Errorf(codes.Internal, "failed to %s", op)

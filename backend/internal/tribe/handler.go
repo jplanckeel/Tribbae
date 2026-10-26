@@ -6,6 +6,7 @@ import (
 	"log"
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
+	"github.com/tribbae/backend/internal/auth"
 	"github.com/tribbae/backend/internal/interceptor"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -34,6 +35,8 @@ func toStatus(op string, err error) error {
 		return status.Error(codes.PermissionDenied, err.Error())
 	case errors.Is(err, ErrNotMember):
 		return status.Error(codes.NotFound, err.Error())
+	case errors.Is(err, auth.ErrEmailNotVerified):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		log.Printf("tribe: %s: %v", op, err)
 		return status.Errorf(codes.Internal, "failed to %s", op)

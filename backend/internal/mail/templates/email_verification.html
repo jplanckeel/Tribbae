@@ -1,0 +1,21 @@
+{{define "preheader"}}Confirmez votre adresse : le lien est valable {{.Validity}}.{{end}}
+
+{{define "card"}}
+{{template "icon" (dict "Bg" "#FBEACB" "Src" (print .Assets "/welcome.png") "Size" 32)}}
+{{template "overline" (dict "Color" "#85560C" "Text" "Votre adresse")}}
+{{template "h1" "Confirmez votre adresse email"}}
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">{{if .Name}}Bonjour {{.Name}}, cliquez{{else}}Bonjour, cliquez{{end}} sur le bouton pour confirmer que <strong style="color:#3A211B;">{{.Email}}</strong> est bien votre adresse. Vous pourrez ensuite publier vos idées et inviter votre tribu.</p>
+{{template "button" (dict "URL" .VerifyURL "Label" "Confirmer mon adresse")}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;"><tr><td style="background:#FBEACB;border-radius:18px;padding:14px 18px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="middle" width="20"><img src="{{.Assets}}/clock.png" width="20" height="20" alt="" style="display:block;border:0;"></td>
+<td valign="middle" style="padding-left:12px;font-size:15px;line-height:22px;color:#3A211B;">Ce lien est valable <strong>{{.Validity}}</strong> et ne fonctionne qu'une seule fois.</td>
+</tr></table>
+</td></tr></table>
+{{template "divider"}}
+<div style="font-size:15px;line-height:20px;font-weight:700;color:#3A211B;">Vous n'avez pas créé de compte Tribbae ?</div>
+<div style="padding-top:6px;font-size:15px;line-height:22px;color:#6B5047;">Ignorez simplement cet email : sans confirmation, personne ne peut se servir de votre adresse pour publier ou écrire à d'autres personnes.</div>
+{{template "fallback" .VerifyURL}}
+{{end}}
+
+{{define "footer"}}Vous recevez cet email car une confirmation d'adresse a été demandée sur Tribbae.{{end}}

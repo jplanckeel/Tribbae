@@ -141,6 +141,8 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                 CampButton(
                     if (busy) "Invitation…" else "Inviter",
                     {
+                        // Ajouter quelqu'un attend la confirmation de l'adresse
+                        if (!viewModel.emailVerified.value) { message = data.EmailVerification.VERIFY_FIRST; return@CampButton }
                         busy = true
                         scope.launch {
                             val r = viewModel.addCollaborator(current.id, email.trim(), role)

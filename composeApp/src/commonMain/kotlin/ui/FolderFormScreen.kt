@@ -312,13 +312,16 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
 
                     Group("Visibilité") {
                         val isPublic = draft.visibility.uppercase().contains("PUBLIC")
+                        // Publier attend la confirmation de l'adresse (un dossier déjà public le reste)
+                        val canPublish by viewModel.emailVerified.collectAsState()
+                        val locked = !canPublish && !isPublic
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(false to "Privé", true to "Public").forEach { (pub, label) ->
                                 val on = isPublic == pub
                                 Column(
                                     Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(if (on) CardColor else Sable2)
                                         .border(2.dp, if (on) Ecorce else Color.Transparent, RoundedCornerShape(18.dp))
-                                        .clickable(role = Role.RadioButton) {
+                                        .clickable(role = Role.RadioButton, enabled = !(pub && locked)) {
                                             // « Partagé » est dérivé des collaborateurs : on le garde tant que le dossier reste privé
                                             draft = draft.copy(visibility = if (pub) "PUBLIC" else if (existing?.visibility == "SHARED") "SHARED" else "PRIVATE")
                                         }.padding(12.dp),
@@ -332,6 +335,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                                 }
                             }
                         }
+                        if (locked) PublishLockedNote(Modifier.padding(top = 8.dp))
                     }
                 }
 

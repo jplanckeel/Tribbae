@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"log"
 	"net/mail"
 	"strings"
 	"time"
@@ -76,6 +77,11 @@ func (s *Service) Invite(ctx context.Context, userID, email string) (*Tribe, err
 	email = strings.ToLower(strings.TrimSpace(email))
 	if !validEmail(email) {
 		return nil, invalid("a valid email is required")
+	}
+	if s.emails != nil {
+		if err := s.emails.RequireVerifiedEmail(ctx, userID); err != nil {
+			return nil, err
+		}
 	}
 	t, err := s.ensure(ctx, userID)
 	if err != nil {
@@ -245,6 +251,12 @@ func (s *Service) Accept(ctx context.Context, userID, token string) (*Tribe, err
 	}
 	if _, err := s.invCol.DeleteOne(ctx, bson.M{"_id": inv.ID}); err != nil {
 		return nil, err
+	}
+	// Le lien est arrivé dans la boîte de l'adresse du compte : elle est confirmée
+	if s.emails != nil {
+		if err := s.emails.MarkEmailVerified(ctx, userID); err != nil {
+			log.Printf("tribe: mark email verified: %v", err)
+		}
 	}
 	return s.find(ctx, userID)
 }

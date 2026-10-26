@@ -62,7 +62,7 @@ func tokenOf(t *testing.T, link string) string {
 func TestPasswordResetFlow(t *testing.T) {
 	svc, db, n := setupReset(t)
 	ctx := context.Background()
-	userID, oldSession, _, err := svc.Register(ctx, "alice@example.com", "ancien-mdp", "Alice")
+	alice, oldSession, err := svc.Register(ctx, "alice@example.com", "ancien-mdp", "Alice")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,25 +89,32 @@ func TestPasswordResetFlow(t *testing.T) {
 		t.Fatalf("demande répétée : err=%v, emails=%d", err, len(n.links))
 	}
 
-	if _, _, _, _, err := svc.ResetPassword(ctx, token, "court", ""); !errors.Is(err, ErrInvalidInput) {
+	if _, _, err := svc.ResetPassword(ctx, token, "court", ""); !errors.Is(err, ErrInvalidInput) {
 		t.Errorf("mot de passe trop court accepté : %v", err)
 	}
-	gotID, newSession, name, _, err := svc.ResetPassword(ctx, token, "nouveau-mdp", "")
-	if err != nil || gotID != userID || name != "Alice" || newSession == "" {
-		t.Fatalf("reset : id=%q name=%q err=%v", gotID, name, err)
+	if alice.EmailVerifiedAt != nil {
+		t.Error("adresse confirmée dès l'inscription")
+	}
+	user, newSession, err := svc.ResetPassword(ctx, token, "nouveau-mdp", "")
+	if err != nil || user.ID != alice.ID || user.DisplayName != "Alice" || newSession == "" {
+		t.Fatalf("reset : user=%+v err=%v", user, err)
+	}
+	// Le lien est arrivé dans la boîte de l'adresse : elle est confirmée
+	if user.EmailVerifiedAt == nil {
+		t.Error("adresse non confirmée après une réinitialisation")
 	}
 	if len(n.changed) != 1 {
 		t.Errorf("email « mot de passe modifié » : %v", n.changed)
 	}
 	// Le lien ne sert qu'une fois
-	if _, _, _, _, err := svc.ResetPassword(ctx, token, "encore-un-mdp", ""); !errors.Is(err, ErrInvalidResetToken) {
+	if _, _, err := svc.ResetPassword(ctx, token, "encore-un-mdp", ""); !errors.Is(err, ErrInvalidResetToken) {
 		t.Errorf("lien réutilisé : %v", err)
 	}
 	// Nouveau mot de passe actif, ancien refusé
-	if _, _, _, _, err := svc.Login(ctx, "alice@example.com", "nouveau-mdp"); err != nil {
+	if _, _, err := svc.Login(ctx, "alice@example.com", "nouveau-mdp"); err != nil {
 		t.Errorf("connexion avec le nouveau mot de passe : %v", err)
 	}
-	if _, _, _, _, err := svc.Login(ctx, "alice@example.com", "ancien-mdp"); err == nil {
+	if _, _, err := svc.Login(ctx, "alice@example.com", "ancien-mdp"); err == nil {
 		t.Error("l'ancien mot de passe marche encore")
 	}
 	// La session ouverte avant le changement est fermée, la nouvelle marche.
@@ -127,7 +134,7 @@ func TestPasswordResetFlow(t *testing.T) {
 func TestPasswordResetLinkExpires(t *testing.T) {
 	svc, db, n := setupReset(t)
 	ctx := context.Background()
-	if _, _, _, err := svc.Register(ctx, "bob@example.com", "mot-de-passe", "Bob"); err != nil {
+	if _, _, err := svc.Register(ctx, "bob@example.com", "mot-de-passe", "Bob"); err != nil {
 		t.Fatal(err)
 	}
 	if err := svc.RequestPasswordReset(ctx, "bob@example.com", ""); err != nil || len(n.links) != 1 {
@@ -136,10 +143,10 @@ func TestPasswordResetLinkExpires(t *testing.T) {
 	if _, err := db.Collection("password_resets").UpdateMany(ctx, bson.M{}, bson.M{"$set": bson.M{"expires_at": time.Now().Add(-time.Second)}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, _, _, err := svc.ResetPassword(ctx, tokenOf(t, n.links[0].url), "nouveau-mdp", ""); !errors.Is(err, ErrInvalidResetToken) {
+	if _, _, err := svc.ResetPassword(ctx, tokenOf(t, n.links[0].url), "nouveau-mdp", ""); !errors.Is(err, ErrInvalidResetToken) {
 		t.Errorf("lien expiré accepté : %v", err)
 	}
-	if _, _, _, _, err := svc.ResetPassword(ctx, "jeton-invente", "nouveau-mdp", ""); !errors.Is(err, ErrInvalidResetToken) {
+	if _, _, err := svc.ResetPassword(ctx, "jeton-invente", "nouveau-mdp", ""); !errors.Is(err, ErrInvalidResetToken) {
 		t.Errorf("jeton inventé accepté : %v", err)
 	}
 }

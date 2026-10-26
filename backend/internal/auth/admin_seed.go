@@ -39,6 +39,12 @@ func EnsureAdminAccount(ctx context.Context, col *mongo.Collection, password str
 			log.Printf("WARNING: account %s exists but is not admin; it will not be promoted automatically", AdminEmail)
 			return nil
 		}
+		// Adresse de l'équipe : confirmée d'office (le compte publie la sélection)
+		if existing.EmailVerifiedAt == nil {
+			if _, err := col.UpdateOne(ctx, bson.M{"_id": existing.ID}, bson.M{"$set": bson.M{"email_verified_at": time.Now()}}); err != nil {
+				return err
+			}
+		}
 		if bcrypt.CompareHashAndPassword([]byte(existing.Password), []byte(legacyDefaultAdminPassword)) != nil {
 			return nil
 		}
@@ -68,13 +74,15 @@ func EnsureAdminAccount(ctx context.Context, col *mongo.Collection, password str
 	if err != nil {
 		return err
 	}
+	now := time.Now()
 	user := User{
-		ID:          bson.NewObjectID(),
-		Email:       AdminEmail,
-		Password:    string(hash),
-		DisplayName: AdminDisplayName,
-		IsAdmin:     true,
-		CreatedAt:   time.Now(),
+		ID:              bson.NewObjectID(),
+		Email:           AdminEmail,
+		Password:        string(hash),
+		DisplayName:     AdminDisplayName,
+		IsAdmin:         true,
+		CreatedAt:       now,
+		EmailVerifiedAt: &now,
 	}
 	if _, err := col.InsertOne(ctx, user); err != nil {
 		return err

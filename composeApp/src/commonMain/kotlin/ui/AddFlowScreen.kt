@@ -584,12 +584,15 @@ private fun SortStep(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CardColor).padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        val canPublish by viewModel.emailVerified.collectAsState()
         Icon(Icons.Outlined.Public, null, tint = BlueInk, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
             Text("Inspirer d'autres familles", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
             Text("Visible aussi dans Explorer", fontSize = 12.sp, color = TextSec)
+            if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
         }
-        CampSwitch(draft.isPublic, { onDraft(draft.copy(isPublic = it)) }, "Inspirer d'autres familles")
+        // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible
+        CampSwitch(draft.isPublic, { if (!it || canPublish) onDraft(draft.copy(isPublic = it)) }, "Inspirer d'autres familles")
     }
 
     Text("Plus de détails (date, prix, lieu, tags…)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta, modifier = Modifier.clickable(role = Role.Button, onClick = onMore).padding(vertical = 4.dp))

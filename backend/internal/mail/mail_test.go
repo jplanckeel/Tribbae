@@ -118,7 +118,8 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 	rec := &recorder{}
 	m := New(rec, "https://tribbae.example", "aide@tribbae.example")
 	m.now = func() time.Time { return time.Date(2026, 10, 22, 14, 42, 0, 0, time.UTC) }
-	m.Welcome("alice@example.com", "Alice")
+	m.Welcome("alice@example.com", "Alice", "https://tribbae.example/verifier-email#v1", 24*time.Hour)
+	m.EmailVerification("alice@example.com", "Alice", "https://tribbae.example/verifier-email#v2", 24*time.Hour)
 	m.PasswordResetLink("alice@example.com", "Alice", "https://tribbae.example/mot-de-passe/nouveau#abc",
 		time.Hour, time.Date(2026, 10, 1, 7, 5, 0, 0, time.UTC), "Firefox sur Linux")
 	m.PasswordChanged("alice@example.com", "Alice", time.Date(2026, 10, 1, 7, 9, 0, 0, time.UTC), "l'application Android")
@@ -138,8 +139,11 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 		text    []string
 	}{
 		{TagWelcome, "Bienvenue dans Tribbae",
-			[]string{"Bienvenue dans la tribu, Alice !", "Pour bien démarrer", "Invitez votre tribu", `href="https://tribbae.example/"`, "https://tribbae.example/email/welcome.png"},
-			[]string{"Bienvenue dans la tribu, Alice !", "Ouvrir Tribbae : https://tribbae.example/", "3. Gardez une idée en un geste"}},
+			[]string{"Bienvenue dans la tribu, Alice !", "Pour bien démarrer", "Invitez votre tribu", "Confirmer mon adresse", `href="https://tribbae.example/verifier-email#v1"`, "Le lien est valable 24 heures", "https://tribbae.example/email/welcome.png"},
+			[]string{"Bienvenue dans la tribu, Alice !", "Confirmer mon adresse : https://tribbae.example/verifier-email#v1", "3. Gardez une idée en un geste"}},
+		{TagEmailVerify, "Confirmez votre adresse email Tribbae",
+			[]string{"Confirmez votre adresse email", "Bonjour Alice, cliquez", "alice@example.com", `href="https://tribbae.example/verifier-email#v2"`, "<strong>24 heures</strong>"},
+			[]string{"https://tribbae.example/verifier-email#v2", "Ce lien est valable 24 heures"}},
 		{TagPasswordReset, "Choisissez un nouveau mot de passe Tribbae",
 			[]string{"Bonjour Alice, une demande", "alice@example.com", "<strong>1 heure</strong>", "1er octobre 2026 à 09 h 05", "Firefox sur Linux", "https://tribbae.example/mot-de-passe/nouveau#abc"},
 			[]string{"https://tribbae.example/mot-de-passe/nouveau#abc", "Ce lien expire dans 1 heure", "1er octobre 2026 à 09 h 05 depuis Firefox sur Linux"}},
@@ -178,13 +182,18 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 	}
 }
 
-func TestWelcomeWithoutName(t *testing.T) {
-	c, err := welcomeEmail("https://tribbae.example", "  ")
+// Sans nom ni lien de confirmation (confirmation désactivée) : titre neutre
+// et bouton « Ouvrir Tribbae ».
+func TestWelcomeWithoutNameNorLink(t *testing.T) {
+	c, err := welcomeEmail("https://tribbae.example", "  ", "", 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(c.Text, "Bienvenue dans la tribu !") {
-		t.Errorf("welcome without a name:\n%s", c.Text)
+	if !strings.Contains(c.Text, "Bienvenue dans la tribu !") || !strings.Contains(c.Text, "Ouvrir Tribbae : https://tribbae.example/") {
+		t.Errorf("welcome without a name nor link:\n%s", c.Text)
+	}
+	if strings.Contains(c.HTML, "Confirmer mon adresse") {
+		t.Error("welcome without a link must not ask to confirm the address")
 	}
 }
 

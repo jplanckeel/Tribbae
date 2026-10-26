@@ -7,9 +7,11 @@ export interface Session {
   userId: string;
   displayName: string;
   isAdmin: boolean;
+  /** Adresse confirmée par le lien reçu par email (relue au lancement, voir api.refreshAccount). */
+  emailVerified: boolean;
 }
 
-const KEYS = ["token", "userId", "displayName", "isAdmin"] as const;
+const KEYS = ["token", "userId", "displayName", "isAdmin", "emailVerified"] as const;
 const listeners = new Set<() => void>();
 let cached: Session | null | undefined;
 
@@ -21,6 +23,7 @@ function read(): Session | null {
     userId: localStorage.getItem("userId") ?? "",
     displayName: localStorage.getItem("displayName") ?? "",
     isAdmin: localStorage.getItem("isAdmin") === "true",
+    emailVerified: localStorage.getItem("emailVerified") === "true",
   };
 }
 
@@ -39,6 +42,7 @@ export function setSession(s: Session) {
   localStorage.setItem("userId", s.userId);
   localStorage.setItem("displayName", s.displayName);
   localStorage.setItem("isAdmin", String(s.isAdmin));
+  localStorage.setItem("emailVerified", String(s.emailVerified));
   emit();
 }
 

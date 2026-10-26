@@ -102,7 +102,7 @@ export function NewPassword() {
     setError("");
     try {
       const r = await api.auth.resetPassword(token, password);
-      setSession({ token: r.token, userId: r.userId, displayName: r.displayName ?? "", isAdmin: !!r.isAdmin });
+      setSession({ token: r.token, userId: r.userId, displayName: r.displayName ?? "", isAdmin: !!r.isAdmin, emailVerified: !!r.emailVerified });
       navigate("/", { replace: true });
     } catch (err) {
       setError((err as Error).message);

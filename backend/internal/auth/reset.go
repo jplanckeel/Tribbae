@@ -109,46 +109,53 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email, device string
 
 // ResetPassword remplace le mot de passe du compte du lien, qui ne sert
 // qu'une fois. Les sessions ouvertes avant sont fermées (voir ValidateToken)
-// et une nouvelle session est ouverte.
-func (s *Service) ResetPassword(ctx context.Context, token, password, device string) (userID, jwt, displayName string, isAdmin bool, err error) {
+// et une nouvelle session est ouverte. Le lien prouve aussi que l'on reçoit
+// les emails de l'adresse : elle est confirmée au passage.
+func (s *Service) ResetPassword(ctx context.Context, token, password, device string) (*User, string, error) {
 	if s.resets == nil {
-		return "", "", "", false, errors.New("password reset is not configured")
+		return nil, "", errors.New("password reset is not configured")
 	}
 	if utf8.RuneCountInString(password) < 8 || len(password) > 72 {
-		return "", "", "", false, errors.Join(ErrInvalidInput, errors.New("password must be between 8 and 72 characters"))
+		return nil, "", errors.Join(ErrInvalidInput, errors.New("password must be between 8 and 72 characters"))
 	}
 	if token == "" || len(token) > 128 {
-		return "", "", "", false, ErrInvalidResetToken
+		return nil, "", ErrInvalidResetToken
 	}
 	// Retirée en même temps qu'elle est lue : deux envois du même lien ne
 	// peuvent pas réussir tous les deux
 	var reset passwordReset
-	err = s.resets.FindOneAndDelete(ctx, bson.M{"token_hash": hashToken(token), "expires_at": bson.M{"$gt": time.Now()}}).Decode(&reset)
+	err := s.resets.FindOneAndDelete(ctx, bson.M{"token_hash": hashToken(token), "expires_at": bson.M{"$gt": time.Now()}}).Decode(&reset)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return "", "", "", false, ErrInvalidResetToken
+		return nil, "", ErrInvalidResetToken
 	}
 	if err != nil {
-		return "", "", "", false, err
+		return nil, "", err
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", "", "", false, err
+		return nil, "", err
 	}
 	// Seconde entière : comparée au champ iat (en secondes) des jetons
 	changedAt := time.Now().Truncate(time.Second)
 	var user User
 	err = s.col.FindOneAndUpdate(ctx, bson.M{"_id": reset.UserID},
-		bson.M{"$set": bson.M{"password": string(hash), "password_changed_at": changedAt}},
+		bson.M{
+			"$set": bson.M{"password": string(hash), "password_changed_at": changedAt},
+			"$min": bson.M{"email_verified_at": changedAt},
+		},
 		options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&user)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		return "", "", "", false, ErrInvalidResetToken // compte supprimé entre-temps
+		return nil, "", ErrInvalidResetToken // compte supprimé entre-temps
 	}
 	if err != nil {
-		return "", "", "", false, err
+		return nil, "", err
+	}
+	if s.verifications != nil {
+		_, _ = s.verifications.DeleteOne(ctx, bson.M{"_id": user.ID})
 	}
 	if s.resetNotify != nil {
 		s.resetNotify.PasswordChanged(user.Email, user.DisplayName, changedAt, device)
 	}
-	jwt, err = s.generateToken(user.ID.Hex())
-	return user.ID.Hex(), jwt, user.DisplayName, user.IsAdmin, err
+	jwt, err := s.generateToken(user.ID.Hex())
+	return &user, jwt, err
 }

@@ -34,7 +34,8 @@ data class AuthResponse(
     val userId: String = "",
     val token: String = "",
     val displayName: String = "",
-    val isAdmin: Boolean = false
+    val isAdmin: Boolean = false,
+    val emailVerified: Boolean = false
 )
 
 class AuthRepository(private val baseUrl: String = Backend.url) {
@@ -118,6 +119,16 @@ class AuthRepository(private val baseUrl: String = Backend.url) {
     /** Nouveau mot de passe depuis le lien de l'email : ouvre une session. */
     suspend fun resetPassword(token: String, password: String): AuthResponse =
         json.decodeFromString(post("/v1/auth/password/reset", json.encodeToString(ResetPasswordRequest.serializer(), ResetPasswordRequest(token, password))))
+
+    /**
+     * Confirme l'adresse depuis le lien reçu par email (sans session : le lien
+     * peut être ouvert avant de se connecter). Lève une exception si le lien
+     * n'est plus valable.
+     */
+    suspend fun verifyEmail(token: String) {
+        @Serializable data class VerifyRequest(val token: String)
+        post("/v1/auth/email/verify", json.encodeToString(VerifyRequest.serializer(), VerifyRequest(token)))
+    }
 
     /** Échange un jeton encore valable contre un neuf (voir TokenRenewal). */
     suspend fun refreshToken(token: String): String {

@@ -55,6 +55,7 @@ const PATHS = {
   bookmark: <path d="M6 4h12v17l-6-4-6 4z" />,
   folder: <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
   beach: <path d="M21 12a9 9 0 0 0-18 0zM12 12v7a2 2 0 0 0 4 0M12 3v0" />,
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></>,
   send: <path d="M4 12l16-8-6 16-2.5-6.5z" />,
   eye: <><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></>,
   baby: <><circle cx="12" cy="9" r="5" /><path d="M10 9h.01M14 9h.01M10.5 11.5c.9.7 2.1.7 3 0M7 20c.8-2.4 2.7-4 5-4s4.2 1.6 5 4" /></>,

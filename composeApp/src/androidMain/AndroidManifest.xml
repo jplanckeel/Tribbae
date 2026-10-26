@@ -53,6 +53,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="tribbae.fr" android:path="/invitation" />
             </intent-filter>
+            <!-- Confirmation de l'adresse email : https://tribbae.fr/verifier-email#<jeton> -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tribbae.fr" android:path="/verifier-email" />
+            </intent-filter>
         </activity>
         <receiver
             android:name="data.ReminderReceiver"

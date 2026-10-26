@@ -83,10 +83,12 @@ func (x *RegisterRequest) GetDisplayName() string {
 }
 
 type RegisterResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
-	IsAdmin       bool                   `protobuf:"varint,3,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	UserId  string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Token   string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	IsAdmin bool                   `protobuf:"varint,3,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	// Adresse confirmée par le lien reçu par email (faux à l'inscription)
+	EmailVerified bool `protobuf:"varint,4,opt,name=email_verified,json=emailVerified,proto3" json:"email_verified,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -138,6 +140,13 @@ func (x *RegisterResponse) GetToken() string {
 func (x *RegisterResponse) GetIsAdmin() bool {
 	if x != nil {
 		return x.IsAdmin
+	}
+	return false
+}
+
+func (x *RegisterResponse) GetEmailVerified() bool {
+	if x != nil {
+		return x.EmailVerified
 	}
 	return false
 }
@@ -200,6 +209,7 @@ type LoginResponse struct {
 	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
 	DisplayName   string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	IsAdmin       bool                   `protobuf:"varint,4,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	EmailVerified bool                   `protobuf:"varint,5,opt,name=email_verified,json=emailVerified,proto3" json:"email_verified,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -258,6 +268,13 @@ func (x *LoginResponse) GetDisplayName() string {
 func (x *LoginResponse) GetIsAdmin() bool {
 	if x != nil {
 		return x.IsAdmin
+	}
+	return false
+}
+
+func (x *LoginResponse) GetEmailVerified() bool {
+	if x != nil {
+		return x.EmailVerified
 	}
 	return false
 }
@@ -487,11 +504,13 @@ func (x *ResetPasswordRequest) GetPassword() string {
 }
 
 type ResetPasswordResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	IsAdmin       bool                   `protobuf:"varint,4,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	UserId      string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Token       string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	DisplayName string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	IsAdmin     bool                   `protobuf:"varint,4,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	// Toujours vrai : le lien prouve que l'on reçoit les emails de l'adresse
+	EmailVerified bool `protobuf:"varint,5,opt,name=email_verified,json=emailVerified,proto3" json:"email_verified,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -554,6 +573,290 @@ func (x *ResetPasswordResponse) GetIsAdmin() bool {
 	return false
 }
 
+func (x *ResetPasswordResponse) GetEmailVerified() bool {
+	if x != nil {
+		return x.EmailVerified
+	}
+	return false
+}
+
+// Compte connecté, relu au lancement des applications (adresse confirmée…).
+type GetAccountRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAccountRequest) Reset() {
+	*x = GetAccountRequest{}
+	mi := &file_tribbae_v1_auth_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAccountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAccountRequest) ProtoMessage() {}
+
+func (x *GetAccountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_auth_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAccountRequest.ProtoReflect.Descriptor instead.
+func (*GetAccountRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_auth_proto_rawDescGZIP(), []int{10}
+}
+
+type GetAccountResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	DisplayName   string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	IsAdmin       bool                   `protobuf:"varint,4,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
+	EmailVerified bool                   `protobuf:"varint,5,opt,name=email_verified,json=emailVerified,proto3" json:"email_verified,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAccountResponse) Reset() {
+	*x = GetAccountResponse{}
+	mi := &file_tribbae_v1_auth_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAccountResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAccountResponse) ProtoMessage() {}
+
+func (x *GetAccountResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_auth_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAccountResponse.ProtoReflect.Descriptor instead.
+func (*GetAccountResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_auth_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetAccountResponse) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GetAccountResponse) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *GetAccountResponse) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *GetAccountResponse) GetIsAdmin() bool {
+	if x != nil {
+		return x.IsAdmin
+	}
+	return false
+}
+
+func (x *GetAccountResponse) GetEmailVerified() bool {
+	if x != nil {
+		return x.EmailVerified
+	}
+	return false
+}
+
+// Confirmation de l'adresse depuis le lien reçu par email. Ne demande pas de
+// session : le lien peut être ouvert sur un autre appareil.
+type VerifyEmailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyEmailRequest) Reset() {
+	*x = VerifyEmailRequest{}
+	mi := &file_tribbae_v1_auth_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyEmailRequest) ProtoMessage() {}
+
+func (x *VerifyEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_auth_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyEmailRequest.ProtoReflect.Descriptor instead.
+func (*VerifyEmailRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_auth_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *VerifyEmailRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+type VerifyEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyEmailResponse) Reset() {
+	*x = VerifyEmailResponse{}
+	mi := &file_tribbae_v1_auth_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyEmailResponse) ProtoMessage() {}
+
+func (x *VerifyEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_auth_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyEmailResponse.ProtoReflect.Descriptor instead.
+func (*VerifyEmailResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_auth_proto_rawDescGZIP(), []int{13}
+}
+
+// Renvoie le lien de confirmation au compte connecté.
+type ResendEmailVerificationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResendEmailVerificationRequest) Reset() {
+	*x = ResendEmailVerificationRequest{}
+	mi := &file_tribbae_v1_auth_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResendEmailVerificationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResendEmailVerificationRequest) ProtoMessage() {}
+
+func (x *ResendEmailVerificationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_auth_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResendEmailVerificationRequest.ProtoReflect.Descriptor instead.
+func (*ResendEmailVerificationRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_auth_proto_rawDescGZIP(), []int{14}
+}
+
+type ResendEmailVerificationResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Vrai si l'adresse était déjà confirmée (aucun email envoyé)
+	EmailVerified bool `protobuf:"varint,1,opt,name=email_verified,json=emailVerified,proto3" json:"email_verified,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResendEmailVerificationResponse) Reset() {
+	*x = ResendEmailVerificationResponse{}
+	mi := &file_tribbae_v1_auth_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResendEmailVerificationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResendEmailVerificationResponse) ProtoMessage() {}
+
+func (x *ResendEmailVerificationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_auth_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResendEmailVerificationResponse.ProtoReflect.Descriptor instead.
+func (*ResendEmailVerificationResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_auth_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ResendEmailVerificationResponse) GetEmailVerified() bool {
+	if x != nil {
+		return x.EmailVerified
+	}
+	return false
+}
+
 var File_tribbae_v1_auth_proto protoreflect.FileDescriptor
 
 const file_tribbae_v1_auth_proto_rawDesc = "" +
@@ -563,19 +866,21 @@ const file_tribbae_v1_auth_proto_rawDesc = "" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12!\n" +
-	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\"\\\n" +
+	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\"\x83\x01\n" +
 	"\x10RegisterResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\x12\x19\n" +
-	"\bis_admin\x18\x03 \x01(\bR\aisAdmin\"@\n" +
+	"\bis_admin\x18\x03 \x01(\bR\aisAdmin\x12%\n" +
+	"\x0eemail_verified\x18\x04 \x01(\bR\remailVerified\"@\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"|\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xa3\x01\n" +
 	"\rLoginResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x19\n" +
-	"\bis_admin\x18\x04 \x01(\bR\aisAdmin\"+\n" +
+	"\bis_admin\x18\x04 \x01(\bR\aisAdmin\x12%\n" +
+	"\x0eemail_verified\x18\x05 \x01(\bR\remailVerified\"+\n" +
 	"\x13RefreshTokenRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\",\n" +
 	"\x14RefreshTokenResponse\x12\x14\n" +
@@ -585,18 +890,36 @@ const file_tribbae_v1_auth_proto_rawDesc = "" +
 	"\x1cRequestPasswordResetResponse\"H\n" +
 	"\x14ResetPasswordRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\x84\x01\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xab\x01\n" +
 	"\x15ResetPasswordResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x19\n" +
-	"\bis_admin\x18\x04 \x01(\bR\aisAdmin2\xc6\x04\n" +
+	"\bis_admin\x18\x04 \x01(\bR\aisAdmin\x12%\n" +
+	"\x0eemail_verified\x18\x05 \x01(\bR\remailVerified\"\x13\n" +
+	"\x11GetAccountRequest\"\xa8\x01\n" +
+	"\x12GetAccountResponse\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12!\n" +
+	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x19\n" +
+	"\bis_admin\x18\x04 \x01(\bR\aisAdmin\x12%\n" +
+	"\x0eemail_verified\x18\x05 \x01(\bR\remailVerified\"*\n" +
+	"\x12VerifyEmailRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"\x15\n" +
+	"\x13VerifyEmailResponse\" \n" +
+	"\x1eResendEmailVerificationRequest\"H\n" +
+	"\x1fResendEmailVerificationResponse\x12%\n" +
+	"\x0eemail_verified\x18\x01 \x01(\bR\remailVerified2\xb1\a\n" +
 	"\vAuthService\x12c\n" +
 	"\bRegister\x12\x1b.tribbae.v1.RegisterRequest\x1a\x1c.tribbae.v1.RegisterResponse\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\"\x11/v1/auth/register\x12W\n" +
 	"\x05Login\x12\x18.tribbae.v1.LoginRequest\x1a\x19.tribbae.v1.LoginResponse\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/v1/auth/login\x12n\n" +
 	"\fRefreshToken\x12\x1f.tribbae.v1.RefreshTokenRequest\x1a .tribbae.v1.RefreshTokenResponse\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/v1/auth/refresh\x12\x8e\x01\n" +
 	"\x14RequestPasswordReset\x12'.tribbae.v1.RequestPasswordResetRequest\x1a(.tribbae.v1.RequestPasswordResetResponse\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/auth/password/forgot\x12x\n" +
-	"\rResetPassword\x12 .tribbae.v1.ResetPasswordRequest\x1a!.tribbae.v1.ResetPasswordResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/v1/auth/password/resetB5Z3github.com/tribbae/backend/gen/tribbae/v1;tribbaev1b\x06proto3"
+	"\rResetPassword\x12 .tribbae.v1.ResetPasswordRequest\x1a!.tribbae.v1.ResetPasswordResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/v1/auth/password/reset\x12`\n" +
+	"\n" +
+	"GetAccount\x12\x1d.tribbae.v1.GetAccountRequest\x1a\x1e.tribbae.v1.GetAccountResponse\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/v1/auth/me\x12p\n" +
+	"\vVerifyEmail\x12\x1e.tribbae.v1.VerifyEmailRequest\x1a\x1f.tribbae.v1.VerifyEmailResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/auth/email/verify\x12\x94\x01\n" +
+	"\x17ResendEmailVerification\x12*.tribbae.v1.ResendEmailVerificationRequest\x1a+.tribbae.v1.ResendEmailVerificationResponse\" \x82\xd3\xe4\x93\x02\x1a:\x01*\"\x15/v1/auth/email/resendB5Z3github.com/tribbae/backend/gen/tribbae/v1;tribbaev1b\x06proto3"
 
 var (
 	file_tribbae_v1_auth_proto_rawDescOnce sync.Once
@@ -610,35 +933,47 @@ func file_tribbae_v1_auth_proto_rawDescGZIP() []byte {
 	return file_tribbae_v1_auth_proto_rawDescData
 }
 
-var file_tribbae_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_tribbae_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_tribbae_v1_auth_proto_goTypes = []any{
-	(*RegisterRequest)(nil),              // 0: tribbae.v1.RegisterRequest
-	(*RegisterResponse)(nil),             // 1: tribbae.v1.RegisterResponse
-	(*LoginRequest)(nil),                 // 2: tribbae.v1.LoginRequest
-	(*LoginResponse)(nil),                // 3: tribbae.v1.LoginResponse
-	(*RefreshTokenRequest)(nil),          // 4: tribbae.v1.RefreshTokenRequest
-	(*RefreshTokenResponse)(nil),         // 5: tribbae.v1.RefreshTokenResponse
-	(*RequestPasswordResetRequest)(nil),  // 6: tribbae.v1.RequestPasswordResetRequest
-	(*RequestPasswordResetResponse)(nil), // 7: tribbae.v1.RequestPasswordResetResponse
-	(*ResetPasswordRequest)(nil),         // 8: tribbae.v1.ResetPasswordRequest
-	(*ResetPasswordResponse)(nil),        // 9: tribbae.v1.ResetPasswordResponse
+	(*RegisterRequest)(nil),                 // 0: tribbae.v1.RegisterRequest
+	(*RegisterResponse)(nil),                // 1: tribbae.v1.RegisterResponse
+	(*LoginRequest)(nil),                    // 2: tribbae.v1.LoginRequest
+	(*LoginResponse)(nil),                   // 3: tribbae.v1.LoginResponse
+	(*RefreshTokenRequest)(nil),             // 4: tribbae.v1.RefreshTokenRequest
+	(*RefreshTokenResponse)(nil),            // 5: tribbae.v1.RefreshTokenResponse
+	(*RequestPasswordResetRequest)(nil),     // 6: tribbae.v1.RequestPasswordResetRequest
+	(*RequestPasswordResetResponse)(nil),    // 7: tribbae.v1.RequestPasswordResetResponse
+	(*ResetPasswordRequest)(nil),            // 8: tribbae.v1.ResetPasswordRequest
+	(*ResetPasswordResponse)(nil),           // 9: tribbae.v1.ResetPasswordResponse
+	(*GetAccountRequest)(nil),               // 10: tribbae.v1.GetAccountRequest
+	(*GetAccountResponse)(nil),              // 11: tribbae.v1.GetAccountResponse
+	(*VerifyEmailRequest)(nil),              // 12: tribbae.v1.VerifyEmailRequest
+	(*VerifyEmailResponse)(nil),             // 13: tribbae.v1.VerifyEmailResponse
+	(*ResendEmailVerificationRequest)(nil),  // 14: tribbae.v1.ResendEmailVerificationRequest
+	(*ResendEmailVerificationResponse)(nil), // 15: tribbae.v1.ResendEmailVerificationResponse
 }
 var file_tribbae_v1_auth_proto_depIdxs = []int32{
-	0, // 0: tribbae.v1.AuthService.Register:input_type -> tribbae.v1.RegisterRequest
-	2, // 1: tribbae.v1.AuthService.Login:input_type -> tribbae.v1.LoginRequest
-	4, // 2: tribbae.v1.AuthService.RefreshToken:input_type -> tribbae.v1.RefreshTokenRequest
-	6, // 3: tribbae.v1.AuthService.RequestPasswordReset:input_type -> tribbae.v1.RequestPasswordResetRequest
-	8, // 4: tribbae.v1.AuthService.ResetPassword:input_type -> tribbae.v1.ResetPasswordRequest
-	1, // 5: tribbae.v1.AuthService.Register:output_type -> tribbae.v1.RegisterResponse
-	3, // 6: tribbae.v1.AuthService.Login:output_type -> tribbae.v1.LoginResponse
-	5, // 7: tribbae.v1.AuthService.RefreshToken:output_type -> tribbae.v1.RefreshTokenResponse
-	7, // 8: tribbae.v1.AuthService.RequestPasswordReset:output_type -> tribbae.v1.RequestPasswordResetResponse
-	9, // 9: tribbae.v1.AuthService.ResetPassword:output_type -> tribbae.v1.ResetPasswordResponse
-	5, // [5:10] is the sub-list for method output_type
-	0, // [0:5] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0,  // 0: tribbae.v1.AuthService.Register:input_type -> tribbae.v1.RegisterRequest
+	2,  // 1: tribbae.v1.AuthService.Login:input_type -> tribbae.v1.LoginRequest
+	4,  // 2: tribbae.v1.AuthService.RefreshToken:input_type -> tribbae.v1.RefreshTokenRequest
+	6,  // 3: tribbae.v1.AuthService.RequestPasswordReset:input_type -> tribbae.v1.RequestPasswordResetRequest
+	8,  // 4: tribbae.v1.AuthService.ResetPassword:input_type -> tribbae.v1.ResetPasswordRequest
+	10, // 5: tribbae.v1.AuthService.GetAccount:input_type -> tribbae.v1.GetAccountRequest
+	12, // 6: tribbae.v1.AuthService.VerifyEmail:input_type -> tribbae.v1.VerifyEmailRequest
+	14, // 7: tribbae.v1.AuthService.ResendEmailVerification:input_type -> tribbae.v1.ResendEmailVerificationRequest
+	1,  // 8: tribbae.v1.AuthService.Register:output_type -> tribbae.v1.RegisterResponse
+	3,  // 9: tribbae.v1.AuthService.Login:output_type -> tribbae.v1.LoginResponse
+	5,  // 10: tribbae.v1.AuthService.RefreshToken:output_type -> tribbae.v1.RefreshTokenResponse
+	7,  // 11: tribbae.v1.AuthService.RequestPasswordReset:output_type -> tribbae.v1.RequestPasswordResetResponse
+	9,  // 12: tribbae.v1.AuthService.ResetPassword:output_type -> tribbae.v1.ResetPasswordResponse
+	11, // 13: tribbae.v1.AuthService.GetAccount:output_type -> tribbae.v1.GetAccountResponse
+	13, // 14: tribbae.v1.AuthService.VerifyEmail:output_type -> tribbae.v1.VerifyEmailResponse
+	15, // 15: tribbae.v1.AuthService.ResendEmailVerification:output_type -> tribbae.v1.ResendEmailVerificationResponse
+	8,  // [8:16] is the sub-list for method output_type
+	0,  // [0:8] is the sub-list for method input_type
+	0,  // [0:0] is the sub-list for extension type_name
+	0,  // [0:0] is the sub-list for extension extendee
+	0,  // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_tribbae_v1_auth_proto_init() }
@@ -652,7 +987,7 @@ func file_tribbae_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tribbae_v1_auth_proto_rawDesc), len(file_tribbae_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

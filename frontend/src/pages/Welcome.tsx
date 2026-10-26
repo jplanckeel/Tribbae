@@ -105,10 +105,10 @@ export function Auth() {
     try {
       if (register) {
         const r = await api.auth.register(email.trim(), password, name.trim());
-        setSession({ token: r.token, userId: r.userId, displayName: name.trim(), isAdmin: !!r.isAdmin });
+        setSession({ token: r.token, userId: r.userId, displayName: name.trim(), isAdmin: !!r.isAdmin, emailVerified: !!r.emailVerified });
       } else {
         const r = await api.auth.login(email.trim(), password);
-        setSession({ token: r.token, userId: r.userId, displayName: r.displayName ?? "", isAdmin: !!r.isAdmin });
+        setSession({ token: r.token, userId: r.userId, displayName: r.displayName ?? "", isAdmin: !!r.isAdmin, emailVerified: !!r.emailVerified });
       }
       navigate(next, { replace: true });
     } catch (err) {

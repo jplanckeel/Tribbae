@@ -71,6 +71,23 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── email_verifications : liens de confirmation d'adresse ─
+		{
+			Collection: "email_verifications",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "token_hash", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_email_verifications_token_hash"),
+			},
+		},
+		{
+			// Efface les demandes expirées
+			Collection: "email_verifications",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "expires_at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_email_verifications_ttl"),
+			},
+		},
+
 		// ── tribes : un compte appartient à au plus une tribu ──────
 		{
 			Collection: "tribes",

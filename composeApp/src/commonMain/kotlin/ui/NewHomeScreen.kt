@@ -93,6 +93,8 @@ fun NewHomeScreen(
                     )
                 }
 
+                VerifyEmailBanner(viewModel, Modifier.padding(horizontal = 20.dp))
+
                 Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(formatToday(), fontSize = 15.sp, color = TextSec)
                     Text(

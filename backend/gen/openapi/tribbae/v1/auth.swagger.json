@@ -16,6 +16,72 @@
     "application/json"
   ],
   "paths": {
+    "/v1/auth/email/resend": {
+      "post": {
+        "operationId": "AuthService_ResendEmailVerification",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ResendEmailVerificationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "Renvoie le lien de confirmation au compte connecté.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ResendEmailVerificationRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
+    "/v1/auth/email/verify": {
+      "post": {
+        "operationId": "AuthService_VerifyEmail",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1VerifyEmailResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "Confirmation de l'adresse depuis le lien reçu par email. Ne demande pas de\nsession : le lien peut être ouvert sur un autre appareil.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1VerifyEmailRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
     "/v1/auth/login": {
       "post": {
         "operationId": "AuthService_Login",
@@ -43,6 +109,28 @@
             }
           }
         ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "operationId": "AuthService_GetAccount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetAccountResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
         "tags": [
           "AuthService"
         ]
@@ -208,6 +296,26 @@
         }
       }
     },
+    "v1GetAccountResponse": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "isAdmin": {
+          "type": "boolean"
+        },
+        "emailVerified": {
+          "type": "boolean"
+        }
+      }
+    },
     "v1LoginRequest": {
       "type": "object",
       "properties": {
@@ -232,6 +340,9 @@
           "type": "string"
         },
         "isAdmin": {
+          "type": "boolean"
+        },
+        "emailVerified": {
           "type": "boolean"
         }
       }
@@ -277,6 +388,10 @@
         },
         "isAdmin": {
           "type": "boolean"
+        },
+        "emailVerified": {
+          "type": "boolean",
+          "title": "Adresse confirmée par le lien reçu par email (faux à l'inscription)"
         }
       }
     },
@@ -291,6 +406,19 @@
     },
     "v1RequestPasswordResetResponse": {
       "type": "object"
+    },
+    "v1ResendEmailVerificationRequest": {
+      "type": "object",
+      "description": "Renvoie le lien de confirmation au compte connecté."
+    },
+    "v1ResendEmailVerificationResponse": {
+      "type": "object",
+      "properties": {
+        "emailVerified": {
+          "type": "boolean",
+          "title": "Vrai si l'adresse était déjà confirmée (aucun email envoyé)"
+        }
+      }
     },
     "v1ResetPasswordRequest": {
       "type": "object",
@@ -318,8 +446,24 @@
         },
         "isAdmin": {
           "type": "boolean"
+        },
+        "emailVerified": {
+          "type": "boolean",
+          "title": "Toujours vrai : le lien prouve que l'on reçoit les emails de l'adresse"
         }
       }
+    },
+    "v1VerifyEmailRequest": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      },
+      "description": "Confirmation de l'adresse depuis le lien reçu par email. Ne demande pas de\nsession : le lien peut être ouvert sur un autre appareil."
+    },
+    "v1VerifyEmailResponse": {
+      "type": "object"
     }
   }
 }

@@ -18,6 +18,8 @@ message RegisterResponse {
   string user_id = 1;
   string token = 2;
   bool is_admin = 3;
+  // Adresse confirmée par le lien reçu par email (faux à l'inscription)
+  bool email_verified = 4;
 }
 
 message LoginRequest {
@@ -30,6 +32,7 @@ message LoginResponse {
   string token = 2;
   string display_name = 3;
   bool is_admin = 4;
+  bool email_verified = 5;
 }
 
 message RefreshTokenRequest {
@@ -60,6 +63,35 @@ message ResetPasswordResponse {
   string token = 2;
   string display_name = 3;
   bool is_admin = 4;
+  // Toujours vrai : le lien prouve que l'on reçoit les emails de l'adresse
+  bool email_verified = 5;
+}
+
+// Compte connecté, relu au lancement des applications (adresse confirmée…).
+message GetAccountRequest {}
+
+message GetAccountResponse {
+  string user_id = 1;
+  string email = 2;
+  string display_name = 3;
+  bool is_admin = 4;
+  bool email_verified = 5;
+}
+
+// Confirmation de l'adresse depuis le lien reçu par email. Ne demande pas de
+// session : le lien peut être ouvert sur un autre appareil.
+message VerifyEmailRequest {
+  string token = 1;
+}
+
+message VerifyEmailResponse {}
+
+// Renvoie le lien de confirmation au compte connecté.
+message ResendEmailVerificationRequest {}
+
+message ResendEmailVerificationResponse {
+  // Vrai si l'adresse était déjà confirmée (aucun email envoyé)
+  bool email_verified = 1;
 }
 
 // --- Service ---
@@ -92,6 +124,23 @@ service AuthService {
   rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse) {
     option (google.api.http) = {
       post: "/v1/auth/password/reset"
+      body: "*"
+    };
+  }
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse) {
+    option (google.api.http) = {
+      get: "/v1/auth/me"
+    };
+  }
+  rpc VerifyEmail(VerifyEmailRequest) returns (VerifyEmailResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/email/verify"
+      body: "*"
+    };
+  }
+  rpc ResendEmailVerification(ResendEmailVerificationRequest) returns (ResendEmailVerificationResponse) {
+    option (google.api.http) = {
+      post: "/v1/auth/email/resend"
       body: "*"
     };
   }

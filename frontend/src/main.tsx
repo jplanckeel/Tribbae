@@ -7,14 +7,19 @@ import "./lib/transitions";
 import "./lib/theme";
 import App from "./App";
 import { FeedbackProvider } from "./components/feedback";
-import { renewSessionIfStale } from "./lib/api";
+import { refreshAccount, renewSessionIfStale } from "./lib/api";
 import { DataProvider } from "./lib/data";
 import "./index.css";
 
-// Session glissante : jeton renouvelé au lancement et au retour sur l'onglet
+// Session glissante : jeton renouvelé au lancement et au retour sur l'onglet,
+// et adresse email relue tant qu'elle n'est pas confirmée
 void renewSessionIfStale();
+void refreshAccount();
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") void renewSessionIfStale();
+  if (document.visibilityState === "visible") {
+    void renewSessionIfStale();
+    void refreshAccount();
+  }
 });
 
 createRoot(document.getElementById("root")!).render(

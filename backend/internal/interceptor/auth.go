@@ -28,8 +28,10 @@ var publicMethods = map[string]bool{
 	// Lien d'invitation dans une tribu, ouvert avant toute connexion
 	"/tribbae.v1.TribeService/GetTribeInvitation": true,
 	// Mot de passe oublié : par définition sans session
-	"/tribbae.v1.AuthService/RequestPasswordReset":   true,
-	"/tribbae.v1.AuthService/ResetPassword":          true,
+	"/tribbae.v1.AuthService/RequestPasswordReset": true,
+	"/tribbae.v1.AuthService/ResetPassword":        true,
+	// Lien de confirmation de l'adresse, parfois ouvert sur un autre appareil
+	"/tribbae.v1.AuthService/VerifyEmail":            true,
 	"/tribbae.v1.FolderService/GetSharedFolder":      true,
 	"/tribbae.v1.FolderService/ListCommunityFolders": true,
 	"/tribbae.v1.FolderService/ListTopFolders":       true,

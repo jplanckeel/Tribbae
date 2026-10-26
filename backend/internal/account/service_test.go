@@ -95,6 +95,10 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	insert(t, db, "follows", bson.M{"follower_id": bob, "following_id": alice})
 	insert(t, db, "children", bson.M{"ownerId": aliceID, "name": "Léa"})
 	insert(t, db, "children", bson.M{"ownerId": bobID, "name": "Tom"})
+	// Une par compte, sous l'identifiant du compte (insert en tirerait un autre)
+	if _, err := db.Collection("email_verifications").InsertOne(ctx, bson.M{"_id": aliceID, "email": "alice@example.com", "token_hash": "secret", "created_at": time.Now(), "expires_at": time.Now().Add(time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
 	var jpg bytes.Buffer
 	if err := jpeg.Encode(&jpg, image.NewRGBA(image.Rect(0, 0, 8, 8)), nil); err != nil {
 		t.Fatal(err)
@@ -116,6 +120,10 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	}
 	if len(export["ideas"].([]bson.M)) != 1 || len(export["children"].([]bson.M)) != 1 || len(export["folderLikes"].([]bson.M)) != 1 || len(export["photos"].([]bson.M)) != 2 {
 		t.Errorf("export incomplet : %v", export)
+	}
+	// Confirmation d'adresse en attente : ses dates, jamais le jeton
+	if v, ok := export["emailVerification"].(bson.M); !ok || v["createdAt"] == nil || v["tokenHash"] != nil || v["token_hash"] != nil {
+		t.Errorf("export de la confirmation d'adresse : %v", export["emailVerification"])
 	}
 
 	// Sous-documents en objets JSON, pas en listes {Key, Value}
@@ -152,6 +160,7 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		{"« j'aime » de dossiers", "folders", bson.M{"liked_by": alice}, 0},
 		{"tribu", "tribes", bson.M{"members.user_id": alice}, 0},
 		{"invitations envoyées ou reçues", "tribe_invitations", bson.M{}, 0},
+		{"confirmation d'adresse en attente", "email_verifications", bson.M{}, 0},
 		{"photos d'Alice", "photos.files", bson.M{"metadata.owner_id": alice}, 0},
 		// Ce qui est à Bob reste à Bob
 		{"compte de Bob", "users", bson.M{"_id": bobID}, 1},

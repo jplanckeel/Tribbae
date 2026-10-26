@@ -59,6 +59,8 @@ export default function Invitation() {
     setError("");
     try {
       setTribe(await api.tribe.acceptInvitation(token));
+      // Le lien est arrivé dans la boîte de l'adresse du compte : elle est confirmée
+      api.markEmailVerified();
       storeToken("");
       toast("Bienvenue dans la tribu !");
       navigate("/tribu", { replace: true });
