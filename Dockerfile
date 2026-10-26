@@ -5,7 +5,7 @@
 # en croisé pour la cible ($TARGETARCH), sans émulation QEMU.
 
 # Stage 1 : Build frontend (indépendant de l'architecture cible)
-FROM --platform=$BUILDPLATFORM node:25-alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:26-alpine AS frontend
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
