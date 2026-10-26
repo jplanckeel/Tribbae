@@ -53,6 +53,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="tribbae.fr" android:path="/invitation" />
             </intent-filter>
+            <!-- Invitations dans le cercle (email) : https://tribbae.fr/invitation-cercle#<jeton> -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="tribbae.fr" android:path="/invitation-cercle" />
+            </intent-filter>
             <!-- Confirmation de l'adresse email : https://tribbae.fr/verifier-email#<jeton> -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />

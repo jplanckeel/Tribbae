@@ -167,6 +167,67 @@ message RemoveCollaboratorResponse {
   Folder folder = 1;
 }
 
+// --- Invitations dans le cercle ---
+//
+// Un proche (compte ou non) est invité par email à des dossiers choisis : il
+// n'y entre qu'en acceptant le lien reçu, avec le compte de l'adresse invitée.
+// Taper une adresse ne dit pas si elle a un compte. Une seule invitation par
+// propriétaire et par adresse : en refaire une ajoute les dossiers choisis.
+
+message CircleInvitation {
+  string id = 1;
+  string email = 2;
+  CollaboratorRole role = 3;
+  repeated string folder_ids = 4;
+  repeated string folder_names = 5;
+  int64 created_at = 6;  // millisecondes (dernier envoi)
+  int64 expires_at = 7;  // millisecondes
+}
+
+message InviteToCircleRequest {
+  string email = 1;
+  repeated string folder_ids = 2;  // dossiers dont on est propriétaire
+  CollaboratorRole role = 3;
+}
+
+message InviteToCircleResponse {
+  CircleInvitation invitation = 1;
+}
+
+// Invitations en attente envoyées par le compte connecté.
+message ListCircleInvitationsRequest {}
+
+message ListCircleInvitationsResponse {
+  repeated CircleInvitation invitations = 1;
+}
+
+message RevokeCircleInvitationRequest {
+  string invitation_id = 1;
+}
+
+message RevokeCircleInvitationResponse {}
+
+// Ce qu'affiche le lien d'invitation, avant de l'accepter (sans compte).
+message GetCircleInvitationRequest {
+  string token = 1;
+}
+
+message GetCircleInvitationResponse {
+  string email = 1;  // adresse invitée : le compte qui accepte doit l'utiliser
+  string invited_by_name = 2;
+  repeated string folder_names = 3;
+  CollaboratorRole role = 4;
+  int64 expires_at = 5;  // millisecondes
+}
+
+message AcceptCircleInvitationRequest {
+  string token = 1;
+}
+
+message AcceptCircleInvitationResponse {
+  repeated Folder folders = 1;  // dossiers désormais ouverts au compte
+}
+
 // --- Communautaire ---
 
 message ListCommunityFoldersRequest {
@@ -252,6 +313,34 @@ service FolderService {
   rpc RemoveCollaborator(RemoveCollaboratorRequest) returns (RemoveCollaboratorResponse) {
     option (google.api.http) = {
       delete: "/v1/folders/{folder_id}/collaborators/{user_id}"
+    };
+  }
+  rpc InviteToCircle(InviteToCircleRequest) returns (InviteToCircleResponse) {
+    option (google.api.http) = {
+      post: "/v1/circle/invitations"
+      body: "*"
+    };
+  }
+  rpc ListCircleInvitations(ListCircleInvitationsRequest) returns (ListCircleInvitationsResponse) {
+    option (google.api.http) = {
+      get: "/v1/circle/invitations"
+    };
+  }
+  rpc RevokeCircleInvitation(RevokeCircleInvitationRequest) returns (RevokeCircleInvitationResponse) {
+    option (google.api.http) = {
+      delete: "/v1/circle/invitations/{invitation_id}"
+    };
+  }
+  rpc GetCircleInvitation(GetCircleInvitationRequest) returns (GetCircleInvitationResponse) {
+    option (google.api.http) = {
+      post: "/v1/circle/invitations/lookup"
+      body: "*"
+    };
+  }
+  rpc AcceptCircleInvitation(AcceptCircleInvitationRequest) returns (AcceptCircleInvitationResponse) {
+    option (google.api.http) = {
+      post: "/v1/circle/invitations/accept"
+      body: "*"
     };
   }
   rpc ListCommunityFolders(ListCommunityFoldersRequest) returns (ListCommunityFoldersResponse) {

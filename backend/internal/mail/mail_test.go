@@ -126,6 +126,8 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 	m.TribeInvitation(TribeInvitation{Email: "bob@example.com", InviterName: "Alice", TribeName: "Les Martin", Members: []string{"Alice", "Bruno", "Chloé", "Denis"},
 		URL: "https://tribbae.example/invitation#tok", Validity: 7 * 24 * time.Hour})
 	m.AccountDeleted("alice@example.com", "")
+	m.CircleInvitation(CircleInvitation{Email: "mamie@example.com", InviterName: "Alice", Folders: []string{"Noël", "Sorties <été>"}, Editor: true,
+		URL: "https://tribbae.example/invitation-cercle#tok", Validity: 7 * 24 * time.Hour})
 	wait(m)
 
 	byTag := map[string]Message{}
@@ -153,6 +155,9 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 		{TagTribeInvite, "Alice vous invite à rejoindre la tribu « Les Martin » sur Tribbae",
 			[]string{"vous invite à rejoindre sa tribu", "Rejoignez la tribu « Les Martin »", "4 membres", "&#43;2<", ">A<", "Rejoindre la tribu", "Invitation valable 7 jours"},
 			[]string{"Alice vous invite à rejoindre sa tribu (4 membres)", "Rejoindre la tribu : https://tribbae.example/invitation#tok"}},
+		{TagCircleInvite, "Alice vous ouvre 2 dossiers sur Tribbae",
+			[]string{"vous fait une place dans son cercle", "Des dossiers vous sont ouverts", ">Noël<", "Sorties &lt;été&gt;", "en ajouter", "Voir les dossiers", `href="https://tribbae.example/invitation-cercle#tok"`, "Invitation valable 7 jours"},
+			[]string{"- Noël", "- Sorties <été>", "Voir les dossiers : https://tribbae.example/invitation-cercle#tok", "ces dossiers"}},
 		{TagAccountDeleted, "Votre compte Tribbae a été supprimé",
 			[]string{"Bonjour, comme vous l'avez demandé le 22 octobre 2026", "Ce qui a été effacé", "Votre profil et votre adresse email", `href="mailto:aide@tribbae.example?subject=Suppression%20de%20mon%20compte%20Tribbae"`},
 			[]string{"le 22 octobre 2026", "- Vos idées et vos dossiers", "aide@tribbae.example"}},
@@ -226,5 +231,16 @@ func TestDevice(t *testing.T) {
 		if got := Device(ua); got != want {
 			t.Errorf("Device(%q) = %q, want %q", ua, got, want)
 		}
+	}
+}
+
+// Un seul dossier : il est nommé dans l'objet et le titre.
+func TestCircleInvitationSingleFolder(t *testing.T) {
+	c, err := circleInvitationEmail("https://tribbae.example", CircleInvitation{InviterName: "Alice", Folders: []string{"Noël"}, URL: "https://tribbae.example/invitation-cercle#t", Validity: 7 * 24 * time.Hour})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Subject != "Alice vous ouvre son dossier « Noël » sur Tribbae" || !strings.Contains(c.Text, "Le dossier « Noël » vous est ouvert") || !strings.Contains(c.Text, "ce dossier.") {
+		t.Errorf("subject %q\n%s", c.Subject, c.Text)
 	}
 }

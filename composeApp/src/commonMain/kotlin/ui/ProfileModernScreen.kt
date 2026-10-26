@@ -226,6 +226,7 @@ private fun TribeContent(
     var showInvite by remember { mutableStateOf(false) }
     var kidTarget by remember { mutableStateOf<KidTarget?>(null) }
     val tribe by viewModel.tribe.collectAsState()
+    val pendingCircle by viewModel.circleInvitations.collectAsState()
     var tribeError by remember { mutableStateOf<String?>(null) }
     var tribeBusy by remember { mutableStateOf(false) }
     var shareFolder by remember { mutableStateOf<data.Folder?>(null) }
@@ -505,7 +506,8 @@ private fun TribeContent(
                             }
                         }
                     }
-                    if (circle.isEmpty()) {
+                    pendingCircle.forEach { inv -> PendingCircleRow(inv, now, viewModel) }
+                    if (circle.isEmpty() && pendingCircle.isEmpty()) {
                         Row(
                             Modifier.fillMaxWidth().clip(CardShape).dashedBorder(Dash, 22.dp).padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -661,7 +663,7 @@ private fun TribeContent(
                     EmptyBlock(Icons.Filled.CreateNewFolder, "Aucun dossier à ouvrir", "Le cercle voit seulement les dossiers que vous lui ouvrez : créez-en un d'abord dans « Mes idées ».")
                 } else {
                     CircleInviteForm(myFolders, viewModel) {
-                        android.widget.Toast.makeText(context, "Dossiers ouverts à votre proche", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(context, "Invitation envoyée", android.widget.Toast.LENGTH_SHORT).show()
                         showInvite = false; tab = 1
                     }
                     Text("Ou partager un dossier par lien", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec, modifier = Modifier.padding(top = 8.dp))
@@ -938,44 +940,98 @@ private fun YearTile(value: Int, label: String, color: Color, modifier: Modifier
     }
 }
 
-/** Invitation au foyer en attente : « Relancer » renvoie l'email (au plus toutes les 10 min côté serveur). */
+/** « Invitation envoyée aujourd'hui / hier / il y a N jours ». */
+private fun sentLabel(createdAt: Long, now: Long): String {
+    val days = if (createdAt > 0) ((now - createdAt) / 86_400_000L).toInt() else -1
+    return when {
+        days < 0 -> "Invitation envoyée"
+        days == 0 -> "Invitation envoyée aujourd'hui"
+        days == 1 -> "Invitation envoyée hier"
+        else -> "Invitation envoyée il y a $days jours"
+    }
+}
+
+/** Invitation au foyer en attente. */
 @Composable
 private fun PendingInvitationRow(inv: data.ApiTribeInvitation, now: Long, viewModel: LinkViewModel) {
-    var state by remember(inv.id) { mutableIntStateOf(0) } // 0 = à relancer, 1 = envoi, 2 = relancé
+    PendingRow(
+        email = inv.email,
+        detail = sentLabel(inv.createdAt, now),
+        onRemind = { done -> viewModel.inviteTribeMember(inv.email, done) },
+        onCancel = { done -> viewModel.revokeTribeInvitation(inv.id, done) },
+    )
+}
+
+/** Invitation au cercle en attente (dossiers choisis). */
+@Composable
+private fun PendingCircleRow(inv: data.ApiCircleInvitation, now: Long, viewModel: LinkViewModel) {
+    PendingRow(
+        email = inv.email,
+        detail = inv.folderNames.joinToString(", ") + " · " + (if (inv.editor) "éditeur" else "lecteur") + " · " + sentLabel(inv.createdAt, now).lowercase(),
+        onRemind = { done -> viewModel.inviteToCircle(inv.email, inv.folderIds, inv.editor, done) },
+        onCancel = { done -> viewModel.revokeCircleInvitation(inv.id, done) },
+    )
+}
+
+/**
+ * Carte d'une invitation en attente (foyer ou cercle) : « Relancer » renvoie
+ * l'email (au plus toutes les 10 min côté serveur), « Annuler » rend le lien
+ * inutilisable, après confirmation. Mêmes cartes sur le web (PendingCard).
+ */
+@Composable
+private fun PendingRow(email: String, detail: String, onRemind: ((String?) -> Unit) -> Unit, onCancel: ((String?) -> Unit) -> Unit) {
+    var state by remember(email) { mutableIntStateOf(0) } // 0 = à relancer, 1 = envoi, 2 = relancé
+    var confirmCancel by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     Row(
         Modifier.fillMaxWidth().clip(CardShape).dashedBorder(Dash, 22.dp).padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Box(Modifier.size(44.dp).clip(CircleShape).background(Sable2), contentAlignment = Alignment.Center) {
             Icon(Icons.Outlined.Email, null, tint = TextMuted, modifier = Modifier.size(20.dp))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(inv.email, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val days = if (inv.createdAt > 0) ((now - inv.createdAt) / 86_400_000L).toInt() else -1
-            Text(
-                when {
-                    days < 0 -> "Invitation envoyée"
-                    days == 0 -> "Invitation envoyée aujourd'hui"
-                    days == 1 -> "Invitation envoyée hier"
-                    else -> "Invitation envoyée il y a $days jours"
-                },
-                fontSize = 13.sp, color = TextSec, maxLines = 1
-            )
+            Text(email, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(detail, fontSize = 13.sp, color = TextSec, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
         Text(
-            when (state) { 2 -> "Relancé ✓"; 1 -> "Envoi…"; else -> "Relancer" },
+            "Annuler", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec,
+            modifier = Modifier.height(36.dp).clip(RoundedCornerShape(12.dp))
+                .clickable(enabled = state != 1, role = Role.Button) { confirmCancel = true }
+                .wrapContentHeight().padding(horizontal = 10.dp)
+        )
+        Text(
+            when (state) { 2 -> "Relancé ✓"; 1 -> "…"; else -> "Relancer" },
             fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (state == 2) RecetteInk else Sable,
             modifier = Modifier.height(36.dp).clip(RoundedCornerShape(12.dp)).background(if (state == 2) RecetteBg else Ecorce)
                 .clickable(enabled = state == 0, role = Role.Button) {
                     state = 1
-                    viewModel.inviteTribeMember(inv.email) { err ->
+                    onRemind { err ->
                         state = if (err == null) 2 else 0
                         android.widget.Toast.makeText(context, err ?: "Invitation renvoyée", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
                 .wrapContentHeight().padding(horizontal = 12.dp)
+        )
+    }
+    if (confirmCancel) {
+        AlertDialog(
+            onDismissRequest = { confirmCancel = false },
+            containerColor = SheetColor,
+            title = { Text("Annuler l'invitation ?", style = display(20.sp, FontWeight.Bold)) },
+            text = { Text("Le lien envoyé à $email ne marchera plus. Vous pourrez l'inviter à nouveau.", color = Ecorce2) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmCancel = false
+                    state = 1
+                    onCancel { err ->
+                        state = 0
+                        android.widget.Toast.makeText(context, err ?: "Invitation annulée", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("Annuler l'invitation", color = Terracotta, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { confirmCancel = false }) { Text("Garder", color = Ecorce) } }
         )
     }
 }
@@ -1011,11 +1067,14 @@ private fun KidCard(child: data.Child, colors: Pair<Color, Color>, ideas: Int, n
     }
 }
 
-/** Ouvre des dossiers à un proche qui a déjà un compte Tribbae. */
+/**
+ * Invite un proche (compte ou non) à des dossiers choisis : il reçoit un lien
+ * par email et n'y entre qu'en l'acceptant. L'invitation reste en attente dans
+ * « Le cercle ».
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CircleInviteForm(folders: List<data.Folder>, viewModel: LinkViewModel, onDone: () -> Unit) {
-    val scope = rememberCoroutineScope()
     var picked by remember { mutableStateOf(folders.take(1).map { it.id }.toSet()) }
     var editor by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
@@ -1051,25 +1110,20 @@ private fun CircleInviteForm(folders: List<data.Folder>, viewModel: LinkViewMode
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Email)
         )
         error?.let { Text(it, color = SortieInk, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
-        CampButton(if (busy) "Envoi…" else "Ouvrir les dossiers", {
+        CampButton(if (busy) "Envoi…" else "Envoyer l'invitation", {
             if (picked.isEmpty()) { error = "Choisissez au moins un dossier à ouvrir."; return@CampButton }
             if (!email.contains("@")) { error = "Saisissez l'adresse email de votre proche."; return@CampButton }
-            // Ajouter quelqu'un attend la confirmation de l'adresse
-            if (!viewModel.emailVerified.value) { error = data.EmailVerification.VERIFY_FIRST; return@CampButton }
             busy = true
-            scope.launch {
-                val role = if (editor) "COLLABORATOR_ROLE_EDITOR" else "COLLABORATOR_ROLE_VIEWER"
-                val failed = folders.filter { it.id in picked }.filter { viewModel.addCollaborator(it.id, email.trim(), role) == null }
+            // Dans l'ordre des dossiers affichés
+            viewModel.inviteToCircle(email, folders.filter { it.id in picked }.map { it.id }, editor) { err ->
                 busy = false
-                when {
-                    failed.size == picked.size -> error = "Invitation impossible : vérifiez l'email (compte Tribbae requis)."
-                    failed.isNotEmpty() -> error = "Pas ajouté à : ${failed.joinToString { it.name }}."
-                    else -> onDone()
-                }
+                error = err
+                if (err == null) onDone()
             }
         }, Modifier.fillMaxWidth(), kind = ButtonKind.Ai, icon = Icons.Outlined.Share, enabled = !busy)
         Text(
-            "Votre proche doit avoir un compte Tribbae. " + (if (editor) "Il pourra ajouter ses idées" else "Il pourra consulter") +
+            "Le lien expire dans 7 jours. Pas encore de compte ? Il pourra en créer un depuis le lien. " +
+                (if (editor) "Il pourra ajouter ses idées" else "Il pourra consulter") +
                 " sans voir le reste de la tribu. Vous pourrez changer les accès à tout moment.",
             fontSize = 12.sp, color = TextMuted, textAlign = TextAlign.Center
         )

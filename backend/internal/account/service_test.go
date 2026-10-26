@@ -80,6 +80,8 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	insert(t, db, "tribe_invitations", bson.M{"email": "alice@example.com", "invited_by": "someone", "token_hash": "x"})
+	insert(t, db, "folder_invitations", bson.M{"email": "alice@example.com", "owner_id": "someone", "folder_ids": bson.A{"f"}, "token_hash": "x"})
+	insert(t, db, "folder_invitations", bson.M{"email": "mamie@example.com", "owner_id": alice, "folder_ids": bson.A{"f"}, "token_hash": "y"})
 
 	aliceFolder := insert(t, db, "folders", bson.M{"owner_id": alice, "name": "Vacances"}).Hex()
 	bobFolder := insert(t, db, "folders", bson.M{"owner_id": bob, "name": "Noël", "liked_by": bson.A{alice}, "like_count": 1,
@@ -121,6 +123,9 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	if len(export["ideas"].([]bson.M)) != 1 || len(export["children"].([]bson.M)) != 1 || len(export["folderLikes"].([]bson.M)) != 1 || len(export["photos"].([]bson.M)) != 2 {
 		t.Errorf("export incomplet : %v", export)
 	}
+	if circle, _ := export["circleInvitations"].([]bson.M); len(circle) != 2 || circle[0]["token_hash"] != nil {
+		t.Errorf("export des invitations du cercle : %v", export["circleInvitations"])
+	}
 	// Confirmation d'adresse en attente : ses dates, jamais le jeton
 	if v, ok := export["emailVerification"].(bson.M); !ok || v["createdAt"] == nil || v["tokenHash"] != nil || v["token_hash"] != nil {
 		t.Errorf("export de la confirmation d'adresse : %v", export["emailVerification"])
@@ -161,6 +166,7 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		{"tribu", "tribes", bson.M{"members.user_id": alice}, 0},
 		{"invitations envoyées ou reçues", "tribe_invitations", bson.M{}, 0},
 		{"confirmation d'adresse en attente", "email_verifications", bson.M{}, 0},
+		{"invitations dans le cercle envoyées ou reçues", "folder_invitations", bson.M{}, 0},
 		{"photos d'Alice", "photos.files", bson.M{"metadata.owner_id": alice}, 0},
 		// Ce qui est à Bob reste à Bob
 		{"compte de Bob", "users", bson.M{"_id": bobID}, 1},

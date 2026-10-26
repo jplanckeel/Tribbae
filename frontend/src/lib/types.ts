@@ -116,6 +116,27 @@ export interface TribeInvitationInfo {
   expiresAt?: string;
 }
 
+/** Invitation dans le cercle (dossiers choisis), en attente de réponse. */
+export interface CircleInvitation {
+  id: string;
+  email: string;
+  role?: CollaboratorRole;
+  folderIds?: string[];
+  folderNames?: string[];
+  /** Millisecondes (dernier envoi). */
+  createdAt?: string;
+  expiresAt?: string;
+}
+
+/** Ce qu'affiche un lien d'invitation dans le cercle avant de l'accepter. */
+export interface CircleInvitationInfo {
+  email: string;
+  invitedByName?: string;
+  folderNames?: string[];
+  role?: CollaboratorRole;
+  expiresAt?: string;
+}
+
 export interface Collaborator {
   userId: string;
   email?: string;

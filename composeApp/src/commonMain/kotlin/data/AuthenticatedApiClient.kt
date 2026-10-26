@@ -87,6 +87,21 @@ data class ApiTribeInvitation(
 @Serializable
 private data class ApiTribeResponse(val tribe: ApiTribe = ApiTribe())
 
+/** Invitation dans le cercle (dossiers choisis), en attente de réponse. */
+@Serializable
+data class ApiCircleInvitation(
+    val id: String = "",
+    val email: String = "",
+    val role: String = "",
+    val folderIds: List<String> = emptyList(),
+    val folderNames: List<String> = emptyList(),
+    /** Millisecondes (dernier envoi). */
+    val createdAt: Long = 0,
+    val expiresAt: Long = 0
+) {
+    val editor: Boolean get() = role == "COLLABORATOR_ROLE_EDITOR"
+}
+
 @Serializable
 data class ApiLinkListResponse(
     val links: List<ApiAuthLink> = emptyList()
@@ -168,12 +183,6 @@ data class UpdateFolderRequest(
 data class ShareFolderResponse(
     val shareToken: String = "",
     val shareUrl: String = ""
-)
-
-@Serializable
-data class AddCollaboratorRequest(
-    val email: String,
-    val role: String = "COLLABORATOR_ROLE_EDITOR"
 )
 
 @Serializable
@@ -325,16 +334,6 @@ class AuthenticatedApiClient(
     }
 
     // Collaborators
-    suspend fun addCollaborator(folderId: String, email: String, role: String): AddCollaboratorResponse {
-        val body = json.encodeToString(
-            AddCollaboratorRequest.serializer(),
-            AddCollaboratorRequest(email = email, role = role)
-        )
-        return request("/v1/folders/$folderId/collaborators", "POST", body) { response ->
-            json.decodeFromString(response)
-        }
-    }
-
     suspend fun removeCollaborator(folderId: String, userId: String): AddCollaboratorResponse {
         return request("/v1/folders/$folderId/collaborators/$userId", "DELETE", null) { response ->
             json.decodeFromString(response)
@@ -442,6 +441,33 @@ class AuthenticatedApiClient(
 
     suspend fun revokeTribeInvitation(id: String): ApiTribe =
         request("/v1/tribe/invitations/$id", "DELETE") { json.decodeFromString<ApiTribeResponse>(it).tribe }
+
+    // Le cercle : proches invités par email à des dossiers choisis
+
+    /** Même réponse que l'adresse ait un compte ou non ; une invitation en attente reçoit les dossiers en plus. */
+    suspend fun inviteToCircle(email: String, folderIds: List<String>, role: String): ApiCircleInvitation {
+        @Serializable data class InviteRequest(val email: String, val folderIds: List<String>, val role: String)
+        @Serializable data class InviteResponse(val invitation: ApiCircleInvitation = ApiCircleInvitation())
+        val body = json.encodeToString(InviteRequest.serializer(), InviteRequest(email, folderIds, role))
+        return request("/v1/circle/invitations", "POST", body) { json.decodeFromString<InviteResponse>(it).invitation }
+    }
+
+    suspend fun listCircleInvitations(): List<ApiCircleInvitation> {
+        @Serializable data class ListResponse(val invitations: List<ApiCircleInvitation> = emptyList())
+        return request("/v1/circle/invitations", "GET") { json.decodeFromString<ListResponse>(it).invitations }
+    }
+
+    suspend fun revokeCircleInvitation(id: String) {
+        request("/v1/circle/invitations/$id", "DELETE") { }
+    }
+
+    /** Accepte le lien reçu par email : le compte doit utiliser l'adresse invitée. */
+    suspend fun acceptCircleInvitation(token: String): List<ApiAuthFolder> {
+        @Serializable data class AcceptRequest(val token: String)
+        @Serializable data class AcceptResponse(val folders: List<ApiAuthFolder> = emptyList())
+        val body = json.encodeToString(AcceptRequest.serializer(), AcceptRequest(token))
+        return request("/v1/circle/invitations/accept", "POST", body) { json.decodeFromString<AcceptResponse>(it).folders }
+    }
 
     // Compte
 

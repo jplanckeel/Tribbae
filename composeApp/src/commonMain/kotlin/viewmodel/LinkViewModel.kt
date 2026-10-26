@@ -67,6 +67,10 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     /** Tribu de l'utilisateur (nom affiché, membres) ; null hors connexion. */
     val tribe: StateFlow<data.ApiTribe?> = _tribe.asStateFlow()
 
+    private val _circleInvitations = MutableStateFlow<List<data.ApiCircleInvitation>>(emptyList())
+    /** Invitations dans le cercle envoyées par l'utilisateur, en attente (« Ma tribu » › Le cercle). */
+    val circleInvitations: StateFlow<List<data.ApiCircleInvitation>> = _circleInvitations.asStateFlow()
+
     private val _communityFolders = MutableStateFlow<List<Folder>>(emptyList())
     val communityFolders: StateFlow<List<Folder>> = _communityFolders.asStateFlow()
 
@@ -209,6 +213,57 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     fun removeTribeMember(userId: String, onDone: (String?) -> Unit) = tribeAction(onDone) { it.removeTribeMember(userId) }
     fun setTribeSharing(sharing: Boolean, onDone: (String?) -> Unit) = tribeAction(onDone) { it.setTribeSharing(sharing) }
 
+    // ── Le cercle : invitations par email à des dossiers choisis ──
+
+    /** Invite un proche (compte ou non) ; onDone(null) une fois l'email envoyé (ou l'invitation mise à jour). */
+    fun inviteToCircle(email: String, folderIds: List<String>, editor: Boolean, onDone: (String?) -> Unit) {
+        val client = authenticatedClient ?: return onDone("Connectez-vous pour inviter un proche.")
+        if (!_emailVerified.value) return onDone(data.EmailVerification.VERIFY_FIRST)
+        val role = if (editor) "COLLABORATOR_ROLE_EDITOR" else "COLLABORATOR_ROLE_VIEWER"
+        viewModelScope.launch {
+            runCatching { client.inviteToCircle(email.trim(), folderIds, role) }
+                .onSuccess { inv ->
+                    _circleInvitations.value = _circleInvitations.value.filter { it.id != inv.id } + inv
+                    onDone(null)
+                }
+                .onFailure { onDone(tribeErrorMessage(it.message.orEmpty())) }
+        }
+    }
+
+    /** « Annuler » : le lien envoyé ne marche plus. */
+    fun revokeCircleInvitation(id: String, onDone: (String?) -> Unit) {
+        val client = authenticatedClient ?: return onDone("Connectez-vous d'abord.")
+        viewModelScope.launch {
+            runCatching { client.revokeCircleInvitation(id) }
+                .onSuccess {
+                    _circleInvitations.value = _circleInvitations.value.filter { it.id != id }
+                    onDone(null)
+                }
+                .onFailure {
+                    // Déjà acceptée ou expirée entre-temps : elle n'est plus en attente
+                    if ("404" in it.message.orEmpty()) _circleInvitations.value = _circleInvitations.value.filter { inv -> inv.id != id }
+                    onDone(tribeErrorMessage(it.message.orEmpty()))
+                }
+        }
+    }
+
+    /** Accepte le lien reçu par email ; onDone(erreur, premier dossier ouvert). */
+    fun acceptCircleInvitation(token: String, onDone: (String?, Folder?) -> Unit) {
+        val client = authenticatedClient ?: return onDone("Connectez-vous pour voir les dossiers.", null)
+        viewModelScope.launch {
+            runCatching { client.acceptCircleInvitation(token) }
+                .onSuccess { folders ->
+                    // Le lien est arrivé dans la boîte de l'adresse du compte : elle est confirmée
+                    sessionManager?.setEmailVerified(true)
+                    val opened = folders.map(::apiFolderToFolder)
+                    opened.forEach { f -> if (repository.folders.value.any { it.id == f.id }) repository.updateFolder(f) else repository.addFolder(f) }
+                    sessionManager?.let { syncWithBackend(it) }
+                    onDone(null, opened.firstOrNull())
+                }
+                .onFailure { onDone(tribeErrorMessage(it.message.orEmpty()), null) }
+        }
+    }
+
     private fun tribeErrorMessage(raw: String): String = when {
         "invalid or expired invitation" in raw -> "Cette invitation n'est plus valable : elle a expiré, a été annulée ou a déjà servi."
         "invitation is for another email" in raw -> "Cette invitation a été envoyée à une autre adresse que celle de votre compte."
@@ -219,6 +274,10 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         "only the tribe owner" in raw -> "Seul le créateur de la tribu peut retirer un membre."
         "name must be 1 to 60" in raw -> "Le nom de la tribu doit faire entre 1 et 60 caractères."
         "email is required" in raw -> "Saisissez l'adresse email de votre proche."
+        "too many pending invitations" in raw -> "Trop d'invitations en attente (30 au plus) : annulez-en ou attendez qu'elles soient acceptées."
+        "choose the folders to open" in raw -> "Choisissez au moins un dossier à ouvrir."
+        "cannot invite yourself" in raw -> "C'est votre propre adresse."
+        "API error (404)" in raw -> "Cette invitation n'est plus valable."
         data.EmailVerification.NOT_VERIFIED in raw -> data.EmailVerification.VERIFY_FIRST
         else -> "Impossible de joindre le serveur, réessayez."
     }
@@ -270,6 +329,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     fun signOut() {
         repository.clearAll()
         _tribe.value = null
+        _circleInvitations.value = emptyList()
         sessionManager?.clearSession()
     }
 
@@ -768,6 +828,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             try {
                 _syncStatus.value = "Synchronisation..."
                 runCatching { client.getTribe() }.onSuccess { _tribe.value = it }
+                runCatching { client.listCircleInvitations() }.onSuccess { _circleInvitations.value = it }
                 performSync(client)
                 _syncStatus.value = "Synchronisé"
                 // Photos prises sur ce téléphone avant leur envoi au serveur
@@ -1084,20 +1145,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             client.shareFolder(folderId)
         } catch (e: Exception) {
             _syncStatus.value = "Erreur partage: ${e.message}"
-            null
-        }
-    }
-
-    suspend fun addCollaborator(folderId: String, email: String, role: String): Folder? {
-        val client = authenticatedClient ?: return null
-        return try {
-            val resp = client.addCollaborator(folderId, email, role)
-            val apiFolder = resp.folder
-            val updatedFolder = apiFolderToFolder(apiFolder)
-            repository.updateFolder(updatedFolder)
-            updatedFolder
-        } catch (e: Exception) {
-            _syncStatus.value = "Erreur ajout collaborateur: ${e.message}"
             null
         }
     }

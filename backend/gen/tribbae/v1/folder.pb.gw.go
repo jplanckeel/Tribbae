@@ -390,6 +390,147 @@ func local_request_FolderService_RemoveCollaborator_0(ctx context.Context, marsh
 	return msg, metadata, err
 }
 
+func request_FolderService_InviteToCircle_0(ctx context.Context, marshaler runtime.Marshaler, client FolderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq InviteToCircleRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.InviteToCircle(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_FolderService_InviteToCircle_0(ctx context.Context, marshaler runtime.Marshaler, server FolderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq InviteToCircleRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.InviteToCircle(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_FolderService_ListCircleInvitations_0(ctx context.Context, marshaler runtime.Marshaler, client FolderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ListCircleInvitationsRequest
+		metadata runtime.ServerMetadata
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.ListCircleInvitations(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_FolderService_ListCircleInvitations_0(ctx context.Context, marshaler runtime.Marshaler, server FolderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ListCircleInvitationsRequest
+		metadata runtime.ServerMetadata
+	)
+	msg, err := server.ListCircleInvitations(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_FolderService_RevokeCircleInvitation_0(ctx context.Context, marshaler runtime.Marshaler, client FolderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq RevokeCircleInvitationRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	val, ok := pathParams["invitation_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "invitation_id")
+	}
+	protoReq.InvitationId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "invitation_id", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.RevokeCircleInvitation(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_FolderService_RevokeCircleInvitation_0(ctx context.Context, marshaler runtime.Marshaler, server FolderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq RevokeCircleInvitationRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	val, ok := pathParams["invitation_id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "invitation_id")
+	}
+	protoReq.InvitationId, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "invitation_id", err)
+	}
+	msg, err := server.RevokeCircleInvitation(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_FolderService_GetCircleInvitation_0(ctx context.Context, marshaler runtime.Marshaler, client FolderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetCircleInvitationRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.GetCircleInvitation(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_FolderService_GetCircleInvitation_0(ctx context.Context, marshaler runtime.Marshaler, server FolderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetCircleInvitationRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.GetCircleInvitation(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_FolderService_AcceptCircleInvitation_0(ctx context.Context, marshaler runtime.Marshaler, client FolderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq AcceptCircleInvitationRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.AcceptCircleInvitation(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_FolderService_AcceptCircleInvitation_0(ctx context.Context, marshaler runtime.Marshaler, server FolderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq AcceptCircleInvitationRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.AcceptCircleInvitation(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 var filter_FolderService_ListCommunityFolders_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 
 func request_FolderService_ListCommunityFolders_0(ctx context.Context, marshaler runtime.Marshaler, client FolderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -730,6 +871,106 @@ func RegisterFolderServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		}
 		forward_FolderService_RemoveCollaborator_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodPost, pattern_FolderService_InviteToCircle_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.FolderService/InviteToCircle", runtime.WithHTTPPathPattern("/v1/circle/invitations"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_FolderService_InviteToCircle_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_InviteToCircle_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_FolderService_ListCircleInvitations_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.FolderService/ListCircleInvitations", runtime.WithHTTPPathPattern("/v1/circle/invitations"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_FolderService_ListCircleInvitations_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_ListCircleInvitations_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodDelete, pattern_FolderService_RevokeCircleInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.FolderService/RevokeCircleInvitation", runtime.WithHTTPPathPattern("/v1/circle/invitations/{invitation_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_FolderService_RevokeCircleInvitation_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_RevokeCircleInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_FolderService_GetCircleInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.FolderService/GetCircleInvitation", runtime.WithHTTPPathPattern("/v1/circle/invitations/lookup"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_FolderService_GetCircleInvitation_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_GetCircleInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_FolderService_AcceptCircleInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.FolderService/AcceptCircleInvitation", runtime.WithHTTPPathPattern("/v1/circle/invitations/accept"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_FolderService_AcceptCircleInvitation_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_AcceptCircleInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodGet, pattern_FolderService_ListCommunityFolders_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -1003,6 +1244,91 @@ func RegisterFolderServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 		}
 		forward_FolderService_RemoveCollaborator_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodPost, pattern_FolderService_InviteToCircle_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.FolderService/InviteToCircle", runtime.WithHTTPPathPattern("/v1/circle/invitations"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_FolderService_InviteToCircle_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_InviteToCircle_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_FolderService_ListCircleInvitations_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.FolderService/ListCircleInvitations", runtime.WithHTTPPathPattern("/v1/circle/invitations"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_FolderService_ListCircleInvitations_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_ListCircleInvitations_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodDelete, pattern_FolderService_RevokeCircleInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.FolderService/RevokeCircleInvitation", runtime.WithHTTPPathPattern("/v1/circle/invitations/{invitation_id}"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_FolderService_RevokeCircleInvitation_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_RevokeCircleInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_FolderService_GetCircleInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.FolderService/GetCircleInvitation", runtime.WithHTTPPathPattern("/v1/circle/invitations/lookup"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_FolderService_GetCircleInvitation_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_GetCircleInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_FolderService_AcceptCircleInvitation_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.FolderService/AcceptCircleInvitation", runtime.WithHTTPPathPattern("/v1/circle/invitations/accept"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_FolderService_AcceptCircleInvitation_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_AcceptCircleInvitation_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	mux.Handle(http.MethodGet, pattern_FolderService_ListCommunityFolders_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -1075,33 +1401,43 @@ func RegisterFolderServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 }
 
 var (
-	pattern_FolderService_CreateFolder_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "folders"}, ""))
-	pattern_FolderService_GetFolder_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "folders", "folder_id"}, ""))
-	pattern_FolderService_ListFolders_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "folders"}, ""))
-	pattern_FolderService_UpdateFolder_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "folders", "folder_id"}, ""))
-	pattern_FolderService_DeleteFolder_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "folders", "folder_id"}, ""))
-	pattern_FolderService_GenerateShareToken_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "share"}, ""))
-	pattern_FolderService_GetSharedFolder_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "share", "share_token"}, ""))
-	pattern_FolderService_AddCollaborator_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "collaborators"}, ""))
-	pattern_FolderService_RemoveCollaborator_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "folders", "folder_id", "collaborators", "user_id"}, ""))
-	pattern_FolderService_ListCommunityFolders_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "community", "folders"}, ""))
-	pattern_FolderService_LikeFolder_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "like"}, ""))
-	pattern_FolderService_UnlikeFolder_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "like"}, ""))
-	pattern_FolderService_ListTopFolders_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "community", "top"}, ""))
+	pattern_FolderService_CreateFolder_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "folders"}, ""))
+	pattern_FolderService_GetFolder_0              = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "folders", "folder_id"}, ""))
+	pattern_FolderService_ListFolders_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "folders"}, ""))
+	pattern_FolderService_UpdateFolder_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "folders", "folder_id"}, ""))
+	pattern_FolderService_DeleteFolder_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "folders", "folder_id"}, ""))
+	pattern_FolderService_GenerateShareToken_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "share"}, ""))
+	pattern_FolderService_GetSharedFolder_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "share", "share_token"}, ""))
+	pattern_FolderService_AddCollaborator_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "collaborators"}, ""))
+	pattern_FolderService_RemoveCollaborator_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "folders", "folder_id", "collaborators", "user_id"}, ""))
+	pattern_FolderService_InviteToCircle_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "circle", "invitations"}, ""))
+	pattern_FolderService_ListCircleInvitations_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "circle", "invitations"}, ""))
+	pattern_FolderService_RevokeCircleInvitation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "circle", "invitations", "invitation_id"}, ""))
+	pattern_FolderService_GetCircleInvitation_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "circle", "invitations", "lookup"}, ""))
+	pattern_FolderService_AcceptCircleInvitation_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "circle", "invitations", "accept"}, ""))
+	pattern_FolderService_ListCommunityFolders_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "community", "folders"}, ""))
+	pattern_FolderService_LikeFolder_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "like"}, ""))
+	pattern_FolderService_UnlikeFolder_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "like"}, ""))
+	pattern_FolderService_ListTopFolders_0         = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "community", "top"}, ""))
 )
 
 var (
-	forward_FolderService_CreateFolder_0         = runtime.ForwardResponseMessage
-	forward_FolderService_GetFolder_0            = runtime.ForwardResponseMessage
-	forward_FolderService_ListFolders_0          = runtime.ForwardResponseMessage
-	forward_FolderService_UpdateFolder_0         = runtime.ForwardResponseMessage
-	forward_FolderService_DeleteFolder_0         = runtime.ForwardResponseMessage
-	forward_FolderService_GenerateShareToken_0   = runtime.ForwardResponseMessage
-	forward_FolderService_GetSharedFolder_0      = runtime.ForwardResponseMessage
-	forward_FolderService_AddCollaborator_0      = runtime.ForwardResponseMessage
-	forward_FolderService_RemoveCollaborator_0   = runtime.ForwardResponseMessage
-	forward_FolderService_ListCommunityFolders_0 = runtime.ForwardResponseMessage
-	forward_FolderService_LikeFolder_0           = runtime.ForwardResponseMessage
-	forward_FolderService_UnlikeFolder_0         = runtime.ForwardResponseMessage
-	forward_FolderService_ListTopFolders_0       = runtime.ForwardResponseMessage
+	forward_FolderService_CreateFolder_0           = runtime.ForwardResponseMessage
+	forward_FolderService_GetFolder_0              = runtime.ForwardResponseMessage
+	forward_FolderService_ListFolders_0            = runtime.ForwardResponseMessage
+	forward_FolderService_UpdateFolder_0           = runtime.ForwardResponseMessage
+	forward_FolderService_DeleteFolder_0           = runtime.ForwardResponseMessage
+	forward_FolderService_GenerateShareToken_0     = runtime.ForwardResponseMessage
+	forward_FolderService_GetSharedFolder_0        = runtime.ForwardResponseMessage
+	forward_FolderService_AddCollaborator_0        = runtime.ForwardResponseMessage
+	forward_FolderService_RemoveCollaborator_0     = runtime.ForwardResponseMessage
+	forward_FolderService_InviteToCircle_0         = runtime.ForwardResponseMessage
+	forward_FolderService_ListCircleInvitations_0  = runtime.ForwardResponseMessage
+	forward_FolderService_RevokeCircleInvitation_0 = runtime.ForwardResponseMessage
+	forward_FolderService_GetCircleInvitation_0    = runtime.ForwardResponseMessage
+	forward_FolderService_AcceptCircleInvitation_0 = runtime.ForwardResponseMessage
+	forward_FolderService_ListCommunityFolders_0   = runtime.ForwardResponseMessage
+	forward_FolderService_LikeFolder_0             = runtime.ForwardResponseMessage
+	forward_FolderService_UnlikeFolder_0           = runtime.ForwardResponseMessage
+	forward_FolderService_ListTopFolders_0         = runtime.ForwardResponseMessage
 )

@@ -58,6 +58,7 @@ data class SharedContent(
     val title: String? = null,
     val folderToken: String? = null,
     val inviteToken: String? = null,
+    val circleToken: String? = null,
     val resetToken: String? = null,
     val verifyToken: String? = null,
     val id: Long = System.nanoTime(),
@@ -143,7 +144,10 @@ private fun ModernMainApp(
     var inviteToken by remember { mutableStateOf<String?>(null) }
     var inviteHidden by remember { mutableStateOf(false) }
     val loggedIn by sessionManager.isLoggedIn.collectAsState()
-    LaunchedEffect(loggedIn) { if (loggedIn) inviteHidden = false }
+    // Lien d'invitation dans le cercle (dossiers choisis), masqué de même
+    var circleToken by remember { mutableStateOf<String?>(null) }
+    var circleHidden by remember { mutableStateOf(false) }
+    LaunchedEffect(loggedIn) { if (loggedIn) { inviteHidden = false; circleHidden = false } }
     // Lien « nouveau mot de passe » ouvert depuis l'email
     var resetToken by remember { mutableStateOf<String?>(null) }
     // Lien de confirmation de l'adresse email
@@ -154,6 +158,7 @@ private fun ModernMainApp(
         if (s.url != null || s.title != null) stack.add(Screen.IdeaForm(url = s.url, title = s.title))
         if (s.folderToken != null) stack.add(Screen.PublicFolder(shareToken = s.folderToken))
         if (s.inviteToken != null) { inviteToken = s.inviteToken; inviteHidden = false }
+        if (s.circleToken != null) { circleToken = s.circleToken; circleHidden = false }
         if (s.resetToken != null) resetToken = s.resetToken
         if (s.verifyToken != null) verifyToken = s.verifyToken
     }
@@ -320,6 +325,27 @@ private fun ModernMainApp(
                         // Connexion depuis l'onglet « Ma tribu » ; la boîte revient une fois connecté
                         onSignIn = { inviteHidden = true; stack.clear(); tab = NavDestination.PROFILE },
                         onDismiss = { inviteToken = null },
+                    )
+                }
+                val circleInvite = circleToken
+                if (circleInvite != null && !circleHidden) {
+                    CircleInvitationDialog(
+                        token = circleInvite,
+                        loggedIn = loggedIn,
+                        onAccept = { done ->
+                            vm.acceptCircleInvitation(circleInvite) { err, folder ->
+                                done(err)
+                                if (err == null) {
+                                    circleToken = null
+                                    stack.clear()
+                                    tab = NavDestination.MY_IDEAS
+                                    folder?.let { stack.add(Screen.FolderDetail(it)) }
+                                }
+                            }
+                        },
+                        // Connexion depuis l'onglet « Ma tribu » ; la boîte revient une fois connecté
+                        onSignIn = { circleHidden = true; stack.clear(); tab = NavDestination.PROFILE },
+                        onDismiss = { circleToken = null },
                     )
                 }
                 verifyToken?.let { token ->

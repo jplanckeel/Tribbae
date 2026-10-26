@@ -16,6 +16,153 @@
     "application/json"
   ],
   "paths": {
+    "/v1/circle/invitations": {
+      "get": {
+        "operationId": "FolderService_ListCircleInvitations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListCircleInvitationsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "FolderService"
+        ]
+      },
+      "post": {
+        "operationId": "FolderService_InviteToCircle",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1InviteToCircleResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1InviteToCircleRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/circle/invitations/accept": {
+      "post": {
+        "operationId": "FolderService_AcceptCircleInvitation",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AcceptCircleInvitationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1AcceptCircleInvitationRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/circle/invitations/lookup": {
+      "post": {
+        "operationId": "FolderService_GetCircleInvitation",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetCircleInvitationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "Ce qu'affiche le lien d'invitation, avant de l'accepter (sans compte).",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1GetCircleInvitationRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/circle/invitations/{invitationId}": {
+      "delete": {
+        "operationId": "FolderService_RevokeCircleInvitation",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RevokeCircleInvitationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "invitationId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
     "/v1/community/folders": {
       "get": {
         "operationId": "FolderService_ListCommunityFolders",
@@ -553,11 +700,68 @@
         }
       }
     },
+    "v1AcceptCircleInvitationRequest": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      }
+    },
+    "v1AcceptCircleInvitationResponse": {
+      "type": "object",
+      "properties": {
+        "folders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Folder"
+          },
+          "title": "dossiers désormais ouverts au compte"
+        }
+      }
+    },
     "v1AddCollaboratorResponse": {
       "type": "object",
       "properties": {
         "folder": {
           "$ref": "#/definitions/v1Folder"
+        }
+      }
+    },
+    "v1CircleInvitation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/v1CollaboratorRole"
+        },
+        "folderIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "folderNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "millisecondes (dernier envoi)"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "millisecondes"
         }
       }
     },
@@ -781,6 +985,41 @@
         }
       }
     },
+    "v1GetCircleInvitationRequest": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        }
+      },
+      "description": "Ce qu'affiche le lien d'invitation, avant de l'accepter (sans compte)."
+    },
+    "v1GetCircleInvitationResponse": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "title": "adresse invitée : le compte qui accepte doit l'utiliser"
+        },
+        "invitedByName": {
+          "type": "string"
+        },
+        "folderNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "role": {
+          "$ref": "#/definitions/v1CollaboratorRole"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "millisecondes"
+        }
+      }
+    },
     "v1GetFolderResponse": {
       "type": "object",
       "properties": {
@@ -801,6 +1040,32 @@
             "type": "object",
             "$ref": "#/definitions/v1Link"
           }
+        }
+      }
+    },
+    "v1InviteToCircleRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "folderIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "dossiers dont on est propriétaire"
+        },
+        "role": {
+          "$ref": "#/definitions/v1CollaboratorRole"
+        }
+      }
+    },
+    "v1InviteToCircleResponse": {
+      "type": "object",
+      "properties": {
+        "invitation": {
+          "$ref": "#/definitions/v1CircleInvitation"
         }
       }
     },
@@ -916,6 +1181,18 @@
       ],
       "default": "LINK_CATEGORY_UNSPECIFIED"
     },
+    "v1ListCircleInvitationsResponse": {
+      "type": "object",
+      "properties": {
+        "invitations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1CircleInvitation"
+          }
+        }
+      }
+    },
     "v1ListCommunityFoldersResponse": {
       "type": "object",
       "properties": {
@@ -962,6 +1239,9 @@
           "$ref": "#/definitions/v1Folder"
         }
       }
+    },
+    "v1RevokeCircleInvitationResponse": {
+      "type": "object"
     },
     "v1UnlikeFolderResponse": {
       "type": "object",
