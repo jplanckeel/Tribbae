@@ -14,7 +14,7 @@ import { childColors, countdown } from "../lib/folderStyle";
 import { formatAge, formatLongDate, initial, plural } from "../lib/format";
 import { clearSession, useSession } from "../lib/session";
 import { birthdayLabel, circleOf, ideasForChild, monthName, RING_SLOTS, ringPosition, yearInIdeas, type CircleMember } from "../lib/tribe";
-import type { Child, CollaboratorRole, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
+import type { Child, CircleInvitation, CollaboratorRole, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
 import { setThemePref, useThemePref, type ThemePref } from "../lib/theme";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
@@ -57,6 +57,9 @@ export default function Tribe() {
   const [exporting, setExporting] = useState(false);
   const [now] = useState(() => Date.now());
   const following = useAsync(() => api.follows.following(session.userId), [session.userId]);
+  // Invitations dans le cercle envoyées par moi, en attente
+  const circleInvites = useAsync(() => api.circle.invitations(), [session.userId]);
+  const pendingCircle = circleInvites.data ?? [];
 
   const mine = links.filter((l) => l.ownerId === session.userId);
   const myFolders = folders.filter((f) => f.ownerId === session.userId);
@@ -296,7 +299,15 @@ export default function Tribe() {
                 onFolder={setShareFolder}
               />
             ))}
-            {circle.length === 0 && (
+            {pendingCircle.map((inv) => (
+              <PendingCircleInvitation
+                key={inv.id}
+                invitation={inv}
+                now={now}
+                onChange={(next) => circleInvites.setData((list) => (list ?? []).flatMap((x) => (x.id !== inv.id ? [x] : next ? [next] : [])))}
+              />
+            ))}
+            {circle.length === 0 && pendingCircle.length === 0 && (
               <div className="flex items-center gap-3 rounded-large border-2 border-dashed border-dash px-3.5 py-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sable-2 text-muted">
                   <Icon name="folder" size={20} />
@@ -399,7 +410,11 @@ export default function Tribe() {
           folders={myFolders}
           onClose={() => setInviteOpen(false)}
           onTribe={(t) => { setTribe(t); setInviteOpen(false); setTab("foyer"); }}
-          onCircle={() => { setInviteOpen(false); setTab("cercle"); }}
+          onCircle={(inv) => {
+            circleInvites.setData((list) => [...(list ?? []).filter((x) => x.id !== inv.id), inv]);
+            setInviteOpen(false);
+            setTab("cercle");
+          }}
           onShareLink={(f) => { setInviteOpen(false); setShareFolder(f); }}
         />
       )}
@@ -563,15 +578,20 @@ function ago(ms: number, now: number): string {
   return `il y a ${days} jours`;
 }
 
-/** Invitation au foyer en attente : on peut relancer (le serveur renvoie l'email au plus toutes les 10 min). */
-function PendingInvitation({ invitation, now, onChange }: { invitation: TribeInvitation; now: number; onChange: (t: TribeData) => void }) {
-  const { toast } = useFeedback();
+/**
+ * Carte d'une invitation en attente (foyer ou cercle) : « Relancer » (le
+ * serveur renvoie l'email au plus toutes les 10 min) et « Annuler » (le lien
+ * reçu ne marche plus), après confirmation.
+ */
+function PendingCard({ email, detail, onRemind, onCancel }: {
+  email: string; detail: string; onRemind: () => Promise<void>; onCancel: () => Promise<void>;
+}) {
+  const { toast, confirm } = useFeedback();
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
-  const sent = Number(invitation.createdAt);
   const remind = async () => {
     setState("busy");
     try {
-      onChange(await api.tribe.invite(invitation.email));
+      await onRemind();
       setState("done");
       toast("Invitation renvoyée");
     } catch (err) {
@@ -579,24 +599,89 @@ function PendingInvitation({ invitation, now, onChange }: { invitation: TribeInv
       toast((err as Error).message, "error");
     }
   };
+  const cancel = async () => {
+    const ok = await confirm({
+      title: "Annuler l'invitation ?",
+      text: `Le lien envoyé à ${email} ne marchera plus. Vous pourrez l'inviter à nouveau.`,
+      confirmLabel: "Annuler l'invitation",
+      danger: true,
+    });
+    if (!ok) return;
+    setState("busy");
+    try {
+      await onCancel();
+      toast("Invitation annulée");
+    } catch (err) {
+      setState("idle");
+      toast((err as Error).message, "error");
+    }
+  };
   return (
-    <div className="flex animate-fade-up items-center gap-3 rounded-large border-2 border-dashed border-dash px-3.5 py-3">
+    <div className="flex animate-fade-up flex-wrap items-center gap-3 rounded-large border-2 border-dashed border-dash px-3.5 py-3">
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sable-2 text-muted">
         <Icon name="send" size={19} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[15px] font-bold">{invitation.email}</span>
-        <span className="truncate text-[13px] text-sec">{sent ? `Invitation envoyée ${ago(sent, now)}` : "Invitation envoyée"}</span>
+        <span className="truncate text-[15px] font-bold">{email}</span>
+        <span className="text-[13px] text-sec">{detail}</span>
       </span>
-      <button
-        type="button"
-        onClick={remind}
-        disabled={state !== "idle"}
-        className={`h-9 shrink-0 rounded-small px-3 text-[13px] font-bold transition-colors ${state === "done" ? "bg-recette-bg text-recette-ink" : "bg-ecorce text-sable"}`}
-      >
-        {state === "done" ? "Relancé ✓" : state === "busy" ? "Envoi…" : "Relancer"}
-      </button>
+      <span className="flex shrink-0 gap-1.5">
+        <button
+          type="button"
+          onClick={cancel}
+          disabled={state === "busy"}
+          className="h-9 rounded-small px-3 text-[13px] font-bold text-sec transition-colors hover:bg-sable-2 disabled:opacity-60"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          onClick={remind}
+          disabled={state !== "idle"}
+          className={`h-9 rounded-small px-3 text-[13px] font-bold transition-colors ${state === "done" ? "bg-recette-bg text-recette-ink" : "bg-ecorce text-sable"}`}
+        >
+          {state === "done" ? "Relancé ✓" : state === "busy" ? "…" : "Relancer"}
+        </button>
+      </span>
     </div>
+  );
+}
+
+function sentLabel(createdAt: string | undefined, now: number): string {
+  const sent = Number(createdAt);
+  return sent ? `Invitation envoyée ${ago(sent, now)}` : "Invitation envoyée";
+}
+
+/** Invitation au foyer en attente. */
+function PendingInvitation({ invitation, now, onChange }: { invitation: TribeInvitation; now: number; onChange: (t: TribeData) => void }) {
+  return (
+    <PendingCard
+      email={invitation.email}
+      detail={sentLabel(invitation.createdAt, now)}
+      onRemind={async () => onChange(await api.tribe.invite(invitation.email))}
+      onCancel={async () => onChange(await api.tribe.revokeInvitation(invitation.id))}
+    />
+  );
+}
+
+/** Invitation au cercle en attente ; onChange(undefined) une fois annulée. */
+function PendingCircleInvitation({ invitation, now, onChange }: {
+  invitation: CircleInvitation; now: number; onChange: (inv: CircleInvitation | undefined) => void;
+}) {
+  const folders = invitation.folderNames ?? [];
+  const role = invitation.role === "COLLABORATOR_ROLE_EDITOR" ? "éditeur" : "lecteur";
+  return (
+    <PendingCard
+      email={invitation.email}
+      detail={`${folders.join(", ")} · ${role} · ${sentLabel(invitation.createdAt, now).toLowerCase()}`}
+      onRemind={async () =>
+        onChange(await api.circle.invite(invitation.email, invitation.folderIds ?? [], invitation.role ?? "COLLABORATOR_ROLE_VIEWER"))
+      }
+      onCancel={async () => {
+        await api.circle.revokeInvitation(invitation.id);
+        onChange(undefined);
+      }}
+    />
   );
 }
 
@@ -841,7 +926,7 @@ function TribeNameSheet({ current, onClose, onSaved }: { current: string; onClos
  * email) ou un proche dans le cercle (accès à des dossiers choisis).
  */
 function InviteSheet({ folders, onClose, onTribe, onCircle, onShareLink }: {
-  folders: Folder[]; onClose: () => void; onTribe: (t: TribeData) => void; onCircle: () => void; onShareLink: (f: Folder) => void;
+  folders: Folder[]; onClose: () => void; onTribe: (t: TribeData) => void; onCircle: (inv: CircleInvitation) => void; onShareLink: (f: Folder) => void;
 }) {
   const [role, setRole] = useState<"foyer" | "cercle">("foyer");
   const roles = [
@@ -951,9 +1036,12 @@ function InviteForm({ onDone }: { onDone: (t: TribeData) => void }) {
   );
 }
 
-/** Ouvre des dossiers à un proche qui a déjà un compte Tribbae. */
-function CircleInviteForm({ folders, onDone }: { folders: Folder[]; onDone: () => void }) {
-  const { upsertFolder } = useMyData();
+/**
+ * Invite un proche (compte ou non) à des dossiers choisis : il reçoit un lien
+ * par email et n'y entre qu'en l'acceptant. L'invitation reste en attente dans
+ * « Le cercle ».
+ */
+function CircleInviteForm({ folders, onDone }: { folders: Folder[]; onDone: (inv: CircleInvitation) => void }) {
   const { toast } = useFeedback();
   const [picked, setPicked] = useState<ReadonlySet<string>>(() => new Set(folders.slice(0, 1).map((f) => f.id)));
   const [role, setRole] = useState<CollaboratorRole>("COLLABORATOR_ROLE_VIEWER");
@@ -974,21 +1062,15 @@ function CircleInviteForm({ folders, onDone }: { folders: Folder[]; onDone: () =
     if (!email.trim()) return setError("Saisissez l'adresse email de votre proche.");
     setBusy(true);
     setError("");
-    const failed: string[] = [];
-    let firstError = "";
-    for (const f of folders.filter((x) => picked.has(x.id))) {
-      try {
-        upsertFolder(await api.folders.addCollaborator(f.id, email.trim(), role));
-      } catch (err) {
-        failed.push(f.name);
-        firstError ||= (err as Error).message;
-      }
+    try {
+      const inv = await api.circle.invite(email.trim(), folders.filter((x) => picked.has(x.id)).map((f) => f.id), role);
+      toast("Invitation envoyée");
+      onDone(inv);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
-    if (failed.length === picked.size) return setError(firstError);
-    if (failed.length) toast(`Pas ajouté à : ${failed.join(", ")} (${firstError})`, "error");
-    else toast("Dossiers ouverts à votre proche");
-    onDone();
   };
 
   return (
@@ -1028,10 +1110,11 @@ function CircleInviteForm({ folders, onDone }: { folders: Folder[]; onDone: () =
       </div>
       <Field label="Son adresse email" type="email" icon="send" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="mamie.jo@exemple.fr" autoComplete="email" />
       {error && <ErrorNote>{error}</ErrorNote>}
-      <Button type="submit" icon="send" block loading={busy} className="!bg-prune !text-soleil hover:!bg-prune/90">Ouvrir les dossiers</Button>
+      <Button type="submit" icon="send" block loading={busy} className="!bg-prune !text-soleil hover:!bg-prune/90">Envoyer l'invitation</Button>
       <p className="text-center text-xs text-muted">
-        Votre proche doit avoir un compte Tribbae. {role === "COLLABORATOR_ROLE_EDITOR" ? "Il pourra ajouter ses idées" : "Il pourra consulter"} sans
-        voir le reste de la tribu. Vous pourrez changer les accès à tout moment.
+        Le lien expire dans 7 jours. Pas encore de compte ? Il pourra en créer un depuis le lien.{" "}
+        {role === "COLLABORATOR_ROLE_EDITOR" ? "Il pourra ajouter ses idées" : "Il pourra consulter"} sans voir le reste de la tribu.
+        Vous pourrez changer les accès à tout moment.
       </p>
     </form>
   );

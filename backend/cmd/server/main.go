@@ -85,6 +85,8 @@ func main() {
 	linkSvc.SetEmailCheck(authSvc.RequireVerifiedEmail)
 	folderSvc.SetEmailCheck(authSvc.RequireVerifiedEmail)
 	tribeSvc.SetEmailVerifier(authSvc)
+	// Invitations dans le cercle : lien vers l'écran « Rejoindre le cercle » du site
+	folderSvc.SetInvitations(database.Col("folder_invitations"), strings.TrimRight(cfg.SiteURL, "/")+"/invitation-cercle", mailer, authSvc.MarkEmailVerified)
 	// Invitations dans une tribu : lien vers l'écran « Rejoindre la tribu » du site
 	tribeSvc.SetNotifier(mailer, strings.TrimRight(cfg.SiteURL, "/")+"/invitation")
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
@@ -208,7 +210,7 @@ func main() {
 	handler = withPreview(preview.Handler(bearerUser), handler)
 	handler = withAI(aiH, handler)
 	handler = withAccount(accountH, handler)
-	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true, "/v1/tribe/members": true}, handler)
+	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true, "/v1/tribe/members": true, "/v1/circle/invitations": true}, handler)
 	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, "/v1/auth/email/verify": true, "/v1/auth/email/resend": true, account.DeletePath: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
 	// Les photos ont leur propre limite de taille (photo.MaxUpload), hors MaxBody

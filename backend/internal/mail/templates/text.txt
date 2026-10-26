@@ -71,6 +71,21 @@ Vous recevez cet email car {{.Inviter}} a saisi votre adresse sur Tribbae. Vous 
 
 {{template "footer" .}}{{end}}
 
+{{define "circle_invitation"}}{{.Heading}}
+
+{{.Inviter}} vous fait une place dans son cercle sur Tribbae :
+{{range .Folders}}- {{.}}
+{{end}}
+{{if .Editor}}Vous pourrez y voir les idées et en ajouter.{{else}}Vous pourrez y retrouver ses idées de sorties, de cadeaux ou de recettes.{{end}} Vous ne verrez que {{if gt (len .Folders) 1}}ces dossiers{{else}}ce dossier{{end}}.
+
+Voir les dossiers : {{.InviteURL}}
+
+Invitation valable {{.Validity}}. Pas encore de compte ? Vous pourrez en créer un en quelques secondes après avoir cliqué.
+
+Vous recevez cet email car {{.Inviter}} a saisi votre adresse sur Tribbae. Vous ne connaissez pas cette personne ? Ignorez simplement ce message.
+
+{{template "footer" .}}{{end}}
+
 {{define "account_deleted"}}Votre compte a bien été supprimé
 
 {{if .Name}}Bonjour {{.Name}}, comme{{else}}Bonjour, comme{{end}} vous l'avez demandé le {{.DeletedOn}}, votre compte Tribbae a été supprimé, ainsi que les données qui y étaient liées.

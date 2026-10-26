@@ -71,6 +71,47 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── folder_invitations : invitations dans le cercle ───────
+		{
+			Collection: "folder_invitations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "token_hash", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_folder_invitations_token_hash"),
+			},
+		},
+		{
+			// Une par propriétaire et par adresse
+			Collection: "folder_invitations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "owner_id", Value: 1}, {Key: "email", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_folder_invitations_owner_email"),
+			},
+		},
+		{
+			// « Mes invitations en attente », des plus anciennes aux plus récentes
+			Collection: "folder_invitations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "owner_id", Value: 1}, {Key: "created_at", Value: 1}},
+				Options: options.Index().SetName("idx_folder_invitations_owner_created"),
+			},
+		},
+		{
+			// Dossier supprimé : retiré des invitations qui l'ouvraient
+			Collection: "folder_invitations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "folder_ids", Value: 1}},
+				Options: options.Index().SetName("idx_folder_invitations_folder_ids"),
+			},
+		},
+		{
+			// Efface les invitations expirées
+			Collection: "folder_invitations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "expires_at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_folder_invitations_ttl"),
+			},
+		},
+
 		// ── email_verifications : liens de confirmation d'adresse ─
 		{
 			Collection: "email_verifications",

@@ -51,6 +51,12 @@ type Service struct {
 	linkCol  *mongo.Collection
 	userCol  *mongo.Collection
 	baseURL  string
+
+	// Invitations dans le cercle (invitations.go)
+	invCol       *mongo.Collection
+	inviteURL    string
+	notify       CircleNotifier
+	markVerified func(ctx context.Context, userID string) error
 }
 
 func NewService(col *mongo.Collection, linkCol *mongo.Collection, userCol *mongo.Collection, baseURL string) *Service {
@@ -256,6 +262,8 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 	if res.DeletedCount == 0 {
 		return errors.New("folder not found or not authorized to delete")
 	}
+
+	s.forgetFolder(ctx, folderID)
 
 	// Orphan associated links by setting their folder_id to empty string
 	// This preserves user data while removing the folder association

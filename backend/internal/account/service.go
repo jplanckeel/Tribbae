@@ -141,6 +141,15 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 		delete(inv, "token_hash")
 	}
 	out["tribeInvitations"] = invs
+	// Invitations dans le cercle (dossiers choisis), envoyées ou reçues, idem
+	circle, err := find("folder_invitations", bson.M{"$or": bson.A{bson.M{"owner_id": userID}, bson.M{"email": strings.ToLower(email)}}})
+	if err != nil {
+		return nil, err
+	}
+	for _, inv := range circle {
+		delete(inv, "token_hash")
+	}
+	out["circleInvitations"] = circle
 	return out, nil
 }
 
@@ -235,6 +244,7 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		{"tribe_invitations", bson.M{"$or": bson.A{bson.M{"invited_by": userID}, bson.M{"email": strings.ToLower(user.Email)}}}},
 		{"password_resets", bson.M{"_id": oid}},
 		{"email_verifications", bson.M{"_id": oid}},
+		{"folder_invitations", bson.M{"$or": bson.A{bson.M{"owner_id": userID}, bson.M{"email": strings.ToLower(user.Email)}}}},
 	}
 	for _, d := range deletes {
 		if _, err := s.col(d.col).DeleteMany(ctx, d.filter); err != nil {

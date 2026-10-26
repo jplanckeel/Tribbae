@@ -19,19 +19,24 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	FolderService_CreateFolder_FullMethodName         = "/tribbae.v1.FolderService/CreateFolder"
-	FolderService_GetFolder_FullMethodName            = "/tribbae.v1.FolderService/GetFolder"
-	FolderService_ListFolders_FullMethodName          = "/tribbae.v1.FolderService/ListFolders"
-	FolderService_UpdateFolder_FullMethodName         = "/tribbae.v1.FolderService/UpdateFolder"
-	FolderService_DeleteFolder_FullMethodName         = "/tribbae.v1.FolderService/DeleteFolder"
-	FolderService_GenerateShareToken_FullMethodName   = "/tribbae.v1.FolderService/GenerateShareToken"
-	FolderService_GetSharedFolder_FullMethodName      = "/tribbae.v1.FolderService/GetSharedFolder"
-	FolderService_AddCollaborator_FullMethodName      = "/tribbae.v1.FolderService/AddCollaborator"
-	FolderService_RemoveCollaborator_FullMethodName   = "/tribbae.v1.FolderService/RemoveCollaborator"
-	FolderService_ListCommunityFolders_FullMethodName = "/tribbae.v1.FolderService/ListCommunityFolders"
-	FolderService_LikeFolder_FullMethodName           = "/tribbae.v1.FolderService/LikeFolder"
-	FolderService_UnlikeFolder_FullMethodName         = "/tribbae.v1.FolderService/UnlikeFolder"
-	FolderService_ListTopFolders_FullMethodName       = "/tribbae.v1.FolderService/ListTopFolders"
+	FolderService_CreateFolder_FullMethodName           = "/tribbae.v1.FolderService/CreateFolder"
+	FolderService_GetFolder_FullMethodName              = "/tribbae.v1.FolderService/GetFolder"
+	FolderService_ListFolders_FullMethodName            = "/tribbae.v1.FolderService/ListFolders"
+	FolderService_UpdateFolder_FullMethodName           = "/tribbae.v1.FolderService/UpdateFolder"
+	FolderService_DeleteFolder_FullMethodName           = "/tribbae.v1.FolderService/DeleteFolder"
+	FolderService_GenerateShareToken_FullMethodName     = "/tribbae.v1.FolderService/GenerateShareToken"
+	FolderService_GetSharedFolder_FullMethodName        = "/tribbae.v1.FolderService/GetSharedFolder"
+	FolderService_AddCollaborator_FullMethodName        = "/tribbae.v1.FolderService/AddCollaborator"
+	FolderService_RemoveCollaborator_FullMethodName     = "/tribbae.v1.FolderService/RemoveCollaborator"
+	FolderService_InviteToCircle_FullMethodName         = "/tribbae.v1.FolderService/InviteToCircle"
+	FolderService_ListCircleInvitations_FullMethodName  = "/tribbae.v1.FolderService/ListCircleInvitations"
+	FolderService_RevokeCircleInvitation_FullMethodName = "/tribbae.v1.FolderService/RevokeCircleInvitation"
+	FolderService_GetCircleInvitation_FullMethodName    = "/tribbae.v1.FolderService/GetCircleInvitation"
+	FolderService_AcceptCircleInvitation_FullMethodName = "/tribbae.v1.FolderService/AcceptCircleInvitation"
+	FolderService_ListCommunityFolders_FullMethodName   = "/tribbae.v1.FolderService/ListCommunityFolders"
+	FolderService_LikeFolder_FullMethodName             = "/tribbae.v1.FolderService/LikeFolder"
+	FolderService_UnlikeFolder_FullMethodName           = "/tribbae.v1.FolderService/UnlikeFolder"
+	FolderService_ListTopFolders_FullMethodName         = "/tribbae.v1.FolderService/ListTopFolders"
 )
 
 // FolderServiceClient is the client API for FolderService service.
@@ -47,6 +52,11 @@ type FolderServiceClient interface {
 	GetSharedFolder(ctx context.Context, in *GetSharedFolderRequest, opts ...grpc.CallOption) (*GetSharedFolderResponse, error)
 	AddCollaborator(ctx context.Context, in *AddCollaboratorRequest, opts ...grpc.CallOption) (*AddCollaboratorResponse, error)
 	RemoveCollaborator(ctx context.Context, in *RemoveCollaboratorRequest, opts ...grpc.CallOption) (*RemoveCollaboratorResponse, error)
+	InviteToCircle(ctx context.Context, in *InviteToCircleRequest, opts ...grpc.CallOption) (*InviteToCircleResponse, error)
+	ListCircleInvitations(ctx context.Context, in *ListCircleInvitationsRequest, opts ...grpc.CallOption) (*ListCircleInvitationsResponse, error)
+	RevokeCircleInvitation(ctx context.Context, in *RevokeCircleInvitationRequest, opts ...grpc.CallOption) (*RevokeCircleInvitationResponse, error)
+	GetCircleInvitation(ctx context.Context, in *GetCircleInvitationRequest, opts ...grpc.CallOption) (*GetCircleInvitationResponse, error)
+	AcceptCircleInvitation(ctx context.Context, in *AcceptCircleInvitationRequest, opts ...grpc.CallOption) (*AcceptCircleInvitationResponse, error)
 	ListCommunityFolders(ctx context.Context, in *ListCommunityFoldersRequest, opts ...grpc.CallOption) (*ListCommunityFoldersResponse, error)
 	LikeFolder(ctx context.Context, in *LikeFolderRequest, opts ...grpc.CallOption) (*LikeFolderResponse, error)
 	UnlikeFolder(ctx context.Context, in *UnlikeFolderRequest, opts ...grpc.CallOption) (*UnlikeFolderResponse, error)
@@ -151,6 +161,56 @@ func (c *folderServiceClient) RemoveCollaborator(ctx context.Context, in *Remove
 	return out, nil
 }
 
+func (c *folderServiceClient) InviteToCircle(ctx context.Context, in *InviteToCircleRequest, opts ...grpc.CallOption) (*InviteToCircleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InviteToCircleResponse)
+	err := c.cc.Invoke(ctx, FolderService_InviteToCircle_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) ListCircleInvitations(ctx context.Context, in *ListCircleInvitationsRequest, opts ...grpc.CallOption) (*ListCircleInvitationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCircleInvitationsResponse)
+	err := c.cc.Invoke(ctx, FolderService_ListCircleInvitations_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) RevokeCircleInvitation(ctx context.Context, in *RevokeCircleInvitationRequest, opts ...grpc.CallOption) (*RevokeCircleInvitationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeCircleInvitationResponse)
+	err := c.cc.Invoke(ctx, FolderService_RevokeCircleInvitation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) GetCircleInvitation(ctx context.Context, in *GetCircleInvitationRequest, opts ...grpc.CallOption) (*GetCircleInvitationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCircleInvitationResponse)
+	err := c.cc.Invoke(ctx, FolderService_GetCircleInvitation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) AcceptCircleInvitation(ctx context.Context, in *AcceptCircleInvitationRequest, opts ...grpc.CallOption) (*AcceptCircleInvitationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcceptCircleInvitationResponse)
+	err := c.cc.Invoke(ctx, FolderService_AcceptCircleInvitation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *folderServiceClient) ListCommunityFolders(ctx context.Context, in *ListCommunityFoldersRequest, opts ...grpc.CallOption) (*ListCommunityFoldersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListCommunityFoldersResponse)
@@ -204,6 +264,11 @@ type FolderServiceServer interface {
 	GetSharedFolder(context.Context, *GetSharedFolderRequest) (*GetSharedFolderResponse, error)
 	AddCollaborator(context.Context, *AddCollaboratorRequest) (*AddCollaboratorResponse, error)
 	RemoveCollaborator(context.Context, *RemoveCollaboratorRequest) (*RemoveCollaboratorResponse, error)
+	InviteToCircle(context.Context, *InviteToCircleRequest) (*InviteToCircleResponse, error)
+	ListCircleInvitations(context.Context, *ListCircleInvitationsRequest) (*ListCircleInvitationsResponse, error)
+	RevokeCircleInvitation(context.Context, *RevokeCircleInvitationRequest) (*RevokeCircleInvitationResponse, error)
+	GetCircleInvitation(context.Context, *GetCircleInvitationRequest) (*GetCircleInvitationResponse, error)
+	AcceptCircleInvitation(context.Context, *AcceptCircleInvitationRequest) (*AcceptCircleInvitationResponse, error)
 	ListCommunityFolders(context.Context, *ListCommunityFoldersRequest) (*ListCommunityFoldersResponse, error)
 	LikeFolder(context.Context, *LikeFolderRequest) (*LikeFolderResponse, error)
 	UnlikeFolder(context.Context, *UnlikeFolderRequest) (*UnlikeFolderResponse, error)
@@ -243,6 +308,21 @@ func (UnimplementedFolderServiceServer) AddCollaborator(context.Context, *AddCol
 }
 func (UnimplementedFolderServiceServer) RemoveCollaborator(context.Context, *RemoveCollaboratorRequest) (*RemoveCollaboratorResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemoveCollaborator not implemented")
+}
+func (UnimplementedFolderServiceServer) InviteToCircle(context.Context, *InviteToCircleRequest) (*InviteToCircleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InviteToCircle not implemented")
+}
+func (UnimplementedFolderServiceServer) ListCircleInvitations(context.Context, *ListCircleInvitationsRequest) (*ListCircleInvitationsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCircleInvitations not implemented")
+}
+func (UnimplementedFolderServiceServer) RevokeCircleInvitation(context.Context, *RevokeCircleInvitationRequest) (*RevokeCircleInvitationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeCircleInvitation not implemented")
+}
+func (UnimplementedFolderServiceServer) GetCircleInvitation(context.Context, *GetCircleInvitationRequest) (*GetCircleInvitationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCircleInvitation not implemented")
+}
+func (UnimplementedFolderServiceServer) AcceptCircleInvitation(context.Context, *AcceptCircleInvitationRequest) (*AcceptCircleInvitationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AcceptCircleInvitation not implemented")
 }
 func (UnimplementedFolderServiceServer) ListCommunityFolders(context.Context, *ListCommunityFoldersRequest) (*ListCommunityFoldersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListCommunityFolders not implemented")
@@ -438,6 +518,96 @@ func _FolderService_RemoveCollaborator_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FolderService_InviteToCircle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InviteToCircleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).InviteToCircle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_InviteToCircle_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).InviteToCircle(ctx, req.(*InviteToCircleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_ListCircleInvitations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCircleInvitationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).ListCircleInvitations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_ListCircleInvitations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).ListCircleInvitations(ctx, req.(*ListCircleInvitationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_RevokeCircleInvitation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeCircleInvitationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).RevokeCircleInvitation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_RevokeCircleInvitation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).RevokeCircleInvitation(ctx, req.(*RevokeCircleInvitationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_GetCircleInvitation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCircleInvitationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).GetCircleInvitation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_GetCircleInvitation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).GetCircleInvitation(ctx, req.(*GetCircleInvitationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_AcceptCircleInvitation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcceptCircleInvitationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).AcceptCircleInvitation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_AcceptCircleInvitation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).AcceptCircleInvitation(ctx, req.(*AcceptCircleInvitationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _FolderService_ListCommunityFolders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListCommunityFoldersRequest)
 	if err := dec(in); err != nil {
@@ -552,6 +722,26 @@ var FolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveCollaborator",
 			Handler:    _FolderService_RemoveCollaborator_Handler,
+		},
+		{
+			MethodName: "InviteToCircle",
+			Handler:    _FolderService_InviteToCircle_Handler,
+		},
+		{
+			MethodName: "ListCircleInvitations",
+			Handler:    _FolderService_ListCircleInvitations_Handler,
+		},
+		{
+			MethodName: "RevokeCircleInvitation",
+			Handler:    _FolderService_RevokeCircleInvitation_Handler,
+		},
+		{
+			MethodName: "GetCircleInvitation",
+			Handler:    _FolderService_GetCircleInvitation_Handler,
+		},
+		{
+			MethodName: "AcceptCircleInvitation",
+			Handler:    _FolderService_AcceptCircleInvitation_Handler,
 		},
 		{
 			MethodName: "ListCommunityFolders",

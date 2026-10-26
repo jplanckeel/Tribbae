@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { shareOrCopy } from "../lib/share";
 import * as api from "../lib/api";
-import type { CollaboratorRole, Folder } from "../lib/types";
+import type { CircleInvitation, CollaboratorRole, Folder } from "../lib/types";
+import { useAsync } from "../lib/useAsync";
 import { useFeedback } from "./feedback";
 import { AVATAR_COLORS } from "../lib/categories";
 import Icon from "./Icon";
@@ -24,6 +25,9 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
   const [busy, setBusy] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [error, setError] = useState("");
+  // Invitations en attente qui ouvrent ce dossier (envoyées par moi)
+  const invites = useAsync(() => api.circle.invitations(), [folder.id]);
+  const pending = (invites.data ?? []).filter((inv) => inv.folderIds?.includes(folder.id));
 
   const makeLink = async () => {
     setLinkBusy(true);
@@ -53,10 +57,11 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
     setBusy(true);
     setError("");
     try {
-      const f = await api.folders.addCollaborator(folder.id, email.trim(), role);
-      onChange(f);
+      // Invitation par email : la personne (compte ou non) entre en acceptant le lien
+      const inv = await api.circle.invite(email.trim(), [folder.id], role);
+      invites.setData((list) => [...(list ?? []).filter((x) => x.id !== inv.id), inv]);
       setEmail("");
-      toast("Membre ajouté au dossier");
+      toast("Invitation envoyée");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -68,6 +73,24 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
     if (!(await confirm({ title: `Retirer ${name} ?`, text: "Cette personne n'aura plus accès au dossier.", confirmLabel: "Retirer", danger: true }))) return;
     try {
       onChange(await api.folders.removeCollaborator(folder.id, userId));
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+
+  const cancel = async (inv: CircleInvitation) => {
+    const others = (inv.folderNames ?? []).filter((n) => n !== folder.name);
+    const ok = await confirm({
+      title: "Annuler l'invitation ?",
+      text: `Le lien envoyé à ${inv.email} ne marchera plus${others.length ? `, ni pour ${others.join(", ")}` : ""}. Vous pourrez l'inviter à nouveau.`,
+      confirmLabel: "Annuler l'invitation",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.circle.revokeInvitation(inv.id);
+      invites.setData((list) => (list ?? []).filter((x) => x.id !== inv.id));
+      toast("Invitation annulée");
     } catch (e) {
       toast((e as Error).message, "error");
     }
@@ -128,7 +151,29 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
               })}
             </ul>
           ) : (
-            <p className="text-sm text-sec">Invitez un proche qui a un compte Tribbae pour remplir ce dossier ensemble.</p>
+            !pending.length && <p className="text-sm text-sec">Invitez un proche pour remplir ce dossier ensemble : il reçoit un lien par email, avec ou sans compte Tribbae.</p>
+          )}
+          {pending.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {pending.map((inv) => (
+                <li key={inv.id} className="flex items-center gap-3 rounded-[18px] border-2 border-dashed border-dash px-3.5 py-2.5">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-small bg-sable-2 text-muted">
+                    <Icon name="send" size={16} />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-sm font-bold">{inv.email}</span>
+                    <span className="text-xs text-sec">En attente · {inv.role === "COLLABORATOR_ROLE_EDITOR" ? "peut ajouter des idées" : "lecture seule"}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => cancel(inv)}
+                    className="h-9 shrink-0 rounded-small px-3 text-[13px] font-bold text-sec hover:bg-sable-2"
+                  >
+                    Annuler
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
 
           <form onSubmit={invite} className="flex flex-col gap-3">

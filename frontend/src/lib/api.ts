@@ -1,7 +1,7 @@
 import { clearSession, getSession, setSession, shouldRenew } from "./session";
 import { withinLimits } from "./preview";
 import type {
-  AdminUser, AiIdea, Child, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole,
+  AdminUser, AiIdea, Child, CircleInvitation, CircleInvitationInfo, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole,
 } from "./types";
 
 const BASE = "/v1";
@@ -31,6 +31,9 @@ function frenchMessage(status: number, message: string): string {
   if (/already a collaborator/i.test(message)) return "Cette personne fait déjà partie du dossier.";
   if (/already a member of this tribe/i.test(message)) return "Cette personne fait déjà partie de votre tribu.";
   if (/already belongs to another tribe/i.test(message)) return "Ce compte fait déjà partie d'une autre tribu : la personne doit d'abord la quitter.";
+  if (/too many pending invitations/i.test(message)) return "Trop d'invitations en attente (30 au plus) : annulez-en ou attendez qu'elles soient acceptées.";
+  if (/choose the folders to open/i.test(message)) return "Choisissez au moins un dossier à ouvrir.";
+  if (/cannot invite yourself/i.test(message)) return "C'est votre propre adresse.";
   if (/tribe is full/i.test(message)) return "La tribu est complète (12 membres et invitations en attente au plus).";
   if (/invitation is for another email/i.test(message)) return "Cette invitation a été envoyée à une autre adresse que celle de votre compte.";
   if (/only the tribe owner/i.test(message)) return "Seul le créateur de la tribu peut retirer un membre.";
@@ -206,10 +209,6 @@ export const folders = {
     request<{ shareToken: string; shareUrl: string }>(`/folders/${encodeURIComponent(id)}/share`, {
       method: "POST", body: "{}",
     }),
-  addCollaborator: (id: string, email: string, role: CollaboratorRole) =>
-    request<{ folder: Folder }>(`/folders/${encodeURIComponent(id)}/collaborators`, {
-      method: "POST", body: json({ email, role }),
-    }).then((r) => r.folder),
   removeCollaborator: (id: string, userId: string) =>
     request<{ folder: Folder }>(
       `/folders/${encodeURIComponent(id)}/collaborators/${encodeURIComponent(userId)}`,
@@ -252,6 +251,20 @@ export const tribe = {
     request<{ tribe: Tribe }>(`/tribe/members/${encodeURIComponent(userId)}`, { method: "DELETE" }).then((r) => r.tribe),
   setSharing: (sharing: boolean) =>
     request<{ tribe: Tribe }>("/tribe/sharing", { method: "PUT", body: json({ sharing }) }).then((r) => r.tribe),
+};
+
+/** Le cercle : proches invités par email à des dossiers choisis. */
+export const circle = {
+  /** Même réponse que l'adresse ait un compte ou non ; une invitation en attente reçoit les dossiers en plus. */
+  invite: (email: string, folderIds: string[], role: CollaboratorRole) =>
+    request<{ invitation: CircleInvitation }>("/circle/invitations", { method: "POST", body: json({ email, folderIds, role }) }).then((r) => r.invitation),
+  invitations: () => request<{ invitations?: CircleInvitation[] }>("/circle/invitations").then((r) => r.invitations ?? []),
+  revokeInvitation: (id: string) => request<void>(`/circle/invitations/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  /** Lien d'invitation : accessible sans compte. */
+  lookupInvitation: (token: string) =>
+    request<CircleInvitationInfo>("/circle/invitations/lookup", { method: "POST", body: json({ token }) }),
+  acceptInvitation: (token: string) =>
+    request<{ folders?: Folder[] }>("/circle/invitations/accept", { method: "POST", body: json({ token }) }).then((r) => r.folders ?? []),
 };
 
 export const children = {

@@ -140,8 +140,12 @@ class MainActivity : ComponentActivity() {
         val inviteToken = extractInviteToken(intent)
         val resetToken = extractResetToken(intent)
         val verifyToken = extractVerifyToken(intent)
-        if (url == null && title == null && token == null && inviteToken == null && resetToken == null && verifyToken == null) return null
-        return SharedContent(url = url, title = title, folderToken = token, inviteToken = inviteToken, resetToken = resetToken, verifyToken = verifyToken)
+        val circleToken = extractCircleToken(intent)
+        if (url == null && title == null && token == null && inviteToken == null && resetToken == null && verifyToken == null && circleToken == null) return null
+        return SharedContent(
+            url = url, title = title, folderToken = token, inviteToken = inviteToken, resetToken = resetToken,
+            verifyToken = verifyToken, circleToken = circleToken,
+        )
     }
 
     private fun installLaunchTransition(launchedFromIcon: Boolean) {
@@ -195,6 +199,14 @@ class MainActivity : ComponentActivity() {
         if (intent?.action != Intent.ACTION_VIEW) return null
         val data = intent.data ?: return null
         if (data.path?.trimEnd('/') != "/mot-de-passe/nouveau") return null
+        return data.fragment?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{20,128}")) }
+    }
+
+    /** Jeton du lien d'invitation dans le cercle (https://…/invitation-cercle#<jeton>). */
+    private fun extractCircleToken(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+        val data = intent.data ?: return null
+        if (data.path?.trimEnd('/') != "/invitation-cercle") return null
         return data.fragment?.takeIf { it.matches(Regex("[A-Za-z0-9_-]{20,128}")) }
     }
 

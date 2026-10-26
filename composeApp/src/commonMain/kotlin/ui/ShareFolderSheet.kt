@@ -45,6 +45,10 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
     var role by remember { mutableStateOf(ROLE_EDITOR) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
+    // Invitations en attente qui ouvrent ce dossier (envoyées par moi)
+    val invitations by viewModel.circleInvitations.collectAsState()
+    val pending = invitations.filter { current.id in it.folderIds }
+    var cancelTarget by remember { mutableStateOf<data.ApiCircleInvitation?>(null) }
 
     fun sendLink(url: String) {
         context.startActivity(
@@ -98,7 +102,7 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Membres invités", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
                 if (current.collaborators.isEmpty()) {
-                    Text("Invitez un proche qui a un compte Tribbae pour remplir ce dossier ensemble.", fontSize = 14.sp, color = TextSec)
+                    if (pending.isEmpty()) Text("Invitez un proche pour remplir ce dossier ensemble : il reçoit un lien par email, avec ou sans compte Tribbae.", fontSize = 14.sp, color = TextSec)
                 } else {
                     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor)) {
                         current.collaborators.forEachIndexed { i, c ->
@@ -122,6 +126,28 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                     }
                 }
 
+                pending.forEach { inv ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).dashedBorder(Dash, 18.dp).padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(Modifier.size(36.dp).clip(RoundedCornerShape(12.dp)).background(Sable2), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.Send, null, tint = TextMuted, modifier = Modifier.size(16.dp))
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text(inv.email, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("En attente · " + if (inv.editor) "peut ajouter des idées" else "lecture seule", fontSize = 12.sp, color = TextSec)
+                        }
+                        Text(
+                            "Annuler", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec,
+                            modifier = Modifier.height(36.dp).clip(RoundedCornerShape(12.dp))
+                                .clickable(role = Role.Button) { cancelTarget = inv }
+                                .wrapContentHeight().padding(horizontal = 10.dp)
+                        )
+                    }
+                }
+
                 CampField(
                     "Email du proche", email, { email = it; message = null },
                     placeholder = "camille@exemple.fr", icon = Icons.Outlined.PersonAdd,
@@ -141,19 +167,45 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                 CampButton(
                     if (busy) "Invitation…" else "Inviter",
                     {
-                        // Ajouter quelqu'un attend la confirmation de l'adresse
-                        if (!viewModel.emailVerified.value) { message = data.EmailVerification.VERIFY_FIRST; return@CampButton }
                         busy = true
-                        scope.launch {
-                            val r = viewModel.addCollaborator(current.id, email.trim(), role)
+                        // Invitation par email : la personne (compte ou non) entre en acceptant le lien
+                        viewModel.inviteToCircle(email, listOf(current.id), role == ROLE_EDITOR) { err ->
                             busy = false
-                            if (r == null) message = "Invitation impossible : vérifiez l'email (compte Tribbae requis)."
-                            else { email = ""; message = null }
+                            message = err
+                            if (err == null) {
+                                email = ""
+                                android.widget.Toast.makeText(context, "Invitation envoyée", android.widget.Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                     Modifier.fillMaxWidth(), icon = Icons.Outlined.Send, enabled = email.contains("@") && !busy
                 )
             }
         }
+    }
+
+    cancelTarget?.let { inv ->
+        val others = inv.folderNames.filter { it != current.name }
+        AlertDialog(
+            onDismissRequest = { cancelTarget = null },
+            containerColor = SheetColor,
+            title = { Text("Annuler l'invitation ?", style = display(20.sp, FontWeight.Bold)) },
+            text = {
+                Text(
+                    "Le lien envoyé à ${inv.email} ne marchera plus" + (if (others.isNotEmpty()) ", ni pour ${others.joinToString(", ")}" else "") +
+                        ". Vous pourrez l'inviter à nouveau.",
+                    color = Ecorce2
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    cancelTarget = null
+                    viewModel.revokeCircleInvitation(inv.id) { err ->
+                        android.widget.Toast.makeText(context, err ?: "Invitation annulée", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("Annuler l'invitation", color = Terracotta, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { cancelTarget = null }) { Text("Garder", color = Ecorce) } }
+        )
     }
 }

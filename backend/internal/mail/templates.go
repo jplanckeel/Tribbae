@@ -46,6 +46,7 @@ const (
 	tmplTribeInvite    = "tribe_invitation"
 	tmplAccountDeleted = "account_deleted"
 	tmplEmailVerify    = "email_verification"
+	tmplCircleInvite   = "circle_invitation"
 )
 
 var (
@@ -54,7 +55,7 @@ var (
 )
 
 func init() {
-	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify} {
+	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify, tmplCircleInvite} {
 		htmlTemplates[name] = htmltemplate.Must(htmltemplate.New("").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
@@ -314,6 +315,49 @@ func tribeInvitationEmail(siteURL string, inv TribeInvitation) (content, error) 
 		Validity:       frenchDuration(inv.Validity),
 	}
 	return render(tmplTribeInvite, d.base, d)
+}
+
+// --- Invitation dans le cercle ---
+
+type circleInvitationData struct {
+	base
+	Inviter        string
+	InviterInitial string
+	Heading        string
+	Folders        []string
+	Editor         bool
+	InviteURL      string
+	Validity       string
+}
+
+func circleInvitationEmail(siteURL string, inv CircleInvitation) (content, error) {
+	inviter := oneLine(inv.InviterName)
+	if inviter == "" {
+		inviter = "Un membre de Tribbae"
+	}
+	folders := make([]string, 0, len(inv.Folders))
+	for _, f := range inv.Folders {
+		if f = oneLine(f); f != "" {
+			folders = append(folders, f)
+		}
+	}
+	heading := "Des dossiers vous sont ouverts"
+	subject := inviter + " vous ouvre " + strconv.Itoa(len(folders)) + " dossiers sur Tribbae"
+	if len(folders) == 1 {
+		heading = "Le dossier « " + folders[0] + " » vous est ouvert"
+		subject = inviter + " vous ouvre son dossier « " + folders[0] + " » sur Tribbae"
+	}
+	d := circleInvitationData{
+		base:           newBase(siteURL, oneLine(subject)),
+		Inviter:        inviter,
+		InviterInitial: initial(inviter),
+		Heading:        heading,
+		Folders:        folders,
+		Editor:         inv.Editor,
+		InviteURL:      inv.URL,
+		Validity:       frenchDuration(inv.Validity),
+	}
+	return render(tmplCircleInvite, d.base, d)
 }
 
 // --- Suppression du compte ---

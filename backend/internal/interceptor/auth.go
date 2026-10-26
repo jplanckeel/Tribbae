@@ -27,6 +27,8 @@ var publicMethods = map[string]bool{
 	"/tribbae.v1.AuthService/RefreshToken": true,
 	// Lien d'invitation dans une tribu, ouvert avant toute connexion
 	"/tribbae.v1.TribeService/GetTribeInvitation": true,
+	// Lien d'invitation dans le cercle (dossiers choisis), idem
+	"/tribbae.v1.FolderService/GetCircleInvitation": true,
 	// Mot de passe oublié : par définition sans session
 	"/tribbae.v1.AuthService/RequestPasswordReset": true,
 	"/tribbae.v1.AuthService/ResetPassword":        true,

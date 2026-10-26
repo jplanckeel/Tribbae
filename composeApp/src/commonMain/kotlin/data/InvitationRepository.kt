@@ -20,13 +20,31 @@ data class TribeInvitationInfo(
     val expiresAt: Long = 0
 )
 
+/** Ce qu'affiche un lien d'invitation dans le cercle (dossiers ouverts), avant de l'accepter. */
+@Serializable
+data class CircleInvitationInfo(
+    val email: String = "",
+    val invitedByName: String = "",
+    val folderNames: List<String> = emptyList(),
+    val role: String = "",
+    val expiresAt: Long = 0
+) {
+    val editor: Boolean get() = role == "COLLABORATOR_ROLE_EDITOR"
+}
+
 /** Lecture d'un lien d'invitation : accessible sans compte (le jeton tient lieu d'accès). */
 class InvitationRepository(private val baseUrl: String = Backend.url) {
     private val json = Json { ignoreUnknownKeys = true }
 
     /** null si l'invitation n'est plus valable (expirée, annulée, déjà utilisée). */
-    suspend fun lookup(token: String): TribeInvitationInfo? = withContext(Dispatchers.IO) {
-        val conn = URL("$baseUrl/v1/tribe/invitations/lookup").openConnection() as HttpURLConnection
+    suspend fun lookup(token: String): TribeInvitationInfo? = post("/v1/tribe/invitations/lookup", token)?.let { json.decodeFromString(it) }
+
+    /** Lien d'invitation dans le cercle ; null s'il n'est plus valable. */
+    suspend fun lookupCircle(token: String): CircleInvitationInfo? = post("/v1/circle/invitations/lookup", token)?.let { json.decodeFromString(it) }
+
+    /** Corps de la réponse, ou null si l'invitation n'est plus valable (404). */
+    private suspend fun post(path: String, token: String): String? = withContext(Dispatchers.IO) {
+        val conn = URL("$baseUrl$path").openConnection() as HttpURLConnection
         try {
             conn.requestMethod = "POST"
             conn.setRequestProperty("Content-Type", "application/json")
@@ -37,7 +55,7 @@ class InvitationRepository(private val baseUrl: String = Backend.url) {
                 kotlinx.serialization.json.buildJsonObject { put("token", kotlinx.serialization.json.JsonPrimitive(token)) })
             OutputStreamWriter(conn.outputStream).use { it.write(body) }
             when (val code = conn.responseCode) {
-                200 -> json.decodeFromString<TribeInvitationInfo>(BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() })
+                200 -> BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
                 404 -> null
                 else -> throw Exception("HTTP $code")
             }

@@ -55,6 +55,7 @@ const (
 	TagAccountDeleted = "account-deleted"
 	TagTribeInvite    = "tribe-invitation"
 	TagEmailVerify    = "email-verification"
+	TagCircleInvite   = "circle-invitation"
 
 	sendTimeout = 30 * time.Second
 )
@@ -139,6 +140,26 @@ type TribeInvitation struct {
 func (m *Mailer) TribeInvitation(inv TribeInvitation) {
 	c, err := tribeInvitationEmail(m.siteURL, inv)
 	m.send(inv.Email, "", TagTribeInvite, c, err)
+}
+
+// CircleInvitation : invitation à des dossiers choisis (le cercle). La
+// fréquence des envois est limitée par le service des dossiers.
+type CircleInvitation struct {
+	Email       string
+	InviterName string
+	// Folders : noms des dossiers ouverts
+	Folders []string
+	// Editor : la personne pourra ajouter des idées
+	Editor bool
+	// URL : lien « Voir les dossiers », jeton compris
+	URL      string
+	Validity time.Duration
+}
+
+// CircleInvitation envoie l'invitation à des dossiers.
+func (m *Mailer) CircleInvitation(inv CircleInvitation) {
+	c, err := circleInvitationEmail(m.siteURL, inv)
+	m.send(inv.Email, "", TagCircleInvite, c, err)
 }
 
 // Wait attend la fin des envois en cours (arrêt du serveur), au plus jusqu'à

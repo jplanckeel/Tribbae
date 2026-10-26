@@ -141,8 +141,10 @@ func toStatus(op string, err error) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, ErrNotFound), errors.Is(err, mongo.ErrNoDocuments):
 		return status.Error(codes.NotFound, "folder not found")
-	case errors.Is(err, auth.ErrEmailNotVerified):
+	case errors.Is(err, auth.ErrEmailNotVerified), errors.Is(err, ErrWrongAccount), errors.Is(err, ErrTooManyInvitations):
 		return status.Error(codes.FailedPrecondition, err.Error())
+	case errors.Is(err, ErrInvalidInvitation):
+		return status.Error(codes.NotFound, err.Error())
 	default:
 		log.Printf("folder: %s: %v", op, err)
 		return status.Errorf(codes.Internal, "failed to %s", op)
@@ -340,4 +342,95 @@ func (h *Handler) ListTopFolders(ctx context.Context, req *pb.ListTopFoldersRequ
 	}
 	pbFolders := h.many(ctx, folders)
 	return &pb.ListTopFoldersResponse{Folders: pbFolders}, nil
+}
+
+// --- Invitations dans le cercle ---
+
+func (h *Handler) invitationToProto(inv *Invitation, names map[string]string) *pb.CircleInvitation {
+	out := &pb.CircleInvitation{
+		Id:        inv.ID.Hex(),
+		Email:     inv.Email,
+		Role:      collabRoleToProto(inv.Role),
+		CreatedAt: inv.CreatedAt.UnixMilli(),
+		ExpiresAt: inv.ExpiresAt.UnixMilli(),
+	}
+	// Seulement les dossiers qui existent encore
+	for _, id := range inv.FolderIDs {
+		if name, ok := names[id]; ok {
+			out.FolderIds = append(out.FolderIds, id)
+			out.FolderNames = append(out.FolderNames, name)
+		}
+	}
+	return out
+}
+
+func (h *Handler) InviteToCircle(ctx context.Context, req *pb.InviteToCircleRequest) (*pb.InviteToCircleResponse, error) {
+	ownerID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+	inv, err := h.svc.Invite(ctx, ownerID, req.Email, req.FolderIds, collabRoleToStr(req.Role))
+	if err != nil {
+		return nil, toStatus("invite to circle", err)
+	}
+	_, names, err := h.svc.Invitations(ctx, ownerID)
+	if err != nil {
+		return nil, toStatus("invite to circle", err)
+	}
+	return &pb.InviteToCircleResponse{Invitation: h.invitationToProto(inv, names)}, nil
+}
+
+func (h *Handler) ListCircleInvitations(ctx context.Context, _ *pb.ListCircleInvitationsRequest) (*pb.ListCircleInvitationsResponse, error) {
+	ownerID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+	invs, names, err := h.svc.Invitations(ctx, ownerID)
+	if err != nil {
+		return nil, toStatus("list circle invitations", err)
+	}
+	out := &pb.ListCircleInvitationsResponse{}
+	for i := range invs {
+		if p := h.invitationToProto(&invs[i], names); len(p.FolderIds) > 0 {
+			out.Invitations = append(out.Invitations, p)
+		}
+	}
+	return out, nil
+}
+
+func (h *Handler) RevokeCircleInvitation(ctx context.Context, req *pb.RevokeCircleInvitationRequest) (*pb.RevokeCircleInvitationResponse, error) {
+	ownerID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+	if err := h.svc.Revoke(ctx, ownerID, req.InvitationId); err != nil {
+		return nil, toStatus("revoke circle invitation", err)
+	}
+	return &pb.RevokeCircleInvitationResponse{}, nil
+}
+
+func (h *Handler) GetCircleInvitation(ctx context.Context, req *pb.GetCircleInvitationRequest) (*pb.GetCircleInvitationResponse, error) {
+	info, err := h.svc.Lookup(ctx, req.Token)
+	if err != nil {
+		return nil, toStatus("get circle invitation", err)
+	}
+	return &pb.GetCircleInvitationResponse{
+		Email:         info.Email,
+		InvitedByName: info.InvitedByName,
+		FolderNames:   info.FolderNames,
+		Role:          collabRoleToProto(info.Role),
+		ExpiresAt:     info.ExpiresAt.UnixMilli(),
+	}, nil
+}
+
+func (h *Handler) AcceptCircleInvitation(ctx context.Context, req *pb.AcceptCircleInvitationRequest) (*pb.AcceptCircleInvitationResponse, error) {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+	folders, err := h.svc.Accept(ctx, userID, req.Token)
+	if err != nil {
+		return nil, toStatus("accept circle invitation", err)
+	}
+	return &pb.AcceptCircleInvitationResponse{Folders: h.many(ctx, folders)}, nil
 }
