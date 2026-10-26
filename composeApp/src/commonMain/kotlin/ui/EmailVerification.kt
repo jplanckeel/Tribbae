@@ -82,6 +82,20 @@ fun PublishLockedNote(modifier: Modifier = Modifier) {
 }
 
 /**
+ * Note sous le choix du dossier : une idée rangée dans un dossier public est
+ * publiée, elle attend donc sur le téléphone que l'adresse soit confirmée.
+ */
+@Composable
+fun PublicFolderWaitingNote(viewModel: LinkViewModel, folder: data.Folder?, modifier: Modifier = Modifier) {
+    val verified by viewModel.emailVerified.collectAsState()
+    if (verified || folder == null || !folder.visibility.uppercase().contains("PUBLIC")) return
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(Icons.Outlined.Lock, null, tint = TextSec, modifier = Modifier.size(14.dp))
+        Text(data.EmailVerification.PUBLIC_FOLDER_WAITS, fontSize = 12.sp, color = TextSec)
+    }
+}
+
+/**
  * « Confirmer mon adresse » : ouvert depuis le lien de l'email
  * (https://tribbae.fr/verifier-email#<jeton>). Le lien est vérifié dès
  * l'ouverture ; sans session, il confirme quand même l'adresse.

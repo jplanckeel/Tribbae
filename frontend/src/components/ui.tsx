@@ -133,7 +133,7 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative h-7 w-[46px] shrink-0 rounded-full transition-colors ${checked ? "bg-ecorce" : "bg-dash"}`}
+      className={`relative h-7 w-[46px] shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${checked ? "bg-ecorce" : "bg-dash"}`}
     >
       <span className={`absolute top-[3px] h-[22px] w-[22px] rounded-full bg-sable transition-all ${checked ? "right-[3px]" : "right-[21px]"}`} />
     </button>

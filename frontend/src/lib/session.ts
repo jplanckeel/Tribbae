@@ -92,3 +92,9 @@ function subscribe(cb: () => void) {
 export function useSession(): Session | null {
   return useSyncExternalStore(subscribe, getSession, () => null);
 }
+
+/** Publier est possible : adresse confirmée (ou pas de compte, rien à bloquer). Même règle sur Android : LinkViewModel.emailVerified. */
+export function useCanPublish(): boolean {
+  const session = useSession();
+  return !session || session.emailVerified;
+}

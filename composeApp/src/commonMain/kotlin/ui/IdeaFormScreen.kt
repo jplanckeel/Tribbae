@@ -374,6 +374,7 @@ fun IdeaFormScreen(
             // Dans son propre dossier public, une idée est visible de tous même sans être partagée
             // à la communauté (les idées d'un collaborateur, elles, restent réservées aux membres).
             val chosenFolder = folders.find { it.id == folderId }
+            PublicFolderWaitingNote(viewModel, chosenFolder, Modifier.padding(horizontal = 4.dp))
             val me = viewModel.currentUserId()
             val inMyPublicFolder = chosenFolder != null && chosenFolder.visibility.uppercase().contains("PUBLIC") &&
                 (me == null || chosenFolder.collaborators.none { it.userId == me })

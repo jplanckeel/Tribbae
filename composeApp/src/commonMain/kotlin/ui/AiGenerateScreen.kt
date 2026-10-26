@@ -322,6 +322,7 @@ fun AiGenerateScreen(
                             fontSize = 13.sp, color = TextSec,
                             modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button, onClickLabel = "Changer de dossier") { picking = true }
                         )
+                        PublicFolderWaitingNote(viewModel, targetFolder)
                         Box(
                             Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(18.dp)).background(if (kept.isEmpty()) BarkMute else Terracotta)
                                 .clickable(enabled = kept.isNotEmpty(), role = Role.Button, onClick = ::save),

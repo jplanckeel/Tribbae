@@ -9,7 +9,9 @@ import { safeImage } from "../lib/format";
 import type { Folder, FolderInput, Visibility } from "../lib/types";
 import { CoverArt, FolderGlyph, IllustrationArt } from "./FolderCover";
 import Icon, { type IconName } from "./Icon";
+import { useCanPublish } from "../lib/session";
 import Sheet from "./Sheet";
+import { PublishLockedNote } from "./VerifyEmailBanner";
 import { Avatar, Button, ErrorNote, Field, Toggle } from "./ui";
 
 const VISIBILITIES: { key: Visibility; label: string; hint: string; icon: IconName }[] = [
@@ -58,6 +60,9 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
   const { children, links } = useMyData();
   const [form, setForm] = useState<FolderInput>(() => (folder ? folderInput(folder) : empty));
   const [tab, setTab] = useState<Tab>(folder ? "style" : "infos");
+  // Publier attend la confirmation de l'adresse (un dossier déjà public le reste)
+  const canPublish = useCanPublish();
+  const publishLocked = !canPublish && folder?.visibility !== "VISIBILITY_PUBLIC";
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const set = (patch: Partial<FolderInput>) => setForm((f) => ({ ...f, ...patch }));
@@ -385,8 +390,9 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         key={v.key}
                         type="button"
                         aria-pressed={active}
+                        disabled={publishLocked && v.key === "VISIBILITY_PUBLIC"}
                         onClick={() => set({ visibility: v.key })}
-                        className={`flex flex-col items-start gap-1 rounded-medium border-2 p-3 text-left transition-colors ${active ? "border-ecorce bg-card" : "border-transparent bg-sable-2"}`}
+                        className={`flex flex-col items-start gap-1 rounded-medium border-2 p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${active ? "border-ecorce bg-card" : "border-transparent bg-sable-2"}`}
                       >
                         <span className="flex items-center gap-1.5 text-sm font-bold"><Icon name={v.icon} size={16} />{v.label}</span>
                         <span className="text-xs text-sec">{v.hint}</span>
@@ -394,6 +400,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                     );
                   })}
                 </div>
+                {publishLocked && <div className="mt-2"><PublishLockedNote /></div>}
               </Group>
             </>
           )}

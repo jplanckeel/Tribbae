@@ -8,7 +8,8 @@ import { useMyData } from "../lib/data";
 import { eventDateMs, formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, toInput } from "../lib/links";
 import { usePhotoUpload } from "../lib/photo";
-import { useSession } from "../lib/session";
+import { useCanPublish, useSession } from "../lib/session";
+import { PublicFolderNote, PublishLockedNote } from "./VerifyEmailBanner";
 import type { Folder, Link, LinkInput, LinkPreview } from "../lib/types";
 import { FolderGlyph } from "./FolderCover";
 import FolderPicker from "./FolderPicker";
@@ -94,6 +95,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
   const editable = useMemo(() => folders.filter((f) => canEditFolder(f, session?.userId, peers)), [folders, session?.userId, peers]);
   const suggestions = useMemo(() => suggestFolders(draft.category, editable, links, preset), [draft.category, editable, links, preset]);
   const folder = folders.find((f) => f.id === folderId);
+  const canPublish = useCanPublish();
   const cat = categoryMeta(draft.category);
   const recent = useMemo(
     () => links.filter((l) => l.ownerId && l.ownerId !== session?.userId && peers.has(l.ownerId)).sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))[0],
@@ -423,6 +425,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
               <Icon name="chevronRight" size={18} className="ml-auto text-muted" />
             </button>
             <WhoSees folder={folder} isPublic={draft.visibility === "public"} />
+            <PublicFolderNote folder={folder} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -472,8 +475,15 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
             <span className="flex flex-1 flex-col">
               <span className="text-sm font-bold">Inspirer d'autres familles</span>
               <span className="text-xs text-sec">Visible aussi dans Explorer</span>
+              {!canPublish && <PublishLockedNote />}
             </span>
-            <Toggle label="Inspirer d'autres familles" checked={draft.visibility === "public"} onChange={(v) => set({ visibility: v ? "public" : "private" })} />
+            {/* Publier attend la confirmation de l'adresse ; dépublier reste possible */}
+            <Toggle
+              label="Inspirer d'autres familles"
+              checked={draft.visibility === "public"}
+              disabled={!canPublish && draft.visibility !== "public"}
+              onChange={(v) => set({ visibility: v ? "public" : "private" })}
+            />
           </div>
 
           <button type="button" onClick={() => onMore({ ...draft, folderId: folderId || undefined })} className="self-start text-sm font-bold text-terracotta">

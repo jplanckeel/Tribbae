@@ -5,7 +5,8 @@ import { useMyData } from "../lib/data";
 import { hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, tagCounts } from "../lib/links";
 import { usePhotoUpload, type PhotoUpload } from "../lib/photo";
-import { useSession } from "../lib/session";
+import { useCanPublish, useSession } from "../lib/session";
+import { PublicFolderNote, PublishLockedNote } from "./VerifyEmailBanner";
 import type { CategoryKey, LinkInput, LinkPreview } from "../lib/types";
 import AgePicker from "./AgePicker";
 import Icon from "./Icon";
@@ -207,6 +208,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
   const editableFolders = folders.filter((f) => canEditFolder(f, session?.userId, peers) || f.id === initial.folderId);
   // Dans son propre dossier public, une idée est visible de tous même sans être partagée à la communauté
   const chosenFolder = folders.find((f) => f.id === form.folderId);
+  const canPublish = useCanPublish();
   const inMyPublicFolder = chosenFolder?.visibility === "VISIBILITY_PUBLIC" && chosenFolder.ownerId === session?.userId;
 
   return (
@@ -474,10 +476,13 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             <span className="flex flex-1 flex-col">
               <span className="text-sm font-bold">Partager avec la communauté</span>
               <span className="text-xs text-sec">Visible dans l'Explorer par toutes les tribus</span>
+              {!canPublish && <PublishLockedNote />}
             </span>
+            {/* Publier attend la confirmation de l'adresse ; dépublier reste possible */}
             <Toggle
               label="Partager avec la communauté"
               checked={form.visibility === "public"}
+              disabled={!canPublish && form.visibility !== "public"}
               onChange={(v) => set("visibility", v ? "public" : "private")}
             />
           </label>
@@ -493,6 +498,8 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             Le dossier « {chosenFolder.name} » est public : cette idée y sera visible par tous ses visiteurs.
           </p>
         )}
+
+        <PublicFolderNote folder={chosenFolder} />
 
         {error && <ErrorNote>{error}</ErrorNote>}
       </form>

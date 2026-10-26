@@ -6,4 +6,6 @@ object EmailVerification {
     const val NOT_VERIFIED = "email address not verified"
     const val VERIFY_FIRST = "Confirmez d'abord votre adresse email : ouvrez le lien reçu par email, ou demandez-en un nouveau avec « Renvoyer l'email »."
     const val PUBLISH_LOCKED = "Confirmez votre adresse email pour publier."
+    /** Idée rangée dans un dossier public : gardée sur le téléphone jusqu'à la confirmation. */
+    const val PUBLIC_FOLDER_WAITS = "Dans un dossier public, l'idée sera envoyée une fois votre adresse email confirmée."
 }

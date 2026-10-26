@@ -543,6 +543,7 @@ private fun SortStep(
             }
             Text(AddFlow.whoSees(folder, draft.isPublic), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
         }
+        PublicFolderWaitingNote(viewModel, folder, Modifier.padding(horizontal = 4.dp))
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

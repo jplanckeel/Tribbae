@@ -1,6 +1,7 @@
 import { useState } from "react";
 import * as api from "../lib/api";
-import { useSession } from "../lib/session";
+import { useCanPublish, useSession } from "../lib/session";
+import type { Folder } from "../lib/types";
 import { useFeedback } from "./feedback";
 import Icon from "./Icon";
 
@@ -16,6 +17,28 @@ export default function VerifyEmailBanner() {
     <div className="mx-auto max-w-[1200px] px-4 pt-3 md:px-6">
       <VerifyEmailNotice />
     </div>
+  );
+}
+
+/** Note sous un réglage « public » verrouillé tant que l'adresse n'est pas confirmée. */
+export function PublishLockedNote() {
+  return (
+    <p role="note" className="flex items-center gap-1.5 text-xs text-sec">
+      <Icon name="lock" size={14} className="shrink-0" />
+      Confirmez votre adresse email pour publier.
+    </p>
+  );
+}
+
+/** Ranger une idée dans un dossier public la publie : refusé tant que l'adresse n'est pas confirmée. */
+export function PublicFolderNote({ folder }: { folder?: Folder }) {
+  const canPublish = useCanPublish();
+  if (canPublish || folder?.visibility !== "VISIBILITY_PUBLIC") return null;
+  return (
+    <p role="note" className="flex items-start gap-1.5 px-1 text-xs text-sec">
+      <Icon name="lock" size={14} className="mt-px shrink-0" />
+      Ce dossier est public : confirmez votre adresse email pour y ranger une idée.
+    </p>
   );
 }
 
