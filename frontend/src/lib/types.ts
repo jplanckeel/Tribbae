@@ -240,3 +240,24 @@ export interface AdminUser {
   isPremium: boolean;
   createdAt?: string | number;
 }
+
+export type StatsPeriod = "week" | "month";
+
+/** Un point d'une série : début de période (lundi 0 h ou 1er du mois, heure de Paris). */
+export interface StatsPoint {
+  bucketStart: string; // RFC 3339
+  count?: string | number; // int64 : chaîne en JSON, absent quand il vaut 0
+}
+
+/** Statistiques admin : séries alignées, de la plus ancienne période à celle en cours. */
+export interface AdminStats {
+  period: StatsPeriod;
+  ideas?: StatsPoint[];
+  publicIdeas?: StatsPoint[];
+  privateIdeas?: StatsPoint[];
+  newUsers?: StatsPoint[];
+  /** Dernière activité seulement : les périodes passées sont sous-estimées. */
+  activeUsers?: StatsPoint[];
+  /** Totaux sur toute la fenêtre (int64 : chaînes en JSON). */
+  totals?: Partial<Record<"ideas" | "publicIdeas" | "privateIdeas" | "newUsers" | "activeUsers", string | number>>;
+}

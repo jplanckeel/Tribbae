@@ -139,10 +139,15 @@
   --av-5-bg: #f7dde6; --av-5-ink: #9c3a5c;
   /* Porte du tipi : prune le jour, lumière le soir */
   --tipi-door: #5e4558;
+  /* Séries des graphiques (statistiques admin), validées daltonisme et contraste */
+  --chart-1: #c8492c;
+  --chart-2: #2a85ad;
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --chart-1: #d4573a;
+  --chart-2: #2f95c2;
   --color-sable: #1c1411;
   --color-sable-2: #33281f;
   --color-ecorce: #f6ebdd;

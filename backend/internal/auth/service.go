@@ -28,6 +28,9 @@ type User struct {
 	PasswordChangedAt *time.Time `bson:"password_changed_at,omitempty"`
 	// EmailVerifiedAt : adresse confirmée par un lien reçu par email (verify.go)
 	EmailVerifiedAt *time.Time `bson:"email_verified_at,omitempty"`
+	// LastSeenAt : dernière connexion ou dernier renouvellement de session
+	// (à l'heure près, voir TouchLastSeen). Seule la dernière est gardée.
+	LastSeenAt *time.Time `bson:"last_seen_at,omitempty"`
 }
 
 type Service struct {
@@ -109,12 +112,14 @@ func (s *Service) Register(ctx context.Context, email, password, displayName str
 		return nil, "", err
 	}
 
+	now := time.Now()
 	user := User{
 		ID:          bson.NewObjectID(),
 		Email:       email,
 		Password:    string(hash),
 		DisplayName: displayName,
-		CreatedAt:   time.Now(),
+		CreatedAt:   now,
+		LastSeenAt:  &now,
 	}
 	if _, err := s.col.InsertOne(ctx, user); err != nil {
 		return nil, "", err
@@ -146,8 +151,30 @@ func (s *Service) Login(ctx context.Context, email, password string) (*User, str
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return nil, "", ErrInvalidCredentials
 	}
+	s.TouchLastSeen(ctx, user.ID.Hex())
 	token, err := s.generateToken(user.ID.Hex())
 	return &user, token, err
+}
+
+// lastSeenEvery : au plus une écriture de last_seen_at par heure et par compte
+const lastSeenEvery = time.Hour
+
+// TouchLastSeen note l'activité d'un compte (connexion, renouvellement de
+// session) pour les statistiques admin. Le filtre n'écrit que si la dernière
+// activité notée date de plus d'une heure ; un échec est seulement journalisé.
+func (s *Service) TouchLastSeen(ctx context.Context, userID string) {
+	id, err := bson.ObjectIDFromHex(userID)
+	if err != nil {
+		return
+	}
+	now := time.Now()
+	filter := bson.M{"_id": id, "$or": bson.A{
+		bson.M{"last_seen_at": bson.M{"$exists": false}},
+		bson.M{"last_seen_at": bson.M{"$lt": now.Add(-lastSeenEvery)}},
+	}}
+	if _, err := s.col.UpdateOne(ctx, filter, bson.M{"$set": bson.M{"last_seen_at": now}}); err != nil {
+		log.Printf("auth: last seen: %v", err)
+	}
 }
 
 func (s *Service) ValidateToken(tokenStr string) (string, error) {

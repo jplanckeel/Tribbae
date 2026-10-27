@@ -109,7 +109,7 @@ func main() {
 	childH := child.NewHandler(childSvc)
 	followH := follow.NewHandler(followSvc)
 	commentH := comment.NewHandler(commentSvc, linkSvc.CanView)
-	adminH := admin.NewHandler(authSvc)
+	adminH := admin.NewHandler(authSvc, admin.NewStatsService(database.Col("links"), database.Col("users")))
 	tribeH := tribe.NewHandler(tribeSvc)
 
 	// Extrait le userID du header Authorization pour les routes HTTP hors gateway

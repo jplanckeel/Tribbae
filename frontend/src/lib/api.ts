@@ -1,7 +1,7 @@
 import { clearSession, getSession, setSession, shouldRenew } from "./session";
 import { withinLimits } from "./preview";
 import type {
-  AdminUser, AiIdea, Child, CircleInvitation, CircleInvitationInfo, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole,
+  AdminStats, AdminUser, AiIdea, Child, CircleInvitation, CircleInvitationInfo, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole, StatsPeriod,
 } from "./types";
 
 const BASE = "/v1";
@@ -311,6 +311,7 @@ export const admin = {
   listUsers: () => request<{ users?: AdminUser[] }>("/admin/users").then((r) => r.users ?? []),
   setPremium: (userId: string, isPremium: boolean) =>
     request(`/admin/users/${encodeURIComponent(userId)}/premium`, { method: "PUT", body: json({ isPremium }) }),
+  stats: (period: StatsPeriod, count = 12) => request<AdminStats>(`/admin/stats?period=${period}&count=${count}`),
 };
 
 /** Photos des idées : envoyées au serveur, qui les garde et renvoie leur adresse. */

@@ -47,6 +47,7 @@ func (h *Handler) RefreshToken(ctx context.Context, req *pb.RefreshTokenRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 	}
+	h.svc.TouchLastSeen(ctx, userID)
 	token, err := h.svc.generateToken(userID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not generate token")
