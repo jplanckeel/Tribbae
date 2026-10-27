@@ -86,6 +86,16 @@ Vous recevez cet email car {{.Inviter}} a saisi votre adresse sur Tribbae. Vous 
 
 {{template "footer" .}}{{end}}
 
+{{define "collaborator_added"}}Le dossier « {{.Folder}} » vous est ouvert
+
+{{.Owner}} vous a ajouté à son dossier « {{.Folder}} » sur Tribbae. {{if .Editor}}Vous pouvez y voir les idées et en ajouter.{{else}}Vous pouvez y voir ses idées de sorties, de cadeaux ou de recettes.{{end}}
+
+Voir le dossier : {{.FolderURL}}
+
+Vous recevez cet email car {{.Owner}} vous a ajouté à un dossier sur Tribbae. Vous ne connaissez pas cette personne ? Ignorez simplement ce message.
+
+{{template "footer" .}}{{end}}
+
 {{define "account_deleted"}}Votre compte a bien été supprimé
 
 {{if .Name}}Bonjour {{.Name}}, comme{{else}}Bonjour, comme{{end}} vous l'avez demandé le {{.DeletedOn}}, votre compte Tribbae a été supprimé, ainsi que les données qui y étaient liées.

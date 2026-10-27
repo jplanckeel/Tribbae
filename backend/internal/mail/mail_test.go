@@ -128,6 +128,7 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 	m.AccountDeleted("alice@example.com", "")
 	m.CircleInvitation(CircleInvitation{Email: "mamie@example.com", InviterName: "Alice", Folders: []string{"Noël", "Sorties <été>"}, Editor: true,
 		URL: "https://tribbae.example/invitation-cercle#tok", Validity: 7 * 24 * time.Hour})
+	m.CollaboratorAdded(CollaboratorAdded{Email: "mamie@example.com", Name: "Mamie", OwnerName: "Alice", FolderID: "f1", FolderName: "Noël <2026>", Editor: true})
 	wait(m)
 
 	byTag := map[string]Message{}
@@ -158,6 +159,9 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 		{TagCircleInvite, "Alice vous ouvre 2 dossiers sur Tribbae",
 			[]string{"vous fait une place dans son cercle", "Des dossiers vous sont ouverts", ">Noël<", "Sorties &lt;été&gt;", "en ajouter", "Voir les dossiers", `href="https://tribbae.example/invitation-cercle#tok"`, "Invitation valable 7 jours"},
 			[]string{"- Noël", "- Sorties <été>", "Voir les dossiers : https://tribbae.example/invitation-cercle#tok", "ces dossiers"}},
+		{TagCollabAdded, "Alice vous ouvre son dossier « Noël <2026> » sur Tribbae",
+			[]string{"vous a ajouté à un dossier partagé", "Le dossier « Noël &lt;2026&gt; » vous est ouvert", "Vous pouvez voir et ajouter des idées", "Voir le dossier", `href="https://tribbae.example/dossiers/f1"`},
+			[]string{"Alice vous a ajouté à son dossier « Noël <2026> » sur Tribbae. Vous pouvez y voir les idées et en ajouter.", "Voir le dossier : https://tribbae.example/dossiers/f1"}},
 		{TagAccountDeleted, "Votre compte Tribbae a été supprimé",
 			[]string{"Bonjour, comme vous l'avez demandé le 22 octobre 2026", "Ce qui a été effacé", "Votre profil et votre adresse email", `href="mailto:aide@tribbae.example?subject=Suppression%20de%20mon%20compte%20Tribbae"`},
 			[]string{"le 22 octobre 2026", "- Vos idées et vos dossiers", "aide@tribbae.example"}},
