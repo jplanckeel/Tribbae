@@ -86,6 +86,31 @@ Vous recevez cet email car {{.Inviter}} a saisi votre adresse sur Tribbae. Vous 
 
 {{template "footer" .}}{{end}}
 
+{{define "tribe_member_removed"}}Vous ne faites plus partie de la tribu « {{.Tribe}} »
+
+{{if .Name}}Bonjour {{.Name}}, {{else}}Bonjour, {{end}}{{.RemovedBy}} vous a retiré de la tribu « {{.Tribe}} » le {{.RemovedOn}}.
+
+Ce qui change :
+{{range .Changes}}- {{.}}
+{{end}}
+Ouvrir Tribbae : {{.AppURL}}
+
+Vous recevez cet email car vous avez été retiré d'une tribu sur Tribbae.
+
+{{template "footer" .}}{{end}}
+
+{{define "tribe_new_owner"}}Vous êtes responsable de la tribu « {{.Tribe}} »
+
+{{if .Name}}Bonjour {{.Name}}, {{else}}Bonjour, {{end}}{{if .FormerOwner}}{{.FormerOwner}}, qui avait créé la tribu, l'a quittée{{else}}la personne qui avait créé la tribu l'a quittée{{end}}. Membre le plus ancien, vous en prenez le relais.
+
+Vous pouvez désormais retirer des membres de la tribu. Les idées et les dossiers de chacun ne changent pas.
+
+Voir ma tribu : {{.TribeURL}}
+
+Vous recevez cet email car vous êtes membre d'une tribu sur Tribbae.
+
+{{template "footer" .}}{{end}}
+
 {{define "account_deleted"}}Votre compte a bien été supprimé
 
 {{if .Name}}Bonjour {{.Name}}, comme{{else}}Bonjour, comme{{end}} vous l'avez demandé le {{.DeletedOn}}, votre compte Tribbae a été supprimé, ainsi que les données qui y étaient liées.

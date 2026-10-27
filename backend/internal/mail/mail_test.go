@@ -128,6 +128,8 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 	m.AccountDeleted("alice@example.com", "")
 	m.CircleInvitation(CircleInvitation{Email: "mamie@example.com", InviterName: "Alice", Folders: []string{"Noël", "Sorties <été>"}, Editor: true,
 		URL: "https://tribbae.example/invitation-cercle#tok", Validity: 7 * 24 * time.Hour})
+	m.TribeMemberRemoved(TribeMemberRemoved{Email: "carol@example.com", Name: "Carol", TribeName: "Les Martin", RemovedByName: "Alice"})
+	m.TribeNewOwner(TribeNewOwner{Email: "bob@example.com", Name: "Bob", TribeName: "Les Martin", FormerOwnerName: "Alice"})
 	wait(m)
 
 	byTag := map[string]Message{}
@@ -158,6 +160,12 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 		{TagCircleInvite, "Alice vous ouvre 2 dossiers sur Tribbae",
 			[]string{"vous fait une place dans son cercle", "Des dossiers vous sont ouverts", ">Noël<", "Sorties &lt;été&gt;", "en ajouter", "Voir les dossiers", `href="https://tribbae.example/invitation-cercle#tok"`, "Invitation valable 7 jours"},
 			[]string{"- Noël", "- Sorties <été>", "Voir les dossiers : https://tribbae.example/invitation-cercle#tok", "ces dossiers"}},
+		{TagTribeRemoved, "Vous ne faites plus partie de la tribu « Les Martin »",
+			[]string{"Bonjour Carol, <strong", ">Alice</strong> vous a retiré de la tribu « Les Martin » le 22 octobre 2026", "Ce qui change", "Vos idées et vos dossiers restent dans votre compte", `href="https://tribbae.example/"`},
+			[]string{"Alice vous a retiré de la tribu « Les Martin » le 22 octobre 2026", "- Les vôtres ne lui sont plus partagés", "Ouvrir Tribbae : https://tribbae.example/"}},
+		{TagTribeNewOwner, "Vous êtes désormais responsable de la tribu « Les Martin »",
+			[]string{"Vous êtes responsable de la tribu « Les Martin »", ">Alice</strong>, qui avait créé la tribu, l'a quittée", "retirer des membres", `href="https://tribbae.example/tribu"`},
+			[]string{"Bonjour Bob, Alice, qui avait créé la tribu, l'a quittée", "Voir ma tribu : https://tribbae.example/tribu"}},
 		{TagAccountDeleted, "Votre compte Tribbae a été supprimé",
 			[]string{"Bonjour, comme vous l'avez demandé le 22 octobre 2026", "Ce qui a été effacé", "Votre profil et votre adresse email", `href="mailto:aide@tribbae.example?subject=Suppression%20de%20mon%20compte%20Tribbae"`},
 			[]string{"le 22 octobre 2026", "- Vos idées et vos dossiers", "aide@tribbae.example"}},
@@ -242,5 +250,23 @@ func TestCircleInvitationSingleFolder(t *testing.T) {
 	}
 	if c.Subject != "Alice vous ouvre son dossier « Noël » sur Tribbae" || !strings.Contains(c.Text, "Le dossier « Noël » vous est ouvert") || !strings.Contains(c.Text, "ce dossier.") {
 		t.Errorf("subject %q\n%s", c.Subject, c.Text)
+	}
+}
+
+// Le nouveau responsable d'une tribu dont le créateur a supprimé son compte :
+// l'email ne nomme personne.
+func TestTribeNewOwnerAfterDeletionNamesNoOne(t *testing.T) {
+	rec := &recorder{}
+	m := New(rec, "https://tribbae.example", "aide@tribbae.example")
+	m.TribeNewOwner(TribeNewOwner{Email: "bob@example.com", Name: "Bob", TribeName: "Les Martin"})
+	wait(m)
+	msgs := rec.sent()
+	if len(msgs) != 1 {
+		t.Fatalf("sent %d emails, want 1", len(msgs))
+	}
+	for _, body := range []string{msgs[0].HTML, msgs[0].Text} {
+		if !strings.Contains(body, "Bonjour Bob, la personne qui avait créé la tribu l") {
+			t.Errorf("neutral wording expected:\n%s", body)
+		}
 	}
 }

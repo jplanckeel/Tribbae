@@ -1,0 +1,12 @@
+{{define "preheader"}}Vous êtes désormais responsable de la tribu « {{.Tribe}} ».{{end}}
+
+{{define "card"}}
+{{template "icon" (dict "Bg" "#FBEACB" "Src" (print .Assets "/logo.png") "Size" 36)}}
+{{template "overline" (dict "Color" "#85560C" "Text" "Votre tribu")}}
+{{template "h1" (print "Vous êtes responsable de la tribu « " .Tribe " »")}}
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">{{if .Name}}Bonjour {{.Name}}, {{else}}Bonjour, {{end}}{{if .FormerOwner}}<strong style="color:#3A211B;">{{.FormerOwner}}</strong>, qui avait créé la tribu, l'a quittée{{else}}la personne qui avait créé la tribu l'a quittée{{end}}. Membre le plus ancien, vous en prenez le relais.</p>
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">Vous pouvez désormais retirer des membres de la tribu. Les idées et les dossiers de chacun ne changent pas.</p>
+{{template "button" (dict "URL" .TribeURL "Label" "Voir ma tribu")}}
+{{end}}
+
+{{define "footer"}}Vous recevez cet email car vous êtes membre d'une tribu sur Tribbae.{{end}}

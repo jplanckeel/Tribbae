@@ -1,0 +1,17 @@
+{{define "preheader"}}Vous ne faites plus partie de la tribu « {{.Tribe}} ».{{end}}
+
+{{define "card"}}
+{{template "icon" (dict "Bg" "#ECE1EA" "Src" (print .Assets "/logo.png") "Size" 36)}}
+{{template "overline" (dict "Color" "#5E4558" "Text" "Votre tribu")}}
+{{template "h1" (print "Vous ne faites plus partie de la tribu « " .Tribe " »")}}
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">{{if .Name}}Bonjour {{.Name}}, {{else}}Bonjour, {{end}}<strong style="color:#3A211B;">{{.RemovedBy}}</strong> vous a retiré de la tribu « {{.Tribe}} » le {{.RemovedOn}}.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;"><tr><td style="background:#FBF3E7;border-radius:22px;padding:20px 22px;">
+<div style="font-size:15px;line-height:20px;font-weight:700;color:#3A211B;padding-bottom:4px;">Ce qui change</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+{{range .Changes}}<tr><td valign="top" width="18" style="padding-top:10px;"><img src="{{$.Assets}}/check.png" width="18" height="18" alt="" style="display:block;border:0;margin-top:2px;"></td><td valign="top" style="padding:10px 0 0 10px;font-size:15px;line-height:22px;color:#3A211B;">{{.}}</td></tr>
+{{end}}</table>
+</td></tr></table>
+{{template "button" (dict "URL" .AppURL "Label" "Ouvrir Tribbae")}}
+{{end}}
+
+{{define "footer"}}Vous recevez cet email car vous avez été retiré d'une tribu sur Tribbae.{{end}}
