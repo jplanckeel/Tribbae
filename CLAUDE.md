@@ -39,9 +39,9 @@ go test ./internal/link -run TestName -v   # single test
 ```
 Backend tests (`internal/{link,folder,follow,comment}/*_test.go`) hit a real MongoDB at `mongodb://localhost:27017`, create a throwaway `tribbae_test_<id>` DB, and **skip** (not fail) if Mongo isn't reachable. Some use `gopter` property-based testing.
 
-Frontend (from `frontend/`): `npm run build` (runs `tsc -b` then `vite build` — this is the type check CI runs), `npm run lint`.
+Frontend (from `frontend/`): `npm run build` (runs `tsc -b` then `vite build` — this is the type check CI runs), `npm run lint`, `npm test` (Vitest, `src/lib/*.test.ts`, pure logic in Node with `TZ=Europe/Paris`; `npm run test:watch` while editing). Logic duplicated with Android is tested on both sides with the same cases (e.g. `age.test.ts` ↔ `AgeRangesTest`, `links.test.ts` ↔ `RotationScoreTest`): change a case on one side, change it on the other.
 
-CI (`.github/workflows/test.yml`): `go build` + `go vet` + `go test -race` (with a MongoDB service) + `govulncheck` for backend, `npm ci && npm run lint && npm run build` for frontend, `./gradlew assembleDebug` for Android. `release.yml` triggers on `v*` tags (APK + Docker images).
+CI (`.github/workflows/test.yml`): `go build` + `go vet` + `go test -race` (with a MongoDB service) + `govulncheck` for backend, `npm ci && npm run lint && npm test && npm run build` for frontend, `./gradlew assembleDebug` for Android. `release.yml` triggers on `v*` tags (APK + Docker images).
 
 ## Git workflow
 
