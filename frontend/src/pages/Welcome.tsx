@@ -1,6 +1,5 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { Link as RouterLink, Navigate, useNavigate, useSearchParams } from "react-router";
-import welcome from "../assets/welcome.jpg";
 import Icon from "../components/Icon";
 import { TipiMark } from "../components/Logo";
 import { Button, ErrorNote, Field } from "../components/ui";
@@ -20,13 +19,17 @@ export default function Welcome() {
     <div className="flex min-h-dvh flex-col bg-[#F7955A] md:flex-row">
       <Seo title="Tribbae — Les idées de la tribu au même endroit" noindex />
       <div className="flex flex-1 items-end justify-center px-2.5 pt-10 md:items-center md:p-12">
-        <img
-          src={welcome}
-          width={724}
-          height={562}
-          alt="Le tipi Tribbae entouré de la famille, d'un cadeau, d'une ampoule, de couverts et d'un ballon"
-          className="block h-auto w-[370px] max-w-full md:w-[560px]"
-        />
+        {/* Logo « Tipi soleil » : le tipi devant un soleil levant. Fond orange quel que soit
+            le thème, donc traits et porte de jour. */}
+        <div
+          role="img"
+          aria-label="Le tipi Tribbae devant un soleil levant"
+          className="relative flex h-[230px] w-[340px] max-w-full items-end justify-center overflow-hidden md:h-[340px] md:w-[480px]"
+          style={{ "--color-ecorce": "#3a211b", "--tipi-door": "#5e4558", "--color-soleil": "#fde6bd" } as CSSProperties}
+        >
+          <div aria-hidden="true" className="absolute bottom-0 left-1/2 aspect-square w-[300px] -translate-x-1/2 translate-y-1/2 rounded-full bg-(--color-soleil) md:w-[440px]" />
+          <TipiMark className="relative -mb-8 h-[240px] w-[240px] md:-mb-[52px] md:h-[340px] md:w-[340px]" />
+        </div>
       </div>
       <div className="flex flex-col gap-3.5 rounded-t-[32px] bg-sable px-6 pt-[30px] pb-[34px] md:w-[480px] md:justify-center md:rounded-none md:px-12">
         <h1 className="font-display text-[38px] leading-none font-extrabold tracking-[-1px] md:text-5xl">Tribbae</h1>
