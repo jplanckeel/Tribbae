@@ -36,6 +36,12 @@ type Config struct {
 	MailFromName string
 	// SupportEmail : adresse « Écrire au support » des emails
 	SupportEmail string
+	// MCPEnabled : serveur MCP (/mcp) et autorisation OAuth des applications
+	// connectées (Claude). Désactivé par défaut : toutes ces routes répondent 404.
+	MCPEnabled bool
+	// OAuthRedirectURIs : seules adresses de retour qu'un client OAuth peut
+	// enregistrer (comparaison exacte)
+	OAuthRedirectURIs []string
 }
 
 // insecureJWTSecret est la valeur d'exemple de .env.example : elle n'est
@@ -64,6 +70,9 @@ func Load() *Config {
 	}
 	cfg.SupportEmail = getEnv("SUPPORT_EMAIL", cfg.MailFrom)
 	cfg.RedirectHosts = splitList(getEnv("REDIRECT_HOSTS", "tribbae.bananaops.cloud,www.tribbae.fr"))
+	cfg.MCPEnabled = getEnvBool("MCP_ENABLED", false)
+	// Callback de claude.ai, et celui de claude.com annoncé par Anthropic
+	cfg.OAuthRedirectURIs = splitList(getEnv("OAUTH_REDIRECT_URIS", "https://claude.ai/api/mcp/auth_callback,https://claude.com/api/mcp/auth_callback"))
 	return cfg
 }
 
@@ -101,6 +110,13 @@ func getEnv(key, fallback string) string {
 
 func getEnvInt(key string, fallback int) int {
 	if v, err := strconv.Atoi(strings.TrimSpace(os.Getenv(key))); err == nil && v >= 0 {
+		return v
+	}
+	return fallback
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	if v, err := strconv.ParseBool(strings.TrimSpace(os.Getenv(key))); err == nil {
 		return v
 	}
 	return fallback

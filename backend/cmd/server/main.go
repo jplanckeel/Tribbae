@@ -28,6 +28,7 @@ import (
 	"github.com/tribbae/backend/internal/httpx"
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/link"
+	"github.com/tribbae/backend/internal/oauth"
 	"github.com/tribbae/backend/internal/mail"
 	"github.com/tribbae/backend/internal/photo"
 	"github.com/tribbae/backend/internal/preview"
@@ -130,6 +131,21 @@ func main() {
 	photoSvc := photo.NewService(database.DB())
 	photoH := photo.NewHandler(photoSvc, bearerUser)
 	go photoSvc.RunCleanup(context.Background(), 6*time.Hour, 24*time.Hour)
+	// Applications connectées (connecteur Claude) : serveur d'autorisation
+	// OAuth 2.1 du serveur MCP. Coupé par défaut (MCP_ENABLED) : ses routes
+	// répondent alors 404.
+	var oauthH http.Handler = http.NotFoundHandler()
+	if cfg.MCPEnabled {
+		siteURL := strings.TrimRight(cfg.SiteURL, "/")
+		oauthSvc := oauth.NewService(database.DB(), oauth.Config{
+			Issuer:       siteURL,
+			Resource:     siteURL + "/mcp",
+			RedirectURIs: cfg.OAuthRedirectURIs,
+		})
+		oauthSvc.SetSessionCheck(authSvc.SessionValid)
+		oauthH = oauth.NewHandler(oauthSvc, bearerUser, !cfg.IsLocal())
+		log.Println("MCP enabled: OAuth authorization server on /oauth")
+	}
 
 	// Serveur gRPC
 	grpcServer := grpc.NewServer(
@@ -205,13 +221,16 @@ func main() {
 	authLimiter := httpx.NewRateLimiter(10, time.Minute)
 	costlyLimiter := httpx.NewRateLimiter(20, time.Minute)
 	photoLimiter := httpx.NewRateLimiter(30, time.Minute)
+	oauthLimiter := httpx.NewRateLimiter(60, time.Minute)
 
 	var handler http.Handler = withSPA(mux, cfg.SiteURL, seo.NewSource(linkSvc, folderSvc))
 	handler = withPreview(preview.Handler(bearerUser), handler)
 	handler = withAI(aiH, handler)
 	handler = withAccount(accountH, handler)
+	handler = withOAuth(oauthH, handler)
+	handler = httpx.Limit(oauthLimiter, map[string]bool{oauth.PathAuthorize: true, oauth.PathToken: true, oauth.PathRevoke: true, oauth.PathConsentInfo: true}, handler)
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true, "/v1/tribe/members": true, "/v1/circle/invitations": true}, handler)
-	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, "/v1/auth/email/verify": true, "/v1/auth/email/resend": true, account.DeletePath: true}, handler)
+	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, "/v1/auth/email/verify": true, "/v1/auth/email/resend": true, account.DeletePath: true, oauth.PathRegister: true, oauth.PathConsent: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)
 	// Les photos ont leur propre limite de taille (photo.MaxUpload), hors MaxBody
 	handler = httpx.Limit(photoLimiter, map[string]bool{photo.UploadPath: true}, withPhotos(photoH, handler))
@@ -264,6 +283,18 @@ func withAccount(accountH http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == account.ExportPath || r.URL.Path == account.DeletePath {
 			accountH.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// withOAuth envoie au serveur d'autorisation ses adresses (/oauth/*,
+// /.well-known/oauth-*, API de la page de consentement).
+func withOAuth(oauthH http.Handler, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if oauth.Handles(r.URL.Path) {
+			oauthH.ServeHTTP(w, r)
 			return
 		}
 		next.ServeHTTP(w, r)

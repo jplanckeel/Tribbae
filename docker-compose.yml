@@ -42,6 +42,9 @@ services:
       MAIL_FROM: ${MAIL_FROM:-contact@tribbae.fr}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-Tribbae}
       SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+      # Serveur MCP et OAuth des applications connectées (Claude) ; coupé par défaut
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      OAUTH_REDIRECT_URIS: ${OAUTH_REDIRECT_URIS:-https://claude.ai/api/mcp/auth_callback,https://claude.com/api/mcp/auth_callback}
     labels:
       - "traefik.enable=true"
       # tribbae.fr, sa variante www et l'ancien domaine (redirigés par l'application)

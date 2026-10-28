@@ -1,7 +1,7 @@
 import { clearSession, getSession, setSession, shouldRenew } from "./session";
 import { withinLimits } from "./preview";
 import type {
-  AdminStats, AdminUser, AiIdea, Child, CircleInvitation, CircleInvitationInfo, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole, StatsPeriod,
+  AdminStats, AdminUser, AiIdea, Child, CircleInvitation, CircleInvitationInfo, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, OAuthConsent, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole, StatsPeriod,
 } from "./types";
 
 const BASE = "/v1";
@@ -23,6 +23,7 @@ function frenchMessage(status: number, message: string): string {
   if (status === 401) return "Votre session a expiré, reconnectez-vous.";
   if (status === 403) return "Vous n'avez pas les droits pour cette action.";
   if (/invalid or expired invitation/i.test(message)) return "Cette invitation n'est plus valable : elle a expiré, a été annulée ou a déjà servi.";
+  if (/authorization request not found/i.test(message)) return "Cette demande de connexion a expiré ou a déjà été traitée. Relancez la connexion depuis l'application.";
   if (status === 404) return "Introuvable — l'élément a peut-être été supprimé.";
   if (/already registered/i.test(message)) return "Un compte existe déjà avec cet email.";
   if (/password must be/i.test(message)) return "Le mot de passe doit contenir au moins 8 caractères.";
@@ -231,6 +232,14 @@ export const community = {
   top: (limit = 12) => request<{ folders?: Folder[] }>(`/community/top${qs({ limit })}`).then((r) => r.folders ?? []),
   links: (category?: string, limit = 60) =>
     request<{ links?: Link[] }>(`/community/links${qs({ category, limit })}`).then((r) => r.links ?? []),
+};
+
+/** Connecter une application (Claude) : page de consentement OAuth. */
+export const oauth = {
+  consentInfo: (requestId: string) => request<OAuthConsent>("/oauth/consent/info", { method: "POST", body: json({ request: requestId }) }),
+  /** Retourne l'adresse où renvoyer le navigateur (vers l'application, avec le code ou le refus). */
+  decide: (requestId: string, approve: boolean) =>
+    request<{ redirect: string }>("/oauth/consent", { method: "POST", body: json({ request: requestId, approve }) }).then((r) => r.redirect),
 };
 
 export const tribe = {

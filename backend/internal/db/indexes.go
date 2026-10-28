@@ -353,6 +353,82 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				Options: options.Index().SetName("idx_photos_owner_id"),
 			},
 		},
+		// ── OAuth des applications connectées (internal/oauth) ───
+		{
+			// Un client enregistré que personne n'a autorisé est effacé après un jour
+			Collection: "oauth_clients",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "unused_expires_at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_oauth_clients_unused_ttl"),
+			},
+		},
+		{
+			// Échange du code contre les jetons
+			Collection: "oauth_requests",
+			Model: mongo.IndexModel{
+				Keys: bson.D{{Key: "code_hash", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_oauth_requests_code_hash").
+					SetPartialFilterExpression(bson.M{"code_hash": bson.M{"$exists": true}}),
+			},
+		},
+		{
+			// Suppression du compte
+			Collection: "oauth_requests",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "user_id", Value: 1}},
+				Options: options.Index().SetName("idx_oauth_requests_user_id"),
+			},
+		},
+		{
+			// Demandes et codes expirés (les codes utilisés restent jusque-là,
+			// pour reconnaître un code présenté deux fois)
+			Collection: "oauth_requests",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "expires_at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_oauth_requests_ttl"),
+			},
+		},
+		{
+			// « Applications connectées » d'un compte, les plus récentes d'abord
+			Collection: "oauth_grants",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "user_id", Value: 1}, {Key: "created_at", Value: -1}},
+				Options: options.Index().SetName("idx_oauth_grants_user_created"),
+			},
+		},
+		{
+			// Accès arrivés au bout de leurs 90 jours
+			Collection: "oauth_grants",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "expires_at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_oauth_grants_ttl"),
+			},
+		},
+		{
+			// Révocation d'un accès : tous ses jetons
+			Collection: "oauth_tokens",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "grant_id", Value: 1}},
+				Options: options.Index().SetName("idx_oauth_tokens_grant_id"),
+			},
+		},
+		{
+			// Suppression du compte
+			Collection: "oauth_tokens",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "user_id", Value: 1}},
+				Options: options.Index().SetName("idx_oauth_tokens_user_id"),
+			},
+		},
+		{
+			// Jetons expirés (les refresh tokens remplacés restent jusque-là,
+			// pour reconnaître une réutilisation)
+			Collection: "oauth_tokens",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "expires_at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_oauth_tokens_ttl"),
+			},
+		},
 	}
 
 	// Index remplacés : préfixes d'un index composé, ou jamais utilisés seuls
