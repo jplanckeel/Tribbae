@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Link as RouterLink, useNavigate } from "react-router";
+import { Link as RouterLink, useNavigate, useSearchParams } from "react-router";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
 import { FolderGlyph } from "../components/FolderCover";
@@ -53,9 +53,19 @@ export default function Tribe() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [shareFolder, setShareFolder] = useState<Folder>();
   const [followingOpen, setFollowingOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  // Paramètres et applications connectées s'ouvrent aussi depuis le menu du
+  // compte de l'en-tête bureau (/tribu?ouvrir=parametres) : l'adresse les porte
+  const [params, setParams] = useSearchParams();
+  const panel = params.get("ouvrir");
+  const settingsOpen = panel === "parametres";
+  const appsOpen = panel === "applications";
+  const openPanel = (name: "parametres" | "applications" | null) =>
+    setParams((p) => {
+      if (name) p.set("ouvrir", name);
+      else p.delete("ouvrir");
+      return p;
+    }, { replace: true });
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [appsOpen, setAppsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [now] = useState(() => Date.now());
   const following = useAsync(() => api.follows.following(session.userId), [session.userId]);
@@ -143,9 +153,10 @@ export default function Tribe() {
           action={
             <button
               type="button"
-              onClick={() => setSettingsOpen(true)}
+              onClick={() => openPanel("parametres")}
               aria-label="Paramètres"
-              className={`flex h-11 w-11 items-center justify-center rounded-full bg-card text-ecorce shadow-soft hover:bg-sable-2 ${PRESS}`}
+              // Sur grand écran, les paramètres sont dans le menu du compte de l'en-tête
+              className={`flex h-11 w-11 items-center justify-center rounded-full bg-card text-ecorce shadow-soft hover:bg-sable-2 md:hidden ${PRESS}`}
             >
               <Icon name="settings" size={21} />
             </button>
@@ -386,7 +397,7 @@ export default function Tribe() {
       </Page>
 
       {deleteOpen && <DeleteAccountSheet onClose={() => setDeleteOpen(false)} />}
-      {appsOpen && <ConnectedAppsSheet onClose={() => setAppsOpen(false)} />}
+      {appsOpen && <ConnectedAppsSheet onClose={() => openPanel(null)} />}
       {kid && (
         <KidSheet
           kid={kid}
@@ -456,7 +467,7 @@ export default function Tribe() {
         )}
       </Sheet>
 
-      <Sheet open={settingsOpen} onClose={() => setSettingsOpen(false)} title="Paramètres">
+      <Sheet open={settingsOpen} onClose={() => openPanel(null)} title="Paramètres">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-medium bg-card p-3.5">
             <span className="flex h-12 w-12 items-center justify-center rounded-medium bg-braise font-display text-xl font-extrabold">{initial(session.displayName)}</span>
@@ -467,7 +478,7 @@ export default function Tribe() {
           </div>
           <button
             type="button"
-            onClick={() => { setSettingsOpen(false); setNameOpen(true); }}
+            onClick={() => { openPanel(null); setNameOpen(true); }}
             className="flex items-center gap-3 rounded-medium bg-card p-3.5 text-left hover:bg-sable-2"
           >
             <Icon name="tipi" size={20} className="text-terracotta" />
@@ -479,7 +490,7 @@ export default function Tribe() {
           </button>
           <button
             type="button"
-            onClick={() => { setSettingsOpen(false); setAppsOpen(true); }}
+            onClick={() => openPanel("applications")}
             className="flex items-center gap-3 rounded-medium bg-card p-3.5 text-left hover:bg-sable-2"
           >
             <Icon name="sparkles" size={20} className="text-prune" />
@@ -498,7 +509,7 @@ export default function Tribe() {
             <Button variant="ghost" size="sm" icon="send" loading={exporting} onClick={() => void exportData()}>
               Télécharger mes données
             </Button>
-            <Button variant="danger" size="sm" icon="trash" onClick={() => { setSettingsOpen(false); setDeleteOpen(true); }}>
+            <Button variant="danger" size="sm" icon="trash" onClick={() => { openPanel(null); setDeleteOpen(true); }}>
               Supprimer mon compte
             </Button>
           </section>
