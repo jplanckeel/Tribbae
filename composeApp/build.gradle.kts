@@ -75,6 +75,23 @@ android {
     buildFeatures {
         buildConfig = true
     }
+    // Signature des APK publiés : release.yml fournit le keystore (secret
+    // ANDROID_KEYSTORE_BASE64) et ses mots de passe. Sans ces variables (build
+    // locale), l'APK release sort non signé, et Android refuse de l'installer.
+    val releaseKeystore = System.getenv("ANDROID_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                // v2/v3, exigées par les Android récents (v1 inutile : minSdk 24)
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
     buildTypes {
         getByName("debug") {
             // Backend visé par une build de dev : -Ptribbae.apiUrl=http://10.0.2.2:8080
@@ -90,6 +107,7 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             buildConfigField("String", "API_URL", "\"\"")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     
