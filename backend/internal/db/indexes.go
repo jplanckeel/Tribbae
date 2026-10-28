@@ -429,6 +429,34 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_oauth_tokens_ttl"),
 			},
 		},
+		{
+			// Quota journalier et suppression en masse des idées ajoutées par
+			// une application connectée (partiel : les autres idées n'y sont pas)
+			Collection: "links",
+			Model: mongo.IndexModel{
+				Keys: bson.D{{Key: "owner_id", Value: 1}, {Key: "created_via", Value: 1}, {Key: "created_at", Value: 1}},
+				Options: options.Index().SetName("idx_links_owner_created_via").
+					SetPartialFilterExpression(bson.M{"created_via": bson.M{"$exists": true}}),
+			},
+		},
+
+		// ── mcp_audit : journal des appels d'outils MCP ───────────
+		{
+			// Gardé 90 jours (mcpserver.AuditRetention)
+			Collection: "mcp_audit",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(int32(90 * 24 * 3600)).SetName("idx_mcp_audit_ttl"),
+			},
+		},
+		{
+			// Suppression du compte
+			Collection: "mcp_audit",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "user_id", Value: 1}, {Key: "at", Value: -1}},
+				Options: options.Index().SetName("idx_mcp_audit_user_at"),
+			},
+		},
 	}
 
 	// Index remplacés : préfixes d'un index composé, ou jamais utilisés seuls

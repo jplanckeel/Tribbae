@@ -93,6 +93,8 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 		{"photos", photo.Bucket + ".files", bson.M{"metadata.owner_id": userID}},
 		// Applications connectées (Claude…) : l'accès donné, jamais les jetons
 		{"connectedApps", "oauth_grants", bson.M{"user_id": userID}},
+		// Journal des appels des applications (outil, résultat, date)
+		{"connectedAppsLog", "mcp_audit", bson.M{"user_id": userID}},
 	}
 	// Demande de mot de passe oublié en cours : sa date seulement, pas le jeton
 	var reset bson.M
@@ -251,6 +253,7 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		{"oauth_grants", bson.M{"user_id": userID}},
 		{"oauth_tokens", bson.M{"user_id": userID}},
 		{"oauth_requests", bson.M{"user_id": userID}},
+		{"mcp_audit", bson.M{"user_id": userID}},
 	}
 	for _, d := range deletes {
 		if _, err := s.col(d.col).DeleteMany(ctx, d.filter); err != nil {
