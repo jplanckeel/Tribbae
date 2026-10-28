@@ -101,6 +101,10 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	if _, err := db.Collection("email_verifications").InsertOne(ctx, bson.M{"_id": aliceID, "email": "alice@example.com", "token_hash": "secret", "created_at": time.Now(), "expires_at": time.Now().Add(time.Hour)}); err != nil {
 		t.Fatal(err)
 	}
+	// Application connectée (Claude) : l'accès et ses jetons hachés
+	insert(t, db, "oauth_grants", bson.M{"user_id": alice, "client_id": "c", "client_name": "Claude"})
+	insert(t, db, "oauth_tokens", bson.M{"user_id": alice, "kind": "refresh"})
+	insert(t, db, "oauth_requests", bson.M{"user_id": alice, "client_id": "c"})
 	var jpg bytes.Buffer
 	if err := jpeg.Encode(&jpg, image.NewRGBA(image.Rect(0, 0, 8, 8)), nil); err != nil {
 		t.Fatal(err)
@@ -122,6 +126,9 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	}
 	if len(export["ideas"].([]bson.M)) != 1 || len(export["children"].([]bson.M)) != 1 || len(export["folderLikes"].([]bson.M)) != 1 || len(export["photos"].([]bson.M)) != 2 {
 		t.Errorf("export incomplet : %v", export)
+	}
+	if apps, _ := export["connectedApps"].([]bson.M); len(apps) != 1 {
+		t.Errorf("export des applications connectées : %v", export["connectedApps"])
 	}
 	if circle, _ := export["circleInvitations"].([]bson.M); len(circle) != 2 || circle[0]["token_hash"] != nil {
 		t.Errorf("export des invitations du cercle : %v", export["circleInvitations"])
@@ -167,6 +174,9 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		{"invitations envoyées ou reçues", "tribe_invitations", bson.M{}, 0},
 		{"confirmation d'adresse en attente", "email_verifications", bson.M{}, 0},
 		{"invitations dans le cercle envoyées ou reçues", "folder_invitations", bson.M{}, 0},
+		{"applications connectées", "oauth_grants", bson.M{}, 0},
+		{"jetons des applications", "oauth_tokens", bson.M{}, 0},
+		{"demandes d'autorisation", "oauth_requests", bson.M{}, 0},
 		{"photos d'Alice", "photos.files", bson.M{"metadata.owner_id": alice}, 0},
 		// Ce qui est à Bob reste à Bob
 		{"compte de Bob", "users", bson.M{"_id": bobID}, 1},

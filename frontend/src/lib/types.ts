@@ -107,6 +107,14 @@ export interface Tribe {
   invitations?: TribeInvitation[];
 }
 
+/** Demande d'accès d'une application connectée (Claude), affichée avant d'accepter. */
+export interface OAuthConsent {
+  clientName: string;
+  /** Site qui recevra l'accès (claude.ai) */
+  redirectHost: string;
+  scopes: string[];
+}
+
 /** Ce qu'affiche un lien d'invitation avant de l'accepter. */
 export interface TribeInvitationInfo {
   email: string;

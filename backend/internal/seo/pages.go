@@ -22,18 +22,19 @@ const (
 
 // private : écrans réservés aux comptes, sans intérêt pour un moteur.
 var private = map[string]string{
-	"/mes-idees":            "Mes idées",
-	"/courses":              "Liste de courses",
-	"/tribu":                "Ma tribu",
-	"/admin":                "Administration",
-	"/partager":             "Ajouter une idée",
-	"/connexion":            "Connexion",
-	"/bienvenue":            "Bienvenue",
-	"/invitation":           "Invitation dans une tribu",
-	"/invitation-cercle":    "Invitation dans le cercle",
-	"/mot-de-passe/oublie":  "Mot de passe oublié",
-	"/mot-de-passe/nouveau": "Nouveau mot de passe",
-	"/verifier-email":       "Confirmer mon adresse",
+	"/mes-idees":             "Mes idées",
+	"/courses":               "Liste de courses",
+	"/tribu":                 "Ma tribu",
+	"/admin":                 "Administration",
+	"/partager":              "Ajouter une idée",
+	"/connexion":             "Connexion",
+	"/bienvenue":             "Bienvenue",
+	"/invitation":            "Invitation dans une tribu",
+	"/invitation-cercle":     "Invitation dans le cercle",
+	"/mot-de-passe/oublie":   "Mot de passe oublié",
+	"/mot-de-passe/nouveau":  "Nouveau mot de passe",
+	"/verifier-email":        "Confirmer mon adresse",
+	"/connecter-application": "Connecter une application",
 }
 
 // redirects : anciennes adresses du site, redirigées définitivement.

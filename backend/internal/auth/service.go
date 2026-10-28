@@ -193,17 +193,26 @@ func (s *Service) ValidateToken(tokenStr string) (string, error) {
 		return "", errors.New("invalid subject")
 	}
 	issuedAt, _ := claims["iat"].(float64)
-	// Un compte supprimé (RGPD) ne doit plus rien pouvoir faire, même avec un
-	// jeton encore valide : sinon il recréerait des données orphelines. Après
-	// un changement de mot de passe, les sessions ouvertes avant sont fermées.
-	changedAt, ok := s.passwordChangedAt(userID)
-	if !ok {
-		return "", errors.New("account no longer exists")
-	}
-	if changedAt != nil && int64(issuedAt) < changedAt.Unix() {
-		return "", errors.New("session closed by a password change")
+	if err := s.SessionValid(userID, time.Unix(int64(issuedAt), 0)); err != nil {
+		return "", err
 	}
 	return userID, nil
+}
+
+// SessionValid vérifie qu'une session ouverte à since (connexion, ou
+// autorisation d'une application connectée) vaut encore. Un compte supprimé
+// (RGPD) ne doit plus rien pouvoir faire, même avec un jeton encore valide :
+// sinon il recréerait des données orphelines. Après un changement de mot de
+// passe, les sessions ouvertes avant sont fermées.
+func (s *Service) SessionValid(userID string, since time.Time) error {
+	changedAt, ok := s.passwordChangedAt(userID)
+	if !ok {
+		return errors.New("account no longer exists")
+	}
+	if changedAt != nil && since.Unix() < changedAt.Unix() {
+		return errors.New("session closed by a password change")
+	}
+	return nil
 }
 
 // passwordChangedAt retourne la date du dernier changement de mot de passe

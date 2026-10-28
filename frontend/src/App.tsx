@@ -8,6 +8,7 @@ import Privacy from "./pages/Privacy";
 import FolderDetail from "./pages/FolderDetail";
 import Home from "./pages/Home";
 import CircleInvitation from "./pages/CircleInvitation";
+import ConnectApp from "./pages/ConnectApp";
 import Invitation from "./pages/Invitation";
 import LinkDetail from "./pages/LinkDetail";
 import MyIdeas from "./pages/MyIdeas";
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
       { path: "/connexion", element: <Auth /> },
       { path: "/invitation", element: <Invitation /> },
       { path: "/invitation-cercle", element: <CircleInvitation /> },
+      { path: "/connecter-application", element: <ConnectApp /> },
       { path: "/mot-de-passe/oublie", element: <ForgotPassword /> },
       { path: "/mot-de-passe/nouveau", element: <NewPassword /> },
       { path: "/verifier-email", element: <VerifyEmail /> },
