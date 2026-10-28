@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.0](https://github.com/jplanckeel/Tribbae/compare/v0.1.0...v0.2.0) (2026-10-28)
+
+
+### Features
+
+* **folder:** email accounts added as collaborators of a folder ([#64](https://github.com/jplanckeel/Tribbae/issues/64)) ([4c471ce](https://github.com/jplanckeel/Tribbae/commit/4c471cecc31842581c43feb89054f7e17d1758a4))
+* **frontend:** open the account settings from the desktop header ([#72](https://github.com/jplanckeel/Tribbae/issues/72)) ([999f257](https://github.com/jplanckeel/Tribbae/commit/999f2573b3f3924f943176878bcb5d403e9af8d9))
+* **mcp:** expose list_folders, list_links and create_link over streamable http ([#68](https://github.com/jplanckeel/Tribbae/issues/68)) ([02882a1](https://github.com/jplanckeel/Tribbae/commit/02882a19ac1ac9db506fc3f21fc599ffe2274ef2))
+* **oauth:** add an oauth 2.1 authorization server for remote mcp clients ([#67](https://github.com/jplanckeel/Tribbae/issues/67)) ([b95c545](https://github.com/jplanckeel/Tribbae/commit/b95c5455d6bf70ffe565936bece734bf584b20d8))
+* **oauth:** show and revoke connected apps on web and android ([#69](https://github.com/jplanckeel/Tribbae/issues/69)) ([877c425](https://github.com/jplanckeel/Tribbae/commit/877c425072f4cabc7fac488fed7b52e7a6ea1901))
+* **tribe:** email the removed member and the new owner ([#63](https://github.com/jplanckeel/Tribbae/issues/63)) ([ed6da51](https://github.com/jplanckeel/Tribbae/commit/ed6da512814515dedf484bc1551837d51a5dd05d))
+
+
+### Bug Fixes
+
+* **android:** sign the release apk so it can be installed ([#73](https://github.com/jplanckeel/Tribbae/issues/73)) ([3ead509](https://github.com/jplanckeel/Tribbae/commit/3ead5092649d18ddc93507f48b0caf94ee0be77a))
+* **deps:** bump golang.org/x/net to v0.62.0 ([#70](https://github.com/jplanckeel/Tribbae/issues/70)) ([95648be](https://github.com/jplanckeel/Tribbae/commit/95648be63f5b88bcbf754b9a5a4a9a032a11af16))
+* **frontend:** make the upcoming panel readable in dark mode ([#71](https://github.com/jplanckeel/Tribbae/issues/71)) ([cad350e](https://github.com/jplanckeel/Tribbae/commit/cad350e81f489661b3dcd69e08a092591d052f86))
+
 ## [0.1.0](https://github.com/jplanckeel/Tribbae/compare/v0.0.2...v0.1.0) (2026-10-27)
 
 
