@@ -87,6 +87,7 @@ export default function Privacy() {
           <li><strong>Ce que vous créez</strong> : idées (titre, lien, description, image, tags, âge, prix, lieu, date, ingrédients), dossiers, commentaires, « j'aime », tribus suivies. Les photos que vous ajoutez sont gardées sur notre serveur, réduites et débarrassées de leurs métadonnées (position GPS, appareil) ; seuls ceux qui voient l'idée en ont l'adresse, et une photo qu'aucune idée n'utilise plus est effacée sous deux jours.</li>
           <li><strong>Votre tribu</strong> : son nom et ses membres.</li>
           <li><strong>Les profils enfants</strong> : prénom et date de naissance, saisis par vous, uniquement pour proposer des idées adaptées à leur âge. Ils ne sont jamais publics.</li>
+          <li><strong>Les applications que vous connectez</strong> (par exemple Claude) : le nom de l'application, les droits accordés, les dates d'autorisation et de dernier usage, et, pour chaque appel, l'outil utilisé, son résultat et sa date (jamais le contenu échangé). Les jetons d'accès ne sont gardés que sous forme chiffrée de façon irréversible.</li>
         </ul>
         <p>
           Les demandes faites à l'IA sont traitées par un modèle installé sur notre propre serveur : elles ne sont
@@ -154,7 +155,8 @@ export default function Privacy() {
       <Section title="Combien de temps">
         <p>
           Vos données sont conservées tant que votre compte existe. Quand vous le supprimez, elles sont effacées
-          immédiatement et définitivement de la base.
+          immédiatement et définitivement de la base. Le journal des appels des applications connectées est effacé
+          au bout de 90 jours, et l'accès d'une application prend fin au plus tard 90 jours après votre accord.
         </p>
       </Section>
 

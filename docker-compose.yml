@@ -45,6 +45,8 @@ services:
       # Serveur MCP et OAuth des applications connectées (Claude) ; coupé par défaut
       MCP_ENABLED: ${MCP_ENABLED:-false}
       OAUTH_REDIRECT_URIS: ${OAUTH_REDIRECT_URIS:-https://claude.ai/api/mcp/auth_callback,https://claude.com/api/mcp/auth_callback}
+      MCP_DAILY_CREATE_QUOTA: ${MCP_DAILY_CREATE_QUOTA:-30}
+      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-https://claude.ai,https://claude.com}
     labels:
       - "traefik.enable=true"
       # tribbae.fr, sa variante www et l'ancien domaine (redirigés par l'application)

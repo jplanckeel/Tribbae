@@ -105,6 +105,7 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	insert(t, db, "oauth_grants", bson.M{"user_id": alice, "client_id": "c", "client_name": "Claude"})
 	insert(t, db, "oauth_tokens", bson.M{"user_id": alice, "kind": "refresh"})
 	insert(t, db, "oauth_requests", bson.M{"user_id": alice, "client_id": "c"})
+	insert(t, db, "mcp_audit", bson.M{"user_id": alice, "tool": "create_link", "outcome": "ok"})
 	var jpg bytes.Buffer
 	if err := jpeg.Encode(&jpg, image.NewRGBA(image.Rect(0, 0, 8, 8)), nil); err != nil {
 		t.Fatal(err)
@@ -177,6 +178,7 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		{"applications connectées", "oauth_grants", bson.M{}, 0},
 		{"jetons des applications", "oauth_tokens", bson.M{}, 0},
 		{"demandes d'autorisation", "oauth_requests", bson.M{}, 0},
+		{"journal des applications", "mcp_audit", bson.M{}, 0},
 		{"photos d'Alice", "photos.files", bson.M{"metadata.owner_id": alice}, 0},
 		// Ce qui est à Bob reste à Bob
 		{"compte de Bob", "users", bson.M{"_id": bobID}, 1},

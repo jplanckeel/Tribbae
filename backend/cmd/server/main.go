@@ -28,8 +28,9 @@ import (
 	"github.com/tribbae/backend/internal/httpx"
 	"github.com/tribbae/backend/internal/interceptor"
 	"github.com/tribbae/backend/internal/link"
-	"github.com/tribbae/backend/internal/oauth"
 	"github.com/tribbae/backend/internal/mail"
+	"github.com/tribbae/backend/internal/mcpserver"
+	"github.com/tribbae/backend/internal/oauth"
 	"github.com/tribbae/backend/internal/photo"
 	"github.com/tribbae/backend/internal/preview"
 	"github.com/tribbae/backend/internal/seo"
@@ -134,7 +135,7 @@ func main() {
 	// Applications connectées (connecteur Claude) : serveur d'autorisation
 	// OAuth 2.1 du serveur MCP. Coupé par défaut (MCP_ENABLED) : ses routes
 	// répondent alors 404.
-	var oauthH http.Handler = http.NotFoundHandler()
+	var oauthH, mcpH http.Handler = http.NotFoundHandler(), http.NotFoundHandler()
 	if cfg.MCPEnabled {
 		siteURL := strings.TrimRight(cfg.SiteURL, "/")
 		oauthSvc := oauth.NewService(database.DB(), oauth.Config{
@@ -144,7 +145,16 @@ func main() {
 		})
 		oauthSvc.SetSessionCheck(authSvc.SessionValid)
 		oauthH = oauth.NewHandler(oauthSvc, bearerUser, !cfg.IsLocal())
-		log.Println("MCP enabled: OAuth authorization server on /oauth")
+		// Serveur MCP : list_folders, list_links, create_link (idées privées)
+		mcpSrv := mcpserver.New(mcpserver.Config{
+			SiteURL:             siteURL,
+			ResourceMetadataURL: siteURL + oauth.PathPRMetadata + mcpserver.Path,
+			AllowedOrigins:      append([]string{siteURL}, cfg.MCPAllowedOrigins...),
+			RequireHTTPS:        !cfg.IsLocal(),
+			DailyQuota:          cfg.MCPDailyQuota,
+		}, linkSvc, folderSvc, mcpserver.NewAudit(database.Col(mcpserver.AuditCollection)))
+		mcpH = mcpSrv.Handler(oauthSvc)
+		log.Println("MCP enabled: OAuth authorization server on /oauth, MCP server on /mcp")
 	}
 
 	// Serveur gRPC
@@ -228,6 +238,7 @@ func main() {
 	handler = withAI(aiH, handler)
 	handler = withAccount(accountH, handler)
 	handler = withOAuth(oauthH, handler)
+	handler = withMCP(mcpH, handler)
 	handler = httpx.Limit(oauthLimiter, map[string]bool{oauth.PathAuthorize: true, oauth.PathToken: true, oauth.PathRevoke: true, oauth.PathConsentInfo: true}, handler)
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true, "/v1/tribe/members": true, "/v1/circle/invitations": true}, handler)
 	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, "/v1/auth/email/verify": true, "/v1/auth/email/resend": true, account.DeletePath: true, oauth.PathRegister: true, oauth.PathConsent: true}, handler)
@@ -295,6 +306,17 @@ func withOAuth(oauthH http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if oauth.Handles(r.URL.Path) {
 			oauthH.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// withMCP envoie /mcp au serveur MCP (404 quand MCP_ENABLED est désactivé).
+func withMCP(mcpH http.Handler, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == mcpserver.Path {
+			mcpH.ServeHTTP(w, r)
 			return
 		}
 		next.ServeHTTP(w, r)

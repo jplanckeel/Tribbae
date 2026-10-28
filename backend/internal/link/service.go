@@ -31,7 +31,15 @@ type Link struct {
 	Favorite        bool          `bson:"favorite"         json:"favorite"`
 	CreatedAt       time.Time     `bson:"created_at"       json:"created_at"`
 	UpdatedAt       time.Time     `bson:"updated_at"       json:"updated_at"`
+	// Provenance : "mcp" pour une idée ajoutée par une application connectée
+	// (Claude), avec l'identifiant de son client OAuth. Absente sinon, et
+	// jamais modifiée ensuite (Update ne touche pas ces champs).
+	CreatedVia    string `bson:"created_via,omitempty"     json:"created_via,omitempty"`
+	OAuthClientID string `bson:"oauth_client_id,omitempty" json:"oauth_client_id,omitempty"`
 }
+
+// CreatedViaMCP marque les idées ajoutées par le serveur MCP.
+const CreatedViaMCP = "mcp"
 
 type LinkLike struct {
 	ID        bson.ObjectID `bson:"_id,omitempty"`
@@ -214,6 +222,18 @@ func (s *Service) canEditFolder(ctx context.Context, folderID, userID string) bo
 		},
 	})
 	return count > 0
+}
+
+// CanEditFolder indique si l'utilisateur peut ajouter des idées dans un
+// dossier (sa tribu en est propriétaire, ou il en est collaborateur éditeur).
+func (s *Service) CanEditFolder(ctx context.Context, folderID, userID string) bool {
+	return s.canEditFolder(ctx, folderID, userID)
+}
+
+// CountCreatedVia compte les idées qu'un compte a créées par une provenance
+// (CreatedViaMCP) depuis since : quota journalier du serveur MCP.
+func (s *Service) CountCreatedVia(ctx context.Context, ownerID, via string, since time.Time) (int64, error) {
+	return s.col.CountDocuments(ctx, bson.M{"owner_id": ownerID, "created_via": via, "created_at": bson.M{"$gte": since}})
 }
 
 // folderIsPublic : le dossier est publié dans la communauté.

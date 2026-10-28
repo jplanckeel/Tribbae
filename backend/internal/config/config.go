@@ -42,6 +42,11 @@ type Config struct {
 	// OAuthRedirectURIs : seules adresses de retour qu'un client OAuth peut
 	// enregistrer (comparaison exacte)
 	OAuthRedirectURIs []string
+	// MCPDailyQuota : idées qu'un compte peut ajouter par le serveur MCP sur 24 h
+	MCPDailyQuota int
+	// MCPAllowedOrigins : en-têtes Origin acceptés sur /mcp en plus de SITE_URL
+	// (une requête sans Origin, de serveur à serveur, passe toujours)
+	MCPAllowedOrigins []string
 }
 
 // insecureJWTSecret est la valeur d'exemple de .env.example : elle n'est
@@ -73,6 +78,8 @@ func Load() *Config {
 	cfg.MCPEnabled = getEnvBool("MCP_ENABLED", false)
 	// Callback de claude.ai, et celui de claude.com annoncé par Anthropic
 	cfg.OAuthRedirectURIs = splitList(getEnv("OAUTH_REDIRECT_URIS", "https://claude.ai/api/mcp/auth_callback,https://claude.com/api/mcp/auth_callback"))
+	cfg.MCPDailyQuota = getEnvInt("MCP_DAILY_CREATE_QUOTA", 30)
+	cfg.MCPAllowedOrigins = splitList(getEnv("MCP_ALLOWED_ORIGINS", "https://claude.ai,https://claude.com"))
 	return cfg
 }
 
