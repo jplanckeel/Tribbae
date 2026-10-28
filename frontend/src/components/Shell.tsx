@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
-import { Navigate, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
-import { useSession } from "../lib/session";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { Navigate, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate } from "react-router";
+import { clearSession, useSession } from "../lib/session";
 import { tabLink, trackLocation } from "../lib/transitions";
 import { ComposerProvider, useComposer } from "./Composer";
 import Icon, { type IconName } from "./Icon";
@@ -163,13 +163,7 @@ function TopBar() {
             Ajouter une idée
           </button>
           {session ? (
-            <NavLink
-              to="/tribu"
-              aria-label={`Ma tribu (${session.displayName || "mon compte"})`}
-              className="flex h-[46px] w-[46px] items-center justify-center rounded-[16px] bg-braise font-display text-lg font-extrabold text-ecorce transition-transform hover:-translate-y-0.5"
-            >
-              {initial}
-            </NavLink>
+            <AccountMenu initial={initial} name={session.displayName} />
           ) : (
             <NavLink
               to="/connexion"
@@ -181,6 +175,73 @@ function TopBar() {
         </div>
       </div>
     </header>
+  );
+}
+
+/**
+ * Menu du compte (en-tête bureau) : Ma tribu, paramètres, applications
+ * connectées et déconnexion. Remplace le rouage de « Ma tribu » sur grand écran.
+ */
+function AccountMenu({ initial, name }: { initial: string; name: string }) {
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+
+  const go = (to: string) => {
+    setOpen(false);
+    navigate(to);
+  };
+  const logout = () => {
+    setOpen(false);
+    clearSession();
+    navigate("/bienvenue", { replace: true });
+  };
+  const item = "flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left text-[15px] font-semibold text-ecorce hover:bg-sable-2";
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Mon compte (${name || "Ma tribu"})`}
+        className="flex h-[46px] w-[46px] items-center justify-center rounded-[16px] bg-braise font-display text-lg font-extrabold text-ecorce transition-transform hover:-translate-y-0.5"
+      >
+        {initial}
+      </button>
+      {open && (
+        <div role="menu" aria-label="Mon compte" className="surface-raised absolute top-[54px] right-0 z-50 flex w-64 flex-col gap-0.5 rounded-[18px] border border-line bg-sable p-2 shadow-soft">
+          <p className="truncate px-3 pt-1.5 pb-2 text-sm font-bold text-sec">{name || "Mon compte"}</p>
+          <button type="button" role="menuitem" className={item} onClick={() => go("/tribu")}>
+            <Icon name="tribe" size={18} className="text-terracotta" />Ma tribu
+          </button>
+          <button type="button" role="menuitem" className={item} onClick={() => go("/tribu?ouvrir=parametres")}>
+            <Icon name="settings" size={18} className="text-sec" />Paramètres
+          </button>
+          <button type="button" role="menuitem" className={item} onClick={() => go("/tribu?ouvrir=applications")}>
+            <Icon name="sparkles" size={18} className="text-prune" />Applications connectées
+          </button>
+          <div className="my-1 h-px bg-line" />
+          <button type="button" role="menuitem" className={`${item} text-sortie-ink`} onClick={logout}>
+            <Icon name="logout" size={18} />Se déconnecter
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
