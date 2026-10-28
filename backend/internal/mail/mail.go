@@ -56,6 +56,7 @@ const (
 	TagTribeInvite    = "tribe-invitation"
 	TagEmailVerify    = "email-verification"
 	TagCircleInvite   = "circle-invitation"
+	TagCollabAdded    = "collaborator-added"
 
 	sendTimeout = 30 * time.Second
 )
@@ -160,6 +161,23 @@ type CircleInvitation struct {
 func (m *Mailer) CircleInvitation(inv CircleInvitation) {
 	c, err := circleInvitationEmail(m.siteURL, inv)
 	m.send(inv.Email, "", TagCircleInvite, c, err)
+}
+
+// CollaboratorAdded : un compte a été ajouté comme collaborateur d'un
+// dossier. La fréquence des envois est limitée par le service des dossiers.
+type CollaboratorAdded struct {
+	Email, Name string
+	OwnerName   string
+	FolderID    string
+	FolderName  string
+	// Editor : la personne peut ajouter des idées
+	Editor bool
+}
+
+// CollaboratorAdded prévient un compte ajouté à un dossier.
+func (m *Mailer) CollaboratorAdded(c CollaboratorAdded) {
+	ct, err := collaboratorAddedEmail(m.siteURL, c)
+	m.send(c.Email, c.Name, TagCollabAdded, ct, err)
 }
 
 // Wait attend la fin des envois en cours (arrêt du serveur), au plus jusqu'à
