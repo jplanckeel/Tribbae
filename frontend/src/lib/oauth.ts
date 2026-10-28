@@ -18,3 +18,8 @@ export function scopeLabels(scopes: string[]): string[] {
   const unknown = scopes.filter((s) => !(s in SCOPE_LABELS));
   return [...known, ...unknown];
 }
+
+/** Mention affichée sur une idée ajoutée par une application connectée. */
+export function createdViaLabel(createdVia?: string): string | undefined {
+  return createdVia === "mcp" ? "Ajoutée par Claude" : undefined;
+}

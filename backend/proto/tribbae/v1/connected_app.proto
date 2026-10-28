@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package tribbae.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
+
+// Applications connectées : les applications (Claude) auxquelles le compte a
+// donné accès par OAuth (serveur MCP). On peut voir et retirer chaque accès,
+// et effacer les idées ajoutées par cette application.
+service ConnectedAppService {
+  rpc ListConnectedApps(ListConnectedAppsRequest) returns (ListConnectedAppsResponse) {
+    option (google.api.http) = {get: "/v1/connected-apps"};
+  }
+  rpc RevokeConnectedApp(RevokeConnectedAppRequest) returns (RevokeConnectedAppResponse) {
+    option (google.api.http) = {delete: "/v1/connected-apps/{id}"};
+  }
+}
+
+message ConnectedApp {
+  string id = 1;
+  // Nom déclaré par l'application à son enregistrement
+  string name = 2;
+  // Site qui a reçu l'accès (claude.ai)
+  string site = 3;
+  // Droits accordés : links:read, links:write, folders:read
+  repeated string scopes = 4;
+  google.protobuf.Timestamp connected_at = 5;
+  google.protobuf.Timestamp last_used_at = 6;
+  // Fin de l'accès (au plus 90 jours après l'accord)
+  google.protobuf.Timestamp expires_at = 7;
+  // Idées que cette application a ajoutées et qui existent encore
+  int32 idea_count = 8;
+}
+
+message ListConnectedAppsRequest {}
+
+message ListConnectedAppsResponse {
+  repeated ConnectedApp apps = 1;
+}
+
+message RevokeConnectedAppRequest {
+  string id = 1;
+  // Efface aussi les idées que cette application a ajoutées
+  bool delete_ideas = 2;
+}
+
+message RevokeConnectedAppResponse {
+  int32 deleted_ideas = 1;
+}

@@ -16,6 +16,7 @@ import { eventDateMs, formatShortDate, formatTime, hostname, safeHref, safeImage
 import { canEditFolder, copyInput, toInput } from "../lib/links";
 import { ideaSeoDescription, ideaSeoTitle } from "../lib/seo";
 import { useSession } from "../lib/session";
+import { createdViaLabel } from "../lib/oauth";
 import { shareOrCopy } from "../lib/share";
 import type { Comment, Link } from "../lib/types";
 import { pushLink, useIdeaMorphTarget } from "../lib/transitions";
@@ -229,6 +230,9 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
           {link.favorite && <Icon name="star" size={16} filled className="text-braise" />}
           {link.visibility === "public" && (
             <span className="flex items-center gap-1 text-xs text-sec"><Icon name="globe" size={14} />public</span>
+          )}
+          {createdViaLabel(link.createdVia) && (
+            <span className="flex items-center gap-1 text-xs text-sec"><Icon name="sparkles" size={14} />{createdViaLabel(link.createdVia)}</span>
           )}
         </div>
 

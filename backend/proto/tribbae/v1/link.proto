@@ -43,6 +43,9 @@ message Link {
   string owner_display_name = 22;
   bool owner_is_admin = 23;
   string visibility = 24;  // "private" | "public"
+  // Provenance : "mcp" pour une idée ajoutée par une application connectée
+  // (Claude), vide sinon
+  string created_via = 25;
 }
 
 message CreateLinkRequest {

@@ -132,8 +132,30 @@ data class ApiAuthLink(
     val createdAt: String = "",
     val ownerDisplayName: String = "",
     val ownerIsAdmin: Boolean = false,
-    val visibility: String = "private"
+    val visibility: String = "private",
+    val createdVia: String = ""
 )
+
+/** Application connectée (Claude) à laquelle le compte a donné accès. */
+@Serializable
+data class ApiConnectedApp(
+    val id: String = "",
+    val name: String = "",
+    /** Site qui a reçu l'accès (claude.ai) */
+    val site: String = "",
+    val scopes: List<String> = emptyList(),
+    val connectedAt: String = "",
+    val lastUsedAt: String = "",
+    val expiresAt: String = "",
+    /** Idées ajoutées par cette application qui existent encore */
+    val ideaCount: Int = 0
+)
+
+@Serializable
+private data class ApiConnectedAppsResponse(val apps: List<ApiConnectedApp> = emptyList())
+
+@Serializable
+private data class ApiRevokeConnectedAppResponse(val deletedIdeas: Int = 0)
 
 @Serializable
 data class CreateFolderRequest(
@@ -422,6 +444,16 @@ class AuthenticatedApiClient(
         request("/v1/account/delete", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
             kotlinx.serialization.json.buildJsonObject { put("password", kotlinx.serialization.json.JsonPrimitive(password)) })) { it }
     }
+
+    // Applications connectées (Claude, serveur MCP)
+    suspend fun listConnectedApps(): List<ApiConnectedApp> =
+        request("/v1/connected-apps", "GET") { json.decodeFromString<ApiConnectedAppsResponse>(it).apps }
+
+    /** Retire l'accès ; deleteIdeas efface aussi les idées que l'application a ajoutées. Renvoie leur nombre. */
+    suspend fun revokeConnectedApp(id: String, deleteIdeas: Boolean): Int =
+        request("/v1/connected-apps/${java.net.URLEncoder.encode(id, "UTF-8")}" + (if (deleteIdeas) "?deleteIdeas=true" else ""), "DELETE") {
+            json.decodeFromString<ApiRevokeConnectedAppResponse>(it).deletedIdeas
+        }
 
     // Tribu
     suspend fun getTribe(): ApiTribe = request("/v1/tribe", "GET") { json.decodeFromString<ApiTribeResponse>(it).tribe }

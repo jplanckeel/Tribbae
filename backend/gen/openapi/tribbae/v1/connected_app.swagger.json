@@ -1,0 +1,172 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "tribbae/v1/connected_app.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "ConnectedAppService",
+      "description": "Applications connectées : les applications (Claude) auxquelles le compte a\ndonné accès par OAuth (serveur MCP). On peut voir et retirer chaque accès,\net effacer les idées ajoutées par cette application."
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/connected-apps": {
+      "get": {
+        "operationId": "ConnectedAppService_ListConnectedApps",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListConnectedAppsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "ConnectedAppService"
+        ]
+      }
+    },
+    "/v1/connected-apps/{id}": {
+      "delete": {
+        "operationId": "ConnectedAppService_RevokeConnectedApp",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RevokeConnectedAppResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "deleteIdeas",
+            "description": "Efface aussi les idées que cette application a ajoutées",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "tags": [
+          "ConnectedAppService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1ConnectedApp": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "title": "Nom déclaré par l'application à son enregistrement"
+        },
+        "site": {
+          "type": "string",
+          "title": "Site qui a reçu l'accès (claude.ai)"
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Droits accordés : links:read, links:write, folders:read"
+        },
+        "connectedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastUsedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Fin de l'accès (au plus 90 jours après l'accord)"
+        },
+        "ideaCount": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Idées que cette application a ajoutées et qui existent encore"
+        }
+      }
+    },
+    "v1ListConnectedAppsResponse": {
+      "type": "object",
+      "properties": {
+        "apps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ConnectedApp"
+          }
+        }
+      }
+    },
+    "v1RevokeConnectedAppResponse": {
+      "type": "object",
+      "properties": {
+        "deletedIdeas": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    }
+  }
+}

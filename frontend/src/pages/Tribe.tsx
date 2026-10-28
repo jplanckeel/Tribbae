@@ -6,15 +6,16 @@ import { FolderGlyph } from "../components/FolderCover";
 import Icon, { type IconName } from "../components/Icon";
 import ShareFolderSheet from "../components/ShareFolderSheet";
 import Sheet from "../components/Sheet";
-import { Button, EmptyState, ErrorNote, Field, PageHeader, Spinner } from "../components/ui";
+import { Button, EmptyState, ErrorNote, Field, PageHeader, Spinner, Toggle } from "../components/ui";
 import * as api from "../lib/api";
 import { AVATAR_COLORS, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { childColors, countdown } from "../lib/folderStyle";
 import { formatAge, formatLongDate, initial, plural } from "../lib/format";
+import { scopeLabels } from "../lib/oauth";
 import { clearSession, useSession } from "../lib/session";
 import { birthdayLabel, circleOf, ideasForChild, monthName, RING_SLOTS, ringPosition, yearInIdeas, type CircleMember } from "../lib/tribe";
-import type { Child, CircleInvitation, CollaboratorRole, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
+import type { Child, CircleInvitation, CollaboratorRole, ConnectedApp, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
 import { setThemePref, useThemePref, type ThemePref } from "../lib/theme";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
@@ -54,6 +55,7 @@ export default function Tribe() {
   const [followingOpen, setFollowingOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [appsOpen, setAppsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [now] = useState(() => Date.now());
   const following = useAsync(() => api.follows.following(session.userId), [session.userId]);
@@ -384,6 +386,7 @@ export default function Tribe() {
       </Page>
 
       {deleteOpen && <DeleteAccountSheet onClose={() => setDeleteOpen(false)} />}
+      {appsOpen && <ConnectedAppsSheet onClose={() => setAppsOpen(false)} />}
       {kid && (
         <KidSheet
           kid={kid}
@@ -473,6 +476,18 @@ export default function Tribe() {
               <span className="font-bold">La tribu {tribeName}</span>
             </span>
             <Icon name="pencil" size={17} className="text-sec" />
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSettingsOpen(false); setAppsOpen(true); }}
+            className="flex items-center gap-3 rounded-medium bg-card p-3.5 text-left hover:bg-sable-2"
+          >
+            <Icon name="sparkles" size={20} className="text-prune" />
+            <span className="flex flex-1 flex-col">
+              <span className="font-bold">Applications connectées</span>
+              <span className="text-xs text-sec">Voir et retirer l'accès donné à Claude</span>
+            </span>
+            <Icon name="dots" size={17} className="text-sec" />
           </button>
           <section aria-labelledby="my-data" className="flex flex-col gap-2 rounded-medium bg-card p-3.5">
             <h3 id="my-data" className="font-bold">Mes données</h3>
@@ -1326,6 +1341,92 @@ function DeleteAccountSheet({ onClose }: { onClose: () => void }) {
         <Button type="button" variant="ghost" onClick={onClose}>Annuler</Button>
       </form>
     </Sheet>
+  );
+}
+
+/** « Applications connectées » : accès donnés à Claude (serveur MCP), à voir et retirer. */
+function ConnectedAppsSheet({ onClose }: { onClose: () => void }) {
+  const apps = useAsync(() => api.connectedApps.list(), []);
+  const { reload } = useMyData();
+
+  return (
+    <Sheet open onClose={onClose} title="Applications connectées">
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-sec">
+          Les applications auxquelles vous avez donné accès à votre compte, par exemple Claude. Elles peuvent seulement
+          voir vos dossiers et y ajouter des idées privées. Un accès dure au plus 90 jours.
+        </p>
+        {apps.error && <ErrorNote>{apps.error.message}</ErrorNote>}
+        {!apps.data && !apps.error && <Spinner />}
+        {apps.data?.length === 0 && (
+          <p className="rounded-medium bg-card p-3.5 text-[15px] text-ecorce-2">Aucune application n'a accès à votre compte.</p>
+        )}
+        {apps.data?.map((app) => (
+          <ConnectedAppCard key={app.id} app={app} onRevoked={(deleted) => { apps.reload(); if (deleted) reload(); }} />
+        ))}
+      </div>
+    </Sheet>
+  );
+}
+
+function ConnectedAppCard({ app, onRevoked }: { app: ConnectedApp; onRevoked: (deletedIdeas: number) => void }) {
+  const { confirm, toast } = useFeedback();
+  const [deleteIdeas, setDeleteIdeas] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const name = app.name || "Application";
+  const ideas = app.ideaCount ?? 0;
+
+  const revoke = async () => {
+    const ok = await confirm({
+      title: `Retirer l'accès de ${name} ?`,
+      text: deleteIdeas
+        ? `${name} ne pourra plus rien faire sur votre compte, et ${ideas > 1 ? `les ${ideas} idées qu'elle a ajoutées seront effacées` : "l'idée qu'elle a ajoutée sera effacée"}.`
+        : `${name} ne pourra plus rien faire sur votre compte. Les idées qu'elle a ajoutées restent.`,
+      confirmLabel: "Retirer l'accès",
+      danger: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    setError("");
+    try {
+      const deleted = await api.connectedApps.revoke(app.id, deleteIdeas);
+      toast(deleted ? `Accès retiré, ${plural(deleted, "idée effacée", "idées effacées")}` : "Accès retiré");
+      onRevoked(deleted);
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3 rounded-medium bg-card p-3.5">
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-medium bg-prune text-soleil"><Icon name="sparkles" size={20} /></span>
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate font-bold">{name}</span>
+          <span className="text-xs text-sec">{app.site}{app.connectedAt ? ` · connectée le ${formatLongDate(app.connectedAt)}` : ""}</span>
+        </span>
+      </div>
+      <ul className="list-disc space-y-0.5 pl-5 text-sm text-ecorce-2">
+        {scopeLabels(app.scopes ?? []).map((label) => <li key={label}>{label}</li>)}
+      </ul>
+      <p className="text-xs text-sec">
+        {app.lastUsedAt ? `Dernier usage le ${formatLongDate(app.lastUsedAt)}` : ""}
+        {app.expiresAt ? ` · accès jusqu'au ${formatLongDate(app.expiresAt)}` : ""}
+        {` · ${plural(ideas, "idée ajoutée", "idées ajoutées")}`}
+      </p>
+      {ideas > 0 && (
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>Effacer aussi {ideas > 1 ? `les ${ideas} idées ajoutées` : "l'idée ajoutée"}</span>
+          <Toggle checked={deleteIdeas} onChange={setDeleteIdeas} label="Effacer aussi les idées ajoutées par cette application" />
+        </label>
+      )}
+      {error && <ErrorNote>{error}</ErrorNote>}
+      <Button variant="danger" size="sm" icon="close" loading={busy} onClick={() => void revoke()}>
+        Retirer l'accès
+      </Button>
+    </div>
   );
 }
 
