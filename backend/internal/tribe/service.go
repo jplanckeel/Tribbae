@@ -12,6 +12,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -27,6 +28,9 @@ const (
 
 	maxNameRunes = 60
 	maxMembers   = 12
+	// Au plus un email de départ (retrait, transfert) par destinataire et par
+	// jour, même si on le fait entrer et sortir plusieurs fois
+	notifyEvery = 24 * time.Hour
 )
 
 var (
@@ -76,9 +80,11 @@ type userDoc struct {
 	DisplayName string        `bson:"display_name"`
 }
 
-// Notifier envoie les emails d'invitation (mail.Mailer).
+// Notifier envoie les emails de la tribu (mail.Mailer).
 type Notifier interface {
 	TribeInvitation(inv mail.TribeInvitation)
+	TribeMemberRemoved(r mail.TribeMemberRemoved)
+	TribeNewOwner(o mail.TribeNewOwner)
 }
 
 type Service struct {
@@ -89,6 +95,10 @@ type Service struct {
 	notify    Notifier
 	inviteURL string
 	emails    EmailVerifier
+
+	// Dernier email de départ par destinataire (limite d'envoi)
+	notifiedMu sync.Mutex
+	notified   map[string]time.Time
 }
 
 // EmailVerifier : confirmation de l'adresse des comptes (auth.Service).
@@ -244,6 +254,11 @@ func (s *Service) join(ctx context.Context, t *Tribe, inviteeID, addedBy string)
 // (targetID == userID) ou, pour le créateur, en retirer un membre. Le contenu
 // du membre parti cesse aussitôt d'être partagé.
 func (s *Service) RemoveMember(ctx context.Context, userID, targetID string) (*Tribe, error) {
+	return s.remove(ctx, userID, targetID, false)
+}
+
+// remove retire targetID ; deleted : son compte est en cours de suppression.
+func (s *Service) remove(ctx context.Context, userID, targetID string, deleted bool) (*Tribe, error) {
 	t, err := s.find(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -266,6 +281,7 @@ func (s *Service) RemoveMember(ctx context.Context, userID, targetID string) (*T
 		return nil, err
 	}
 	// Le créateur s'en va : la tribu revient au membre le plus ancien
+	newOwner := ""
 	if t.Member(targetID).Role == RoleOwner {
 		oldest := 0
 		for i := range rest {
@@ -274,10 +290,12 @@ func (s *Service) RemoveMember(ctx context.Context, userID, targetID string) (*T
 			}
 		}
 		rest[oldest].Role = RoleOwner
+		newOwner = rest[oldest].UserID
 	}
 	if _, err := s.col.UpdateOne(ctx, bson.M{"_id": t.ID}, bson.M{"$set": bson.M{"members": rest, "updated_at": time.Now()}}); err != nil {
 		return nil, err
 	}
+	s.notifyDeparture(ctx, t.Name, userID, targetID, newOwner, deleted)
 	if targetID == userID {
 		return s.Get(ctx, userID)
 	}
@@ -299,6 +317,51 @@ func (s *Service) SetSharing(ctx context.Context, userID string, sharing bool) (
 		return nil, err
 	}
 	return s.find(ctx, userID)
+}
+
+// notifyDeparture prévient par email le membre retiré par le responsable
+// (pas celui qui part de lui-même) et le nouveau responsable. L'email au
+// nouveau responsable ne nomme pas un compte supprimé.
+func (s *Service) notifyDeparture(ctx context.Context, tribeName, userID, targetID, newOwner string, deleted bool) {
+	if s.notify == nil || targetID == userID && newOwner == "" {
+		return
+	}
+	users := s.Users(ctx, []string{userID, targetID, newOwner})
+	if targetID != userID {
+		if u, ok := users[targetID]; ok && s.mayNotify(targetID) {
+			s.notify.TribeMemberRemoved(mail.TribeMemberRemoved{
+				Email: u.Email, Name: u.DisplayName, TribeName: tribeName, RemovedByName: users[userID].DisplayName,
+			})
+		}
+	}
+	if u, ok := users[newOwner]; ok && s.mayNotify(newOwner) {
+		former := users[userID].DisplayName
+		if deleted {
+			former = ""
+		}
+		s.notify.TribeNewOwner(mail.TribeNewOwner{Email: u.Email, Name: u.DisplayName, TribeName: tribeName, FormerOwnerName: former})
+	}
+}
+
+// mayNotify applique la limite d'un email de départ par destinataire et par
+// jour (mémoire du serveur : un redémarrage la remet à zéro).
+func (s *Service) mayNotify(userID string) bool {
+	s.notifiedMu.Lock()
+	defer s.notifiedMu.Unlock()
+	now := time.Now()
+	if last, ok := s.notified[userID]; ok && now.Sub(last) < notifyEvery {
+		return false
+	}
+	if s.notified == nil {
+		s.notified = map[string]time.Time{}
+	}
+	for id, at := range s.notified {
+		if now.Sub(at) >= notifyEvery {
+			delete(s.notified, id)
+		}
+	}
+	s.notified[userID] = now
+	return true
 }
 
 func (s *Service) user(ctx context.Context, userID string) (*userDoc, error) {
@@ -338,7 +401,7 @@ func (s *Service) Users(ctx context.Context, ids []string) map[string]userDoc {
 // Leave retire userID de sa tribu (suppression du compte). Sans tribu
 // enregistrée, il n'y a rien à faire.
 func (s *Service) Leave(ctx context.Context, userID string) error {
-	_, err := s.RemoveMember(ctx, userID, userID)
+	_, err := s.remove(ctx, userID, userID, true)
 	if errors.Is(err, ErrNotMember) {
 		return nil
 	}
