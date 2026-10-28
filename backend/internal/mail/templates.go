@@ -47,6 +47,8 @@ const (
 	tmplAccountDeleted = "account_deleted"
 	tmplEmailVerify    = "email_verification"
 	tmplCircleInvite   = "circle_invitation"
+	tmplTribeRemoved   = "tribe_member_removed"
+	tmplTribeNewOwner  = "tribe_new_owner"
 	tmplCollabAdded    = "collaborator_added"
 )
 
@@ -56,7 +58,7 @@ var (
 )
 
 func init() {
-	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify, tmplCircleInvite, tmplCollabAdded} {
+	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify, tmplCircleInvite, tmplTribeRemoved, tmplTribeNewOwner, tmplCollabAdded} {
 		htmlTemplates[name] = htmltemplate.Must(htmltemplate.New("").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
@@ -359,6 +361,70 @@ func circleInvitationEmail(siteURL string, inv CircleInvitation) (content, error
 		Validity:       frenchDuration(inv.Validity),
 	}
 	return render(tmplCircleInvite, d.base, d)
+}
+
+// --- Retrait d'une tribu ---
+
+var leftTribe = []string{
+	"Vous ne voyez plus les idées, les dossiers et les enfants de la tribu",
+	"Les vôtres ne lui sont plus partagés",
+	"Vos idées et vos dossiers restent dans votre compte",
+}
+
+type tribeMemberRemovedData struct {
+	base
+	Name      string
+	RemovedBy string
+	Tribe     string
+	RemovedOn string
+	Changes   []string
+	AppURL    string
+}
+
+func tribeMemberRemovedEmail(siteURL string, r TribeMemberRemoved, removedAt time.Time) (content, error) {
+	by := oneLine(r.RemovedByName)
+	if by == "" {
+		by = "La personne responsable de la tribu"
+	}
+	tribe := oneLine(r.TribeName)
+	if tribe == "" {
+		tribe = by
+	}
+	d := tribeMemberRemovedData{
+		base:      newBase(siteURL, oneLine("Vous ne faites plus partie de la tribu « "+tribe+" »")),
+		Name:      oneLine(r.Name),
+		RemovedBy: by,
+		Tribe:     tribe,
+		RemovedOn: frenchDate(removedAt),
+		Changes:   leftTribe,
+		AppURL:    siteURL + "/",
+	}
+	return render(tmplTribeRemoved, d.base, d)
+}
+
+// --- Nouveau responsable de la tribu ---
+
+type tribeNewOwnerData struct {
+	base
+	Name        string
+	FormerOwner string
+	Tribe       string
+	TribeURL    string
+}
+
+func tribeNewOwnerEmail(siteURL string, o TribeNewOwner) (content, error) {
+	tribe := oneLine(o.TribeName)
+	if tribe == "" {
+		tribe = oneLine(o.Name)
+	}
+	d := tribeNewOwnerData{
+		base:        newBase(siteURL, oneLine("Vous êtes désormais responsable de la tribu « "+tribe+" »")),
+		Name:        oneLine(o.Name),
+		FormerOwner: oneLine(o.FormerOwnerName),
+		Tribe:       tribe,
+		TribeURL:    siteURL + "/tribu",
+	}
+	return render(tmplTribeNewOwner, d.base, d)
 }
 
 // --- Ajout comme collaborateur d'un dossier ---
