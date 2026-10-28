@@ -111,7 +111,7 @@ function HomeMobile() {
 
         {session ? (
           event ? (
-            <RouterLink to={`/links/${event.id}`} className="flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-3.5 transition-transform hover:-translate-y-0.5">
+            <RouterLink to={`/links/${event.id}`} className="ecorce-panel flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-3.5 transition-transform hover:-translate-y-0.5">
               <span className="flex h-16 w-[58px] shrink-0 flex-col items-center justify-center rounded-2xl bg-braise text-ecorce">
                 <span className="text-[11px] font-bold tracking-[0.6px] uppercase">{dayBadge(event.at).weekday}</span>
                 <span className="font-display text-[26px] leading-none font-extrabold">{dayBadge(event.at).day}</span>
@@ -298,7 +298,7 @@ function HomeDesktop() {
           </div>
         </div>
 
-        <aside className={`flex min-w-0 flex-[1_1_340px] flex-col gap-4 rounded-[28px] bg-ecorce p-6 text-sable ${session && next.length ? "" : "self-start"}`}>
+        <aside className={`ecorce-panel flex min-w-0 flex-[1_1_340px] flex-col gap-4 rounded-[28px] bg-ecorce p-6 text-sable ${session && next.length ? "" : "self-start"}`}>
           <h2 className="font-display text-xl font-bold">À venir pour la tribu</h2>
           {!session ? (
             <>
@@ -312,7 +312,7 @@ function HomeDesktop() {
               {next.slice(0, 3).map((l, i) => {
                 const b = dayBadge(l.at);
                 return (
-                  <RouterLink key={l.id} to={`/links/${l.id}`} className="flex items-center gap-3.5 rounded-[18px] bg-[#4D2F28] p-3 transition-colors hover:bg-[#583830]">
+                  <RouterLink key={l.id} to={`/links/${l.id}`} className="flex items-center gap-3.5 rounded-[18px] bg-(--panel-row) p-3 transition-colors hover:bg-(--panel-row-hover)">
                     <span className={`flex h-[62px] w-[58px] shrink-0 flex-col items-center justify-center rounded-2xl text-ecorce ${i === 0 ? "bg-braise" : "bg-soleil"}`}>
                       <span className="text-[11px] font-bold uppercase">{b.weekday}</span>
                       <span className="font-display text-2xl leading-none font-extrabold">{b.day}</span>
@@ -437,7 +437,7 @@ function NoEventCard() {
 
 function JoinCard() {
   return (
-    <RouterLink to="/bienvenue" className="flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-4 text-sable transition-transform hover:-translate-y-0.5">
+    <RouterLink to="/bienvenue" className="ecorce-panel flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-4 text-sable transition-transform hover:-translate-y-0.5">
       <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-braise text-ecorce">
         <Icon name="tribe" size={24} />
       </span>

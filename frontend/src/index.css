@@ -231,6 +231,19 @@
 :root[data-theme="dark"] .bg-sable-2 > .bg-card { background-color: #44342b; }
 /* Liens et textes terracotta plus clairs ; les boutons gardent leur terracotta */
 :root[data-theme="dark"] .text-terracotta { color: var(--color-link); }
+/* Panneaux « écorce » (À venir de l'accueil) : sombres le jour ; le soir,
+   écorce et sable s'inversent, d'où une surface élevée chaude au texte clair,
+   des lignes un ton au-dessus et des pastilles de date pleines */
+.ecorce-panel { --panel-row: #4d2f28; --panel-row-hover: #583830; }
+:root[data-theme="dark"] .ecorce-panel {
+  --color-ecorce: #33281f;
+  --color-sable: #f6ebdd;
+  --color-bark-soft: #c4ae9e;
+  --panel-row: #44342b;
+  --panel-row-hover: #4f3d32;
+  border: 1px solid #4a3a30;
+}
+:root[data-theme="dark"] .ecorce-panel .bg-soleil { background: #fde6bd; }
 /* Photos adoucies, pour ne pas éblouir le soir */
 :root[data-theme="dark"] img { filter: brightness(0.9); }
 
