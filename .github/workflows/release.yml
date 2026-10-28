@@ -44,37 +44,41 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
       
-      - name: Build APK
+      # Keystore de signature : sans lui, l'APK sortirait non signé et Android
+      # refuserait de l'installer (« le package ne semble pas valide »). On
+      # échoue plutôt que de publier un APK inutilisable.
+      - name: Decode signing keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_BASE64 manquant : impossible de signer l'APK"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build signed APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./gradlew assembleRelease
-      
-      #- name: Sign APK
-      #  env:
-      #    KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
-      #    KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-      #    KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      #    KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-      #  run: |
-      #    if [ -z "$KEYSTORE_FILE" ]; then
-      #      echo "INFO: Pas de keystore configuré, APK non signé"
-      #      exit 0
-      #    fi
-      #    echo "$KEYSTORE_FILE" | base64 -d > keystore.jks
-      #    jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
-      #      -keystore keystore.jks \
-      #      -storepass "$KEYSTORE_PASSWORD" \
-      #      -keypass "$KEY_PASSWORD" \
-      #      composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk \
-      #      "$KEY_ALIAS"
-      #    rm keystore.jks
-      
+
+      - name: Verify APK signature
+        run: |
+          APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          "$APKSIGNER" verify --verbose --min-sdk-version 24 composeApp/build/outputs/apk/release/composeApp-release.apk
+          rm -f "$ANDROID_KEYSTORE_PATH"
+
       - name: Rename APK
         run: |
-          mv composeApp/build/outputs/apk/release/composeApp-release-unsigned.apk \
+          mv composeApp/build/outputs/apk/release/composeApp-release.apk \
              "tribbae-${TAG#v}.apk"
           # Table de correspondance R8 : nécessaire pour relire les traces de
           # plantage de cette version (noms de classes et de méthodes raccourcis)
           gzip -c composeApp/build/outputs/mapping/release/mapping.txt > "tribbae-${TAG#v}-mapping.txt.gz"
-      
+
       # Release déjà créée par release-please : on y ajoute l'APK sans toucher à son
       # changelog. Tag poussé à la main : on crée la release avec des notes auto.
       - name: Publish APK to release
