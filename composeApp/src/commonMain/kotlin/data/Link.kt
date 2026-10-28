@@ -66,7 +66,9 @@ data class Link(
     val ownerIsAdmin: Boolean = false,
     val visibility: String = "private",
     val createdAt: String = "",
-    val updatedAt: String = ""
+    val updatedAt: String = "",
+    /** Provenance : "mcp" pour une idée ajoutée par une application connectée (Claude) */
+    val createdVia: String = ""
 )
 
 @Serializable

@@ -422,7 +422,7 @@
           "type": "string"
         }
       },
-      "additionalProperties": {}
+      "additionalProperties": true
     },
     "rpcStatus": {
       "type": "object",
@@ -619,6 +619,10 @@
         "visibility": {
           "type": "string",
           "title": "\"private\" | \"public\""
+        },
+        "createdVia": {
+          "type": "string",
+          "title": "Provenance : \"mcp\" pour une idée ajoutée par une application connectée\n(Claude), vide sinon"
         }
       }
     },

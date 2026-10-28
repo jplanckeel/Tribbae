@@ -36,6 +36,8 @@ export interface Link {
   visibility?: string;
   createdAt?: string;
   updatedAt?: string;
+  /** Provenance : "mcp" pour une idée ajoutée par une application connectée (Claude) */
+  createdVia?: string;
 }
 
 /** Champs modifiables d'une idée (création / édition). */
@@ -105,6 +107,20 @@ export interface Tribe {
   members?: TribeMember[];
   /** Invitations en attente. */
   invitations?: TribeInvitation[];
+}
+
+/** Application connectée (Claude) à laquelle le compte a donné accès. */
+export interface ConnectedApp {
+  id: string;
+  name?: string;
+  /** Site qui a reçu l'accès (claude.ai) */
+  site?: string;
+  scopes?: string[];
+  connectedAt?: string;
+  lastUsedAt?: string;
+  expiresAt?: string;
+  /** Idées ajoutées par cette application qui existent encore */
+  ideaCount?: number;
 }
 
 /** Demande d'accès d'une application connectée (Claude), affichée avant d'accepter. */

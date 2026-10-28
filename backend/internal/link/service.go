@@ -236,6 +236,51 @@ func (s *Service) CountCreatedVia(ctx context.Context, ownerID, via string, sinc
 	return s.col.CountDocuments(ctx, bson.M{"owner_id": ownerID, "created_via": via, "created_at": bson.M{"$gte": since}})
 }
 
+// byClient : idées qu'un compte a ajoutées par une application connectée.
+func byClient(ownerID, clientID string) bson.M {
+	return bson.M{"owner_id": ownerID, "created_via": CreatedViaMCP, "oauth_client_id": clientID}
+}
+
+// CountCreatedByClient compte les idées qu'un compte a ajoutées par une
+// application connectée (écran « Applications connectées »).
+func (s *Service) CountCreatedByClient(ctx context.Context, ownerID, clientID string) (int64, error) {
+	return s.col.CountDocuments(ctx, byClient(ownerID, clientID))
+}
+
+// DeleteCreatedByClient efface les idées qu'un compte a ajoutées par une
+// application connectée, avec les commentaires et « j'aime » qu'elles ont reçus.
+func (s *Service) DeleteCreatedByClient(ctx context.Context, ownerID, clientID string) (int64, error) {
+	cur, err := s.col.Find(ctx, byClient(ownerID, clientID), options.Find().SetProjection(bson.M{"_id": 1}))
+	if err != nil {
+		return 0, err
+	}
+	var docs []struct {
+		ID bson.ObjectID `bson:"_id"`
+	}
+	if err := cur.All(ctx, &docs); err != nil {
+		return 0, err
+	}
+	if len(docs) == 0 {
+		return 0, nil
+	}
+	ids := make(bson.A, 0, len(docs))
+	hexIDs := make(bson.A, 0, len(docs))
+	for _, d := range docs {
+		ids = append(ids, d.ID)
+		hexIDs = append(hexIDs, d.ID.Hex())
+	}
+	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments")} {
+		if _, err := c.DeleteMany(ctx, bson.M{"link_id": bson.M{"$in": hexIDs}}); err != nil {
+			return 0, err
+		}
+	}
+	res, err := s.col.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": ids}, "owner_id": ownerID})
+	if err != nil {
+		return 0, err
+	}
+	return res.DeletedCount, nil
+}
+
 // folderIsPublic : le dossier est publié dans la communauté.
 func (s *Service) folderIsPublic(ctx context.Context, folderID string) bool {
 	fid, err := bson.ObjectIDFromHex(folderID)

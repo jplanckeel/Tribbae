@@ -100,6 +100,12 @@ func tryAuthenticate(ctx context.Context, validator TokenValidator) (context.Con
 	return context.WithValue(ctx, userIDKey, userID), nil
 }
 
+// WithUserID place le compte authentifié dans le contexte, comme le fait
+// UnaryAuth (tests des handlers).
+func WithUserID(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, userIDKey, userID)
+}
+
 func UserIDFromContext(ctx context.Context) (string, error) {
 	v, ok := ctx.Value(userIDKey).(string)
 	if !ok || v == "" {

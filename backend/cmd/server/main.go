@@ -135,15 +135,17 @@ func main() {
 	// Applications connectées (connecteur Claude) : serveur d'autorisation
 	// OAuth 2.1 du serveur MCP. Coupé par défaut (MCP_ENABLED) : ses routes
 	// répondent alors 404.
+	siteURL := strings.TrimRight(cfg.SiteURL, "/")
+	oauthSvc := oauth.NewService(database.DB(), oauth.Config{
+		Issuer:       siteURL,
+		Resource:     siteURL + "/mcp",
+		RedirectURIs: cfg.OAuthRedirectURIs,
+	})
+	oauthSvc.SetSessionCheck(authSvc.SessionValid)
+	// « Applications connectées » : voir et retirer les accès, même serveur coupé
+	appsH := oauth.NewAppsHandler(oauthSvc, linkSvc)
 	var oauthH, mcpH http.Handler = http.NotFoundHandler(), http.NotFoundHandler()
 	if cfg.MCPEnabled {
-		siteURL := strings.TrimRight(cfg.SiteURL, "/")
-		oauthSvc := oauth.NewService(database.DB(), oauth.Config{
-			Issuer:       siteURL,
-			Resource:     siteURL + "/mcp",
-			RedirectURIs: cfg.OAuthRedirectURIs,
-		})
-		oauthSvc.SetSessionCheck(authSvc.SessionValid)
 		oauthH = oauth.NewHandler(oauthSvc, bearerUser, !cfg.IsLocal())
 		// Serveur MCP : list_folders, list_links, create_link (idées privées)
 		mcpSrv := mcpserver.New(mcpserver.Config{
@@ -172,6 +174,7 @@ func main() {
 	pb.RegisterCommentServiceServer(grpcServer, commentH)
 	pb.RegisterAdminServiceServer(grpcServer, adminH)
 	pb.RegisterTribeServiceServer(grpcServer, tribeH)
+	pb.RegisterConnectedAppServiceServer(grpcServer, appsH)
 	reflection.Register(grpcServer)
 
 	grpcAddr := ":" + cfg.GRPCPort
@@ -225,6 +228,9 @@ func main() {
 	}
 	if err := pb.RegisterTribeServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
 		log.Fatalf("register tribe gateway: %v", err)
+	}
+	if err := pb.RegisterConnectedAppServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
+		log.Fatalf("register connected apps gateway: %v", err)
 	}
 
 	// Limites de débit par IP sur les routes sensibles (force brute, coût IA, requêtes sortantes)

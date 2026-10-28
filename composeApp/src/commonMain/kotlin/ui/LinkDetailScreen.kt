@@ -170,6 +170,10 @@ fun LinkDetailScreen(
                     )
                     if (link.favorite) Icon(Icons.Filled.Star, "Favori", tint = Braise, modifier = Modifier.size(16.dp))
                     if (link.visibility == "public") Icon(Icons.Outlined.Public, "Public", tint = TextSec, modifier = Modifier.size(16.dp))
+                    data.ConnectedApps.createdViaLabel(link.createdVia)?.let { label ->
+                        Icon(Icons.Outlined.AutoAwesome, null, tint = TextSec, modifier = Modifier.size(14.dp))
+                        Text(label, fontSize = 12.sp, color = TextSec, maxLines = 1)
+                    }
                 }
 
                 Text(link.title, style = display(28.sp))

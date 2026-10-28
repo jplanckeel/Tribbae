@@ -336,6 +336,26 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     /** Export RGPD de toutes les données du compte (JSON), ou null en cas d'échec. */
     suspend fun exportAccount(): String? = authenticatedClient?.let { runCatching { it.exportAccount() }.getOrNull() }
 
+    /** Applications connectées (Claude), ou null si le serveur n'a pas répondu. */
+    suspend fun connectedApps(): List<data.ApiConnectedApp>? =
+        authenticatedClient?.let { runCatching { it.listConnectedApps() }.getOrNull() }
+
+    /**
+     * Retire l'accès d'une application ; avec deleteIdeas, efface aussi ses idées
+     * (puis resynchronise). Renvoie le nombre d'idées effacées, ou le message d'erreur.
+     */
+    suspend fun revokeConnectedApp(id: String, deleteIdeas: Boolean): Result<Int> {
+        val client = authenticatedClient ?: return Result.failure(Exception("Connectez-vous d'abord."))
+        return runCatching { client.revokeConnectedApp(id, deleteIdeas) }
+            .onSuccess { deleted -> if (deleted > 0) sessionManager?.let { syncWithBackend(it) } }
+            .recoverCatching { e ->
+                throw Exception(when {
+                    "(404)" in e.message.orEmpty() -> "Cette application n'est déjà plus connectée."
+                    else -> "Impossible de joindre le serveur, réessayez."
+                })
+            }
+    }
+
     /** Suppression définitive du compte, puis déconnexion. onDone(null) si réussi, sinon le message d'erreur. */
     fun deleteAccount(password: String, onDone: (String?) -> Unit) {
         val client = authenticatedClient ?: return onDone("Connectez-vous pour supprimer votre compte.")
@@ -912,7 +932,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 ownerId = apiLink.ownerId,
                 ownerDisplayName = apiLink.ownerDisplayName,
                 ownerIsAdmin = apiLink.ownerIsAdmin,
-                visibility = apiLink.visibility.ifBlank { "private" }
+                visibility = apiLink.visibility.ifBlank { "private" },
+                createdVia = apiLink.createdVia
             )
         }
         val backendChildren = client.listChildren().children.map { apiChild ->

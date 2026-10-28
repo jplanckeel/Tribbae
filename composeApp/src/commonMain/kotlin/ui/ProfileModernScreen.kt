@@ -234,6 +234,7 @@ private fun TribeContent(
     var showSettings by remember { mutableStateOf(false) }
     var showLogout by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
+    var showApps by remember { mutableStateOf(false) }
     var dataMessage by remember { mutableStateOf<String?>(null) }
     val now = remember { System.currentTimeMillis() }
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
@@ -721,6 +722,7 @@ private fun TribeContent(
                     }
                 }
                 MenuRow(Icons.Outlined.Edit, "Nom de la tribu : $tribeName") { showSettings = false; showRename = true }
+                MenuRow(Icons.Outlined.AutoAwesome, "Applications connectées", tint = Prune) { showSettings = false; showApps = true }
                 Text("Mes données", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
                 MenuRow(Icons.Outlined.Download, "Télécharger mes données") {
                     exportLauncher.launch("tribbae-mes-donnees-${java.time.LocalDate.now()}.json")
@@ -737,6 +739,8 @@ private fun TribeContent(
             }
         }
     }
+
+    if (showApps) ConnectedAppsSheet(viewModel) { showApps = false }
 
     if (showRename) {
         var newName by remember { mutableStateOf(tribeName) }

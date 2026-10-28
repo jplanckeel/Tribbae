@@ -68,6 +68,7 @@ func (h *Handler) toProto(l *Link, st *Stats) *pb.Link {
 		OwnerDisplayName: owner.DisplayName,
 		OwnerIsAdmin:     owner.IsAdmin,
 		Visibility:       l.Visibility,
+		CreatedVia:       l.CreatedVia,
 	}
 }
 

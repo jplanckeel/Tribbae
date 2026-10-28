@@ -64,8 +64,9 @@ L'accès dure 90 jours au plus, et il faut le renouveler en reconnectant le conn
 
 ## Révocation
 
+- **Depuis Tribbae**, sur le web et dans l'app Android : « Ma tribu » › Paramètres › « Applications connectées ». L'écran liste chaque accès (site, droits, dates, nombre d'idées ajoutées). « Retirer l'accès » le coupe immédiatement, et l'option « Effacer aussi les idées ajoutées » supprime les idées créées par cette connexion. Cet écran marche même quand `MCP_ENABLED` est coupé.
 - **Depuis Claude** : déconnecter ou supprimer le connecteur.
-- **Depuis Tribbae** : changer son mot de passe ferme tous les accès des applications. L'écran « Applications connectées », pour voir et révoquer chaque accès, arrive dans une PR séparée.
+- **Changer son mot de passe** ferme tous les accès des applications.
 - **En base**, pour l'admin :
   ```js
   // Tous les accès d'un compte
@@ -74,6 +75,8 @@ L'accès dure 90 jours au plus, et il faut le renouveler en reconnectant le conn
   db.links.deleteMany({ owner_id: "<id>", created_via: "mcp", oauth_client_id: "<client>" })
   ```
 - **Tout le service** : `MCP_ENABLED=false`.
+
+Sur l'idée, la mention « Ajoutée par Claude » (web et Android) signale une idée créée par le connecteur (`createdVia: "mcp"` dans l'API).
 
 ## Sécurité OAuth, en bref
 

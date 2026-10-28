@@ -1,7 +1,7 @@
 import { clearSession, getSession, setSession, shouldRenew } from "./session";
 import { withinLimits } from "./preview";
 import type {
-  AdminStats, AdminUser, AiIdea, Child, CircleInvitation, CircleInvitationInfo, Comment, Folder, FolderInput, Link, LinkInput, LinkPreview, OAuthConsent, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole, StatsPeriod,
+  AdminStats, AdminUser, AiIdea, Child, CircleInvitation, CircleInvitationInfo, Comment, ConnectedApp, Folder, FolderInput, Link, LinkInput, LinkPreview, OAuthConsent, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole, StatsPeriod,
 } from "./types";
 
 const BASE = "/v1";
@@ -23,6 +23,7 @@ function frenchMessage(status: number, message: string): string {
   if (status === 401) return "Votre session a expiré, reconnectez-vous.";
   if (status === 403) return "Vous n'avez pas les droits pour cette action.";
   if (/invalid or expired invitation/i.test(message)) return "Cette invitation n'est plus valable : elle a expiré, a été annulée ou a déjà servi.";
+  if (/connected app not found/i.test(message)) return "Cette application n'est déjà plus connectée.";
   if (/authorization request not found/i.test(message)) return "Cette demande de connexion a expiré ou a déjà été traitée. Relancez la connexion depuis l'application.";
   if (status === 404) return "Introuvable — l'élément a peut-être été supprimé.";
   if (/already registered/i.test(message)) return "Un compte existe déjà avec cet email.";
@@ -240,6 +241,15 @@ export const oauth = {
   /** Retourne l'adresse où renvoyer le navigateur (vers l'application, avec le code ou le refus). */
   decide: (requestId: string, approve: boolean) =>
     request<{ redirect: string }>("/oauth/consent", { method: "POST", body: json({ request: requestId, approve }) }).then((r) => r.redirect),
+};
+
+/** « Applications connectées » : accès donnés à Claude (serveur MCP). */
+export const connectedApps = {
+  list: () => request<{ apps?: ConnectedApp[] }>("/connected-apps").then((r) => r.apps ?? []),
+  /** Retire l'accès ; deleteIdeas efface aussi les idées que l'application a ajoutées. */
+  revoke: (id: string, deleteIdeas: boolean) =>
+    request<{ deletedIdeas?: number }>(`/connected-apps/${encodeURIComponent(id)}${qs({ deleteIdeas: deleteIdeas ? "true" : undefined })}`, { method: "DELETE" })
+      .then((r) => r.deletedIdeas ?? 0),
 };
 
 export const tribe = {

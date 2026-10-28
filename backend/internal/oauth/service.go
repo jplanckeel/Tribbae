@@ -723,3 +723,36 @@ func (s *Service) revokeGrant(ctx context.Context, id bson.ObjectID) error {
 	_, err := s.tokens.DeleteMany(ctx, bson.M{"grant_id": id})
 	return err
 }
+
+// ErrGrantNotFound : accès inconnu, expiré ou d'un autre compte.
+var ErrGrantNotFound = errors.New("connected app not found")
+
+// ListGrants retourne les applications connectées d'un compte, les plus
+// récentes d'abord (écran « Applications connectées »).
+func (s *Service) ListGrants(ctx context.Context, userID string) ([]Grant, error) {
+	cur, err := s.grants.Find(ctx, bson.M{"user_id": userID, "expires_at": bson.M{"$gt": s.now()}},
+		options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).SetLimit(100))
+	if err != nil {
+		return nil, err
+	}
+	out := []Grant{}
+	return out, cur.All(ctx, &out)
+}
+
+// GrantOf retrouve un accès, seulement si c'est le compte qui l'a donné.
+func (s *Service) GrantOf(ctx context.Context, userID, grantID string) (*Grant, error) {
+	id, err := bson.ObjectIDFromHex(grantID)
+	if err != nil {
+		return nil, ErrGrantNotFound
+	}
+	var g Grant
+	if err := s.grants.FindOne(ctx, bson.M{"_id": id, "user_id": userID}).Decode(&g); err != nil {
+		return nil, ErrGrantNotFound
+	}
+	return &g, nil
+}
+
+// RevokeGrant retire un accès et tous ses jetons.
+func (s *Service) RevokeGrant(ctx context.Context, g *Grant) error {
+	return s.revokeGrant(ctx, g.ID)
+}
