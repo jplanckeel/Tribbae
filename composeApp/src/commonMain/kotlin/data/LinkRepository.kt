@@ -3,6 +3,7 @@ package data
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
 
 class LinkRepository(private val storage: Storage? = null) {
     private val _links = MutableStateFlow<List<Link>>(emptyList())
@@ -31,6 +32,13 @@ class LinkRepository(private val storage: Storage? = null) {
             if (savedTags.isNotEmpty()) storage.saveTags(_tags.value)
         }
     }
+
+    /**
+     * Un seul envoi au serveur à la fois, même depuis deux ViewModel (l'app et
+     * les fonctions appelées par Gemini partagent ce dépôt) : une idée créée
+     * ici ne doit pas partir deux fois.
+     */
+    val pushLock = Mutex()
 
     private val _pending = MutableStateFlow(storage?.loadPending() ?: PendingChanges())
     /** Changements faits ici et pas encore reçus par le serveur. */
