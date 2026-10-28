@@ -49,6 +49,7 @@ const (
 	tmplCircleInvite   = "circle_invitation"
 	tmplTribeRemoved   = "tribe_member_removed"
 	tmplTribeNewOwner  = "tribe_new_owner"
+	tmplCollabAdded    = "collaborator_added"
 )
 
 var (
@@ -57,7 +58,7 @@ var (
 )
 
 func init() {
-	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify, tmplCircleInvite, tmplTribeRemoved, tmplTribeNewOwner} {
+	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify, tmplCircleInvite, tmplTribeRemoved, tmplTribeNewOwner, tmplCollabAdded} {
 		htmlTemplates[name] = htmltemplate.Must(htmltemplate.New("").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
@@ -424,6 +425,34 @@ func tribeNewOwnerEmail(siteURL string, o TribeNewOwner) (content, error) {
 		TribeURL:    siteURL + "/tribu",
 	}
 	return render(tmplTribeNewOwner, d.base, d)
+}
+
+// --- Ajout comme collaborateur d'un dossier ---
+
+type collaboratorAddedData struct {
+	base
+	Owner        string
+	OwnerInitial string
+	Folder       string
+	Editor       bool
+	FolderURL    string
+}
+
+func collaboratorAddedEmail(siteURL string, c CollaboratorAdded) (content, error) {
+	owner := oneLine(c.OwnerName)
+	if owner == "" {
+		owner = "Un membre de Tribbae"
+	}
+	folder := oneLine(c.FolderName)
+	d := collaboratorAddedData{
+		base:         newBase(siteURL, oneLine(owner+" vous ouvre son dossier « "+folder+" » sur Tribbae")),
+		Owner:        owner,
+		OwnerInitial: initial(owner),
+		Folder:       folder,
+		Editor:       c.Editor,
+		FolderURL:    siteURL + "/dossiers/" + url.PathEscape(c.FolderID),
+	}
+	return render(tmplCollabAdded, d.base, d)
 }
 
 // --- Suppression du compte ---

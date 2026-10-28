@@ -16,9 +16,15 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-type fakeCircleMailer struct{ sent []tmail.CircleInvitation }
+type fakeCircleMailer struct {
+	sent   []tmail.CircleInvitation
+	collab []tmail.CollaboratorAdded
+}
 
 func (f *fakeCircleMailer) CircleInvitation(inv tmail.CircleInvitation) { f.sent = append(f.sent, inv) }
+func (f *fakeCircleMailer) CollaboratorAdded(c tmail.CollaboratorAdded) {
+	f.collab = append(f.collab, c)
+}
 
 type circleEnv struct {
 	svc      *Service
@@ -95,6 +101,60 @@ func (e *circleEnv) age(t *testing.T, field string, by time.Duration) {
 	if _, err := e.db.Collection("folder_invitations").UpdateMany(context.Background(), bson.M{}, bson.M{"$set": bson.M{field: time.Now().Add(-by)}}); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// Ajouté directement comme collaborateur (anciennes applications), on est
+// prévenu par email, une fois par dossier et au plus 5 fois par jour.
+func TestCollaboratorAddedEmail(t *testing.T) {
+	e := setupCircle(t)
+	ctx := context.Background()
+	alice := e.user(t, "alice@ex.fr", "Alice")
+	e.user(t, "mamie@ex.fr", "Mamie")
+	noel := e.folder(t, alice, "Noël")
+
+	if _, err := e.svc.AddCollaborator(ctx, noel, alice, "Mamie@ex.fr", "editor"); err != nil {
+		t.Fatal(err)
+	}
+	want := tmail.CollaboratorAdded{Email: "mamie@ex.fr", Name: "Mamie", OwnerName: "Alice", FolderID: noel, FolderName: "Noël", Editor: true}
+	if len(e.mailer.collab) != 1 || e.mailer.collab[0] != want {
+		t.Fatalf("email d'ajout : %+v", e.mailer.collab)
+	}
+	// Déjà collaboratrice : refusé, pas d'email
+	if _, err := e.svc.AddCollaborator(ctx, noel, alice, "mamie@ex.fr", "viewer"); err == nil {
+		t.Error("déjà collaboratrice : erreur attendue")
+	}
+	// Retirée puis rajoutée le même jour : pas de second email
+	mamie := e.mailer.collab[0]
+	if _, err := e.svc.RemoveCollaborator(ctx, noel, alice, e.collabID(t, noel)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.AddCollaborator(ctx, noel, alice, mamie.Email, "viewer"); err != nil {
+		t.Fatal(err)
+	}
+	if len(e.mailer.collab) != 1 {
+		t.Errorf("un seul email par dossier et par jour : %d", len(e.mailer.collab))
+	}
+	// D'autres dossiers : un email chacun, 5 au plus par jour
+	for i := range 6 {
+		f := e.folder(t, alice, "Dossier "+strconv.Itoa(i))
+		if _, err := e.svc.AddCollaborator(ctx, f, alice, mamie.Email, "viewer"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(e.mailer.collab) != 5 {
+		t.Errorf("au plus 5 emails par jour et par destinataire : %d", len(e.mailer.collab))
+	}
+}
+
+// collabID : identifiant du premier collaborateur du dossier.
+func (e *circleEnv) collabID(t *testing.T, folderID string) string {
+	t.Helper()
+	id, _ := bson.ObjectIDFromHex(folderID)
+	var f Folder
+	if err := e.db.Collection("folders").FindOne(context.Background(), bson.M{"_id": id}).Decode(&f); err != nil || len(f.Collaborators) == 0 {
+		t.Fatalf("collaborateur introuvable : %v", err)
+	}
+	return f.Collaborators[0].UserID
 }
 
 func TestCircleInvitationFlow(t *testing.T) {

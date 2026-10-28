@@ -8,13 +8,17 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+
+	tmail "github.com/tribbae/backend/internal/mail"
 )
 
 type CollaboratorEntry struct {
@@ -57,6 +61,10 @@ type Service struct {
 	inviteURL    string
 	notify       CircleNotifier
 	markVerified func(ctx context.Context, userID string) error
+
+	// Emails d'ajout comme collaborateur déjà envoyés (limite d'envoi)
+	collabMu     sync.Mutex
+	collabEmails map[string][]collabEmail
 }
 
 func NewService(col *mongo.Collection, linkCol *mongo.Collection, userCol *mongo.Collection, baseURL string) *Service {
@@ -397,6 +405,8 @@ func (s *Service) AddCollaborator(ctx context.Context, folderID, ownerID, email,
 		return nil, err
 	}
 
+	s.notifyCollaborator(ctx, f, ownerID, collab)
+
 	// Si la visibilité est encore "private", passer en "shared"
 	if f.Visibility == "private" {
 		s.col.UpdateOne(ctx,
@@ -406,6 +416,58 @@ func (s *Service) AddCollaborator(ctx context.Context, folderID, ownerID, email,
 	}
 
 	return s.Get(ctx, folderID, ownerID)
+}
+
+const (
+	// Au plus collabEmailsPerDay emails d'ajout par destinataire et par jour,
+	// et un seul par dossier : retirer et rajouter quelqu'un ne le spamme pas
+	collabEmailsPerDay = 5
+	collabEmailWindow  = 24 * time.Hour
+)
+
+type collabEmail struct {
+	folderID string
+	at       time.Time
+}
+
+// notifyCollaborator prévient par email le compte ajouté au dossier f.
+func (s *Service) notifyCollaborator(ctx context.Context, f Folder, ownerID string, c CollaboratorEntry) {
+	if s.notify == nil || !s.mayEmailCollaborator(c.UserID, f.ID.Hex()) {
+		return
+	}
+	s.notify.CollaboratorAdded(tmail.CollaboratorAdded{
+		Email:      c.Email,
+		Name:       c.DisplayName,
+		OwnerName:  s.displayName(ctx, ownerID),
+		FolderID:   f.ID.Hex(),
+		FolderName: f.Name,
+		Editor:     c.Role == "editor",
+	})
+}
+
+// mayEmailCollaborator applique la limite d'envoi (mémoire du serveur : un
+// redémarrage la remet à zéro) et note l'envoi s'il est permis.
+func (s *Service) mayEmailCollaborator(userID, folderID string) bool {
+	s.collabMu.Lock()
+	defer s.collabMu.Unlock()
+	now := time.Now()
+	if s.collabEmails == nil {
+		s.collabEmails = map[string][]collabEmail{}
+	}
+	for id, sent := range s.collabEmails {
+		sent = slices.DeleteFunc(sent, func(e collabEmail) bool { return now.Sub(e.at) >= collabEmailWindow })
+		if len(sent) == 0 {
+			delete(s.collabEmails, id)
+		} else {
+			s.collabEmails[id] = sent
+		}
+	}
+	sent := s.collabEmails[userID]
+	if len(sent) >= collabEmailsPerDay || slices.ContainsFunc(sent, func(e collabEmail) bool { return e.folderID == folderID }) {
+		return false
+	}
+	s.collabEmails[userID] = append(sent, collabEmail{folderID, now})
+	return true
 }
 
 func (s *Service) RemoveCollaborator(ctx context.Context, folderID, ownerID, targetUserID string) (*Folder, error) {

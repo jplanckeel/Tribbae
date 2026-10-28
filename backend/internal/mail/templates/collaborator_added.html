@@ -1,0 +1,23 @@
+{{define "preheader"}}{{.Owner}} vous a ajouté au dossier « {{.Folder}} » sur Tribbae.{{end}}
+
+{{define "card"}}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="middle" width="44"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" width="44" height="44" style="width:44px;height:44px;border-radius:999px;background:#FFC857;color:#3A211B;font-size:16px;font-weight:700;">{{.OwnerInitial}}</td></tr></table></td>
+<td valign="middle" style="padding-left:12px;font-size:15px;line-height:22px;color:#6B5047;"><strong style="color:#3A211B;">{{.Owner}}</strong> vous a ajouté à un dossier partagé</td>
+</tr></table>
+{{template "h1" (print "Le dossier « " .Folder " » vous est ouvert")}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;"><tr><td style="background:#FBF3E7;border:1px solid #EADBC8;border-radius:22px;padding:18px 20px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="middle" width="44"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" width="44" height="44" style="width:44px;height:44px;border-radius:14px;background:#F1E3D1;"><img src="{{.Assets}}/logo.png" width="28" height="28" alt="" style="display:block;border:0;"></td></tr></table></td>
+<td valign="middle" style="padding-left:14px;">
+<div style="font-family:'Bricolage Grotesque',Arial,sans-serif;font-size:18px;line-height:1.2;font-weight:700;color:#3A211B;">{{.Folder}}</div>
+<div style="padding-top:4px;font-size:13px;line-height:18px;font-weight:500;color:#6B5047;">{{if .Editor}}Vous pouvez voir et ajouter des idées{{else}}Vous pouvez voir les idées{{end}}</div>
+</td>
+</tr></table>
+</td></tr></table>
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">{{if .Editor}}Vous y retrouverez ses idées de sorties, de cadeaux ou de recettes, et pourrez y ranger les vôtres.{{else}}Vous y retrouverez ses idées de sorties, de cadeaux ou de recettes.{{end}}</p>
+{{template "button" (dict "URL" .FolderURL "Label" "Voir le dossier")}}
+{{template "fallback" .FolderURL}}
+{{end}}
+
+{{define "footer"}}Vous recevez cet email car {{.Owner}} vous a ajouté à un dossier sur Tribbae. Vous ne connaissez pas cette personne ? Ignorez simplement ce message.{{end}}

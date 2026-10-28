@@ -130,6 +130,7 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 		URL: "https://tribbae.example/invitation-cercle#tok", Validity: 7 * 24 * time.Hour})
 	m.TribeMemberRemoved(TribeMemberRemoved{Email: "carol@example.com", Name: "Carol", TribeName: "Les Martin", RemovedByName: "Alice"})
 	m.TribeNewOwner(TribeNewOwner{Email: "bob@example.com", Name: "Bob", TribeName: "Les Martin", FormerOwnerName: "Alice"})
+	m.CollaboratorAdded(CollaboratorAdded{Email: "mamie@example.com", Name: "Mamie", OwnerName: "Alice", FolderID: "f1", FolderName: "Noël <2026>", Editor: true})
 	wait(m)
 
 	byTag := map[string]Message{}
@@ -166,6 +167,9 @@ func TestEmailsFollowTheMockups(t *testing.T) {
 		{TagTribeNewOwner, "Vous êtes désormais responsable de la tribu « Les Martin »",
 			[]string{"Vous êtes responsable de la tribu « Les Martin »", ">Alice</strong>, qui avait créé la tribu, l'a quittée", "retirer des membres", `href="https://tribbae.example/tribu"`},
 			[]string{"Bonjour Bob, Alice, qui avait créé la tribu, l'a quittée", "Voir ma tribu : https://tribbae.example/tribu"}},
+		{TagCollabAdded, "Alice vous ouvre son dossier « Noël <2026> » sur Tribbae",
+			[]string{"vous a ajouté à un dossier partagé", "Le dossier « Noël &lt;2026&gt; » vous est ouvert", "Vous pouvez voir et ajouter des idées", "Voir le dossier", `href="https://tribbae.example/dossiers/f1"`},
+			[]string{"Alice vous a ajouté à son dossier « Noël <2026> » sur Tribbae. Vous pouvez y voir les idées et en ajouter.", "Voir le dossier : https://tribbae.example/dossiers/f1"}},
 		{TagAccountDeleted, "Votre compte Tribbae a été supprimé",
 			[]string{"Bonjour, comme vous l'avez demandé le 22 octobre 2026", "Ce qui a été effacé", "Votre profil et votre adresse email", `href="mailto:aide@tribbae.example?subject=Suppression%20de%20mon%20compte%20Tribbae"`},
 			[]string{"le 22 octobre 2026", "- Vos idées et vos dossiers", "aide@tribbae.example"}},

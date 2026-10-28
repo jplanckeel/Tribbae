@@ -58,6 +58,7 @@ const (
 	TagCircleInvite   = "circle-invitation"
 	TagTribeRemoved   = "tribe-member-removed"
 	TagTribeNewOwner  = "tribe-new-owner"
+	TagCollabAdded    = "collaborator-added"
 
 	sendTimeout = 30 * time.Second
 )
@@ -192,6 +193,23 @@ type TribeNewOwner struct {
 func (m *Mailer) TribeNewOwner(o TribeNewOwner) {
 	c, err := tribeNewOwnerEmail(m.siteURL, o)
 	m.send(o.Email, o.Name, TagTribeNewOwner, c, err)
+}
+
+// CollaboratorAdded : un compte a été ajouté comme collaborateur d'un
+// dossier. La fréquence des envois est limitée par le service des dossiers.
+type CollaboratorAdded struct {
+	Email, Name string
+	OwnerName   string
+	FolderID    string
+	FolderName  string
+	// Editor : la personne peut ajouter des idées
+	Editor bool
+}
+
+// CollaboratorAdded prévient un compte ajouté à un dossier.
+func (m *Mailer) CollaboratorAdded(c CollaboratorAdded) {
+	ct, err := collaboratorAddedEmail(m.siteURL, c)
+	m.send(c.Email, c.Name, TagCollabAdded, ct, err)
 }
 
 // Wait attend la fin des envois en cours (arrêt du serveur), au plus jusqu'à

@@ -41,9 +41,11 @@ var (
 	ErrTooManyInvitations = errors.New("too many pending invitations")
 )
 
-// CircleNotifier envoie l'email d'invitation dans le cercle (mail.Mailer).
+// CircleNotifier envoie les emails du cercle (mail.Mailer) : invitation, et
+// ajout direct comme collaborateur (anciennes versions des applications).
 type CircleNotifier interface {
 	CircleInvitation(inv tmail.CircleInvitation)
+	CollaboratorAdded(c tmail.CollaboratorAdded)
 }
 
 // Invitation : une adresse invitée par owner à des dossiers choisis (son
