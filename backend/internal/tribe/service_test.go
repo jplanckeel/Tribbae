@@ -159,9 +159,17 @@ func TestLeaveAndOwnerTransfer(t *testing.T) {
 	}
 }
 
-type fakeNotifier struct{ sent []mail.TribeInvitation }
+type fakeNotifier struct {
+	sent      []mail.TribeInvitation
+	removed   []mail.TribeMemberRemoved
+	newOwners []mail.TribeNewOwner
+}
 
 func (f *fakeNotifier) TribeInvitation(inv mail.TribeInvitation) { f.sent = append(f.sent, inv) }
+func (f *fakeNotifier) TribeMemberRemoved(r mail.TribeMemberRemoved) {
+	f.removed = append(f.removed, r)
+}
+func (f *fakeNotifier) TribeNewOwner(o mail.TribeNewOwner) { f.newOwners = append(f.newOwners, o) }
 
 func notifier(svc *Service) *fakeNotifier { return svc.notify.(*fakeNotifier) }
 
@@ -188,6 +196,80 @@ func join(t *testing.T, svc *Service, from, to, email string) (*Tribe, error) {
 		t.Fatal("invitation sans email")
 	}
 	return svc.Accept(ctx, to, lastToken(t, svc))
+}
+
+func TestDepartureEmails(t *testing.T) {
+	svc, db, cleanup := setup(t)
+	defer cleanup()
+	ctx := context.Background()
+	alice := addUser(t, db, "alice@ex.fr", "Alice")
+	bob := addUser(t, db, "bob@ex.fr", "Bob")
+	carol := addUser(t, db, "carol@ex.fr", "Carol")
+	dan := addUser(t, db, "dan@ex.fr", "Dan")
+	_, _ = svc.Rename(ctx, alice, "Les Martin")
+	_, _ = join(t, svc, alice, bob, "bob@ex.fr")
+	time.Sleep(5 * time.Millisecond)
+	_, _ = join(t, svc, alice, carol, "carol@ex.fr")
+	time.Sleep(5 * time.Millisecond)
+	_, _ = join(t, svc, alice, dan, "dan@ex.fr")
+	n := notifier(svc)
+
+	// Dan part de lui-même : personne n'est prévenu
+	if _, err := svc.RemoveMember(ctx, dan, dan); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.removed) != 0 || len(n.newOwners) != 0 {
+		t.Fatalf("aucun email quand on part soi-même : %+v %+v", n.removed, n.newOwners)
+	}
+
+	// Alice retire Carol : Carol est prévenue, nommément par Alice
+	if _, err := svc.RemoveMember(ctx, alice, carol); err != nil {
+		t.Fatal(err)
+	}
+	want := mail.TribeMemberRemoved{Email: "carol@ex.fr", Name: "Carol", TribeName: "Les Martin", RemovedByName: "Alice"}
+	if len(n.removed) != 1 || n.removed[0] != want {
+		t.Fatalf("email au membre retiré : %+v", n.removed)
+	}
+
+	// Alice, créatrice, quitte la tribu : Bob la reprend et en est prévenu
+	if _, err := svc.RemoveMember(ctx, alice, alice); err != nil {
+		t.Fatal(err)
+	}
+	wantOwner := mail.TribeNewOwner{Email: "bob@ex.fr", Name: "Bob", TribeName: "Les Martin", FormerOwnerName: "Alice"}
+	if len(n.newOwners) != 1 || n.newOwners[0] != wantOwner {
+		t.Fatalf("email au nouveau responsable : %+v", n.newOwners)
+	}
+
+	// Carol revient puis Bob la retire de nouveau le même jour : un seul email
+	_, _ = join(t, svc, bob, carol, "carol@ex.fr")
+	if _, err := svc.RemoveMember(ctx, bob, carol); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.removed) != 1 {
+		t.Errorf("au plus un email par jour et par destinataire : %+v", n.removed)
+	}
+}
+
+// La suppression d'un compte créateur prévient le nouveau responsable sans
+// nommer le compte supprimé.
+func TestNewOwnerEmailOnAccountDeletionNamesNoOne(t *testing.T) {
+	svc, db, cleanup := setup(t)
+	defer cleanup()
+	ctx := context.Background()
+	alice := addUser(t, db, "alice@ex.fr", "Alice")
+	bob := addUser(t, db, "bob@ex.fr", "Bob")
+	_, _ = join(t, svc, alice, bob, "bob@ex.fr")
+
+	if err := svc.Leave(ctx, alice); err != nil {
+		t.Fatal(err)
+	}
+	got := notifier(svc).newOwners
+	if len(got) != 1 || got[0].Email != "bob@ex.fr" || got[0].FormerOwnerName != "" {
+		t.Fatalf("email au nouveau responsable : %+v", got)
+	}
+	if len(notifier(svc).removed) != 0 {
+		t.Errorf("personne n'a été retiré : %+v", notifier(svc).removed)
+	}
 }
 
 func TestInvitationEmailAndLookup(t *testing.T) {

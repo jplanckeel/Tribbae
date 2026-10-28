@@ -231,7 +231,9 @@ func TestDeleteSendsConfirmationEmail(t *testing.T) {
 // invitations retient le dernier lien d'invitation envoyé.
 type invitations struct{ last string }
 
-func (i *invitations) TribeInvitation(inv mail.TribeInvitation) { i.last = inv.URL }
+func (i *invitations) TribeInvitation(inv mail.TribeInvitation)   { i.last = inv.URL }
+func (i *invitations) TribeMemberRemoved(mail.TribeMemberRemoved) {}
+func (i *invitations) TribeNewOwner(mail.TribeNewOwner)           {}
 
 func (i *invitations) token() string {
 	_, token, _ := strings.Cut(i.last, "#")

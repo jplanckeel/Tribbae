@@ -56,6 +56,8 @@ const (
 	TagTribeInvite    = "tribe-invitation"
 	TagEmailVerify    = "email-verification"
 	TagCircleInvite   = "circle-invitation"
+	TagTribeRemoved   = "tribe-member-removed"
+	TagTribeNewOwner  = "tribe-new-owner"
 	TagCollabAdded    = "collaborator-added"
 
 	sendTimeout = 30 * time.Second
@@ -161,6 +163,36 @@ type CircleInvitation struct {
 func (m *Mailer) CircleInvitation(inv CircleInvitation) {
 	c, err := circleInvitationEmail(m.siteURL, inv)
 	m.send(inv.Email, "", TagCircleInvite, c, err)
+}
+
+// TribeMemberRemoved : un membre a été retiré de la tribu par son responsable
+// (pas d'email quand on la quitte soi-même).
+type TribeMemberRemoved struct {
+	Email, Name   string
+	TribeName     string
+	RemovedByName string
+}
+
+// TribeMemberRemoved prévient le membre retiré d'une tribu.
+func (m *Mailer) TribeMemberRemoved(r TribeMemberRemoved) {
+	c, err := tribeMemberRemovedEmail(m.siteURL, r, m.now())
+	m.send(r.Email, r.Name, TagTribeRemoved, c, err)
+}
+
+// TribeNewOwner : le créateur a quitté la tribu, qui revient au membre le plus
+// ancien.
+type TribeNewOwner struct {
+	Email, Name string
+	TribeName   string
+	// FormerOwnerName : nom de l'ancien responsable, vide quand il a supprimé
+	// son compte (rien ne doit en survivre dans l'email)
+	FormerOwnerName string
+}
+
+// TribeNewOwner prévient le nouveau responsable de la tribu.
+func (m *Mailer) TribeNewOwner(o TribeNewOwner) {
+	c, err := tribeNewOwnerEmail(m.siteURL, o)
+	m.send(o.Email, o.Name, TagTribeNewOwner, c, err)
 }
 
 // CollaboratorAdded : un compte a été ajouté comme collaborateur d'un
