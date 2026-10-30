@@ -9,7 +9,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -62,15 +61,12 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.Role import androidx.compose.ui.semantics.contentDescription import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.linkkeeper.app.R
 import data.FolderStyle
 import data.FollowRepository
 import data.TribePage
@@ -129,12 +125,7 @@ fun ProfileModernScreen(
 private fun WelcomeScreen(modifier: Modifier, onRegister: () -> Unit, onLogin: () -> Unit, onFaq: () -> Unit) {
     Column(modifier.fillMaxSize().background(Color(0xFFF7955A))) {
         Box(Modifier.weight(1f).fillMaxWidth().statusBarsPadding().padding(start = 10.dp, end = 10.dp, top = 24.dp), contentAlignment = Alignment.BottomCenter) {
-            Image(
-                painterResource(R.drawable.welcome),
-                contentDescription = "Le tipi Tribbae entouré de la famille, d'un cadeau, d'une ampoule, de couverts et d'un ballon",
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxWidth()
-            )
+            WelcomeTipi(Modifier.size(340.dp, 230.dp))
         }
         Column(
             Modifier
@@ -890,6 +881,35 @@ private fun TribeContent(
     }
 
     if (showDelete) DeleteAccountDialog(viewModel, onDismiss = { showDelete = false })
+}
+
+/**
+ * Logo « Tipi soleil » de l'accueil : le tipi (même dessin que `TipiMark` du web,
+ * viewBox 100×100) devant un soleil levant. Fond orange quel que soit le thème,
+ * donc couleurs de jour.
+ */
+@Composable
+private fun WelcomeTipi(modifier: Modifier) {
+    val paths = remember {
+        fun p(d: String) = PathParser().parsePathString(d).toPath()
+        listOf(p("M50 24L81 80H19Z"), p("M43 13L54 30M57 13L46 30"), p("M50 50L64 80H36Z"), p("M34 52H50L42 68Z"), p("M10 80H90"))
+    }
+    val ink = Color(0xFF3A211B)
+    Box(modifier.clipToBounds().semantics { contentDescription = "Le tipi Tribbae devant un soleil levant" }, contentAlignment = Alignment.BottomCenter) {
+        Box(Modifier.requiredSize(300.dp).offset(y = 150.dp).clip(CircleShape).background(Soleil))
+        Canvas(Modifier.size(240.dp).offset(y = 32.dp)) {
+            val s = size.width / 100f
+            scale(s, s, pivot = Offset.Zero) {
+                fun stroke(w: Float) = Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                drawCircle(Color(0xFFFFC857), radius = 8f, center = Offset(76f, 24f))
+                drawPath(paths[0], Tipi); drawPath(paths[0], ink, style = stroke(4.5f))
+                drawPath(paths[1], ink, style = stroke(4.5f))
+                drawPath(paths[2], Prune); drawPath(paths[2], ink, style = stroke(4.5f))
+                drawPath(paths[3], Braise); drawPath(paths[3], ink, style = stroke(3.6f))
+                drawPath(paths[4], ink, style = stroke(4.5f))
+            }
+        }
+    }
 }
 
 /** Le tipi au centre du feu (SVG de la maquette, viewBox 100×100). */
