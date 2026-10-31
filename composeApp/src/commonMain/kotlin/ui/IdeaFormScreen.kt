@@ -40,7 +40,6 @@ import kotlinx.coroutines.launch
 import ui.campfire.*
 import ui.components.TagInputWithAutocomplete
 import viewmodel.LinkViewModel
-import java.util.Calendar
 
 private enum class PreviewStatus { Idle, Loading, Done, Failed }
 
@@ -111,7 +110,6 @@ fun IdeaFormScreen(
     var requestId by remember { mutableStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }
     var showDate by remember { mutableStateOf(false) }
-    var showTime by remember { mutableStateOf(false) }
     var showFolders by remember { mutableStateOf(false) }
 
     val cat = categoryUi(category)
@@ -324,7 +322,7 @@ fun IdeaFormScreen(
                             Modifier.weight(1f)
                         ) { showDate = true }
                         if (eventDate != null) {
-                            DateChip(Icons.Outlined.Schedule, formatTime(eventDate!!).ifEmpty { "Heure" }) { showTime = true }
+                            DateChip(Icons.Outlined.Schedule, formatTime(eventDate!!).ifEmpty { "Heure" }) { showDate = true }
                             CircleIconButton(Icons.Outlined.Close, "Retirer la date", { eventDate = null; reminder = false }, background = Sable2, size = 52.dp)
                         }
                     }
@@ -423,44 +421,14 @@ fun IdeaFormScreen(
     }
 
     if (showDate) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = eventDate ?: System.currentTimeMillis())
-        DatePickerDialog(
-            onDismissRequest = { showDate = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { utc ->
-                        // Le sélecteur renvoie minuit UTC : on garde le jour, en heure locale, avec l'heure déjà choisie
-                        val day = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { timeInMillis = utc }
-                        val prev = Calendar.getInstance().apply { timeInMillis = eventDate ?: 0 }
-                        eventDate = Calendar.getInstance().apply {
-                            set(day.get(Calendar.YEAR), day.get(Calendar.MONTH), day.get(Calendar.DAY_OF_MONTH),
-                                if (eventDate != null) prev.get(Calendar.HOUR_OF_DAY) else 0,
-                                if (eventDate != null) prev.get(Calendar.MINUTE) else 0, 0)
-                            set(Calendar.MILLISECOND, 0)
-                        }.timeInMillis
-                    }
-                    showDate = false
-                }) { Text("Valider", color = Terracotta, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = { TextButton(onClick = { showDate = false }) { Text("Annuler", color = Ecorce) } }
-        ) { DatePicker(state) }
-    }
-
-    if (showTime && eventDate != null) {
-        val c = Calendar.getInstance().apply { timeInMillis = eventDate!! }
-        val state = rememberTimePickerState(c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), is24Hour = true)
-        AlertDialog(
-            onDismissRequest = { showTime = false },
-            containerColor = SheetColor,
-            title = { Text("Heure", style = display(20.sp, FontWeight.Bold)) },
-            text = { TimePicker(state) },
-            confirmButton = {
-                TextButton(onClick = {
-                    eventDate = c.apply { set(Calendar.HOUR_OF_DAY, state.hour); set(Calendar.MINUTE, state.minute) }.timeInMillis
-                    showTime = false
-                }) { Text("Valider", color = Terracotta, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = { TextButton(onClick = { showTime = false }) { Text("Annuler", color = Ecorce) } }
+        DateWheelSheet(
+            title = "Date et heure",
+            kind = data.DateWheel.Kind.EVENT,
+            value = eventDate,
+            withTime = true,
+            onConfirm = { eventDate = it },
+            onClear = if (eventDate != null) { { eventDate = null; reminder = false } } else null,
+            onDismiss = { showDate = false },
         )
     }
 }

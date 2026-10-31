@@ -7,6 +7,7 @@ import Icon, { type IconName } from "../components/Icon";
 import ShareFolderSheet from "../components/ShareFolderSheet";
 import Sheet from "../components/Sheet";
 import { Button, EmptyState, ErrorNote, Field, PageHeader, Spinner, Toggle } from "../components/ui";
+import { DateField, DateSheet } from "../components/WheelPicker";
 import * as api from "../lib/api";
 import { AVATAR_COLORS, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
@@ -780,9 +781,10 @@ function CircleCard({ member, index, canManage, onFolder }: {
 
 // ── Enfants ───────────────────────────────────────────────────────────
 
-const toDateInput = (v: Child["birthDate"]) => {
-  const d = new Date(Number(v));
-  return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+// Date de naissance enregistrée (ms) ; 0 si absente ou illisible
+const birthMs = (v: Child["birthDate"]) => {
+  const ms = Number(v);
+  return Number.isFinite(ms) && ms > 0 ? ms : 0;
 };
 
 /** Fiche d'un enfant (anniversaire, ses dossiers, idées de l'IA) ou formulaire d'ajout. À monter quand elle est ouverte. */
@@ -791,7 +793,8 @@ function KidSheet({ kid, now, onClose, onIdeas }: { kid: Child | "new"; now: num
   const { toast, confirm } = useFeedback();
   const [editing, setEditing] = useState(kid === "new");
   const [name, setName] = useState(kid === "new" ? "" : kid.name);
-  const [birth, setBirth] = useState(kid === "new" ? "" : toDateInput(kid.birthDate));
+  const [birth, setBirth] = useState(kid === "new" ? 0 : birthMs(kid.birthDate));
+  const [dateOpen, setDateOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // Après une modification, la fiche affiche la version à jour
@@ -800,7 +803,8 @@ function KidSheet({ kid, now, onClose, onIdeas }: { kid: Child | "new"; now: num
   const save = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !birth) return setError("Le prénom et la date de naissance sont nécessaires.");
-    const ms = new Date(`${birth}T12:00:00`).getTime();
+    // Midi local (sélecteur à roulettes, kind « birth ») : la date ne glisse pas d'un fuseau à l'autre
+    const ms = birth;
     if (ms > Date.now()) return setError("La date de naissance est dans le futur.");
     setBusy(true);
     setError("");
@@ -834,7 +838,7 @@ function KidSheet({ kid, now, onClose, onIdeas }: { kid: Child | "new"; now: num
       <Sheet open onClose={onClose} title={child ? `Modifier ${child.name}` : "Ajouter un enfant"}>
         <form onSubmit={save} className="flex flex-col gap-3">
           <Field label="Prénom" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} autoFocus />
-          <Field label="Date de naissance" type="date" value={birth} max={new Date(now).toISOString().slice(0, 10)} onChange={(e) => setBirth(e.target.value)} />
+          <DateField label="Date de naissance" text={birth ? formatLongDate(birth) : undefined} placeholder="Choisir une date" onOpen={() => setDateOpen(true)} />
           <p className="text-xs text-muted">L'âge sert à filtrer l'Explorer et à guider les idées de l'IA. Rien n'est public.</p>
           {error && <ErrorNote>{error}</ErrorNote>}
           <div className="flex gap-2">
@@ -847,6 +851,9 @@ function KidSheet({ kid, now, onClose, onIdeas }: { kid: Child | "new"; now: num
             </button>
           )}
         </form>
+        {dateOpen && (
+          <DateSheet title="Date de naissance" kind="birth" value={birth} onConfirm={(ms) => { setBirth(ms); setError(""); }} onClose={() => setDateOpen(false)} />
+        )}
       </Sheet>
     );
   }

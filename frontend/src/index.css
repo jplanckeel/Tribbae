@@ -292,6 +292,10 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+  /* Roulettes du sélecteur de date : les crans s'estompent vers le haut et le bas */
+  .wheel {
+    mask-image: linear-gradient(to bottom, transparent, #000 32%, #000 68%, transparent);
+  }
   .icon {
     fill: none;
     stroke: currentColor;

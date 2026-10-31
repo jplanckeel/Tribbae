@@ -398,26 +398,13 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
     }
 
     if (showDate) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = (draft.keyDate.takeIf { it > 0 } ?: System.currentTimeMillis()).let { local ->
-            // Le sélecteur travaille en minuit UTC
-            val c = Calendar.getInstance().apply { timeInMillis = local }
-            Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { clear(); set(c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)) }.timeInMillis
-        })
-        DatePickerDialog(
-            onDismissRequest = { showDate = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { utc ->
-                        val day = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { timeInMillis = utc }
-                        draft = draft.copy(keyDate = Calendar.getInstance().apply {
-                            clear(); set(day.get(Calendar.YEAR), day.get(Calendar.MONTH), day.get(Calendar.DAY_OF_MONTH))
-                        }.timeInMillis)
-                    }
-                    showDate = false
-                }) { Text("Valider", color = Terracotta, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = { TextButton(onClick = { showDate = false }) { Text("Annuler", color = Ecorce) } }
-        ) { DatePicker(state) }
+        DateWheelSheet(
+            title = if (draft.keyDateType == "anniv") "Date de l'anniversaire" else "Date clé",
+            kind = if (draft.keyDateType == "anniv") data.DateWheel.Kind.ANNIV else data.DateWheel.Kind.KEY,
+            value = draft.keyDate,
+            onConfirm = { draft = draft.copy(keyDate = it) },
+            onDismiss = { showDate = false },
+        )
     }
 }
 
