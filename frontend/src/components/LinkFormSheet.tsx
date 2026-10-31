@@ -2,7 +2,7 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState, type FormEvent, t
 import * as api from "../lib/api";
 import { CATEGORIES, categoryMeta } from "../lib/categories";
 import { useMyData } from "../lib/data";
-import { hostname, safeImage } from "../lib/format";
+import { formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, tagCounts } from "../lib/links";
 import { usePhotoUpload, type PhotoUpload } from "../lib/photo";
 import { useCanPublish, useSession } from "../lib/session";
@@ -13,6 +13,7 @@ import Icon from "./Icon";
 import { PhotoInput, PhotoPreview } from "./PhotoUpload";
 import Sheet from "./Sheet";
 import { Button, ErrorNote, Field, Spinner, TextArea, Toggle } from "./ui";
+import { DateField, DateSheet } from "./WheelPicker";
 
 /** À monter uniquement quand la feuille est ouverte : l'état part de `initial`. */
 export interface LinkFormProps {
@@ -28,14 +29,8 @@ export interface LinkFormProps {
   onSubmit: (data: LinkInput) => Promise<void>;
 }
 
-// datetime-local ↔ timestamp ms (heure locale)
-const toLocalInput = (ms?: number) => {
-  if (!ms) return "";
-  const d = new Date(ms);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
-const fromLocalInput = (v: string) => (v ? new Date(v).getTime() : 0);
+// « Sam. 31 oct. · 15h30 » (heure absente à minuit : date sans heure)
+const dateText = (ms?: number) => (ms ? [formatShortDate(ms), formatTime(ms)].filter(Boolean).join(" · ") : undefined);
 
 const DATED: CategoryKey[] = ["LINK_CATEGORY_EVENEMENT", "LINK_CATEGORY_ACTIVITE"];
 
@@ -73,6 +68,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [ingredients, setIngredients] = useState((initial.ingredients ?? []).join("\n"));
   // Les champs secondaires sont dépliés s'ils sont déjà renseignés
+  const [dateOpen, setDateOpen] = useState(false);
   const [more, setMore] = useState(!!(initial.price || initial.location || initial.eventDate || initial.rating));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -433,13 +429,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
                 <Field label="Image (adresse web)" icon="landscape" type="url" placeholder="https://…" value={form.imageUrl ?? ""} onChange={(e) => set("imageUrl", e.target.value)} />
               </>
             )}
-            <Field
-              label="Date"
-              icon="calendar"
-              type="datetime-local"
-              value={toLocalInput(form.eventDate)}
-              onChange={(e) => set("eventDate", fromLocalInput(e.target.value))}
-            />
+            <DateField label="Date" text={dateText(form.eventDate)} placeholder="Choisir une date" onOpen={() => setDateOpen(true)} />
             {!!form.eventDate && (
               <label className="flex items-center gap-3 self-end rounded-medium bg-soleil px-3.5 py-3">
                 <Icon name="bell" size={20} />
@@ -503,6 +493,17 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
 
         {error && <ErrorNote>{error}</ErrorNote>}
       </form>
+      {dateOpen && (
+        <DateSheet
+          title="Date et heure"
+          kind="event"
+          withTime
+          value={form.eventDate ?? 0}
+          onConfirm={(ms) => set("eventDate", ms)}
+          onClear={form.eventDate ? () => set("eventDate", 0) : undefined}
+          onClose={() => setDateOpen(false)}
+        />
+      )}
     </Sheet>
   );
 }

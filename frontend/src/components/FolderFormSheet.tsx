@@ -5,7 +5,7 @@ import {
   COVERS, ILLUSTRATIONS, KEY_DATE_TYPES, SORTS, VIEW_MODES,
   autoIllustration, childColors, countdown, folderInput, resolvedCover, type CoverKey, type ViewMode,
 } from "../lib/folderStyle";
-import { safeImage } from "../lib/format";
+import { formatLongDate, safeImage } from "../lib/format";
 import type { Folder, FolderInput, Visibility } from "../lib/types";
 import { CoverArt, FolderGlyph, IllustrationArt } from "./FolderCover";
 import Icon, { type IconName } from "./Icon";
@@ -13,6 +13,7 @@ import { useCanPublish } from "../lib/session";
 import Sheet from "./Sheet";
 import { PublishLockedNote } from "./VerifyEmailBanner";
 import { Avatar, Button, ErrorNote, Field, Toggle } from "./ui";
+import { DateSheet } from "./WheelPicker";
 
 const VISIBILITIES: { key: Visibility; label: string; hint: string; icon: IconName }[] = [
   { key: "VISIBILITY_PRIVATE", label: "Privé", hint: "Vous et les membres invités", icon: "lock" },
@@ -31,16 +32,6 @@ const empty: FolderInput = {
   description: "", cover: "", illustration: "", keyDate: 0, keyDateType: "", childIds: [], viewMode: "", sort: "", pinned: false,
 };
 
-// <input type="date"> ↔ timestamp ms (minuit local)
-const toDateInput = (ms: number) => {
-  if (!ms) return "";
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-const fromDateInput = (v: string) => {
-  const [y, m, d] = v.split("-").map(Number);
-  return y && m && d ? new Date(y, m - 1, d).getTime() : 0;
-};
 const inDays = (n: number) => {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n).getTime();
@@ -64,6 +55,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
   const canPublish = useCanPublish();
   const publishLocked = !canPublish && folder?.visibility !== "VISIBILITY_PUBLIC";
   const [saving, setSaving] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   const [error, setError] = useState("");
   const set = (patch: Partial<FolderInput>) => setForm((f) => ({ ...f, ...patch }));
 
@@ -331,16 +323,17 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         );
                       })}
                     </div>
-                    <label className="flex items-center gap-3 text-[13px] font-bold text-sec">
+                    <div className="flex items-center gap-3 text-[13px] font-bold text-sec">
                       {form.keyDateType === "anniv" ? "Date de l'anniversaire" : "Date"}
-                      <input
-                        type="date"
-                        required
-                        value={toDateInput(keyDate)}
-                        onChange={(e) => set({ keyDate: fromDateInput(e.target.value) || keyDate })}
-                        className="h-10 flex-1 rounded-xl border-[1.5px] border-line-2 bg-card px-3 text-[15px] font-semibold text-ecorce outline-none focus:border-terracotta"
-                      />
-                    </label>
+                      <button
+                        type="button"
+                        onClick={() => setDateOpen(true)}
+                        className="flex h-10 flex-1 items-center justify-between gap-2 rounded-xl border-[1.5px] border-line-2 bg-card px-3 text-left text-[15px] font-semibold text-ecorce outline-none focus-visible:border-terracotta"
+                      >
+                        {formatLongDate(keyDate)}
+                        <Icon name="calendar" size={18} className="text-muted" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -458,6 +451,15 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
           {error && <ErrorNote>{error}</ErrorNote>}
         </div>
       </form>
+      {dateOpen && (
+        <DateSheet
+          title={form.keyDateType === "anniv" ? "Date de l'anniversaire" : "Date clé"}
+          kind={form.keyDateType === "anniv" ? "anniv" : "key"}
+          value={keyDate}
+          onConfirm={(ms) => set({ keyDate: ms })}
+          onClose={() => setDateOpen(false)}
+        />
+      )}
     </Sheet>
   );
 }

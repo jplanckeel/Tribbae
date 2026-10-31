@@ -1268,33 +1268,13 @@ private fun KidSheet(
     }
 
     if (showDate) {
-        val state = rememberDatePickerState(
-            initialSelectedDateMillis = birth?.let { local ->
-                // Le sélecteur travaille en minuit UTC
-                val c = java.util.Calendar.getInstance().apply { timeInMillis = local }
-                java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { clear(); set(c.get(java.util.Calendar.YEAR), c.get(java.util.Calendar.MONTH), c.get(java.util.Calendar.DAY_OF_MONTH)) }.timeInMillis
-            },
-            selectableDates = object : SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= System.currentTimeMillis()
-            }
+        DateWheelSheet(
+            title = "Date de naissance",
+            kind = data.DateWheel.Kind.BIRTH,
+            value = birth,
+            onConfirm = { birth = it; error = null },
+            onDismiss = { showDate = false },
         )
-        DatePickerDialog(
-            onDismissRequest = { showDate = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { utc ->
-                        val day = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { timeInMillis = utc }
-                        // Midi local, comme le web : la date ne glisse pas d'un jour selon le fuseau
-                        birth = java.util.Calendar.getInstance().apply {
-                            clear(); set(day.get(java.util.Calendar.YEAR), day.get(java.util.Calendar.MONTH), day.get(java.util.Calendar.DAY_OF_MONTH), 12, 0)
-                        }.timeInMillis
-                        error = null
-                    }
-                    showDate = false
-                }) { Text("Valider", color = Terracotta, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = { TextButton(onClick = { showDate = false }) { Text("Annuler", color = Ecorce) } }
-        ) { DatePicker(state) }
     }
 
     if (confirmRemove && child != null) {
