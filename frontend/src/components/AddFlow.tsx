@@ -17,7 +17,7 @@ import Icon, { type IconName } from "./Icon";
 import { TipiMark } from "./Logo";
 import { PhotoInput, PhotoPreview } from "./PhotoUpload";
 import Sheet from "./Sheet";
-import { Avatar, ErrorNote, Field, Toggle } from "./ui";
+import { Avatar, ErrorNote, Field, TextArea, Toggle } from "./ui";
 
 // Parcours « Ajouter une idée » (maquette « Ajouter une idée v2 ») :
 // choisir un point de départ → (lire le lien) → ranger → c'est rangé !
@@ -63,8 +63,14 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState<Link>();
+  // Ingrédients tapés (null : ceux lus sur la page de la recette)
+  const [ingText, setIngText] = useState<string | null>(null);
   const request = useRef(0);
   const set = (patch: Partial<LinkInput>) => setDraft((d) => ({ ...d, ...patch }));
+  const isRecipe = draft.category === "LINK_CATEGORY_RECETTE";
+  const ingredientsText = ingText ?? (draft.ingredients ?? []).join("\n");
+  const withIngredients = (d: LinkInput): LinkInput =>
+    ingText === null || !isRecipe ? d : { ...d, ingredients: ingText.split("\n").map((l) => l.trim()).filter(Boolean) };
   const { photo, send: sendPhoto, reset: resetPhoto } = usePhotoUpload();
   const photoInput = useRef<HTMLInputElement>(null);
   const pickPhoto = () => photoInput.current?.click();
@@ -158,7 +164,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
     setSaving(true);
     setError("");
     try {
-      const link = await api.links.create({ ...draft, title, folderId: folderId || undefined });
+      const link = await api.links.create({ ...withIngredients(draft), title, folderId: folderId || undefined });
       upsertLink(link);
       setCreated(link);
       setStep("done");
@@ -449,6 +455,17 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
             </div>
           </div>
 
+          {/* Sans eux, la recette n'arrive pas dans la liste de courses */}
+          {isRecipe && (
+            <TextArea
+              label="Ingrédients (un par ligne)"
+              placeholder={"250 g de farine\n2 œufs\n50 cl de lait"}
+              maxLength={5000}
+              value={ingredientsText}
+              onChange={(e) => setIngText(e.target.value)}
+            />
+          )}
+
           <div className="flex flex-col gap-2">
             <span className="text-[13px] font-bold text-sec">Pour quels âges</span>
             <div className="flex gap-2">
@@ -486,7 +503,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
             />
           </div>
 
-          <button type="button" onClick={() => onMore({ ...draft, folderId: folderId || undefined })} className="self-start text-sm font-bold text-terracotta">
+          <button type="button" onClick={() => onMore({ ...withIngredients(draft), folderId: folderId || undefined })} className="self-start text-sm font-bold text-terracotta">
             Plus de détails (date, prix, lieu, tags…)
           </button>
           {error && <ErrorNote>{error}</ErrorNote>}

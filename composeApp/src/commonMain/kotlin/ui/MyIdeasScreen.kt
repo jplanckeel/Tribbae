@@ -50,7 +50,8 @@ fun MyIdeasScreen(
     val folderIds = remember(folders) { folders.map { it.id }.toSet() }
     val loose = remember(links, folderIds) { links.filter { it.folderId == null || it.folderId !in folderIds } }
     val recipes = remember(links) { links.filter { it.category == LinkCategory.RECETTE && it.ingredients.isNotEmpty() } }
-    val ingredientCount = remember(recipes) { recipes.flatMap { r -> r.ingredients.map { it.trim().lowercase() } }.toSet().size }
+    // Comme la liste de courses : un produit compte une fois, quelles que soient les recettes
+    val ingredientCount = remember(recipes) { data.ShoppingList.build(recipes.map { data.ShoppingList.Recipe(it.title, it.ingredients) }).size }
     val children by viewModel.children.collectAsState()
     var folderSort by rememberSaveable { mutableStateOf("recent") }
     val pinned = remember(folders) { folders.filter { it.pinned } }

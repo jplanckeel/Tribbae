@@ -108,6 +108,7 @@ private sealed class Screen {
         val category: LinkCategory? = null,
         val folderId: String? = null,
         val title: String? = null,
+        val ingredients: List<String> = emptyList(),
     ) : Screen()
     data class FolderForm(val existing: Folder? = null) : Screen()
     /** `origin` : visuel de la carte touchée, d'où la fiche s'ouvre (et où elle revient). */
@@ -116,7 +117,8 @@ private sealed class Screen {
     data class FolderDetail(val folder: Folder, val fromLinkId: String? = null) : Screen()
     data class Category(val category: LinkCategory?) : Screen()
     data class Ai(val folderId: String? = null, val prompt: String = "", val childId: String? = null) : Screen()
-    object Shopping : Screen()
+    /** `recipeId` : recette d'où l'on vient, ajoutée à la liste. */
+    data class Shopping(val recipeId: String? = null) : Screen()
     object Faq : Screen()
     object Admin : Screen()
     /** Dossier d'un autre membre : public (folder) ou ouvert par lien de partage (shareToken). */
@@ -292,7 +294,7 @@ private fun ModernMainApp(
                         onNavigateToAdd = { showAdd = true },
                         onNavigateToCategory = { push(Screen.Category(it)) },
                         viewModel = vm,
-                        onOpenShopping = { push(Screen.Shopping) },
+                        onOpenShopping = { push(Screen.Shopping()) },
                         onOpenLoose = { push(Screen.Category(null)) },
                     )
                     NavDestination.PROFILE -> ProfileModernScreen(
@@ -302,7 +304,7 @@ private fun ModernMainApp(
                         authRepository = authRepository,
                         onLoginSuccess = { vm.syncWithBackend(sessionManager) },
                         onNavigateToFaq = { push(Screen.Faq) },
-                        onOpenShopping = { push(Screen.Shopping) },
+                        onOpenShopping = { push(Screen.Shopping()) },
                         onOpenAdmin = { push(Screen.Admin) },
                         onOpenAi = { push(Screen.Ai(childId = it)) },
                         onOpenFolder = { push(Screen.FolderDetail(it)) },
@@ -393,6 +395,7 @@ private fun ModernMainApp(
                 initialCategory = screen.category,
                 initialFolderId = screen.folderId,
                 initialTitle = screen.title,
+                initialIngredients = screen.ingredients,
                 onSaved = {
                     pop()
                     // Après une modification, la fiche affichée reprend la version à jour
@@ -425,6 +428,7 @@ private fun ModernMainApp(
                     commentRepository = commentRepository,
                     viewModel = vm,
                     onOpenFolder = { f -> push(Screen.FolderDetail(f, fromLinkId = fresh.id)) },
+                    onOpenShopping = if (screen.public) null else { { push(Screen.Shopping(fresh.id)) } },
                 )
             }
 
@@ -474,7 +478,7 @@ private fun ModernMainApp(
                 },
             )
 
-            Screen.Shopping -> ShoppingListScreen(vm, onBack = ::pop, onAddRecipe = { push(Screen.IdeaForm(category = LinkCategory.RECETTE)) })
+            is Screen.Shopping -> ShoppingListScreen(vm, recipeId = screen.recipeId, onBack = ::pop, onAddRecipe = { push(Screen.IdeaForm(category = LinkCategory.RECETTE)) })
 
             Screen.Faq -> FaqScreen(onBack = ::pop)
             is Screen.PublicFolder -> PublicFolderScreen(
@@ -553,7 +557,7 @@ private fun ModernMainApp(
                 presetFolderId = folderId,
                 onDismiss = { showAdd = false },
                 onAi = { showAdd = false; push(Screen.Ai(folderId = folderId)) },
-                onMore = { d -> showAdd = false; push(Screen.IdeaForm(url = d.url, category = d.category, folderId = d.folderId, title = d.title)) },
+                onMore = { d -> showAdd = false; push(Screen.IdeaForm(url = d.url, category = d.category, folderId = d.folderId, title = d.title, ingredients = d.ingredients)) },
                 onNewFolder = { showAdd = false; push(Screen.FolderForm()) },
                 onOpenLink = { id -> showAdd = false; openLink(id) },
             )

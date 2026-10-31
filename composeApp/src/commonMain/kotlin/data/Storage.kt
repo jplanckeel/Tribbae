@@ -22,4 +22,8 @@ interface Storage {
     /** Changements pas encore reçus par le serveur (voir PendingChanges). */
     fun savePending(pending: PendingChanges) {}
     fun loadPending(): PendingChanges = PendingChanges()
+
+    /** Liste de courses (voir ShoppingSelection). */
+    fun saveShopping(selection: ShoppingSelection) {}
+    fun loadShopping(): ShoppingSelection = ShoppingSelection()
 }
