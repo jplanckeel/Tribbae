@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
@@ -415,11 +414,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         addFolder(Folder(id = "", name = name, icon = icon, color = color, visibility = visibility))
 
     /** Nouveau dossier (id local remplacé par celui du serveur après synchro). */
-    fun addFolder(draft: Folder) {
+    fun addFolder(draft: Folder): Folder {
         val folder = draft.copy(id = kotlin.random.Random.nextLong().toString())
         repository.addFolder(folder)
         
         schedulePush()
+        return folder
     }
 
     fun deleteFolder(id: String, onSuccess: () -> Unit = {}) {
@@ -807,17 +807,26 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
 
-    fun initAuthenticatedClient(sessionManager: data.SessionManager) {
+    /**
+     * Session seule, sans le reste de l'écran (abonnés, mise à jour des auteurs) :
+     * de quoi signer les idées et envoyer ce qui est créé ici. Sert aussi aux
+     * fonctions appelées par Gemini, hors de l'app (voir GeminiFunctions.kt).
+     */
+    fun attachSession(sessionManager: data.SessionManager) {
         this.sessionManager = sessionManager
+        authenticatedClient = data.AuthenticatedApiClient(sessionManager = sessionManager)
+        authToken = sessionManager.getToken()
+    }
+
+    fun initAuthenticatedClient(sessionManager: data.SessionManager) {
+        attachSession(sessionManager)
         emailVerifiedWatch?.cancel()
         emailVerifiedWatch = viewModelScope.launch {
             // Sans session (déconnexion), rien n'est bloqué
             sessionManager.emailVerified.combine(sessionManager.isLoggedIn) { verified, loggedIn -> verified || !loggedIn }
                 .collect { _emailVerified.value = it }
         }
-        authenticatedClient = data.AuthenticatedApiClient(sessionManager = sessionManager)
         followRepository = data.FollowRepository(sessionManager = sessionManager)
-        authToken = sessionManager.getToken()
         
         // Mettre à jour les liens existants avec le displayName si vide
         updateExistingLinksOwner()
@@ -955,7 +964,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     // ── Envoi des changements faits ici ──────────────────────────────────────
 
     /** Un seul envoi à la fois : une idée créée ici ne doit pas partir deux fois. */
-    private val pushLock = Mutex()
+    private val pushLock get() = repository.pushLock
 
     /** Idée modifiée ici : à envoyer (une idée encore locale part entière à sa création). */
     private fun markLinkChanged(id: String) {

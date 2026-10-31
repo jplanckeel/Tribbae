@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
@@ -13,6 +14,9 @@ kotlin {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
+            // Sinon « Tribbae:composeApp » : le compilateur AppFunctions (KSP) en
+            // tire un nom de classe, où « : » est interdit
+            moduleName.set("composeApp")
         }
     }
     
@@ -24,6 +28,8 @@ kotlin {
             implementation(libs.androidx.core.splashscreen)
             // Analyse HTML des pages liées (images, titre) quand le backend n'est pas joignable
             implementation(libs.jsoup)
+            // Gemini crée des idées et des dossiers (GeminiFunctions.kt)
+            implementation(libs.androidx.appfunctions)
         }
         commonMain.dependencies {
             implementation(libs.compose.ui)
@@ -43,6 +49,11 @@ kotlin {
     }
 }
 
+dependencies {
+    // Génère le service et la description (XML) des fonctions AppFunctions
+    add("kspAndroid", libs.androidx.appfunctions.compiler)
+}
+
 // Version de l'app, montée par release-please. Le Play Store exige un
 // versionCode qui augmente à chaque envoi : il en est calculé
 // (major * 10000 + minor * 100 + patch, ex. 1.4.12 -> 10412).
@@ -55,7 +66,8 @@ val appVersionCode = appVersion.split(".").map { it.toInt() }.let { (major, mino
 android {
     // Paquet du code Kotlin (R, BuildConfig) ; l'identifiant sur le Play Store est applicationId
     namespace = "com.linkkeeper.app"
-    compileSdk = 36
+    // 37 : exigé par androidx.appfunctions (targetSdk reste à 36)
+    compileSdk = 37
 
     defaultConfig {
         // Identifiant définitif sur le Play Store (ne peut plus changer après le premier envoi)

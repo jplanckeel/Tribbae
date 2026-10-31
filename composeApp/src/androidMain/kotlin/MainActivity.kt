@@ -24,9 +24,8 @@ import androidx.core.content.ContextCompat
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import data.AndroidStorage
+import data.AppGraph
 import data.ImagePickerHelper
-import data.LinkRepository
 import data.NotificationHelper
 import data.OgImageFetcher
 import data.extractUrl
@@ -65,10 +64,11 @@ class MainActivity : ComponentActivity() {
         // ImagePickerHelper doit être créé avant setContent (enregistre les launchers)
         val imagePicker = ImagePickerHelper(this)
 
-        val storage = AndroidStorage(applicationContext)
+        // Partagés avec les fonctions appelées par Gemini (voir data.AppGraph)
+        val storage = AppGraph.storage(applicationContext)
         ui.Appearance.pref = storage.loadAppearance()
         ui.Appearance.save = storage::saveAppearance
-        val repository = LinkRepository(storage)
+        val repository = AppGraph.repository(applicationContext)
         // Une seule fois : à la recréation (rotation…), le partage est déjà ouvert
         if (savedInstanceState == null) incoming.value = parseIncoming(intent)
         val appContext = applicationContext
