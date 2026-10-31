@@ -18,6 +18,7 @@ import (
 	"github.com/tribbae/backend/internal/account"
 	"github.com/tribbae/backend/internal/admin"
 	"github.com/tribbae/backend/internal/ai"
+	"github.com/tribbae/backend/internal/applinks"
 	"github.com/tribbae/backend/internal/auth"
 	"github.com/tribbae/backend/internal/child"
 	"github.com/tribbae/backend/internal/comment"
@@ -239,7 +240,14 @@ func main() {
 	photoLimiter := httpx.NewRateLimiter(30, time.Minute)
 	oauthLimiter := httpx.NewRateLimiter(60, time.Minute)
 
+	appLinksH, err := applinks.Handler(cfg.AndroidCertFingerprints)
+	if err != nil {
+		log.Fatalf("applinks: %v", err)
+	}
+
 	var handler http.Handler = withSPA(mux, cfg.SiteURL, seo.NewSource(linkSvc, folderSvc))
+	// Avant le fallback de l'application : servi tel quel, en JSON, même sans frontend
+	handler = withAppLinks(appLinksH, handler)
 	handler = withPreview(preview.Handler(bearerUser), handler)
 	handler = withAI(aiH, handler)
 	handler = withAccount(accountH, handler)
@@ -323,6 +331,17 @@ func withMCP(mcpH http.Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == mcpserver.Path {
 			mcpH.ServeHTTP(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// withAppLinks sert /.well-known/assetlinks.json (liens du site ouverts dans l'app Android).
+func withAppLinks(appLinksH http.Handler, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == applinks.Path {
+			appLinksH.ServeHTTP(w, r)
 			return
 		}
 		next.ServeHTTP(w, r)

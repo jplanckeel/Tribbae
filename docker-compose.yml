@@ -47,6 +47,9 @@ services:
       OAUTH_REDIRECT_URIS: ${OAUTH_REDIRECT_URIS:-https://claude.ai/api/mcp/auth_callback,https://claude.com/api/mcp/auth_callback}
       MCP_DAILY_CREATE_QUOTA: ${MCP_DAILY_CREATE_QUOTA:-30}
       MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-https://claude.ai,https://claude.com}
+      # Liens tribbae.fr ouverts dans l'app Android : empreintes SHA-256 de la clé de
+      # signature Play et de la clé d'importation (/.well-known/assetlinks.json)
+      ANDROID_CERT_FINGERPRINTS: ${ANDROID_CERT_FINGERPRINTS:-}
     labels:
       - "traefik.enable=true"
       # tribbae.fr, sa variante www et l'ancien domaine (redirigés par l'application)
