@@ -1,6 +1,5 @@
 package ui
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,7 +17,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -26,41 +24,45 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import data.LinkCategory
+import data.ShoppingList
 import ui.campfire.*
 import viewmodel.LinkViewModel
 
-private const val PREFS = "tribbae_courses"
-
-/** Liste de courses : ingrédients des recettes choisies, regroupés et cochables (conservés sur l'appareil). */
+/**
+ * Liste de courses : ingrédients des recettes choisies, regroupés par produit avec
+ * leurs quantités additionnées (data.ShoppingList), cochables. La sélection vit
+ * dans le dépôt (gardée sur l'appareil, suit l'identifiant donné par le serveur).
+ * [recipeId] : recette d'où l'on vient (« Préparer la liste de courses »), ajoutée à la sélection.
+ */
 @Composable
 fun ShoppingListScreen(
     viewModel: LinkViewModel,
     modifier: Modifier = Modifier,
+    recipeId: String? = null,
     onBack: () -> Unit = {},
     onAddRecipe: () -> Unit = {},
 ) {
-    val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
-    val links by viewModel.repository.links.collectAsState()
-    var selected by remember { mutableStateOf(prefs.getStringSet("recipes", emptySet())!!.toSet()) }
-    var checked by remember { mutableStateOf(prefs.getStringSet("checked", emptySet())!!.toSet()) }
-
-    LaunchedEffect(selected, checked) {
-        prefs.edit().putStringSet("recipes", selected).putStringSet("checked", checked).apply()
-    }
+    val repository = viewModel.repository
+    val links by repository.links.collectAsState()
+    val shopping by repository.shopping.collectAsState()
+    val selected = shopping.recipes
+    val checked = shopping.checked
 
     val recipes = remember(links) { links.filter { it.category == LinkCategory.RECETTE && it.ingredients.isNotEmpty() } }
-    val items = remember(recipes, selected) {
-        val m = linkedMapOf<String, Pair<String, MutableList<String>>>()
-        recipes.filter { it.id in selected }.forEach { r ->
-            r.ingredients.map { it.trim() }.filter { it.isNotEmpty() }.forEach { name ->
-                val e = m.getOrPut(name.lowercase()) { name to mutableListOf() }
-                if (r.title !in e.second) e.second += r.title
-            }
-        }
-        m.entries.sortedBy { it.value.first.lowercase() }
-    }
+    fun listFor(ids: Set<String>) = ShoppingList.build(recipes.filter { it.id in ids }.map { ShoppingList.Recipe(it.title, it.ingredients) })
+    val items = remember(recipes, selected) { listFor(selected) }
     val remaining = items.count { it.key !in checked }
+
+    LaunchedEffect(recipeId) {
+        if (recipeId != null) repository.updateShopping { it.copy(recipes = it.recipes + recipeId) }
+    }
+    // Ne garde cochées que les lignes encore dans la liste (une quantité qui change décoche la ligne)
+    fun toggleRecipe(id: String) = repository.updateShopping { s ->
+        val ids = if (id in s.recipes) s.recipes - id else s.recipes + id
+        val keys = listFor(ids).map { it.key }.toSet()
+        s.copy(recipes = ids, checked = s.checked.filter { it in keys }.toSet())
+    }
+    fun toggleItem(key: String) = repository.updateShopping { s -> s.copy(checked = if (key in s.checked) s.checked - key else s.checked + key) }
     val rc = categoryUi(LinkCategory.RECETTE)
 
     Column(
@@ -93,7 +95,7 @@ fun ShoppingListScreen(
                     val on = r.id in selected
                     Row(
                         Modifier.clip(CircleShape).background(if (on) rc.tint else rc.bg)
-                            .clickable(role = Role.Checkbox) { selected = if (on) selected - r.id else selected + r.id }
+                            .clickable(role = Role.Checkbox) { toggleRecipe(r.id) }
                             .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -113,19 +115,24 @@ fun ShoppingListScreen(
         } else {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 Text("${items.size} ingrédient${if (items.size > 1) "s" else ""}", style = display(18.sp, FontWeight.Bold))
-                if (checked.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (checked.isNotEmpty()) {
+                        Text(
+                            "Tout décocher", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Terracotta,
+                            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { repository.updateShopping { it.copy(checked = emptySet()) } }.padding(4.dp)
+                        )
+                    }
                     Text(
-                        "Tout décocher", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Terracotta,
-                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { checked = emptySet() }.padding(4.dp)
+                        "Nouvelle liste", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Terracotta,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { repository.updateShopping { data.ShoppingSelection() } }.padding(4.dp)
                     )
                 }
             }
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(CardColor)) {
-                items.forEachIndexed { i, (key, value) ->
-                    val (name, from) = value
-                    val done = key in checked
+                items.forEachIndexed { i, item ->
+                    val done = item.key in checked
                     Row(
-                        Modifier.fillMaxWidth().clickable(role = Role.Checkbox) { checked = if (done) checked - key else checked + key }.padding(horizontal = 16.dp, vertical = 12.dp),
+                        Modifier.fillMaxWidth().clickable(role = Role.Checkbox) { toggleItem(item.key) }.padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
@@ -136,11 +143,11 @@ fun ShoppingListScreen(
                         ) { if (done) Icon(Icons.Outlined.Check, null, tint = Color.White, modifier = Modifier.size(14.dp)) }
                         Column(Modifier.weight(1f)) {
                             Text(
-                                name, fontSize = 15.sp, color = if (done) TextMuted else Ecorce,
+                                item.label, fontSize = 15.sp, color = if (done) TextMuted else Ecorce,
                                 fontWeight = if (done) FontWeight.Normal else FontWeight.Medium,
                                 textDecoration = if (done) TextDecoration.LineThrough else null
                             )
-                            if (from.size > 1) Text(from.joinToString(" · "), fontSize = 12.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (item.from.size > 1) Text(item.from.joinToString(" · "), fontSize = 12.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                     if (i < items.lastIndex) HorizontalDivider(color = Sable2)

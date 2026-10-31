@@ -52,7 +52,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   const session = useSession();
   const navigate = useNavigate();
   const { editLink } = useComposer();
-  const { folders, upsertLink, removeLink, peers, isTribePeer } = useMyData();
+  const { folders, upsertLink, removeLink, peers, isTribePeer, links: myLinks } = useMyData();
   const { toast, confirm } = useFeedback();
   const [menuOpen, setMenuOpen] = useState(false);
   const [liked, setLiked] = useState(!!link.likedByMe);
@@ -294,7 +294,12 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
                 </li>
               ))}
             </ul>
-            <RouterLink to="/courses" className="self-start text-sm font-bold text-terracotta">Préparer la liste de courses</RouterLink>
+            {/* La liste de courses ne reprend que nos recettes (celles de la tribu et du cercle comprises) */}
+            {myLinks.some((l) => l.id === link.id) && (
+              <RouterLink to={`/courses?recette=${encodeURIComponent(link.id)}`} className="self-start text-sm font-bold text-terracotta">
+                Préparer la liste de courses
+              </RouterLink>
+            )}
           </section>
         )}
 

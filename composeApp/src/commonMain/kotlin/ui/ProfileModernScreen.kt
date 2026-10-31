@@ -626,7 +626,7 @@ private fun TribeContent(
                 if (role == 0) {
                     var email by remember { mutableStateOf("") }
                     Text(
-                        "Votre proche reçoit un lien pour rejoindre la tribu et tout gérer avec vous : idées, dossiers, enfants et liste de courses.",
+                        "Votre proche reçoit un lien pour rejoindre la tribu et tout gérer avec vous : idées, dossiers et enfants.",
                         fontSize = 15.sp, color = Ecorce2
                     )
                     CampField(

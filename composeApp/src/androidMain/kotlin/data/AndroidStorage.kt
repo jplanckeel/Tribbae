@@ -54,6 +54,19 @@ class AndroidStorage(context: Context) : Storage {
         return try { json.decodeFromString(raw) } catch (_: Exception) { emptyMap() }
     }
 
+    // Liste de courses : fichier à part, gardé à la déconnexion comme avant
+    private val courses: SharedPreferences =
+        context.getSharedPreferences("tribbae_courses", Context.MODE_PRIVATE)
+
+    override fun saveShopping(selection: ShoppingSelection) {
+        courses.edit().putStringSet("recipes", selection.recipes).putStringSet("checked", selection.checked).apply()
+    }
+
+    override fun loadShopping() = ShoppingSelection(
+        recipes = courses.getStringSet("recipes", null)?.toSet().orEmpty(),
+        checked = courses.getStringSet("checked", null)?.toSet().orEmpty(),
+    )
+
     override fun savePending(pending: PendingChanges) {
         prefs.edit().putString("pending", json.encodeToString(pending)).apply()
     }

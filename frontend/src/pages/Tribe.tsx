@@ -1049,7 +1049,7 @@ function InviteForm({ onDone }: { onDone: (t: TribeData) => void }) {
   return (
     <form onSubmit={invite} className="flex flex-col gap-3">
       <p className="text-[15px] text-ecorce-2">
-        Votre proche reçoit un lien pour rejoindre la tribu et tout gérer avec vous : idées, dossiers, enfants et liste de courses.
+        Votre proche reçoit un lien pour rejoindre la tribu et tout gérer avec vous : idées, dossiers et enfants.
       </p>
       <Field label="Son adresse email" type="email" icon="send" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="camille@exemple.fr" autoComplete="email" />
       {error && <ErrorNote>{error}</ErrorNote>}

@@ -74,6 +74,7 @@ fun IdeaFormScreen(
     initialCategory: LinkCategory? = null,
     initialFolderId: String? = null,
     initialTitle: String? = null,
+    initialIngredients: List<String> = emptyList(),
 ) {
     val folders by viewModel.folders.collectAsState()
     val kids by viewModel.children.collectAsState()
@@ -85,7 +86,7 @@ fun IdeaFormScreen(
     var title by remember { mutableStateOf(existing?.title ?: initialTitle.orEmpty()) }
     var description by remember { mutableStateOf(existing?.description.orEmpty()) }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl.orEmpty()) }
-    var ingredients by remember { mutableStateOf(existing?.ingredients?.joinToString("\n").orEmpty()) }
+    var ingredients by remember { mutableStateOf((existing?.ingredients ?: initialIngredients).joinToString("\n")) }
     var folderId by remember { mutableStateOf(existing?.folderId ?: initialFolderId) }
     var tags by remember { mutableStateOf(existing?.tags ?: emptyList()) }
     var ageRange by remember { mutableStateOf(existing?.ageRange.orEmpty()) }

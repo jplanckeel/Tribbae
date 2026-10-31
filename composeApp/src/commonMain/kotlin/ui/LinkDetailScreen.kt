@@ -65,6 +65,8 @@ fun LinkDetailScreen(
     commentRepository: CommentRepository? = null,
     viewModel: viewmodel.LinkViewModel? = null,
     onOpenFolder: ((data.Folder) -> Unit)? = null,
+    /** Liste de courses avec cette recette (absent pour l'idée d'un autre) */
+    onOpenShopping: (() -> Unit)? = null,
 ) {
     // Ouverture depuis une carte : les infos et la barre arrivent après l'en-tête
     val openProgress = LocalOpenProgress.current
@@ -268,6 +270,12 @@ fun LinkDetailScreen(
                                 Box(Modifier.size(6.dp).clip(CircleShape).background(rc.tint))
                                 Text(ing, fontSize = 15.sp, color = Ecorce2)
                             }
+                        }
+                        if (onOpenShopping != null) {
+                            Text(
+                                "Préparer la liste de courses", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta,
+                                modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button, onClick = onOpenShopping).padding(vertical = 4.dp)
+                            )
                         }
                     }
                 }

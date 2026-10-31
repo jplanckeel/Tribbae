@@ -94,7 +94,7 @@ private data class Draft(
 )
 
 /** Brouillon passé au formulaire complet (« Plus de détails »). */
-data class AddDraft(val url: String?, val title: String?, val category: LinkCategory, val folderId: String?)
+data class AddDraft(val url: String?, val title: String?, val category: LinkCategory, val folderId: String?, val ingredients: List<String> = emptyList())
 
 private val SPRING = spring<Float>(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow)
 
@@ -232,7 +232,7 @@ fun AddFlowSheet(
                             onCategory = { draft = draft.copy(category = it); catChosen = true },
                             onFolder = { folderId = it },
                             onPicker = { picker = true },
-                            onMore = { onMore(AddDraft(draft.url.ifBlank { null }, draft.title.ifBlank { null }, draft.category, folderId)) },
+                            onMore = { onMore(AddDraft(draft.url.ifBlank { null }, draft.title.ifBlank { null }, draft.category, folderId, draft.ingredients)) },
                         )
                         AddStep.Done -> current?.let { l ->
                             DoneStep(l, folders.find { it.id == l.folderId }) { viewModel.updateLink(l.copy(reminderEnabled = !l.reminderEnabled)) }
@@ -562,6 +562,16 @@ private fun SortStep(
                 }
             }
         }
+    }
+
+    // Sans eux, la recette n'arrive pas dans la liste de courses
+    if (draft.category == LinkCategory.RECETTE) {
+        var ingredientsText by remember { mutableStateOf(draft.ingredients.joinToString("\n")) }
+        CampField(
+            "Ingrédients (un par ligne)", ingredientsText,
+            { ingredientsText = it; onDraft(draft.copy(ingredients = it.lines().map(String::trim).filter(String::isNotEmpty))) },
+            placeholder = "250 g de farine\n2 œufs\n50 cl de lait", singleLine = false, minLines = 4, maxLength = 5000,
+        )
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

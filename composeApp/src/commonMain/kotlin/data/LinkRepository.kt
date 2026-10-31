@@ -58,6 +58,19 @@ class LinkRepository(private val storage: Storage? = null) {
     fun replaceLinkId(old: String, new: String) {
         _links.value = _links.value.map { if (it.id == old) it.copy(id = new) else it }
         storage?.saveLinks(_links.value)
+        // Une recette choisie pour les courses reste choisie sous son nouvel identifiant
+        if (old in _shopping.value.recipes) updateShopping { it.copy(recipes = it.recipes - old + new) }
+    }
+
+    private val _shopping = MutableStateFlow(storage?.loadShopping() ?: ShoppingSelection())
+    /** Liste de courses : recettes choisies et lignes cochées. */
+    val shopping: StateFlow<ShoppingSelection> = _shopping.asStateFlow()
+
+    fun updateShopping(change: (ShoppingSelection) -> ShoppingSelection) {
+        synchronized(_shopping) {
+            _shopping.value = change(_shopping.value)
+            storage?.saveShopping(_shopping.value)
+        }
     }
 
     /** Dossier reçu par le serveur : ses idées le suivent sous son nouvel identifiant. */
