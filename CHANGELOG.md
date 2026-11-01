@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0](https://github.com/jplanckeel/Tribbae/compare/v0.2.0...v0.3.0) (2026-10-31)
+
+
+### Features
+
+* **android:** let gemini create ideas and folders through app functions ([#74](https://github.com/jplanckeel/Tribbae/issues/74)) ([b34b4f1](https://github.com/jplanckeel/Tribbae/commit/b34b4f1e4319f3f245d6406223d39928f150bae8))
+* group shopping list quantities and bring every recipe into it ([#80](https://github.com/jplanckeel/Tribbae/issues/80)) ([7bb871f](https://github.com/jplanckeel/Tribbae/commit/7bb871fa061e4fb209910f4b6243a1a6b87f7754))
+* pick dates with a wheel picker on web and android ([#81](https://github.com/jplanckeel/Tribbae/issues/81)) ([2beff6c](https://github.com/jplanckeel/Tribbae/commit/2beff6ced8159cd8e01475c771170c9ba24facd6))
+
+
+### Bug Fixes
+
+* show the current tipi logo on the welcome screen ([#75](https://github.com/jplanckeel/Tribbae/issues/75)) ([c00d448](https://github.com/jplanckeel/Tribbae/commit/c00d448235525eab35a9a7662bff32ad571e4b8d))
+
+
+### Documentation
+
+* update the readme to the current state of the project ([#77](https://github.com/jplanckeel/Tribbae/issues/77)) ([4c3478e](https://github.com/jplanckeel/Tribbae/commit/4c3478e30360776b43b4c7de8de67e8e771e4da8))
+
 ## [0.2.0](https://github.com/jplanckeel/Tribbae/compare/v0.1.0...v0.2.0) (2026-10-28)
 
 
