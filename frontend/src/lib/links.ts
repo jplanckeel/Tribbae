@@ -23,9 +23,9 @@ export function toInput(l: Link): LinkInput {
   };
 }
 
-/** Copie d'une idée d'un autre membre vers ses propres idées. */
+/** Copie d'une idée d'un autre membre vers ses propres idées : privée, date gardée, rappel à activer soi-même. */
 export function copyInput(l: Link, folderId?: string): LinkInput {
-  return { ...toInput(l), folderId: folderId ?? "", visibility: "private", eventDate: 0, reminderEnabled: false };
+  return { ...toInput(l), folderId: folderId ?? "", visibility: "private", reminderEnabled: false };
 }
 
 const startOfToday = () => {
