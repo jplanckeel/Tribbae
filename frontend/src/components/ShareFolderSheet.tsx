@@ -44,6 +44,24 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
     }
   };
 
+  const cutLink = async () => {
+    const ok = await confirm({
+      title: "Couper le lien ?",
+      text: "Le lien cessera de marcher pour toutes les personnes qui l'ont reçu.",
+      confirmLabel: "Couper le lien",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.folders.unshare(folder.id);
+      setCreated("");
+      onChange({ ...folder, shareToken: "" });
+      toast("Lien coupé");
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+
   const copy = async () => {
     if (!token) return;
     const res = await shareOrCopy(shareUrlFor(token), folder.name);
@@ -107,16 +125,19 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
             Toute personne qui a le lien peut consulter ce dossier, même sans compte.
           </p>
           {token ? (
-            <div className="flex items-center gap-2 rounded-medium bg-card p-2 pl-4 shadow-card">
-              <input
-                readOnly
-                aria-label="Lien de partage"
-                value={shareUrlFor(token)}
-                onFocus={(e) => e.currentTarget.select()}
-                className="min-w-0 flex-1 bg-transparent text-sm text-sec outline-none"
-              />
-              <Button size="sm" variant="dark" icon="copy" onClick={copy}>Copier</Button>
-            </div>
+            <>
+              <div className="flex items-center gap-2 rounded-medium bg-card p-2 pl-4 shadow-card">
+                <input
+                  readOnly
+                  aria-label="Lien de partage"
+                  value={shareUrlFor(token)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="min-w-0 flex-1 bg-transparent text-sm text-sec outline-none"
+                />
+                <Button size="sm" variant="dark" icon="copy" onClick={copy}>Copier</Button>
+              </div>
+              <Button variant="ghost" icon="close" onClick={cutLink} className="self-start">Couper le lien</Button>
+            </>
           ) : (
             <Button variant="dark" icon="link" loading={linkBusy} onClick={makeLink} className="self-start">
               Créer un lien de partage

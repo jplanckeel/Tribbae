@@ -236,6 +236,17 @@ func (h *Handler) DeleteFolder(ctx context.Context, req *pb.DeleteFolderRequest)
 	return &pb.DeleteFolderResponse{}, nil
 }
 
+func (h *Handler) RevokeShareToken(ctx context.Context, req *pb.RevokeShareTokenRequest) (*pb.RevokeShareTokenResponse, error) {
+	ownerID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+	if err := h.svc.RevokeShareToken(ctx, req.FolderId, ownerID); err != nil {
+		return nil, toStatus("revoke share link", err)
+	}
+	return &pb.RevokeShareTokenResponse{}, nil
+}
+
 func (h *Handler) GenerateShareToken(ctx context.Context, req *pb.GenerateShareTokenRequest) (*pb.GenerateShareTokenResponse, error) {
 	ownerID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {

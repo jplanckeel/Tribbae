@@ -19,6 +19,7 @@ data class Folder(
     val bannerUrl: String = "",
     val tags: List<String> = emptyList(),
     val visibility: String = "",
+    val shareToken: String = "",       // lien de partage actif, connu du propriétaire seul
     val ownerDisplayName: String = "",
     val ownerIsAdmin: Boolean = false,
     val linkCount: Int = 0,

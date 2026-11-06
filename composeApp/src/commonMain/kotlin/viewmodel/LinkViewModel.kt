@@ -1172,11 +1172,28 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     suspend fun shareFolder(folderId: String): data.ShareFolderResponse? {
         val client = authenticatedClient ?: return null
         return try {
-            client.shareFolder(folderId)
+            client.shareFolder(folderId).also { r -> setShareToken(folderId, r.shareToken) }
         } catch (e: Exception) {
             _syncStatus.value = "Erreur partage: ${e.message}"
             null
         }
+    }
+
+    /** Coupe le lien de partage. Renvoie false si le serveur n'a pas pu le faire. */
+    suspend fun revokeShare(folderId: String): Boolean {
+        val client = authenticatedClient ?: return false
+        return try {
+            client.revokeShare(folderId)
+            setShareToken(folderId, "")
+            true
+        } catch (e: Exception) {
+            _syncStatus.value = "Erreur partage: ${e.message}"
+            false
+        }
+    }
+
+    private fun setShareToken(folderId: String, token: String) {
+        repository.folders.value.find { it.id == folderId }?.let { repository.updateFolder(it.copy(shareToken = token)) }
     }
 
     suspend fun removeCollaborator(folderId: String, userId: String): Folder? {
@@ -1198,6 +1215,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             id = apiFolder.id,
             name = apiFolder.name,
             ownerId = apiFolder.ownerId,
+            shareToken = apiFolder.shareToken,
             icon = try { FolderIcon.valueOf(apiFolder.icon) } catch (_: Exception) { FolderIcon.FOLDER },
             color = try { FolderColor.valueOf(apiFolder.color) } catch (_: Exception) { FolderColor.ORANGE },
             bannerUrl = apiFolder.bannerUrl,

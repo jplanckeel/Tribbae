@@ -25,6 +25,7 @@ const (
 	FolderService_UpdateFolder_FullMethodName           = "/tribbae.v1.FolderService/UpdateFolder"
 	FolderService_DeleteFolder_FullMethodName           = "/tribbae.v1.FolderService/DeleteFolder"
 	FolderService_GenerateShareToken_FullMethodName     = "/tribbae.v1.FolderService/GenerateShareToken"
+	FolderService_RevokeShareToken_FullMethodName       = "/tribbae.v1.FolderService/RevokeShareToken"
 	FolderService_GetSharedFolder_FullMethodName        = "/tribbae.v1.FolderService/GetSharedFolder"
 	FolderService_AddCollaborator_FullMethodName        = "/tribbae.v1.FolderService/AddCollaborator"
 	FolderService_RemoveCollaborator_FullMethodName     = "/tribbae.v1.FolderService/RemoveCollaborator"
@@ -49,6 +50,7 @@ type FolderServiceClient interface {
 	UpdateFolder(ctx context.Context, in *UpdateFolderRequest, opts ...grpc.CallOption) (*UpdateFolderResponse, error)
 	DeleteFolder(ctx context.Context, in *DeleteFolderRequest, opts ...grpc.CallOption) (*DeleteFolderResponse, error)
 	GenerateShareToken(ctx context.Context, in *GenerateShareTokenRequest, opts ...grpc.CallOption) (*GenerateShareTokenResponse, error)
+	RevokeShareToken(ctx context.Context, in *RevokeShareTokenRequest, opts ...grpc.CallOption) (*RevokeShareTokenResponse, error)
 	GetSharedFolder(ctx context.Context, in *GetSharedFolderRequest, opts ...grpc.CallOption) (*GetSharedFolderResponse, error)
 	AddCollaborator(ctx context.Context, in *AddCollaboratorRequest, opts ...grpc.CallOption) (*AddCollaboratorResponse, error)
 	RemoveCollaborator(ctx context.Context, in *RemoveCollaboratorRequest, opts ...grpc.CallOption) (*RemoveCollaboratorResponse, error)
@@ -125,6 +127,16 @@ func (c *folderServiceClient) GenerateShareToken(ctx context.Context, in *Genera
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GenerateShareTokenResponse)
 	err := c.cc.Invoke(ctx, FolderService_GenerateShareToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) RevokeShareToken(ctx context.Context, in *RevokeShareTokenRequest, opts ...grpc.CallOption) (*RevokeShareTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeShareTokenResponse)
+	err := c.cc.Invoke(ctx, FolderService_RevokeShareToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -261,6 +273,7 @@ type FolderServiceServer interface {
 	UpdateFolder(context.Context, *UpdateFolderRequest) (*UpdateFolderResponse, error)
 	DeleteFolder(context.Context, *DeleteFolderRequest) (*DeleteFolderResponse, error)
 	GenerateShareToken(context.Context, *GenerateShareTokenRequest) (*GenerateShareTokenResponse, error)
+	RevokeShareToken(context.Context, *RevokeShareTokenRequest) (*RevokeShareTokenResponse, error)
 	GetSharedFolder(context.Context, *GetSharedFolderRequest) (*GetSharedFolderResponse, error)
 	AddCollaborator(context.Context, *AddCollaboratorRequest) (*AddCollaboratorResponse, error)
 	RemoveCollaborator(context.Context, *RemoveCollaboratorRequest) (*RemoveCollaboratorResponse, error)
@@ -299,6 +312,9 @@ func (UnimplementedFolderServiceServer) DeleteFolder(context.Context, *DeleteFol
 }
 func (UnimplementedFolderServiceServer) GenerateShareToken(context.Context, *GenerateShareTokenRequest) (*GenerateShareTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GenerateShareToken not implemented")
+}
+func (UnimplementedFolderServiceServer) RevokeShareToken(context.Context, *RevokeShareTokenRequest) (*RevokeShareTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeShareToken not implemented")
 }
 func (UnimplementedFolderServiceServer) GetSharedFolder(context.Context, *GetSharedFolderRequest) (*GetSharedFolderResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSharedFolder not implemented")
@@ -460,6 +476,24 @@ func _FolderService_GenerateShareToken_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(FolderServiceServer).GenerateShareToken(ctx, req.(*GenerateShareTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_RevokeShareToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeShareTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).RevokeShareToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_RevokeShareToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).RevokeShareToken(ctx, req.(*RevokeShareTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -710,6 +744,10 @@ var FolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateShareToken",
 			Handler:    _FolderService_GenerateShareToken_Handler,
+		},
+		{
+			MethodName: "RevokeShareToken",
+			Handler:    _FolderService_RevokeShareToken_Handler,
 		},
 		{
 			MethodName: "GetSharedFolder",

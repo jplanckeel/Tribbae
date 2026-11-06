@@ -137,6 +137,12 @@ message GenerateShareTokenResponse {
   string share_url = 2;
 }
 
+message RevokeShareTokenRequest {
+  string folder_id = 1;
+}
+
+message RevokeShareTokenResponse {}
+
 message GetSharedFolderRequest {
   string share_token = 1;
 }
@@ -297,6 +303,11 @@ service FolderService {
     option (google.api.http) = {
       post: "/v1/folders/{folder_id}/share"
       body: "*"
+    };
+  }
+  rpc RevokeShareToken(RevokeShareTokenRequest) returns (RevokeShareTokenResponse) {
+    option (google.api.http) = {
+      delete: "/v1/folders/{folder_id}/share"
     };
   }
   rpc GetSharedFolder(GetSharedFolderRequest) returns (GetSharedFolderResponse) {

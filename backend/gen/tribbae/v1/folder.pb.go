@@ -1215,6 +1215,86 @@ func (x *GenerateShareTokenResponse) GetShareUrl() string {
 	return ""
 }
 
+type RevokeShareTokenRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FolderId      string                 `protobuf:"bytes,1,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeShareTokenRequest) Reset() {
+	*x = RevokeShareTokenRequest{}
+	mi := &file_tribbae_v1_folder_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeShareTokenRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeShareTokenRequest) ProtoMessage() {}
+
+func (x *RevokeShareTokenRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_folder_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeShareTokenRequest.ProtoReflect.Descriptor instead.
+func (*RevokeShareTokenRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *RevokeShareTokenRequest) GetFolderId() string {
+	if x != nil {
+		return x.FolderId
+	}
+	return ""
+}
+
+type RevokeShareTokenResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeShareTokenResponse) Reset() {
+	*x = RevokeShareTokenResponse{}
+	mi := &file_tribbae_v1_folder_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeShareTokenResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeShareTokenResponse) ProtoMessage() {}
+
+func (x *RevokeShareTokenResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_folder_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeShareTokenResponse.ProtoReflect.Descriptor instead.
+func (*RevokeShareTokenResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{15}
+}
+
 type GetSharedFolderRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ShareToken    string                 `protobuf:"bytes,1,opt,name=share_token,json=shareToken,proto3" json:"share_token,omitempty"`
@@ -1224,7 +1304,7 @@ type GetSharedFolderRequest struct {
 
 func (x *GetSharedFolderRequest) Reset() {
 	*x = GetSharedFolderRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[14]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1236,7 +1316,7 @@ func (x *GetSharedFolderRequest) String() string {
 func (*GetSharedFolderRequest) ProtoMessage() {}
 
 func (x *GetSharedFolderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[14]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1249,7 +1329,7 @@ func (x *GetSharedFolderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSharedFolderRequest.ProtoReflect.Descriptor instead.
 func (*GetSharedFolderRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{14}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetSharedFolderRequest) GetShareToken() string {
@@ -1269,7 +1349,7 @@ type GetSharedFolderResponse struct {
 
 func (x *GetSharedFolderResponse) Reset() {
 	*x = GetSharedFolderResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[15]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1281,7 +1361,7 @@ func (x *GetSharedFolderResponse) String() string {
 func (*GetSharedFolderResponse) ProtoMessage() {}
 
 func (x *GetSharedFolderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[15]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1294,7 +1374,7 @@ func (x *GetSharedFolderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSharedFolderResponse.ProtoReflect.Descriptor instead.
 func (*GetSharedFolderResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{15}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetSharedFolderResponse) GetFolder() *Folder {
@@ -1322,7 +1402,7 @@ type AddCollaboratorRequest struct {
 
 func (x *AddCollaboratorRequest) Reset() {
 	*x = AddCollaboratorRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[16]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1334,7 +1414,7 @@ func (x *AddCollaboratorRequest) String() string {
 func (*AddCollaboratorRequest) ProtoMessage() {}
 
 func (x *AddCollaboratorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[16]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1347,7 +1427,7 @@ func (x *AddCollaboratorRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddCollaboratorRequest.ProtoReflect.Descriptor instead.
 func (*AddCollaboratorRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{16}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *AddCollaboratorRequest) GetFolderId() string {
@@ -1380,7 +1460,7 @@ type AddCollaboratorResponse struct {
 
 func (x *AddCollaboratorResponse) Reset() {
 	*x = AddCollaboratorResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[17]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1392,7 +1472,7 @@ func (x *AddCollaboratorResponse) String() string {
 func (*AddCollaboratorResponse) ProtoMessage() {}
 
 func (x *AddCollaboratorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[17]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1405,7 +1485,7 @@ func (x *AddCollaboratorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddCollaboratorResponse.ProtoReflect.Descriptor instead.
 func (*AddCollaboratorResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{17}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *AddCollaboratorResponse) GetFolder() *Folder {
@@ -1425,7 +1505,7 @@ type RemoveCollaboratorRequest struct {
 
 func (x *RemoveCollaboratorRequest) Reset() {
 	*x = RemoveCollaboratorRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[18]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1437,7 +1517,7 @@ func (x *RemoveCollaboratorRequest) String() string {
 func (*RemoveCollaboratorRequest) ProtoMessage() {}
 
 func (x *RemoveCollaboratorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[18]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1450,7 +1530,7 @@ func (x *RemoveCollaboratorRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveCollaboratorRequest.ProtoReflect.Descriptor instead.
 func (*RemoveCollaboratorRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{18}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *RemoveCollaboratorRequest) GetFolderId() string {
@@ -1476,7 +1556,7 @@ type RemoveCollaboratorResponse struct {
 
 func (x *RemoveCollaboratorResponse) Reset() {
 	*x = RemoveCollaboratorResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[19]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1488,7 +1568,7 @@ func (x *RemoveCollaboratorResponse) String() string {
 func (*RemoveCollaboratorResponse) ProtoMessage() {}
 
 func (x *RemoveCollaboratorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[19]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1501,7 +1581,7 @@ func (x *RemoveCollaboratorResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveCollaboratorResponse.ProtoReflect.Descriptor instead.
 func (*RemoveCollaboratorResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{19}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *RemoveCollaboratorResponse) GetFolder() *Folder {
@@ -1526,7 +1606,7 @@ type CircleInvitation struct {
 
 func (x *CircleInvitation) Reset() {
 	*x = CircleInvitation{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[20]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1538,7 +1618,7 @@ func (x *CircleInvitation) String() string {
 func (*CircleInvitation) ProtoMessage() {}
 
 func (x *CircleInvitation) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[20]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1551,7 +1631,7 @@ func (x *CircleInvitation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CircleInvitation.ProtoReflect.Descriptor instead.
 func (*CircleInvitation) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{20}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *CircleInvitation) GetId() string {
@@ -1614,7 +1694,7 @@ type InviteToCircleRequest struct {
 
 func (x *InviteToCircleRequest) Reset() {
 	*x = InviteToCircleRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[21]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1626,7 +1706,7 @@ func (x *InviteToCircleRequest) String() string {
 func (*InviteToCircleRequest) ProtoMessage() {}
 
 func (x *InviteToCircleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[21]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1639,7 +1719,7 @@ func (x *InviteToCircleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InviteToCircleRequest.ProtoReflect.Descriptor instead.
 func (*InviteToCircleRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{21}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *InviteToCircleRequest) GetEmail() string {
@@ -1672,7 +1752,7 @@ type InviteToCircleResponse struct {
 
 func (x *InviteToCircleResponse) Reset() {
 	*x = InviteToCircleResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[22]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1684,7 +1764,7 @@ func (x *InviteToCircleResponse) String() string {
 func (*InviteToCircleResponse) ProtoMessage() {}
 
 func (x *InviteToCircleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[22]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1697,7 +1777,7 @@ func (x *InviteToCircleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InviteToCircleResponse.ProtoReflect.Descriptor instead.
 func (*InviteToCircleResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{22}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *InviteToCircleResponse) GetInvitation() *CircleInvitation {
@@ -1716,7 +1796,7 @@ type ListCircleInvitationsRequest struct {
 
 func (x *ListCircleInvitationsRequest) Reset() {
 	*x = ListCircleInvitationsRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[23]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1728,7 +1808,7 @@ func (x *ListCircleInvitationsRequest) String() string {
 func (*ListCircleInvitationsRequest) ProtoMessage() {}
 
 func (x *ListCircleInvitationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[23]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1741,7 +1821,7 @@ func (x *ListCircleInvitationsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCircleInvitationsRequest.ProtoReflect.Descriptor instead.
 func (*ListCircleInvitationsRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{23}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{25}
 }
 
 type ListCircleInvitationsResponse struct {
@@ -1753,7 +1833,7 @@ type ListCircleInvitationsResponse struct {
 
 func (x *ListCircleInvitationsResponse) Reset() {
 	*x = ListCircleInvitationsResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[24]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1765,7 +1845,7 @@ func (x *ListCircleInvitationsResponse) String() string {
 func (*ListCircleInvitationsResponse) ProtoMessage() {}
 
 func (x *ListCircleInvitationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[24]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1778,7 +1858,7 @@ func (x *ListCircleInvitationsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCircleInvitationsResponse.ProtoReflect.Descriptor instead.
 func (*ListCircleInvitationsResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{24}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ListCircleInvitationsResponse) GetInvitations() []*CircleInvitation {
@@ -1797,7 +1877,7 @@ type RevokeCircleInvitationRequest struct {
 
 func (x *RevokeCircleInvitationRequest) Reset() {
 	*x = RevokeCircleInvitationRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[25]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1809,7 +1889,7 @@ func (x *RevokeCircleInvitationRequest) String() string {
 func (*RevokeCircleInvitationRequest) ProtoMessage() {}
 
 func (x *RevokeCircleInvitationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[25]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1822,7 +1902,7 @@ func (x *RevokeCircleInvitationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeCircleInvitationRequest.ProtoReflect.Descriptor instead.
 func (*RevokeCircleInvitationRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{25}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *RevokeCircleInvitationRequest) GetInvitationId() string {
@@ -1840,7 +1920,7 @@ type RevokeCircleInvitationResponse struct {
 
 func (x *RevokeCircleInvitationResponse) Reset() {
 	*x = RevokeCircleInvitationResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[26]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1852,7 +1932,7 @@ func (x *RevokeCircleInvitationResponse) String() string {
 func (*RevokeCircleInvitationResponse) ProtoMessage() {}
 
 func (x *RevokeCircleInvitationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[26]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1865,7 +1945,7 @@ func (x *RevokeCircleInvitationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeCircleInvitationResponse.ProtoReflect.Descriptor instead.
 func (*RevokeCircleInvitationResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{26}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{28}
 }
 
 // Ce qu'affiche le lien d'invitation, avant de l'accepter (sans compte).
@@ -1878,7 +1958,7 @@ type GetCircleInvitationRequest struct {
 
 func (x *GetCircleInvitationRequest) Reset() {
 	*x = GetCircleInvitationRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[27]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1890,7 +1970,7 @@ func (x *GetCircleInvitationRequest) String() string {
 func (*GetCircleInvitationRequest) ProtoMessage() {}
 
 func (x *GetCircleInvitationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[27]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1903,7 +1983,7 @@ func (x *GetCircleInvitationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCircleInvitationRequest.ProtoReflect.Descriptor instead.
 func (*GetCircleInvitationRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{27}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *GetCircleInvitationRequest) GetToken() string {
@@ -1926,7 +2006,7 @@ type GetCircleInvitationResponse struct {
 
 func (x *GetCircleInvitationResponse) Reset() {
 	*x = GetCircleInvitationResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[28]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1938,7 +2018,7 @@ func (x *GetCircleInvitationResponse) String() string {
 func (*GetCircleInvitationResponse) ProtoMessage() {}
 
 func (x *GetCircleInvitationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[28]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1951,7 +2031,7 @@ func (x *GetCircleInvitationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCircleInvitationResponse.ProtoReflect.Descriptor instead.
 func (*GetCircleInvitationResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{28}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *GetCircleInvitationResponse) GetEmail() string {
@@ -1998,7 +2078,7 @@ type AcceptCircleInvitationRequest struct {
 
 func (x *AcceptCircleInvitationRequest) Reset() {
 	*x = AcceptCircleInvitationRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[29]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2010,7 +2090,7 @@ func (x *AcceptCircleInvitationRequest) String() string {
 func (*AcceptCircleInvitationRequest) ProtoMessage() {}
 
 func (x *AcceptCircleInvitationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[29]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2023,7 +2103,7 @@ func (x *AcceptCircleInvitationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptCircleInvitationRequest.ProtoReflect.Descriptor instead.
 func (*AcceptCircleInvitationRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{29}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *AcceptCircleInvitationRequest) GetToken() string {
@@ -2042,7 +2122,7 @@ type AcceptCircleInvitationResponse struct {
 
 func (x *AcceptCircleInvitationResponse) Reset() {
 	*x = AcceptCircleInvitationResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[30]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2054,7 +2134,7 @@ func (x *AcceptCircleInvitationResponse) String() string {
 func (*AcceptCircleInvitationResponse) ProtoMessage() {}
 
 func (x *AcceptCircleInvitationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[30]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2067,7 +2147,7 @@ func (x *AcceptCircleInvitationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptCircleInvitationResponse.ProtoReflect.Descriptor instead.
 func (*AcceptCircleInvitationResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{30}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *AcceptCircleInvitationResponse) GetFolders() []*Folder {
@@ -2088,7 +2168,7 @@ type ListCommunityFoldersRequest struct {
 
 func (x *ListCommunityFoldersRequest) Reset() {
 	*x = ListCommunityFoldersRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[31]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2100,7 +2180,7 @@ func (x *ListCommunityFoldersRequest) String() string {
 func (*ListCommunityFoldersRequest) ProtoMessage() {}
 
 func (x *ListCommunityFoldersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[31]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2113,7 +2193,7 @@ func (x *ListCommunityFoldersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCommunityFoldersRequest.ProtoReflect.Descriptor instead.
 func (*ListCommunityFoldersRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{31}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ListCommunityFoldersRequest) GetSearch() string {
@@ -2147,7 +2227,7 @@ type ListCommunityFoldersResponse struct {
 
 func (x *ListCommunityFoldersResponse) Reset() {
 	*x = ListCommunityFoldersResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[32]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2159,7 +2239,7 @@ func (x *ListCommunityFoldersResponse) String() string {
 func (*ListCommunityFoldersResponse) ProtoMessage() {}
 
 func (x *ListCommunityFoldersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[32]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2172,7 +2252,7 @@ func (x *ListCommunityFoldersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCommunityFoldersResponse.ProtoReflect.Descriptor instead.
 func (*ListCommunityFoldersResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{32}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ListCommunityFoldersResponse) GetFolders() []*Folder {
@@ -2198,7 +2278,7 @@ type LikeFolderRequest struct {
 
 func (x *LikeFolderRequest) Reset() {
 	*x = LikeFolderRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[33]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2210,7 +2290,7 @@ func (x *LikeFolderRequest) String() string {
 func (*LikeFolderRequest) ProtoMessage() {}
 
 func (x *LikeFolderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[33]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2223,7 +2303,7 @@ func (x *LikeFolderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikeFolderRequest.ProtoReflect.Descriptor instead.
 func (*LikeFolderRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{33}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *LikeFolderRequest) GetFolderId() string {
@@ -2242,7 +2322,7 @@ type LikeFolderResponse struct {
 
 func (x *LikeFolderResponse) Reset() {
 	*x = LikeFolderResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[34]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2254,7 +2334,7 @@ func (x *LikeFolderResponse) String() string {
 func (*LikeFolderResponse) ProtoMessage() {}
 
 func (x *LikeFolderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[34]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2267,7 +2347,7 @@ func (x *LikeFolderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikeFolderResponse.ProtoReflect.Descriptor instead.
 func (*LikeFolderResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{34}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *LikeFolderResponse) GetLikeCount() int32 {
@@ -2286,7 +2366,7 @@ type UnlikeFolderRequest struct {
 
 func (x *UnlikeFolderRequest) Reset() {
 	*x = UnlikeFolderRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[35]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2298,7 +2378,7 @@ func (x *UnlikeFolderRequest) String() string {
 func (*UnlikeFolderRequest) ProtoMessage() {}
 
 func (x *UnlikeFolderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[35]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2311,7 +2391,7 @@ func (x *UnlikeFolderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlikeFolderRequest.ProtoReflect.Descriptor instead.
 func (*UnlikeFolderRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{35}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *UnlikeFolderRequest) GetFolderId() string {
@@ -2330,7 +2410,7 @@ type UnlikeFolderResponse struct {
 
 func (x *UnlikeFolderResponse) Reset() {
 	*x = UnlikeFolderResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[36]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2342,7 +2422,7 @@ func (x *UnlikeFolderResponse) String() string {
 func (*UnlikeFolderResponse) ProtoMessage() {}
 
 func (x *UnlikeFolderResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[36]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2355,7 +2435,7 @@ func (x *UnlikeFolderResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlikeFolderResponse.ProtoReflect.Descriptor instead.
 func (*UnlikeFolderResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{36}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *UnlikeFolderResponse) GetLikeCount() int32 {
@@ -2374,7 +2454,7 @@ type ListTopFoldersRequest struct {
 
 func (x *ListTopFoldersRequest) Reset() {
 	*x = ListTopFoldersRequest{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[37]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2386,7 +2466,7 @@ func (x *ListTopFoldersRequest) String() string {
 func (*ListTopFoldersRequest) ProtoMessage() {}
 
 func (x *ListTopFoldersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[37]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2399,7 +2479,7 @@ func (x *ListTopFoldersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTopFoldersRequest.ProtoReflect.Descriptor instead.
 func (*ListTopFoldersRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{37}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *ListTopFoldersRequest) GetLimit() int32 {
@@ -2418,7 +2498,7 @@ type ListTopFoldersResponse struct {
 
 func (x *ListTopFoldersResponse) Reset() {
 	*x = ListTopFoldersResponse{}
-	mi := &file_tribbae_v1_folder_proto_msgTypes[38]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2430,7 +2510,7 @@ func (x *ListTopFoldersResponse) String() string {
 func (*ListTopFoldersResponse) ProtoMessage() {}
 
 func (x *ListTopFoldersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_folder_proto_msgTypes[38]
+	mi := &file_tribbae_v1_folder_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2443,7 +2523,7 @@ func (x *ListTopFoldersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTopFoldersResponse.ProtoReflect.Descriptor instead.
 func (*ListTopFoldersResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{38}
+	return file_tribbae_v1_folder_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *ListTopFoldersResponse) GetFolders() []*Folder {
@@ -2572,7 +2652,10 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x1aGenerateShareTokenResponse\x12\x1f\n" +
 	"\vshare_token\x18\x01 \x01(\tR\n" +
 	"shareToken\x12\x1b\n" +
-	"\tshare_url\x18\x02 \x01(\tR\bshareUrl\"9\n" +
+	"\tshare_url\x18\x02 \x01(\tR\bshareUrl\"6\n" +
+	"\x17RevokeShareTokenRequest\x12\x1b\n" +
+	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\"\x1a\n" +
+	"\x18RevokeShareTokenResponse\"9\n" +
 	"\x16GetSharedFolderRequest\x12\x1f\n" +
 	"\vshare_token\x18\x01 \x01(\tR\n" +
 	"shareToken\"m\n" +
@@ -2660,14 +2743,15 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\x10CollaboratorRole\x12!\n" +
 	"\x1dCOLLABORATOR_ROLE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18COLLABORATOR_ROLE_VIEWER\x10\x01\x12\x1c\n" +
-	"\x18COLLABORATOR_ROLE_EDITOR\x10\x022\xba\x12\n" +
+	"\x18COLLABORATOR_ROLE_EDITOR\x10\x022\xc1\x13\n" +
 	"\rFolderService\x12i\n" +
 	"\fCreateFolder\x12\x1f.tribbae.v1.CreateFolderRequest\x1a .tribbae.v1.CreateFolderResponse\"\x16\x82\xd3\xe4\x93\x02\x10:\x01*\"\v/v1/folders\x12i\n" +
 	"\tGetFolder\x12\x1c.tribbae.v1.GetFolderRequest\x1a\x1d.tribbae.v1.GetFolderResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/folders/{folder_id}\x12c\n" +
 	"\vListFolders\x12\x1e.tribbae.v1.ListFoldersRequest\x1a\x1f.tribbae.v1.ListFoldersResponse\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/v1/folders\x12u\n" +
 	"\fUpdateFolder\x12\x1f.tribbae.v1.UpdateFolderRequest\x1a .tribbae.v1.UpdateFolderResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\x1a\x17/v1/folders/{folder_id}\x12r\n" +
 	"\fDeleteFolder\x12\x1f.tribbae.v1.DeleteFolderRequest\x1a .tribbae.v1.DeleteFolderResponse\"\x1f\x82\xd3\xe4\x93\x02\x19*\x17/v1/folders/{folder_id}\x12\x8d\x01\n" +
-	"\x12GenerateShareToken\x12%.tribbae.v1.GenerateShareTokenRequest\x1a&.tribbae.v1.GenerateShareTokenResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/folders/{folder_id}/share\x12{\n" +
+	"\x12GenerateShareToken\x12%.tribbae.v1.GenerateShareTokenRequest\x1a&.tribbae.v1.GenerateShareTokenResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/folders/{folder_id}/share\x12\x84\x01\n" +
+	"\x10RevokeShareToken\x12#.tribbae.v1.RevokeShareTokenRequest\x1a$.tribbae.v1.RevokeShareTokenResponse\"%\x82\xd3\xe4\x93\x02\x1f*\x1d/v1/folders/{folder_id}/share\x12{\n" +
 	"\x0fGetSharedFolder\x12\".tribbae.v1.GetSharedFolderRequest\x1a#.tribbae.v1.GetSharedFolderResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/share/{share_token}\x12\x8c\x01\n" +
 	"\x0fAddCollaborator\x12\".tribbae.v1.AddCollaboratorRequest\x1a#.tribbae.v1.AddCollaboratorResponse\"0\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/folders/{folder_id}/collaborators\x12\x9c\x01\n" +
 	"\x12RemoveCollaborator\x12%.tribbae.v1.RemoveCollaboratorRequest\x1a&.tribbae.v1.RemoveCollaboratorResponse\"7\x82\xd3\xe4\x93\x021*//v1/folders/{folder_id}/collaborators/{user_id}\x12z\n" +
@@ -2695,7 +2779,7 @@ func file_tribbae_v1_folder_proto_rawDescGZIP() []byte {
 }
 
 var file_tribbae_v1_folder_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_tribbae_v1_folder_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
+var file_tribbae_v1_folder_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
 var file_tribbae_v1_folder_proto_goTypes = []any{
 	(Visibility)(0),                        // 0: tribbae.v1.Visibility
 	(CollaboratorRole)(0),                  // 1: tribbae.v1.CollaboratorRole
@@ -2713,40 +2797,42 @@ var file_tribbae_v1_folder_proto_goTypes = []any{
 	(*DeleteFolderResponse)(nil),           // 13: tribbae.v1.DeleteFolderResponse
 	(*GenerateShareTokenRequest)(nil),      // 14: tribbae.v1.GenerateShareTokenRequest
 	(*GenerateShareTokenResponse)(nil),     // 15: tribbae.v1.GenerateShareTokenResponse
-	(*GetSharedFolderRequest)(nil),         // 16: tribbae.v1.GetSharedFolderRequest
-	(*GetSharedFolderResponse)(nil),        // 17: tribbae.v1.GetSharedFolderResponse
-	(*AddCollaboratorRequest)(nil),         // 18: tribbae.v1.AddCollaboratorRequest
-	(*AddCollaboratorResponse)(nil),        // 19: tribbae.v1.AddCollaboratorResponse
-	(*RemoveCollaboratorRequest)(nil),      // 20: tribbae.v1.RemoveCollaboratorRequest
-	(*RemoveCollaboratorResponse)(nil),     // 21: tribbae.v1.RemoveCollaboratorResponse
-	(*CircleInvitation)(nil),               // 22: tribbae.v1.CircleInvitation
-	(*InviteToCircleRequest)(nil),          // 23: tribbae.v1.InviteToCircleRequest
-	(*InviteToCircleResponse)(nil),         // 24: tribbae.v1.InviteToCircleResponse
-	(*ListCircleInvitationsRequest)(nil),   // 25: tribbae.v1.ListCircleInvitationsRequest
-	(*ListCircleInvitationsResponse)(nil),  // 26: tribbae.v1.ListCircleInvitationsResponse
-	(*RevokeCircleInvitationRequest)(nil),  // 27: tribbae.v1.RevokeCircleInvitationRequest
-	(*RevokeCircleInvitationResponse)(nil), // 28: tribbae.v1.RevokeCircleInvitationResponse
-	(*GetCircleInvitationRequest)(nil),     // 29: tribbae.v1.GetCircleInvitationRequest
-	(*GetCircleInvitationResponse)(nil),    // 30: tribbae.v1.GetCircleInvitationResponse
-	(*AcceptCircleInvitationRequest)(nil),  // 31: tribbae.v1.AcceptCircleInvitationRequest
-	(*AcceptCircleInvitationResponse)(nil), // 32: tribbae.v1.AcceptCircleInvitationResponse
-	(*ListCommunityFoldersRequest)(nil),    // 33: tribbae.v1.ListCommunityFoldersRequest
-	(*ListCommunityFoldersResponse)(nil),   // 34: tribbae.v1.ListCommunityFoldersResponse
-	(*LikeFolderRequest)(nil),              // 35: tribbae.v1.LikeFolderRequest
-	(*LikeFolderResponse)(nil),             // 36: tribbae.v1.LikeFolderResponse
-	(*UnlikeFolderRequest)(nil),            // 37: tribbae.v1.UnlikeFolderRequest
-	(*UnlikeFolderResponse)(nil),           // 38: tribbae.v1.UnlikeFolderResponse
-	(*ListTopFoldersRequest)(nil),          // 39: tribbae.v1.ListTopFoldersRequest
-	(*ListTopFoldersResponse)(nil),         // 40: tribbae.v1.ListTopFoldersResponse
-	(*timestamppb.Timestamp)(nil),          // 41: google.protobuf.Timestamp
-	(*Link)(nil),                           // 42: tribbae.v1.Link
+	(*RevokeShareTokenRequest)(nil),        // 16: tribbae.v1.RevokeShareTokenRequest
+	(*RevokeShareTokenResponse)(nil),       // 17: tribbae.v1.RevokeShareTokenResponse
+	(*GetSharedFolderRequest)(nil),         // 18: tribbae.v1.GetSharedFolderRequest
+	(*GetSharedFolderResponse)(nil),        // 19: tribbae.v1.GetSharedFolderResponse
+	(*AddCollaboratorRequest)(nil),         // 20: tribbae.v1.AddCollaboratorRequest
+	(*AddCollaboratorResponse)(nil),        // 21: tribbae.v1.AddCollaboratorResponse
+	(*RemoveCollaboratorRequest)(nil),      // 22: tribbae.v1.RemoveCollaboratorRequest
+	(*RemoveCollaboratorResponse)(nil),     // 23: tribbae.v1.RemoveCollaboratorResponse
+	(*CircleInvitation)(nil),               // 24: tribbae.v1.CircleInvitation
+	(*InviteToCircleRequest)(nil),          // 25: tribbae.v1.InviteToCircleRequest
+	(*InviteToCircleResponse)(nil),         // 26: tribbae.v1.InviteToCircleResponse
+	(*ListCircleInvitationsRequest)(nil),   // 27: tribbae.v1.ListCircleInvitationsRequest
+	(*ListCircleInvitationsResponse)(nil),  // 28: tribbae.v1.ListCircleInvitationsResponse
+	(*RevokeCircleInvitationRequest)(nil),  // 29: tribbae.v1.RevokeCircleInvitationRequest
+	(*RevokeCircleInvitationResponse)(nil), // 30: tribbae.v1.RevokeCircleInvitationResponse
+	(*GetCircleInvitationRequest)(nil),     // 31: tribbae.v1.GetCircleInvitationRequest
+	(*GetCircleInvitationResponse)(nil),    // 32: tribbae.v1.GetCircleInvitationResponse
+	(*AcceptCircleInvitationRequest)(nil),  // 33: tribbae.v1.AcceptCircleInvitationRequest
+	(*AcceptCircleInvitationResponse)(nil), // 34: tribbae.v1.AcceptCircleInvitationResponse
+	(*ListCommunityFoldersRequest)(nil),    // 35: tribbae.v1.ListCommunityFoldersRequest
+	(*ListCommunityFoldersResponse)(nil),   // 36: tribbae.v1.ListCommunityFoldersResponse
+	(*LikeFolderRequest)(nil),              // 37: tribbae.v1.LikeFolderRequest
+	(*LikeFolderResponse)(nil),             // 38: tribbae.v1.LikeFolderResponse
+	(*UnlikeFolderRequest)(nil),            // 39: tribbae.v1.UnlikeFolderRequest
+	(*UnlikeFolderResponse)(nil),           // 40: tribbae.v1.UnlikeFolderResponse
+	(*ListTopFoldersRequest)(nil),          // 41: tribbae.v1.ListTopFoldersRequest
+	(*ListTopFoldersResponse)(nil),         // 42: tribbae.v1.ListTopFoldersResponse
+	(*timestamppb.Timestamp)(nil),          // 43: google.protobuf.Timestamp
+	(*Link)(nil),                           // 44: tribbae.v1.Link
 }
 var file_tribbae_v1_folder_proto_depIdxs = []int32{
 	1,  // 0: tribbae.v1.Collaborator.role:type_name -> tribbae.v1.CollaboratorRole
-	41, // 1: tribbae.v1.Collaborator.added_at:type_name -> google.protobuf.Timestamp
+	43, // 1: tribbae.v1.Collaborator.added_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: tribbae.v1.Folder.visibility:type_name -> tribbae.v1.Visibility
-	41, // 3: tribbae.v1.Folder.created_at:type_name -> google.protobuf.Timestamp
-	41, // 4: tribbae.v1.Folder.updated_at:type_name -> google.protobuf.Timestamp
+	43, // 3: tribbae.v1.Folder.created_at:type_name -> google.protobuf.Timestamp
+	43, // 4: tribbae.v1.Folder.updated_at:type_name -> google.protobuf.Timestamp
 	2,  // 5: tribbae.v1.Folder.collaborators:type_name -> tribbae.v1.Collaborator
 	0,  // 6: tribbae.v1.CreateFolderRequest.visibility:type_name -> tribbae.v1.Visibility
 	3,  // 7: tribbae.v1.CreateFolderResponse.folder:type_name -> tribbae.v1.Folder
@@ -2755,14 +2841,14 @@ var file_tribbae_v1_folder_proto_depIdxs = []int32{
 	0,  // 10: tribbae.v1.UpdateFolderRequest.visibility:type_name -> tribbae.v1.Visibility
 	3,  // 11: tribbae.v1.UpdateFolderResponse.folder:type_name -> tribbae.v1.Folder
 	3,  // 12: tribbae.v1.GetSharedFolderResponse.folder:type_name -> tribbae.v1.Folder
-	42, // 13: tribbae.v1.GetSharedFolderResponse.links:type_name -> tribbae.v1.Link
+	44, // 13: tribbae.v1.GetSharedFolderResponse.links:type_name -> tribbae.v1.Link
 	1,  // 14: tribbae.v1.AddCollaboratorRequest.role:type_name -> tribbae.v1.CollaboratorRole
 	3,  // 15: tribbae.v1.AddCollaboratorResponse.folder:type_name -> tribbae.v1.Folder
 	3,  // 16: tribbae.v1.RemoveCollaboratorResponse.folder:type_name -> tribbae.v1.Folder
 	1,  // 17: tribbae.v1.CircleInvitation.role:type_name -> tribbae.v1.CollaboratorRole
 	1,  // 18: tribbae.v1.InviteToCircleRequest.role:type_name -> tribbae.v1.CollaboratorRole
-	22, // 19: tribbae.v1.InviteToCircleResponse.invitation:type_name -> tribbae.v1.CircleInvitation
-	22, // 20: tribbae.v1.ListCircleInvitationsResponse.invitations:type_name -> tribbae.v1.CircleInvitation
+	24, // 19: tribbae.v1.InviteToCircleResponse.invitation:type_name -> tribbae.v1.CircleInvitation
+	24, // 20: tribbae.v1.ListCircleInvitationsResponse.invitations:type_name -> tribbae.v1.CircleInvitation
 	1,  // 21: tribbae.v1.GetCircleInvitationResponse.role:type_name -> tribbae.v1.CollaboratorRole
 	3,  // 22: tribbae.v1.AcceptCircleInvitationResponse.folders:type_name -> tribbae.v1.Folder
 	3,  // 23: tribbae.v1.ListCommunityFoldersResponse.folders:type_name -> tribbae.v1.Folder
@@ -2773,38 +2859,40 @@ var file_tribbae_v1_folder_proto_depIdxs = []int32{
 	10, // 28: tribbae.v1.FolderService.UpdateFolder:input_type -> tribbae.v1.UpdateFolderRequest
 	12, // 29: tribbae.v1.FolderService.DeleteFolder:input_type -> tribbae.v1.DeleteFolderRequest
 	14, // 30: tribbae.v1.FolderService.GenerateShareToken:input_type -> tribbae.v1.GenerateShareTokenRequest
-	16, // 31: tribbae.v1.FolderService.GetSharedFolder:input_type -> tribbae.v1.GetSharedFolderRequest
-	18, // 32: tribbae.v1.FolderService.AddCollaborator:input_type -> tribbae.v1.AddCollaboratorRequest
-	20, // 33: tribbae.v1.FolderService.RemoveCollaborator:input_type -> tribbae.v1.RemoveCollaboratorRequest
-	23, // 34: tribbae.v1.FolderService.InviteToCircle:input_type -> tribbae.v1.InviteToCircleRequest
-	25, // 35: tribbae.v1.FolderService.ListCircleInvitations:input_type -> tribbae.v1.ListCircleInvitationsRequest
-	27, // 36: tribbae.v1.FolderService.RevokeCircleInvitation:input_type -> tribbae.v1.RevokeCircleInvitationRequest
-	29, // 37: tribbae.v1.FolderService.GetCircleInvitation:input_type -> tribbae.v1.GetCircleInvitationRequest
-	31, // 38: tribbae.v1.FolderService.AcceptCircleInvitation:input_type -> tribbae.v1.AcceptCircleInvitationRequest
-	33, // 39: tribbae.v1.FolderService.ListCommunityFolders:input_type -> tribbae.v1.ListCommunityFoldersRequest
-	35, // 40: tribbae.v1.FolderService.LikeFolder:input_type -> tribbae.v1.LikeFolderRequest
-	37, // 41: tribbae.v1.FolderService.UnlikeFolder:input_type -> tribbae.v1.UnlikeFolderRequest
-	39, // 42: tribbae.v1.FolderService.ListTopFolders:input_type -> tribbae.v1.ListTopFoldersRequest
-	5,  // 43: tribbae.v1.FolderService.CreateFolder:output_type -> tribbae.v1.CreateFolderResponse
-	7,  // 44: tribbae.v1.FolderService.GetFolder:output_type -> tribbae.v1.GetFolderResponse
-	9,  // 45: tribbae.v1.FolderService.ListFolders:output_type -> tribbae.v1.ListFoldersResponse
-	11, // 46: tribbae.v1.FolderService.UpdateFolder:output_type -> tribbae.v1.UpdateFolderResponse
-	13, // 47: tribbae.v1.FolderService.DeleteFolder:output_type -> tribbae.v1.DeleteFolderResponse
-	15, // 48: tribbae.v1.FolderService.GenerateShareToken:output_type -> tribbae.v1.GenerateShareTokenResponse
-	17, // 49: tribbae.v1.FolderService.GetSharedFolder:output_type -> tribbae.v1.GetSharedFolderResponse
-	19, // 50: tribbae.v1.FolderService.AddCollaborator:output_type -> tribbae.v1.AddCollaboratorResponse
-	21, // 51: tribbae.v1.FolderService.RemoveCollaborator:output_type -> tribbae.v1.RemoveCollaboratorResponse
-	24, // 52: tribbae.v1.FolderService.InviteToCircle:output_type -> tribbae.v1.InviteToCircleResponse
-	26, // 53: tribbae.v1.FolderService.ListCircleInvitations:output_type -> tribbae.v1.ListCircleInvitationsResponse
-	28, // 54: tribbae.v1.FolderService.RevokeCircleInvitation:output_type -> tribbae.v1.RevokeCircleInvitationResponse
-	30, // 55: tribbae.v1.FolderService.GetCircleInvitation:output_type -> tribbae.v1.GetCircleInvitationResponse
-	32, // 56: tribbae.v1.FolderService.AcceptCircleInvitation:output_type -> tribbae.v1.AcceptCircleInvitationResponse
-	34, // 57: tribbae.v1.FolderService.ListCommunityFolders:output_type -> tribbae.v1.ListCommunityFoldersResponse
-	36, // 58: tribbae.v1.FolderService.LikeFolder:output_type -> tribbae.v1.LikeFolderResponse
-	38, // 59: tribbae.v1.FolderService.UnlikeFolder:output_type -> tribbae.v1.UnlikeFolderResponse
-	40, // 60: tribbae.v1.FolderService.ListTopFolders:output_type -> tribbae.v1.ListTopFoldersResponse
-	43, // [43:61] is the sub-list for method output_type
-	25, // [25:43] is the sub-list for method input_type
+	16, // 31: tribbae.v1.FolderService.RevokeShareToken:input_type -> tribbae.v1.RevokeShareTokenRequest
+	18, // 32: tribbae.v1.FolderService.GetSharedFolder:input_type -> tribbae.v1.GetSharedFolderRequest
+	20, // 33: tribbae.v1.FolderService.AddCollaborator:input_type -> tribbae.v1.AddCollaboratorRequest
+	22, // 34: tribbae.v1.FolderService.RemoveCollaborator:input_type -> tribbae.v1.RemoveCollaboratorRequest
+	25, // 35: tribbae.v1.FolderService.InviteToCircle:input_type -> tribbae.v1.InviteToCircleRequest
+	27, // 36: tribbae.v1.FolderService.ListCircleInvitations:input_type -> tribbae.v1.ListCircleInvitationsRequest
+	29, // 37: tribbae.v1.FolderService.RevokeCircleInvitation:input_type -> tribbae.v1.RevokeCircleInvitationRequest
+	31, // 38: tribbae.v1.FolderService.GetCircleInvitation:input_type -> tribbae.v1.GetCircleInvitationRequest
+	33, // 39: tribbae.v1.FolderService.AcceptCircleInvitation:input_type -> tribbae.v1.AcceptCircleInvitationRequest
+	35, // 40: tribbae.v1.FolderService.ListCommunityFolders:input_type -> tribbae.v1.ListCommunityFoldersRequest
+	37, // 41: tribbae.v1.FolderService.LikeFolder:input_type -> tribbae.v1.LikeFolderRequest
+	39, // 42: tribbae.v1.FolderService.UnlikeFolder:input_type -> tribbae.v1.UnlikeFolderRequest
+	41, // 43: tribbae.v1.FolderService.ListTopFolders:input_type -> tribbae.v1.ListTopFoldersRequest
+	5,  // 44: tribbae.v1.FolderService.CreateFolder:output_type -> tribbae.v1.CreateFolderResponse
+	7,  // 45: tribbae.v1.FolderService.GetFolder:output_type -> tribbae.v1.GetFolderResponse
+	9,  // 46: tribbae.v1.FolderService.ListFolders:output_type -> tribbae.v1.ListFoldersResponse
+	11, // 47: tribbae.v1.FolderService.UpdateFolder:output_type -> tribbae.v1.UpdateFolderResponse
+	13, // 48: tribbae.v1.FolderService.DeleteFolder:output_type -> tribbae.v1.DeleteFolderResponse
+	15, // 49: tribbae.v1.FolderService.GenerateShareToken:output_type -> tribbae.v1.GenerateShareTokenResponse
+	17, // 50: tribbae.v1.FolderService.RevokeShareToken:output_type -> tribbae.v1.RevokeShareTokenResponse
+	19, // 51: tribbae.v1.FolderService.GetSharedFolder:output_type -> tribbae.v1.GetSharedFolderResponse
+	21, // 52: tribbae.v1.FolderService.AddCollaborator:output_type -> tribbae.v1.AddCollaboratorResponse
+	23, // 53: tribbae.v1.FolderService.RemoveCollaborator:output_type -> tribbae.v1.RemoveCollaboratorResponse
+	26, // 54: tribbae.v1.FolderService.InviteToCircle:output_type -> tribbae.v1.InviteToCircleResponse
+	28, // 55: tribbae.v1.FolderService.ListCircleInvitations:output_type -> tribbae.v1.ListCircleInvitationsResponse
+	30, // 56: tribbae.v1.FolderService.RevokeCircleInvitation:output_type -> tribbae.v1.RevokeCircleInvitationResponse
+	32, // 57: tribbae.v1.FolderService.GetCircleInvitation:output_type -> tribbae.v1.GetCircleInvitationResponse
+	34, // 58: tribbae.v1.FolderService.AcceptCircleInvitation:output_type -> tribbae.v1.AcceptCircleInvitationResponse
+	36, // 59: tribbae.v1.FolderService.ListCommunityFolders:output_type -> tribbae.v1.ListCommunityFoldersResponse
+	38, // 60: tribbae.v1.FolderService.LikeFolder:output_type -> tribbae.v1.LikeFolderResponse
+	40, // 61: tribbae.v1.FolderService.UnlikeFolder:output_type -> tribbae.v1.UnlikeFolderResponse
+	42, // 62: tribbae.v1.FolderService.ListTopFolders:output_type -> tribbae.v1.ListTopFoldersResponse
+	44, // [44:63] is the sub-list for method output_type
+	25, // [25:44] is the sub-list for method input_type
 	25, // [25:25] is the sub-list for extension type_name
 	25, // [25:25] is the sub-list for extension extendee
 	0,  // [0:25] is the sub-list for field type_name
@@ -2823,7 +2911,7 @@ func file_tribbae_v1_folder_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tribbae_v1_folder_proto_rawDesc), len(file_tribbae_v1_folder_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   39,
+			NumMessages:   41,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

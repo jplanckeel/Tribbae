@@ -2,6 +2,7 @@ package folder
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -52,5 +53,63 @@ func TestSharedFolderShowsOwnerIdeas(t *testing.T) {
 	l := links[0]
 	if l.Title != "Sapin" || l.Category != "LINK_CATEGORY_DECORATION" || len(l.Tags) != 1 || l.Price != "20 €" || !l.CreatedAt.Equal(created) || l.ID.IsZero() {
 		t.Errorf("idea = %+v", l)
+	}
+}
+
+// Redemander le lien redonne le même, et le couper le désactive tout de suite.
+func TestShareLinkIsReusedThenRevoked(t *testing.T) {
+	ctx := context.Background()
+	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		t.Skip("mongodb unavailable")
+	}
+	if err := client.Ping(ctx, nil); err != nil {
+		t.Skip("mongodb unavailable")
+	}
+	db := client.Database("tribbae_test_" + bson.NewObjectID().Hex())
+	t.Cleanup(func() {
+		_ = db.Drop(ctx)
+		_ = client.Disconnect(ctx)
+	})
+	svc := NewService(db.Collection("folders"), db.Collection("links"), db.Collection("users"), "https://tribbae.example")
+	fid := bson.NewObjectID()
+	if _, err := db.Collection("folders").InsertOne(ctx, bson.M{"_id": fid, "owner_id": "alice", "name": "Noël", "visibility": "private"}); err != nil {
+		t.Fatal(err)
+	}
+
+	first, url, err := svc.GenerateShareToken(ctx, fid.Hex(), "alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, againURL, err := svc.GenerateShareToken(ctx, fid.Hex(), "alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again != first || againURL != url {
+		t.Errorf("second link = %q, want the first one %q", again, first)
+	}
+
+	if _, _, err := svc.GenerateShareToken(ctx, fid.Hex(), "bob"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("share by another account: %v", err)
+	}
+	if err := svc.RevokeShareToken(ctx, fid.Hex(), "bob"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("revoke by another account: %v", err)
+	}
+	if _, _, err := svc.GetByShareToken(ctx, first); err != nil {
+		t.Fatalf("link cut by another account: %v", err)
+	}
+
+	if err := svc.RevokeShareToken(ctx, fid.Hex(), "alice"); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := svc.GetByShareToken(ctx, first); err == nil {
+		t.Error("revoked link still works")
+	}
+	fresh, _, err := svc.GenerateShareToken(ctx, fid.Hex(), "alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fresh == first {
+		t.Error("a new link must not reuse the revoked token")
 	}
 }

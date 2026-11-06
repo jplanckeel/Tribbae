@@ -39,7 +39,9 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
     val scope = rememberCoroutineScope()
     val folders by viewModel.folders.collectAsState()
     val current = folders.find { it.id == folder.id } ?: folder
-    var shareUrl by remember { mutableStateOf<String?>(null) }
+    // Le lien existant reste affiché et réutilisable d'une ouverture à l'autre
+    val shareUrl = current.shareToken.takeIf { it.isNotBlank() }?.let { "${data.Backend.PRODUCTION}/share/$it" }
+    var confirmCut by remember { mutableStateOf(false) }
     var linkBusy by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var role by remember { mutableStateOf(ROLE_EDITOR) }
@@ -74,8 +76,24 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                         Modifier.fillMaxWidth().card(RoundedCornerShape(18.dp), 4.dp).padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(shareUrl!!, fontSize = 14.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                        CampButton("Envoyer", { sendLink(shareUrl!!) }, kind = ButtonKind.Dark, icon = Icons.Outlined.IosShare, height = 40.dp)
+                        Text(shareUrl, fontSize = 14.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        CampButton("Envoyer", { sendLink(shareUrl) }, kind = ButtonKind.Dark, icon = Icons.Outlined.IosShare, height = 40.dp)
+                    }
+                    CampButton("Couper le lien", { confirmCut = true }, kind = ButtonKind.Ghost, icon = Icons.Outlined.Close)
+                    if (confirmCut) {
+                        AlertDialog(
+                            onDismissRequest = { confirmCut = false },
+                            containerColor = SheetColor,
+                            title = { Text("Couper le lien ?", style = display(20.sp, FontWeight.Bold)) },
+                            text = { Text("Le lien cessera de marcher pour toutes les personnes qui l'ont reçu.", color = Ecorce2) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    confirmCut = false
+                                    scope.launch { if (!viewModel.revokeShare(current.id)) message = "Le lien n'a pas pu être coupé. Réessayez dans un instant." }
+                                }) { Text("Couper le lien", color = TerracottaDark, fontWeight = FontWeight.Bold) }
+                            },
+                            dismissButton = { TextButton(onClick = { confirmCut = false }) { Text("Annuler", color = Ecorce) } },
+                        )
                     }
                 } else {
                     CampButton(
@@ -88,9 +106,7 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                                 if (r == null) {
                                     message = "Connexion requise pour partager un dossier."
                                 } else {
-                                    val url = r.shareUrl.ifBlank { "${data.Backend.PRODUCTION}/share/${r.shareToken}" }
-                                    shareUrl = url
-                                    sendLink(url)
+                                    sendLink(r.shareUrl.ifBlank { "${data.Backend.PRODUCTION}/share/${r.shareToken}" })
                                 }
                             }
                         },
