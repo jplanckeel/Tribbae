@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -62,6 +63,7 @@ import data.Folder
 import data.FolderColor
 import data.Link
 import data.LinkCategory
+import kotlinx.coroutines.flow.collectLatest
 import ui.*
 import ui.folderIconVector
 
@@ -552,6 +554,40 @@ fun RailCard(link: Link, onClick: () -> Unit) {
 }
 
 private val Mosaic = listOf(150.dp, 110.dp, 100.dp, 120.dp, 140.dp, 96.dp)
+
+/**
+ * Toast d'erreur du design system : montre chaque message 3,2 s. Les feuilles
+ * modales passent au-dessus de lui : elles gardent leurs messages dans la feuille.
+ */
+@Composable
+fun ErrorToast(errors: kotlinx.coroutines.flow.Flow<String>, modifier: Modifier = Modifier) {
+    var text by remember { mutableStateOf("") }
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(errors) {
+        errors.collectLatest {
+            text = it
+            visible = true
+            kotlinx.coroutines.delay(3200)
+            visible = false
+        }
+    }
+    androidx.compose.animation.AnimatedVisibility(
+        visible,
+        modifier,
+        enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.scaleIn(initialScale = 0.96f),
+        exit = androidx.compose.animation.fadeOut(),
+    ) {
+        Row(
+            Modifier.clip(RoundedCornerShape(18.dp)).background(CoralInk).padding(horizontal = 16.dp, vertical = 12.dp)
+                .semantics { liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Assertive },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(Icons.Outlined.Close, null, tint = CardColor, modifier = Modifier.size(18.dp))
+            Text(text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = CardColor)
+        }
+    }
+}
 
 /** Carte de la mosaïque de l'Explorer (2 colonnes décalées). */
 @Composable

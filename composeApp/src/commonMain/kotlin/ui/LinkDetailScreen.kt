@@ -64,6 +64,7 @@ fun LinkDetailScreen(
     sessionManager: SessionManager? = null,
     commentRepository: CommentRepository? = null,
     viewModel: viewmodel.LinkViewModel? = null,
+    ensureSignedIn: () -> Boolean = { sessionManager?.hasToken() == true },
     onOpenFolder: ((data.Folder) -> Unit)? = null,
     /** Liste de courses avec cette recette (absent pour l'idée d'un autre) */
     onOpenShopping: (() -> Unit)? = null,
@@ -350,7 +351,7 @@ fun LinkDetailScreen(
                 if (liked) "Je n'aime plus, $likeCount" else "J'aime, $likeCount",
                 iconModifier = Modifier.likePop(liked),
             ) {
-                if (viewModel == null || !isLoggedIn) return@ActionChip
+                if (viewModel == null || !ensureSignedIn()) return@ActionChip
                 val was = liked
                 liked = !was
                 likeCount += if (was) -1 else 1

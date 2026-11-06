@@ -82,16 +82,18 @@ fun ExploreScreen(
     viewModel: viewmodel.LinkViewModel,
     initialQuery: String = "",
     initialCategory: LinkCategory? = null,
+    ensureSignedIn: () -> Boolean = { true },
+    searchRequest: Int = 0,
     onNavigateToAI: () -> Unit = {},
     onOpenFolder: (data.Folder) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var query by remember(initialQuery) { mutableStateOf(initialQuery) }
+    var query by remember(initialQuery, searchRequest) { mutableStateOf(initialQuery) }
     // 0 = idées, 1 = dossiers publics (comme l'onglet « Dossiers » du web)
     var view by rememberSaveable { mutableStateOf(0) }
     val communityFolders by viewModel.communityFolders.collectAsState()
     LaunchedEffect(view) { if (view == 1) viewModel.loadCommunityFolders() }
-    var category by remember(initialCategory) { mutableStateOf(initialCategory) }
+    var category by remember(initialCategory, searchRequest) { mutableStateOf(initialCategory) }
     var ages by remember { mutableStateOf(setOf<String>()) }
     var tags by remember { mutableStateOf(setOf<String>()) }
     var minRating by remember { mutableStateOf(0) }
@@ -153,7 +155,7 @@ fun ExploreScreen(
                 Modifier.padding(horizontal = 20.dp),
                 subtitle = if (view == 1) "Les dossiers publiés par les tribus" else "Les idées partagées par les tribus",
                 action = {
-                    Row(
+                    if (view == 0) Row(
                         Modifier
                             .height(44.dp)
                             .clip(RoundedCornerShape(14.dp))
@@ -239,7 +241,8 @@ fun ExploreScreen(
                                 index = i,
                                 onClick = { onNavigateToDetail(l.id) },
                                 liked = liked,
-                                onLike = {
+                                onLike = like@{
+                                    if (!ensureSignedIn()) return@like
                                     val count = likes[l.id]?.second ?: l.likeCount
                                     likes[l.id] = !liked to (count + if (liked) -1 else 1)
                                     viewModel.toggleLike(l.id, liked) { ok, c -> likes[l.id] = ok to c }

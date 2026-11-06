@@ -95,7 +95,11 @@ private data class Draft(
 )
 
 /** Brouillon passé au formulaire complet (« Plus de détails »). */
-data class AddDraft(val url: String?, val title: String?, val category: LinkCategory, val folderId: String?, val ingredients: List<String> = emptyList())
+data class AddDraft(
+    val url: String?, val title: String?, val category: LinkCategory, val folderId: String?,
+    val ingredients: List<String>, val description: String, val imageUrl: String, val price: String,
+    val location: String, val eventDate: Long?, val ageRange: String, val isPublic: Boolean,
+)
 
 private val SPRING = spring<Float>(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow)
 
@@ -233,7 +237,15 @@ fun AddFlowSheet(
                             onCategory = { draft = draft.copy(category = it); catChosen = true },
                             onFolder = { folderId = it },
                             onPicker = { picker = true },
-                            onMore = { onMore(AddDraft(draft.url.ifBlank { null }, draft.title.ifBlank { null }, draft.category, folderId, draft.ingredients)) },
+                            onMore = {
+                                onMore(AddDraft(
+                                    url = draft.url.ifBlank { null }, title = draft.title.ifBlank { null },
+                                    category = draft.category, folderId = folderId, ingredients = draft.ingredients,
+                                    description = draft.description, imageUrl = draft.imageUrl, price = draft.price,
+                                    location = draft.location, eventDate = draft.eventDate, ageRange = draft.ageRange,
+                                    isPublic = draft.isPublic,
+                                ))
+                            },
                         )
                         AddStep.Done -> current?.let { l ->
                             DoneStep(l, folders.find { it.id == l.folderId }) { viewModel.updateLink(l.copy(reminderEnabled = !l.reminderEnabled)) }
