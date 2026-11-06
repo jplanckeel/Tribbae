@@ -167,6 +167,8 @@ private fun ModernMainApp(
     var showAdd by remember { mutableStateOf(false) }
     var exploreQuery by remember { mutableStateOf("") }
     var exploreCategory by remember { mutableStateOf<LinkCategory?>(null) }
+    // Change à chaque demande, pour qu'une recherche identique à la précédente s'applique
+    var exploreRequest by remember { mutableStateOf(0) }
 
     val links by vm.repository.links.collectAsState()
     val folders by vm.folders.collectAsState()
@@ -182,7 +184,7 @@ private fun ModernMainApp(
     }
     fun openLink(id: String) { links.find { it.id == id }?.let { push(Screen.Detail(it)) } }
     fun openExplore(query: String = "", category: LinkCategory? = null) {
-        exploreQuery = query; exploreCategory = category
+        exploreQuery = query; exploreCategory = category; exploreRequest++
         stack.clear(); tab = NavDestination.EXPLORE
     }
 
@@ -280,6 +282,7 @@ private fun ModernMainApp(
                             viewModel = vm,
                             initialQuery = exploreQuery,
                             initialCategory = exploreCategory,
+                            searchRequest = exploreRequest,
                             onNavigateToAI = { push(Screen.Ai(prompt = exploreQuery)) },
                             onOpenFolder = ::openCommunityFolder,
                         )
