@@ -69,6 +69,7 @@ import data.Folder
 import data.Link
 import data.LinkCategory
 import data.LinkPreview
+import data.PublishConfirm
 import data.AgeRanges
 import data.extractUrl
 import kotlinx.coroutines.delay
@@ -603,7 +604,15 @@ private fun SortStep(
             if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
         }
         // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible
-        CampSwitch(draft.isPublic, { if (!it || canPublish) onDraft(draft.copy(isPublic = it)) }, "Inspirer d'autres familles")
+        var confirmPublish by remember { mutableStateOf(false) }
+        CampSwitch(draft.isPublic, { if (!it) onDraft(draft.copy(isPublic = false)) else if (canPublish) confirmPublish = true }, "Inspirer d'autres familles")
+        if (confirmPublish) {
+            ConfirmSheet(
+                PublishConfirm.IDEA_TITLE, PublishConfirm.IDEA_TEXT, "Publier",
+                onConfirm = { onDraft(draft.copy(isPublic = true)); confirmPublish = false },
+                onDismiss = { confirmPublish = false },
+            )
+        }
     }
 
     Text("Plus de détails (date, prix, lieu, tags…)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta, modifier = Modifier.clickable(role = Role.Button, onClick = onMore).padding(vertical = 4.dp))

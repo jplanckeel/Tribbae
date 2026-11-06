@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useFeedback } from "./feedback";
 import { Link as RouterLink, useNavigate } from "react-router";
 import { agoShort, bandsToAge, selectedBands, suggestFolders, whoSees } from "../lib/addFlow";
 import { AGE_BANDS } from "../lib/age";
@@ -8,6 +9,7 @@ import { useMyData } from "../lib/data";
 import { eventDateMs, formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, toInput } from "../lib/links";
 import { usePhotoUpload } from "../lib/photo";
+import { PUBLISH_IDEA } from "../lib/publish";
 import { useCanPublish, useSession } from "../lib/session";
 import { PublicFolderNote, PublishLockedNote } from "./VerifyEmailBanner";
 import type { Folder, Link, LinkInput, LinkPreview } from "../lib/types";
@@ -102,6 +104,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
   const suggestions = useMemo(() => suggestFolders(draft.category, editable, links, preset), [draft.category, editable, links, preset]);
   const folder = folders.find((f) => f.id === folderId);
   const canPublish = useCanPublish();
+  const { confirm } = useFeedback();
   const cat = categoryMeta(draft.category);
   const recent = useMemo(
     () => links.filter((l) => l.ownerId && l.ownerId !== session?.userId && peers.has(l.ownerId)).sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))[0],
@@ -499,7 +502,10 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
               label="Inspirer d'autres familles"
               checked={draft.visibility === "public"}
               disabled={!canPublish && draft.visibility !== "public"}
-              onChange={(v) => set({ visibility: v ? "public" : "private" })}
+              onChange={async (v) => {
+                if (v && !(await confirm(PUBLISH_IDEA))) return;
+                set({ visibility: v ? "public" : "private" });
+              }}
             />
           </div>
 

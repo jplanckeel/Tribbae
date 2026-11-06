@@ -367,7 +367,15 @@ fun IdeaFormScreen(
                         if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
                     }
                     // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible
-                    CampSwitch(isPublic, { if (!it || canPublish) isPublic = it }, "Partager avec la communauté")
+                    var confirmPublish by remember { mutableStateOf(false) }
+                    CampSwitch(isPublic, { if (!it) isPublic = false else if (canPublish) confirmPublish = true }, "Partager avec la communauté")
+                    if (confirmPublish) {
+                        ConfirmSheet(
+                            data.PublishConfirm.IDEA_TITLE, data.PublishConfirm.IDEA_TEXT, "Publier",
+                            onConfirm = { isPublic = true; confirmPublish = false },
+                            onDismiss = { confirmPublish = false },
+                        )
+                    }
                 }
             }
             // Dans son propre dossier public, une idée est visible de tous même sans être partagée

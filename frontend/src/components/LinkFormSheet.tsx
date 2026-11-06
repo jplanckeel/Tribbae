@@ -1,10 +1,12 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type FormEvent, type SyntheticEvent } from "react";
+import { useFeedback } from "./feedback";
 import * as api from "../lib/api";
 import { CATEGORIES, categoryMeta } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, tagCounts } from "../lib/links";
 import { usePhotoUpload, type PhotoUpload } from "../lib/photo";
+import { PUBLISH_IDEA } from "../lib/publish";
 import { useCanPublish, useSession } from "../lib/session";
 import { PublicFolderNote, PublishLockedNote } from "./VerifyEmailBanner";
 import type { CategoryKey, LinkInput, LinkPreview } from "../lib/types";
@@ -205,6 +207,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
   // Dans son propre dossier public, une idée est visible de tous même sans être partagée à la communauté
   const chosenFolder = folders.find((f) => f.id === form.folderId);
   const canPublish = useCanPublish();
+  const { confirm } = useFeedback();
   const inMyPublicFolder = chosenFolder?.visibility === "VISIBILITY_PUBLIC" && chosenFolder.ownerId === session?.userId;
 
   return (
@@ -473,7 +476,10 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
               label="Partager avec la communauté"
               checked={form.visibility === "public"}
               disabled={!canPublish && form.visibility !== "public"}
-              onChange={(v) => set("visibility", v ? "public" : "private")}
+              onChange={async (v) => {
+                if (v && !(await confirm(PUBLISH_IDEA))) return;
+                set("visibility", v ? "public" : "private");
+              }}
             />
           </label>
         ) : (

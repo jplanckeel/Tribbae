@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useFeedback } from "./feedback";
 import { FOLDER_COLORS, FOLDER_ICONS, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import {
@@ -9,6 +10,7 @@ import { formatLongDate, safeImage } from "../lib/format";
 import type { Folder, FolderInput, Visibility } from "../lib/types";
 import { CoverArt, FolderGlyph, IllustrationArt } from "./FolderCover";
 import Icon, { type IconName } from "./Icon";
+import { publishFolder } from "../lib/publish";
 import { useCanPublish } from "../lib/session";
 import Sheet from "./Sheet";
 import { PublishLockedNote } from "./VerifyEmailBanner";
@@ -53,6 +55,7 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
   const [tab, setTab] = useState<Tab>(folder ? "style" : "infos");
   // Publier attend la confirmation de l'adresse (un dossier déjà public le reste)
   const canPublish = useCanPublish();
+  const { confirm } = useFeedback();
   const publishLocked = !canPublish && folder?.visibility !== "VISIBILITY_PUBLIC";
   const [saving, setSaving] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
@@ -384,7 +387,11 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         type="button"
                         aria-pressed={active}
                         disabled={publishLocked && v.key === "VISIBILITY_PUBLIC"}
-                        onClick={() => set({ visibility: v.key })}
+                        onClick={async () => {
+                          const publishing = v.key === "VISIBILITY_PUBLIC" && form.visibility !== "VISIBILITY_PUBLIC";
+                          if (publishing && !(await confirm(publishFolder(folder ? links.filter((l) => l.folderId === folder.id).length : 0)))) return;
+                          set({ visibility: v.key });
+                        }}
                         className={`flex flex-col items-start gap-1 rounded-medium border-2 p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${active ? "border-ecorce bg-card" : "border-transparent bg-sable-2"}`}
                       >
                         <span className="flex items-center gap-1.5 text-sm font-bold"><Icon name={v.icon} size={16} />{v.label}</span>
