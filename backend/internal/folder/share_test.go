@@ -105,6 +105,12 @@ func TestShareLinkIsReusedThenRevoked(t *testing.T) {
 	if _, _, err := svc.GetByShareToken(ctx, first); err == nil {
 		t.Error("revoked link still works")
 	}
+	if _, _, err := svc.GenerateShareToken(ctx, "xyz", "alice"); !errors.Is(err, ErrInvalidInput) {
+		t.Errorf("malformed id on share: %v", err)
+	}
+	if err := svc.RevokeShareToken(ctx, "xyz", "alice"); !errors.Is(err, ErrInvalidInput) {
+		t.Errorf("malformed id on revoke: %v", err)
+	}
 	fresh, _, err := svc.GenerateShareToken(ctx, fid.Hex(), "alice")
 	if err != nil {
 		t.Fatal(err)

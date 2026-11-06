@@ -293,7 +293,7 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 func (s *Service) GenerateShareToken(ctx context.Context, folderID, ownerID string) (string, string, error) {
 	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
-		return "", "", errors.New("invalid folder id")
+		return "", "", ErrInvalidInput
 	}
 	var f Folder
 	if err := s.col.FindOne(ctx, bson.M{"_id": id, "owner_id": ownerID}).Decode(&f); err != nil {
@@ -331,7 +331,7 @@ func (s *Service) GenerateShareToken(ctx context.Context, folderID, ownerID stri
 func (s *Service) RevokeShareToken(ctx context.Context, folderID, ownerID string) error {
 	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
-		return errors.New("invalid folder id")
+		return ErrInvalidInput
 	}
 	res, err := s.col.UpdateOne(ctx,
 		bson.M{"_id": id, "owner_id": ownerID},
