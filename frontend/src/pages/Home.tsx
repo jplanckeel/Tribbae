@@ -137,7 +137,7 @@ function HomeMobile() {
         <section className="flex flex-col gap-3">
           <SectionTitle
             title="Nos catégories"
-            action={<RouterLink to="/explorer" className="text-sm font-semibold text-terracotta hover:text-terracotta-dark">Tout voir</RouterLink>}
+            action={<RouterLink to="/mes-idees" className="text-sm font-semibold text-link hover:underline">Tout voir</RouterLink>}
           />
           <Rail>
             {CATEGORIES.map((c) => (
@@ -153,8 +153,8 @@ function HomeMobile() {
 
         <section className="flex flex-col gap-3">
           <SectionTitle
-            title="Ça plaît aux tribus"
-            action={<RouterLink to="/explorer" className="text-sm font-semibold text-terracotta hover:text-terracotta-dark">Explorer</RouterLink>}
+            title="De la communauté"
+            action={<RouterLink to="/explorer" className="text-sm font-semibold text-link hover:underline">Tout voir dans Explorer</RouterLink>}
           />
           {community.loading ? (
             <Rail>
@@ -170,7 +170,7 @@ function HomeMobile() {
         {session && (
           <section className="flex flex-col gap-3">
             <SectionTitle
-              title="Ajouté récemment"
+              title="De votre tribu"
               action={<RouterLink to="/mes-idees" className="text-sm font-semibold text-terracotta hover:text-terracotta-dark">Mes idées</RouterLink>}
             />
             {recent.length ? (
