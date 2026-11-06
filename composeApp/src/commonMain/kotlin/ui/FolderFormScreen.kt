@@ -62,6 +62,7 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
     var tab by remember { mutableStateOf(if (existing != null) 0 else 1) }
     var error by remember { mutableStateOf<String?>(null) }
     var showDate by remember { mutableStateOf(false) }
+    var confirmPublish by remember { mutableStateOf(false) }
     val children by viewModel.children.collectAsState()
     val allLinks by viewModel.repository.links.collectAsState()
     val inFolder = remember(allLinks, existing) { if (existing == null) emptyList() else allLinks.filter { it.folderId == existing.id } }
@@ -315,15 +316,18 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                         // Publier attend la confirmation de l'adresse (un dossier déjà public le reste)
                         val canPublish by viewModel.emailVerified.collectAsState()
                         val locked = !canPublish && !isPublic
+                        // Le serveur ignore la visibilité envoyée par un autre compte que le propriétaire
+                        val notOwner = existing != null && existing.ownerId.isNotBlank() && existing.ownerId != viewModel.currentUserId()
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(false to "Privé", true to "Public").forEach { (pub, label) ->
                                 val on = isPublic == pub
                                 Column(
                                     Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(if (on) CardColor else Sable2)
                                         .border(2.dp, if (on) Ecorce else Color.Transparent, RoundedCornerShape(18.dp))
-                                        .clickable(role = Role.RadioButton, enabled = !(pub && locked)) {
+                                        .clickable(role = Role.RadioButton, enabled = !notOwner && !(pub && locked)) {
                                             // « Partagé » est dérivé des collaborateurs : on le garde tant que le dossier reste privé
-                                            draft = draft.copy(visibility = if (pub) "PUBLIC" else if (existing?.visibility == "SHARED") "SHARED" else "PRIVATE")
+                                            if (pub && !isPublic) confirmPublish = true
+                                            else draft = draft.copy(visibility = if (pub) "PUBLIC" else if (existing?.visibility == "SHARED") "SHARED" else "PRIVATE")
                                         }.padding(12.dp),
                                     verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
@@ -335,7 +339,15 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                                 }
                             }
                         }
-                        if (locked) PublishLockedNote(Modifier.padding(top = 8.dp))
+                        if (notOwner) Text("Seul le propriétaire du dossier peut changer sa visibilité.", fontSize = 12.sp, color = TextSec, modifier = Modifier.padding(top = 8.dp))
+                        else if (locked) PublishLockedNote(Modifier.padding(top = 8.dp))
+                        if (confirmPublish) {
+                            ConfirmSheet(
+                                data.PublishConfirm.FOLDER_TITLE, data.PublishConfirm.folderText(existing?.let { e -> allLinks.count { data.PublishConfirm.exposedBy(it, e) } } ?: 0), "Publier",
+                                onConfirm = { draft = draft.copy(visibility = "PUBLIC"); confirmPublish = false },
+                                onDismiss = { confirmPublish = false },
+                            )
+                        }
                     }
                 }
 

@@ -79,6 +79,7 @@ fun LinkDetailScreen(
     val context = LocalContext.current
     val myId = sessionManager?.getUserId()
     val isLoggedIn = sessionManager?.hasToken() == true
+    var confirmPublish by remember { mutableStateOf(false) }
 
     var liked by remember(link.id) { mutableStateOf(link.likedByMe) }
     var likeCount by remember(link.id) { mutableStateOf(link.likeCount) }
@@ -390,7 +391,7 @@ fun LinkDetailScreen(
                             if (link.visibility == "public") "Ne plus partager avec la communauté" else "Partager avec la communauté"
                         ) {
                             showMenu = false
-                            viewModel?.updateLinkVisibility(link.id, if (link.visibility == "public") "private" else "public")
+                            if (link.visibility == "public") viewModel?.updateLinkVisibility(link.id, "private") else confirmPublish = true
                         }
                     }
                 } else if (onSaveToMyList != null) {
@@ -403,6 +404,14 @@ fun LinkDetailScreen(
     }
 
     // ── Enregistrer une idée de la communauté ──
+    if (confirmPublish) {
+        ConfirmSheet(
+            data.PublishConfirm.IDEA_TITLE, data.PublishConfirm.IDEA_TEXT, "Publier",
+            onConfirm = { viewModel?.updateLinkVisibility(link.id, "public"); confirmPublish = false },
+            onDismiss = { confirmPublish = false },
+        )
+    }
+
     if (showSave && onSaveToMyList != null) {
         ModalBottomSheet(onDismissRequest = { showSave = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(
