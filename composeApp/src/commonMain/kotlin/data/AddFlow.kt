@@ -81,6 +81,10 @@ object AddFlow {
 
     fun isPublic(folder: Folder) = folder.visibility.uppercase().contains("PUBLIC")
 
+    /** Un dossier public n'expose que les idées de son propriétaire (link.PublicFolderFilter). */
+    fun exposesIdeas(folder: Folder?, me: String?): Boolean =
+        folder != null && isPublic(folder) && (folder.ownerId.isBlank() || folder.ownerId == me)
+
     private fun pluralOf(c: LinkCategory) = when (c) {
         LinkCategory.IDEE -> "Idées"; LinkCategory.CADEAU -> "Cadeaux"; LinkCategory.ACTIVITE -> "Activités"
         LinkCategory.EVENEMENT -> "Sorties"; LinkCategory.RECETTE -> "Recettes"; LinkCategory.LIVRE -> "Livres"
@@ -88,9 +92,10 @@ object AddFlow {
     }
 
     /** « Inès la verra », « Inès, Camille et 1 autre la verront », « Visible par toute la communauté »… */
-    fun whoSees(folder: Folder?, isPublic: Boolean): String {
+    fun whoSees(folder: Folder?, isPublic: Boolean, me: String? = null): String {
         if (folder == null) return if (isPublic) "Visible par toute la communauté" else "Visible par vous et votre tribu"
-        if (folder.visibility.uppercase().contains("PUBLIC")) return "Visible par toute la communauté"
+        if (isPublic || exposesIdeas(folder, me)) return "Visible par toute la communauté"
+        if (isPublic(folder)) return "Visible par les membres du dossier"
         val names = folder.collaborators.map(::firstName)
         return when (names.size) {
             0 -> "Visible par vous et votre tribu"

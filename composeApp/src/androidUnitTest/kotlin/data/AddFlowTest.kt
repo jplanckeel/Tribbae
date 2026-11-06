@@ -31,6 +31,16 @@ class AddFlowTest {
     }
 
     @Test
+    fun onlyTheOwnersIdeasAreExposed() {
+        val public = Folder(id = "p", name = "", visibility = "VISIBILITY_PUBLIC", ownerId = "o")
+        assertEquals(true, AddFlow.exposesIdeas(public, "o"))
+        assertEquals(false, AddFlow.exposesIdeas(public, "dan"))
+        assertEquals("Visible par toute la communauté", AddFlow.whoSees(public, false, "o"))
+        assertEquals("Visible par les membres du dossier", AddFlow.whoSees(public, false, "dan"))
+        assertEquals("Visible par toute la communauté", AddFlow.whoSees(public, true, "dan"))
+    }
+
+    @Test
     fun describesWhoSeesAndAges() {
         assertEquals("Inès la verra", AddFlow.whoSees(Folder(id = "b", name = "", collaborators = listOf(Collaborator(displayName = "Inès"))), false))
         assertEquals("Visible par toute la communauté", AddFlow.whoSees(null, true))

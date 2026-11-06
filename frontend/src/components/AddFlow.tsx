@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link as RouterLink, useNavigate } from "react-router";
-import { agoShort, bandsToAge, defaultFolder, selectedBands, suggestFolders, whoSees } from "../lib/addFlow";
+import { agoShort, bandsToAge, defaultFolder, exposesIdeas, selectedBands, suggestFolders, whoSees } from "../lib/addFlow";
 import { AGE_BANDS } from "../lib/age";
 import * as api from "../lib/api";
 import { AVATAR_COLORS, CATEGORIES, categoryMeta, folderColor } from "../lib/categories";
@@ -101,7 +101,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
   const editable = useMemo(() => folders.filter((f) => canEditFolder(f, session?.userId, peers)), [folders, session?.userId, peers]);
   const suggestions = useMemo(() => suggestFolders(draft.category, editable, links, preset), [draft.category, editable, links, preset]);
   const folder = folders.find((f) => f.id === folderId);
-  const inPublicFolder = folder?.visibility === "VISIBILITY_PUBLIC";
+  const inPublicFolder = exposesIdeas(folder, session?.userId);
   const canPublish = useCanPublish();
   const cat = categoryMeta(draft.category);
   const recent = useMemo(
@@ -431,7 +431,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
               {folderId === "" ? "Sans dossier · " : ""}Chercher parmi mes {folders.length} dossiers
               <Icon name="chevronRight" size={18} className="ml-auto text-muted" />
             </button>
-            <WhoSees folder={folder} isPublic={draft.visibility === "public"} />
+            <WhoSees folder={folder} isPublic={draft.visibility === "public"} userId={session?.userId} />
             <PublicFolderNote folder={folder} />
           </div>
 
@@ -492,7 +492,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
             <Icon name="globe" size={20} className="text-activite-ink" />
             <span className="flex flex-1 flex-col">
               <span className="text-sm font-bold">Inspirer d'autres familles</span>
-              <span className="text-xs text-sec">{inPublicFolder ? "Ce dossier est public : l'idée sera visible dans Explorer" : "Visible aussi dans Explorer"}</span>
+              <span className="text-xs text-sec">{inPublicFolder ? "Ce dossier est public : l'idée y sera visible par toutes les familles" : "Visible aussi dans Explorer"}</span>
               {!canPublish && <PublishLockedNote />}
             </span>
             {/* Publier attend la confirmation de l'adresse ; dépublier reste possible.
@@ -610,7 +610,7 @@ function FolderChoice({ folder, reason, on, delay, onClick }: { folder: Folder; 
   );
 }
 
-function WhoSees({ folder, isPublic }: { folder?: Folder; isPublic: boolean }) {
+function WhoSees({ folder, isPublic, userId }: { folder?: Folder; isPublic: boolean; userId?: string }) {
   const names = (folder?.collaborators ?? []).map((c) => c.displayName || c.email || "?");
   return (
     <div className={`flex items-center gap-2.5 rounded-[14px] px-3 py-2.5 transition-colors ${names.length ? "bg-peach" : "bg-sable-2"}`}>
@@ -622,7 +622,7 @@ function WhoSees({ folder, isPublic }: { folder?: Folder; isPublic: boolean }) {
           })}
         </span>
       )}
-      <span className="flex-1 text-[13px] font-semibold">{whoSees(folder, isPublic)}</span>
+      <span className="flex-1 text-[13px] font-semibold">{whoSees(folder, isPublic, userId)}</span>
     </div>
   );
 }

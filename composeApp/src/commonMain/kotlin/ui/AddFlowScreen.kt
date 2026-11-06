@@ -541,7 +541,7 @@ private fun SortStep(
                 AvatarStack(names)
                 Spacer(Modifier.width(4.dp))
             }
-            Text(AddFlow.whoSees(folder, draft.isPublic), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
+            Text(AddFlow.whoSees(folder, draft.isPublic, viewModel.currentUserId()), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
         }
         PublicFolderWaitingNote(viewModel, folder, Modifier.padding(horizontal = 4.dp))
     }
@@ -596,11 +596,11 @@ private fun SortStep(
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         val canPublish by viewModel.emailVerified.collectAsState()
-        val inPublicFolder = folder?.let(AddFlow::isPublic) == true
+        val inPublicFolder = AddFlow.exposesIdeas(folder, viewModel.currentUserId())
         Icon(Icons.Outlined.Public, null, tint = BlueInk, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
             Text("Inspirer d'autres familles", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
-            Text(if (inPublicFolder) "Ce dossier est public : l'idée sera visible dans Explorer" else "Visible aussi dans Explorer", fontSize = 12.sp, color = TextSec)
+            Text(if (inPublicFolder) "Ce dossier est public : l'idée y sera visible par toutes les familles" else "Visible aussi dans Explorer", fontSize = 12.sp, color = TextSec)
             if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
         }
         // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible.

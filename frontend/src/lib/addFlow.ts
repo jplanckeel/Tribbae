@@ -86,12 +86,18 @@ export function defaultFolder(suggestions: FolderSuggestion[]): Folder | undefin
   return suggestions.find((s) => s.folder.visibility !== "VISIBILITY_PUBLIC")?.folder;
 }
 
+/** Un dossier public n'expose que les idées de son propriétaire (link.PublicFolderFilter). */
+export function exposesIdeas(folder: Folder | undefined, userId?: string): boolean {
+  return folder?.visibility === "VISIBILITY_PUBLIC" && folder.ownerId === userId;
+}
+
 const firstName = (c: { displayName?: string; email?: string }) => c.displayName || c.email || "un proche";
 
 /** « Inès la verra », « Inès, Camille et 1 autre la verront », « Visible par vous seulement »… */
-export function whoSees(folder: Folder | undefined, isPublic: boolean): string {
+export function whoSees(folder: Folder | undefined, isPublic: boolean, userId?: string): string {
   if (!folder) return isPublic ? "Visible par toute la communauté" : "Visible par vous et votre tribu";
-  if (folder.visibility === "VISIBILITY_PUBLIC") return "Visible par toute la communauté";
+  if (isPublic || exposesIdeas(folder, userId)) return "Visible par toute la communauté";
+  if (folder.visibility === "VISIBILITY_PUBLIC") return "Visible par les membres du dossier";
   const names = (folder.collaborators ?? []).map(firstName);
   if (!names.length) return "Visible par vous et votre tribu";
   if (names.length === 1) return `${names[0]} la verra`;
