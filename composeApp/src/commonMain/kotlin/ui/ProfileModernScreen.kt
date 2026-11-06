@@ -224,6 +224,8 @@ private fun TribeContent(
     var showFollowing by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showLogout by remember { mutableStateOf(false) }
+    var logoutSending by remember { mutableStateOf(false) }
+    var logoutUnsent by remember { mutableStateOf(0) }
     var showDelete by remember { mutableStateOf(false) }
     var showApps by remember { mutableStateOf(false) }
     var dataMessage by remember { mutableStateOf<String?>(null) }
@@ -866,17 +868,55 @@ private fun TribeContent(
     }
 
     if (showLogout) {
+        val closeLogout = { showLogout = false; logoutUnsent = 0 }
+        val leave = { viewModel.signOut(); closeLogout() }
+        val sendThenLeave: () -> Unit = {
+            logoutSending = true
+            scope.launch {
+                val unsent = viewModel.sendBeforeSignOut()
+                logoutSending = false
+                if (unsent == 0) leave() else logoutUnsent = unsent
+            }
+        }
         AlertDialog(
-            onDismissRequest = { showLogout = false },
+            onDismissRequest = { if (!logoutSending) closeLogout() },
             containerColor = SheetColor,
-            title = { Text("Se déconnecter ?", style = display(20.sp, FontWeight.Bold)) },
-            text = { Text("Vos idées restent sur votre compte. Elles sont retirées de cet appareil jusqu'à votre prochaine connexion.", color = Ecorce2) },
+            title = {
+                Text(
+                    if (logoutUnsent > 0) "Des changements n'ont pas pu partir" else "Se déconnecter ?",
+                    style = display(20.sp, FontWeight.Bold),
+                )
+            },
+            text = {
+                Text(
+                    when {
+                        logoutUnsent > 1 -> "$logoutUnsent changements faits sur cet appareil n'ont pas été envoyés. Si vous vous déconnectez, ils seront perdus."
+                        logoutUnsent == 1 -> "Un changement fait sur cet appareil n'a pas été envoyé. Si vous vous déconnectez, il sera perdu."
+                        else -> "Vos idées restent sur votre compte. Elles sont retirées de cet appareil jusqu'à votre prochaine connexion."
+                    },
+                    color = Ecorce2,
+                )
+            },
             confirmButton = {
-                TextButton(onClick = { viewModel.signOut(); showLogout = false }) {
-                    Text("Se déconnecter", color = Terracotta, fontWeight = FontWeight.Bold)
+                TextButton(onClick = sendThenLeave, enabled = !logoutSending) {
+                    Text(
+                        when {
+                            logoutSending -> "Envoi en cours…"
+                            logoutUnsent > 0 -> "Réessayer"
+                            else -> "Se déconnecter"
+                        },
+                        color = TerracottaDark,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             },
-            dismissButton = { TextButton(onClick = { showLogout = false }) { Text("Annuler", color = Ecorce) } }
+            dismissButton = {
+                if (logoutUnsent > 0) {
+                    TextButton(onClick = { leave() }, enabled = !logoutSending) { Text("Se déconnecter quand même", color = Ecorce) }
+                } else {
+                    TextButton(onClick = { closeLogout() }, enabled = !logoutSending) { Text("Annuler", color = Ecorce) }
+                }
+            }
         )
     }
 
@@ -1424,7 +1464,7 @@ private fun SimpleAuthDialog(
     AlertDialog(onDismissRequest = { if (!isLoading) onDismiss() }) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color.White
+            color = SheetColor
         ) {
             Column(
                 modifier = Modifier
@@ -1473,7 +1513,7 @@ private fun SimpleAuthDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color(0xFFC8492C),
-                            focusedLabelColor = Color(0xFFC8492C)
+                            focusedLabelColor = TerracottaDark
                         )
                     )
                 }
@@ -1491,7 +1531,7 @@ private fun SimpleAuthDialog(
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFC8492C),
-                        focusedLabelColor = Color(0xFFC8492C)
+                        focusedLabelColor = TerracottaDark
                     )
                 )
 
@@ -1517,7 +1557,7 @@ private fun SimpleAuthDialog(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFC8492C),
-                        focusedLabelColor = Color(0xFFC8492C)
+                        focusedLabelColor = TerracottaDark
                     )
                 )
 
@@ -1527,7 +1567,7 @@ private fun SimpleAuthDialog(
                         modifier = Modifier.align(Alignment.End),
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
                     ) {
-                        Text("Mot de passe oublié ?", color = Color(0xFFC8492C), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Mot de passe oublié ?", color = TerracottaDark, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -1539,7 +1579,7 @@ private fun SimpleAuthDialog(
                     ) {
                         Text(
                             text = errorMessage ?: "",
-                            color = Color(0xFFB2412A),
+                            color = CoralInk,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(10.dp)
                         )

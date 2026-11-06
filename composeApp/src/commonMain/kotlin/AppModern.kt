@@ -108,7 +108,8 @@ private sealed class Screen {
         val category: LinkCategory? = null,
         val folderId: String? = null,
         val title: String? = null,
-        val ingredients: List<String> = emptyList(),
+        /** Brouillon du parcours « + » repris par « Plus de détails ». */
+        val draft: AddDraft? = null,
     ) : Screen()
     data class FolderForm(val existing: Folder? = null) : Screen()
     /** `origin` : visuel de la carte touchée, d'où la fiche s'ouvre (et où elle revient). */
@@ -167,6 +168,8 @@ private fun ModernMainApp(
     var showAdd by remember { mutableStateOf(false) }
     var exploreQuery by remember { mutableStateOf("") }
     var exploreCategory by remember { mutableStateOf<LinkCategory?>(null) }
+    // Change à chaque demande, pour qu'une recherche identique à la précédente s'applique
+    var exploreRequest by remember { mutableStateOf(0) }
 
     val links by vm.repository.links.collectAsState()
     val folders by vm.folders.collectAsState()
@@ -186,9 +189,13 @@ private fun ModernMainApp(
         stack.clear(); tab = NavDestination.PROFILE
         return false
     }
+    // Une idée de mes idées ou de la tribu s'ouvre en mode normal, les autres en lecture seule
+    fun openPublicLink(l: Link) {
+        push(links.find { it.id == l.id }?.let { Screen.Detail(it) } ?: Screen.Detail(l, public = l.ownerId != sessionManager.getUserId()))
+    }
     fun openLink(id: String) { links.find { it.id == id }?.let { push(Screen.Detail(it)) } }
     fun openExplore(query: String = "", category: LinkCategory? = null) {
-        exploreQuery = query; exploreCategory = category
+        exploreQuery = query; exploreCategory = category; exploreRequest++
         stack.clear(); tab = NavDestination.EXPLORE
     }
 
@@ -267,7 +274,7 @@ private fun ModernMainApp(
                         onNavigateToAI = { push(Screen.Ai()) },
                         viewModel = vm,
                         onSearch = { openExplore(query = it) },
-                        onOpenCommunityLink = { push(Screen.Detail(it, public = it.ownerId != sessionManager.getUserId())) },
+                        onOpenCommunityLink = ::openPublicLink,
                         onAddWithCategory = { push(Screen.IdeaForm(category = it)) },
                         onNavigateToTribe = { tab = NavDestination.PROFILE },
                     )
@@ -276,17 +283,12 @@ private fun ModernMainApp(
                             links = communityLinks,
                             ensureSignedIn = ::ensureSignedIn,
                             onNavigateBack = { tab = NavDestination.HOME },
-                            onNavigateToDetail = { id ->
-                                communityLinks.find { it.id == id }?.let { l ->
-                                    // Ses propres idées publiques s'ouvrent en mode édition
-                                    val mine = links.find { it.id == id }
-                                    push(if (mine != null) Screen.Detail(mine) else Screen.Detail(l, public = true))
-                                }
-                            },
+                            onNavigateToDetail = { id -> communityLinks.find { it.id == id }?.let(::openPublicLink) },
                             onSaveLink = { vm.toggleFavorite(it.id) },
                             viewModel = vm,
                             initialQuery = exploreQuery,
                             initialCategory = exploreCategory,
+                            searchRequest = exploreRequest,
                             onNavigateToAI = { push(Screen.Ai(prompt = exploreQuery)) },
                             onOpenFolder = ::openCommunityFolder,
                         )
@@ -402,7 +404,7 @@ private fun ModernMainApp(
                 initialCategory = screen.category,
                 initialFolderId = screen.folderId,
                 initialTitle = screen.title,
-                initialIngredients = screen.ingredients,
+                draft = screen.draft,
                 onSaved = {
                     pop()
                     // Après une modification, la fiche affichée reprend la version à jour
@@ -426,7 +428,7 @@ private fun ModernMainApp(
                         vm.addLink(
                             title = l.title, url = l.url, description = l.description, category = l.category,
                             folderId = folderId, tags = l.tags, ageRange = l.ageRange, location = l.location,
-                            price = l.price, imageUrl = l.imageUrl, rating = l.rating, ingredients = l.ingredients
+                            price = l.price, eventDate = l.eventDate, imageUrl = l.imageUrl, rating = l.rating, ingredients = l.ingredients
                         )
                     } else null,
                     folders = folders,
@@ -565,11 +567,13 @@ private fun ModernMainApp(
                 presetFolderId = folderId,
                 onDismiss = { showAdd = false },
                 onAi = { showAdd = false; push(Screen.Ai(folderId = folderId)) },
-                onMore = { d -> showAdd = false; push(Screen.IdeaForm(url = d.url, category = d.category, folderId = d.folderId, title = d.title, ingredients = d.ingredients)) },
+                onMore = { d -> showAdd = false; push(Screen.IdeaForm(draft = d)) },
                 onNewFolder = { showAdd = false; push(Screen.FolderForm()) },
                 onOpenLink = { id -> showAdd = false; openLink(id) },
             )
         }
+
+        ui.campfire.ErrorToast(vm.actionErrors, Modifier.align(Alignment.BottomCenter).padding(start = 20.dp, end = 20.dp, bottom = 116.dp))
     }
 }
 

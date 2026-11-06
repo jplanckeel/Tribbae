@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { byRotation, canEditFolder, extractUrl, ROTATION_MS, rotationScore, tagCounts } from "./links";
+import { byRotation, canEditFolder, copyInput, extractUrl, ROTATION_MS, rotationScore, tagCounts } from "./links";
 import type { Folder, Link } from "./types";
 
 describe("ordre « À la une »", () => {
@@ -69,4 +69,29 @@ describe("canEditFolder", () => {
 it("compte les tags, du plus utilisé au moins utilisé", () => {
   const links = [{ tags: ["pluie", "été"] }, { tags: ["été"] }, {}, { tags: ["automne"] }] as Link[];
   expect(tagCounts(links)).toEqual([["été", 2], ["automne", 1], ["pluie", 1]]);
+});
+
+describe("copie d'une idée", () => {
+  const at = Date.parse("2026-12-05T14:00:00Z");
+  const source = {
+    id: "1",
+    title: "Marché de Noël",
+    category: "LINK_CATEGORY_EVENEMENT",
+    eventDate: at,
+    reminderEnabled: true,
+    visibility: "public",
+    folderId: "dossier-public",
+  } as Link;
+
+  it("garde la date mais pas le rappel, et reste privée", () => {
+    const copy = copyInput(source, "mon-dossier");
+    expect(copy.eventDate).toBe(at);
+    expect(copy.reminderEnabled).toBe(false);
+    expect(copy.visibility).toBe("private");
+    expect(copy.folderId).toBe("mon-dossier");
+  });
+
+  it("n'invente pas de date pour une idée sans date", () => {
+    expect(copyInput({ ...source, eventDate: undefined }).eventDate).toBe(0);
+  });
 });
