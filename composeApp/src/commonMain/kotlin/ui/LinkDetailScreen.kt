@@ -173,7 +173,7 @@ fun LinkDetailScreen(
                         fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false)
                     )
                     if (link.favorite) Icon(Icons.Filled.Star, "Favori", tint = Braise, modifier = Modifier.size(16.dp))
-                    if (link.visibility == "public") Icon(Icons.Outlined.Public, "Public", tint = TextSec, modifier = Modifier.size(16.dp))
+                    VisibilityBadge(LocalAudiences.current.of(link))
                     data.ConnectedApps.createdViaLabel(link.createdVia)?.let { label ->
                         Icon(Icons.Outlined.AutoAwesome, null, tint = TextSec, modifier = Modifier.size(14.dp))
                         Text(label, fontSize = 12.sp, color = TextSec, maxLines = 1)
@@ -419,12 +419,11 @@ fun LinkDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text("Ranger dans…", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
-                // Une idée rangée dans un dossier public attend la confirmation de l'adresse
-                viewModel?.let { vm -> PublicFolderWaitingNote(vm, folders.firstOrNull { it.visibility.uppercase().contains("PUBLIC") }, Modifier.padding(bottom = 4.dp)) }
                 MenuRow(Icons.Outlined.BookmarkBorder, "Mes idées (sans dossier)") {
                     onSaveToMyList(link, null); savedCopy = true; showSave = false
                 }
-                folders.forEach { f ->
+                // La copie reste privée : un dossier public la publierait
+                folders.filterNot(data.AddFlow::isPublic).forEach { f ->
                     MenuRow(folderIconVector(f), f.name, tint = folderSolid(f.color)) {
                         onSaveToMyList(link, f.id); savedCopy = true; showSave = false
                     }

@@ -174,7 +174,7 @@ fun AddFlowSheet(
 
     fun toSort() {
         // Premier passage : le dossier le mieux placé est présélectionné
-        if (!folderPicked) { folderId = suggestions.firstOrNull()?.folder?.id; folderPicked = true }
+        if (!folderPicked) { folderId = AddFlow.defaultFolder(suggestions)?.id; folderPicked = true }
         step = AddStep.Sort
     }
 
@@ -554,7 +554,7 @@ private fun SortStep(
                 AvatarStack(names)
                 Spacer(Modifier.width(4.dp))
             }
-            Text(AddFlow.whoSees(folder, draft.isPublic), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
+            Text(AddFlow.whoSees(folder, draft.isPublic, viewModel.currentUserId()), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
         }
         PublicFolderWaitingNote(viewModel, folder, Modifier.padding(horizontal = 4.dp))
     }
@@ -609,15 +609,21 @@ private fun SortStep(
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         val canPublish by viewModel.emailVerified.collectAsState()
+        val inPublicFolder = AddFlow.exposesIdeas(folder, viewModel.currentUserId())
         Icon(Icons.Outlined.Public, null, tint = BlueInk, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
             Text("Inspirer d'autres familles", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
-            Text("Visible aussi dans Explorer", fontSize = 12.sp, color = TextSec)
+            Text(if (inPublicFolder) "Ce dossier est public : l'idée y sera visible par toutes les familles" else "Visible aussi dans Explorer", fontSize = 12.sp, color = TextSec)
             if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
         }
-        // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible
+        // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible.
+        // Dans un dossier public, l'idée est publiée quoi qu'il arrive : l'interrupteur le montre
         var confirmPublish by remember { mutableStateOf(false) }
-        CampSwitch(draft.isPublic, { if (!it) onDraft(draft.copy(isPublic = false)) else if (canPublish) confirmPublish = true }, "Inspirer d'autres familles")
+        CampSwitch(
+            draft.isPublic || inPublicFolder,
+            { if (!inPublicFolder) { if (!it) onDraft(draft.copy(isPublic = false)) else if (canPublish) confirmPublish = true } },
+            "Inspirer d'autres familles",
+        )
         if (confirmPublish) {
             ConfirmSheet(
                 PublishConfirm.IDEA_TITLE, PublishConfirm.IDEA_TEXT, "Publier",
@@ -666,10 +672,11 @@ internal fun FolderPickerSheet(
     fun norm(t: String) = java.text.Normalizer.normalize(t.lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
     val query = q.trim()
     val match = folders.filter { query.isEmpty() || norm(it.name).contains(norm(query)) }
-    fun group(f: Folder) = when {
-        f.visibility.uppercase().contains("PUBLIC") -> 2
-        f.collaborators.isNotEmpty() -> 0
-        else -> 1
+    val audiences = LocalAudiences.current
+    fun group(f: Folder) = when (audiences.of(f)) {
+        data.Audience.SHARED -> 0
+        data.Audience.PRIVATE -> 1
+        data.Audience.PUBLIC -> 2
     }
     val canCreate = query.length > 1 && folders.none { norm(it.name) == norm(query) }
 

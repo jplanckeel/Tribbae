@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import data.Audience
 import data.Child
 import data.Folder
 import data.FolderStyle
@@ -63,12 +64,11 @@ fun ChildAvatars(folder: Folder, children: List<Child>, size: Dp = 26.dp, ring: 
 private fun folderMeta(folder: Folder, count: Int, ownerLabel: String?): String {
     val who = when {
         ownerLabel != null -> ownerLabel
+        folder.visibility.uppercase().contains("PUBLIC") -> "public"
         folder.collaborators.isNotEmpty() -> {
             val c = folder.collaborators.first()
             "avec ${c.displayName.ifBlank { c.email.ifBlank { "un proche" } }}" + if (folder.collaborators.size > 1) " +${folder.collaborators.size - 1}" else ""
         }
-        folder.visibility.uppercase().contains("PUBLIC") -> "public"
-        folder.childIds.isNotEmpty() -> null
         else -> "privé"
     }
     return listOfNotNull("$count idée${if (count > 1) "s" else ""}", who).joinToString(" · ")
@@ -101,8 +101,14 @@ fun FolderCard(
 ) {
     val ink = folderSolid(folder.color)
     val cd = FolderStyle.countdown(folder)
-    Box(modifier.clickable(onClick = onClick).padding(top = 10.dp)) {
-        Box(Modifier.offset(y = (-10).dp).size(58.dp, 22.dp).clip(RoundedCornerShape(topStart = 10.dp, topEnd = 12.dp)).background(folderMid(folder.color)))
+    val audience = LocalAudiences.current.of(folder)
+    val tab = when (audience) {
+        Audience.PUBLIC -> VisPublicInk
+        Audience.SHARED -> Prune
+        Audience.PRIVATE -> folderMid(folder.color)
+    }
+    Box(modifier.semantics { contentDescription = "${folder.name}, ${audience.label}" }.clickable(onClick = onClick).padding(top = 10.dp)) {
+        Box(Modifier.offset(y = (-10).dp).size(58.dp, 22.dp).clip(RoundedCornerShape(topStart = 10.dp, topEnd = 12.dp)).background(tab))
         Column(Modifier.fillMaxWidth().card(RoundedCornerShape(0.dp, 20.dp, 20.dp, 20.dp), 4.dp)) {
             Box(Modifier.fillMaxWidth().height(64.dp)) {
                 FolderCover(folder)
@@ -112,12 +118,15 @@ fun FolderCard(
                 }
             }
             Column(Modifier.pullUp(18.dp).padding(start = 12.dp, end = 12.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(CardColor).padding(3.dp)
-                        .clip(RoundedCornerShape(10.dp)).background(ink),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(folderGlyph(folder.icon), null, tint = Color.White, modifier = Modifier.size(20.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                    Box(
+                        Modifier.size(40.dp).clip(RoundedCornerShape(13.dp)).background(CardColor).padding(3.dp)
+                            .clip(RoundedCornerShape(10.dp)).background(ink),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(folderGlyph(folder.icon), null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    if (audience != Audience.PRIVATE) VisibilityBadge(audience, iconOnly = true)
                 }
                 Column {
                     Text(folder.name, style = display(15.sp, FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -137,13 +146,15 @@ fun PinnedFolderCard(folder: Folder, count: Int, onClick: () -> Unit, children: 
     val ink = folderSolid(folder.color)
     val cd = FolderStyle.countdown(folder)
     val sub = listOf(folder.description, "$count idée${if (count > 1) "s" else ""}").filter { it.isNotBlank() }.joinToString(" · ")
-    Column(modifier.fillMaxWidth().card(RoundedCornerShape(24.dp)).clickable(onClick = onClick)) {
+    val audience = LocalAudiences.current.of(folder)
+    Column(modifier.fillMaxWidth().semantics { contentDescription = "${folder.name}, ${audience.label}" }.card(RoundedCornerShape(24.dp)).clickable(onClick = onClick)) {
         Box(Modifier.fillMaxWidth().height(96.dp)) {
             FolderCover(folder)
             if (cd != null) {
                 val vac = folder.keyDateType == "vacances"
                 CountdownBadge(cd.label, if (vac) Ecorce else ink, if (vac) Sable else Color.White, small = false, modifier = Modifier.padding(12.dp))
             }
+            VisibilityBadge(audience, Modifier.align(Alignment.TopEnd).padding(12.dp))
         }
         Row(
             Modifier.pullUp(22.dp).padding(start = 14.dp, end = 14.dp, bottom = 14.dp).fillMaxWidth(),

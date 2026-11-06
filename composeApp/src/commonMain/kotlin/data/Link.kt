@@ -68,7 +68,9 @@ data class Link(
     val createdAt: String = "",
     val updatedAt: String = "",
     /** Provenance : "mcp" pour une idée ajoutée par une application connectée (Claude) */
-    val createdVia: String = ""
+    val createdVia: String = "",
+    /** Visible de tous parce que son auteur l'a rangée dans son dossier public. */
+    val publicViaFolder: Boolean = false
 )
 
 @Serializable

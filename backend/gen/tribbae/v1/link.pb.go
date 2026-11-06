@@ -115,9 +115,11 @@ type Link struct {
 	Visibility       string                 `protobuf:"bytes,24,opt,name=visibility,proto3" json:"visibility,omitempty"` // "private" | "public"
 	// Provenance : "mcp" pour une idée ajoutée par une application connectée
 	// (Claude), vide sinon
-	CreatedVia    string `protobuf:"bytes,25,opt,name=created_via,json=createdVia,proto3" json:"created_via,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	CreatedVia string `protobuf:"bytes,25,opt,name=created_via,json=createdVia,proto3" json:"created_via,omitempty"`
+	// Visible de tous parce que son auteur l'a rangée dans son dossier public
+	PublicViaFolder bool `protobuf:"varint,26,opt,name=public_via_folder,json=publicViaFolder,proto3" json:"public_via_folder,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Link) Reset() {
@@ -323,6 +325,13 @@ func (x *Link) GetCreatedVia() string {
 		return x.CreatedVia
 	}
 	return ""
+}
+
+func (x *Link) GetPublicViaFolder() bool {
+	if x != nil {
+		return x.PublicViaFolder
+	}
+	return false
 }
 
 type CreateLinkRequest struct {
@@ -1458,7 +1467,7 @@ var File_tribbae_v1_link_proto protoreflect.FileDescriptor
 const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\n" +
 	"\x15tribbae/v1/link.proto\x12\n" +
-	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb8\x06\n" +
+	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe4\x06\n" +
 	"\x04Link\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1b\n" +
@@ -1492,7 +1501,8 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"visibility\x18\x18 \x01(\tR\n" +
 	"visibility\x12\x1f\n" +
 	"\vcreated_via\x18\x19 \x01(\tR\n" +
-	"createdVia\"\xf0\x03\n" +
+	"createdVia\x12*\n" +
+	"\x11public_via_folder\x18\x1a \x01(\bR\x0fpublicViaFolder\"\xf0\x03\n" +
 	"\x11CreateLinkRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +

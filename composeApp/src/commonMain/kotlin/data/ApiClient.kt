@@ -92,7 +92,8 @@ data class ApiLink(
     val visibility: String = "",
     val createdAt: String = "",
     val updatedAt: String = "",
-    val createdVia: String = ""
+    val createdVia: String = "",
+    val publicViaFolder: Boolean = false
 ) {
     /** Idée en lecture (communauté, dossier public, lien de partage). */
     fun toLink(): Link = Link(
@@ -118,7 +119,8 @@ data class ApiLink(
         visibility = visibility.ifBlank { "private" },
         createdAt = createdAt,
         updatedAt = updatedAt,
-        createdVia = createdVia
+        createdVia = createdVia,
+        publicViaFolder = publicViaFolder
     )
 }
 

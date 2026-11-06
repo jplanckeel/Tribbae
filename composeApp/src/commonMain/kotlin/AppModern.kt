@@ -92,7 +92,10 @@ fun AppModern(vm: LinkViewModel = viewModel(), incoming: SharedContent? = null) 
 
     // Compte connecté : les cartes signent du nom de leur auteur les idées des autres (tribu, communauté)
     val currentUserId by sessionManager.userId.collectAsState()
-    CompositionLocalProvider(ui.campfire.LocalCurrentUserId provides currentUserId) {
+    val myFolders by vm.folders.collectAsState()
+    val tribe by vm.tribe.collectAsState()
+    val audiences = remember(myFolders, tribe, currentUserId) { ui.campfire.Audiences(myFolders, vm::isTribePeer) }
+    CompositionLocalProvider(ui.campfire.LocalCurrentUserId provides currentUserId, ui.campfire.LocalAudiences provides audiences) {
         ModernMainApp(vm, incoming, sessionManager, authRepository, followRepository, commentRepository)
     }
 }

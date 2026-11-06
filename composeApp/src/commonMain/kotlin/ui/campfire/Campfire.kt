@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import data.Audience
 import data.Folder
 import data.FolderColor
 import data.Link
@@ -544,6 +545,7 @@ fun RailCard(link: Link, onClick: () -> Unit) {
         Box {
             IdeaVisual(link, 120.dp)
             CategoryBadge(cat, Modifier.padding(10.dp))
+            IdeaVisibility(link, Modifier.align(Alignment.BottomStart).padding(8.dp))
         }
         Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(link.title, style = display(16.sp, FontWeight.Bold), maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -589,6 +591,47 @@ fun ErrorToast(errors: kotlinx.coroutines.flow.Flow<String>, modifier: Modifier 
     }
 }
 
+/** Calcule la visibilité avec les dossiers du compte et sa tribu (fourni par l'app). */
+class Audiences(private val folders: List<Folder>, private val isPeer: (String) -> Boolean) {
+    fun of(folder: Folder) = Audience.ofFolder(folder, isPeer)
+    fun of(link: Link) = Audience.ofIdea(link, folders.find { it.id == link.folderId }, isPeer)
+}
+
+val LocalAudiences = androidx.compose.runtime.compositionLocalOf { Audiences(emptyList()) { true } }
+
+/** Badge de visibilité (fiche, dossier épinglé) ou pastille ronde `iconOnly` (cartes). */
+@Composable
+fun VisibilityBadge(audience: Audience, modifier: Modifier = Modifier, iconOnly: Boolean = false) {
+    val (bg, ink, icon) = when (audience) {
+        Audience.PRIVATE -> Triple(Sable2, TextSec, Icons.Outlined.Lock)
+        Audience.SHARED -> Triple(Prune, OnDark, Icons.Outlined.Group)
+        Audience.PUBLIC -> Triple(VisPublicBg, VisPublicInk, Icons.Outlined.Public)
+    }
+    if (iconOnly) {
+        Box(
+            modifier.size(26.dp).border(2.dp, CardColor, CircleShape).clip(CircleShape).background(bg)
+                .semantics { contentDescription = audience.label },
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, null, tint = ink, modifier = Modifier.size(14.dp)) }
+    } else {
+        Row(
+            modifier.height(26.dp).clip(CircleShape).background(bg).padding(start = 7.dp, end = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Icon(icon, null, tint = ink, modifier = Modifier.size(14.dp))
+            Text(audience.label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = ink, maxLines = 1)
+        }
+    }
+}
+
+/** Pastille d'une carte idée : rien pour une idée Privée, pour ne pas charger les listes. */
+@Composable
+fun IdeaVisibility(link: Link, modifier: Modifier = Modifier) {
+    val audience = LocalAudiences.current.of(link)
+    if (audience != Audience.PRIVATE) VisibilityBadge(audience, modifier, iconOnly = true)
+}
+
 /** Carte de la mosaïque de l'Explorer (2 colonnes décalées). */
 @Composable
 fun MosaicCard(link: Link, index: Int, onClick: () -> Unit, liked: Boolean, onLike: (() -> Unit)?) {
@@ -596,6 +639,7 @@ fun MosaicCard(link: Link, index: Int, onClick: () -> Unit, liked: Boolean, onLi
     Column(Modifier.fillMaxWidth().card(RoundedCornerShape(20.dp)).clickable(onClick = onClick)) {
         Box {
             IdeaVisual(link, Mosaic[index % Mosaic.size], iconSize = 40.dp)
+            IdeaVisibility(link, Modifier.align(Alignment.BottomStart).padding(8.dp))
             if (onLike != null) {
                 Box(
                     Modifier
@@ -641,6 +685,7 @@ fun RowCard(link: Link, onClick: () -> Unit, trailing: (@Composable () -> Unit)?
             Text(link.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(listOf(cat.label, metaLine(link), authorLine(link)).filter { it.isNotEmpty() }.joinToString(" · "), fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
+        IdeaVisibility(link)
         trailing?.invoke() ?: Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
     }
 }
