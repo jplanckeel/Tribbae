@@ -11,7 +11,9 @@ import data.FolderIcon
 import data.Link
 import data.LinkCategory
 import data.LinkRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -58,6 +60,18 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     
     private val _syncStatus = MutableStateFlow<String?>(null)
     val syncStatus: StateFlow<String?> = _syncStatus.asStateFlow()
+
+    private val _actionErrors = MutableSharedFlow<String>(extraBufferCapacity = 4)
+    /** Messages d'erreur à montrer une fois, en Toast (app) : l'action demandée n'a pas abouti. */
+    val actionErrors: SharedFlow<String> = _actionErrors
+
+    /** Échec de synchronisation : hors réseau, rien à signaler ici, les changements attendent. */
+    private fun reportSyncFailure(e: Exception) {
+        _syncStatus.value = "Erreur: ${e.message}"
+        if (e !is java.io.IOException && e !is kotlinx.coroutines.CancellationException) {
+            _actionErrors.tryEmit("La synchronisation a échoué. Vos changements restent sur cet appareil.")
+        }
+    }
     
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
@@ -462,6 +476,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             } catch (e: Exception) {
                 println("ERROR: Failed to delete folder $id - ${e.message}")
                 _syncStatus.value = "Erreur suppression dossier: ${e.message}"
+                _actionErrors.tryEmit("Le dossier n'a pas pu être supprimé. Réessayez dans un instant.")
             }
         }
     }
@@ -884,7 +899,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 // Les idées arrivées du serveur sans image : on tente de la récupérer
                 fetchMissingImages()
             } catch (e: Exception) {
-                _syncStatus.value = "Erreur: ${e.message}"
+                reportSyncFailure(e)
             }
         }
     }
@@ -918,7 +933,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 performSync(client)
                 _syncStatus.value = "Synchronisé"
             } catch (e: Exception) {
-                _syncStatus.value = "Erreur: ${e.message}"
+                reportSyncFailure(e)
             } finally {
                 _isRefreshing.value = false
             }
