@@ -21,6 +21,18 @@ class SyncTest {
     }
 
     @Test
+    fun countsWhatTheServerHasNotReceived() {
+        val serverId = "64f0c2aa11b2c3d4e5f60718"
+        assertEquals(0, SyncIds.unsentCount(PendingChanges(), listOf(serverId)))
+        assertEquals(2, SyncIds.unsentCount(PendingChanges(), listOf(serverId, "123", "-456")))
+        val pending = PendingChanges(
+            linkUpdates = setOf("a"), linkDeletes = setOf("b"), folderUpdates = setOf("c"),
+            childUpdates = setOf("d"), childDeletes = setOf("e"),
+        )
+        assertEquals(6, SyncIds.unsentCount(pending, listOf("123")))
+    }
+
+    @Test
     fun keepsWhatWasDoneOffline() {
         // srv2 a été supprimée ici hors ligne : elle n'est plus dans la liste locale
         val local = listOf(link(srv1, "modifiée hors ligne"), link("-42", "créée hors ligne"))

@@ -42,13 +42,13 @@ internal fun resetErrorMessage(e: Exception): String {
 @Composable
 private fun ErrorBox(message: String) {
     Surface(Modifier.fillMaxWidth(), color = CoralBg, shape = RoundedCornerShape(8.dp)) {
-        Text(message, color = Color(0xFFB2412A), fontSize = 12.sp, modifier = Modifier.padding(10.dp))
+        Text(message, color = CoralInk, fontSize = 12.sp, modifier = Modifier.padding(10.dp))
     }
 }
 
 private val fieldColors @Composable get() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = Terracotta,
-    focusedLabelColor = Terracotta,
+    focusedLabelColor = TerracottaDark,
 )
 
 /** « Mot de passe oublié » : demande d'un lien de réinitialisation par email. */
@@ -66,7 +66,7 @@ fun ForgotPasswordDialog(
     val scope = rememberCoroutineScope()
 
     AlertDialog(onDismissRequest = { if (!loading) onDismiss() }) {
-        Surface(shape = RoundedCornerShape(24.dp), color = Color.White) {
+        Surface(shape = RoundedCornerShape(24.dp), color = SheetColor) {
             Column(
                 Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -166,7 +166,7 @@ fun NewPasswordDialog(
     }
 
     AlertDialog(onDismissRequest = { if (!loading) onDismiss() }) {
-        Surface(shape = RoundedCornerShape(24.dp), color = Color.White) {
+        Surface(shape = RoundedCornerShape(24.dp), color = SheetColor) {
             Column(
                 Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -201,7 +201,7 @@ fun NewPasswordDialog(
                     ErrorBox(msg)
                     if (msg.contains("n'est plus valable")) {
                         TextButton(onClick = { showForgot = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                            Text("Demander un nouveau lien", color = Terracotta, fontWeight = FontWeight.SemiBold)
+                            Text("Demander un nouveau lien", color = TerracottaDark, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
