@@ -11,6 +11,11 @@ class PublishConfirmTest {
     }
 
     @Test
+    fun doesNotPromiseExplorerToAnIdeaPublishedByItsFolder() {
+        assertEquals("Votre idée sera visible par toutes les familles dans ce dossier public. Les prénoms des enfants ne sont jamais publiés.", PublishConfirm.IDEA_IN_FOLDER_TEXT)
+    }
+
+    @Test
     fun countsOnlyTheIdeasTheFolderExposes() {
         val folder = Folder(id = "d", name = "", ownerId = "alice")
         fun idea(folderId: String, ownerId: String, visibility: String) =

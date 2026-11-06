@@ -183,9 +183,13 @@ fun AddFlowSheet(
         if (m == Mode.Link) { step = AddStep.Link; url?.let(::readLink) } else toSort()
     }
 
-    fun submit() {
+    var confirmFolder by remember { mutableStateOf(false) }
+
+    fun submit(confirmed: Boolean = false) {
         val title = draft.title.ifBlank { runCatching { java.net.URI(draft.url).host?.removePrefix("www.") }.getOrNull().orEmpty() }.trim()
         if (title.isEmpty()) { error = "Donnez un titre à votre idée."; return }
+        // Ranger une idée dans son dossier public la publie : même confirmation que le formulaire
+        if (!confirmed && !draft.isPublic && AddFlow.exposesIdeas(folder, viewModel.currentUserId())) { confirmFolder = true; return }
         created = viewModel.addLink(
             title = title, url = draft.url, description = draft.description, category = draft.category,
             folderId = folderId, tags = emptyList(), ageRange = draft.ageRange, location = draft.location, price = draft.price,
@@ -260,7 +264,7 @@ fun AddFlowSheet(
                 Row(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     when (step) {
                         AddStep.Link -> CampButton("Ranger cette idée", ::toSort, Modifier.fillMaxWidth(), trailingIcon = Icons.Outlined.ArrowForward, enabled = draft.url.isNotBlank(), height = 56.dp)
-                        AddStep.Sort -> CampButton("Ajouter à la tribu", ::submit, Modifier.fillMaxWidth(), trailingIcon = Icons.Outlined.Check, height = 56.dp)
+                        AddStep.Sort -> CampButton("Ajouter à la tribu", { submit() }, Modifier.fillMaxWidth(), trailingIcon = Icons.Outlined.Check, height = 56.dp)
                         else -> {
                             CampButton("Une autre", ::again, kind = ButtonKind.Secondary, height = 56.dp)
                             CampButton("Voir l'idée", { current?.let { onOpenLink(it.id) } }, Modifier.weight(1f), kind = ButtonKind.Dark, trailingIcon = Icons.Outlined.ArrowForward, height = 56.dp)
@@ -269,6 +273,14 @@ fun AddFlowSheet(
                 }
             }
         }
+    }
+
+    if (confirmFolder) {
+        ConfirmSheet(
+            PublishConfirm.IDEA_TITLE, PublishConfirm.IDEA_IN_FOLDER_TEXT, "Publier",
+            onConfirm = { confirmFolder = false; submit(confirmed = true) },
+            onDismiss = { confirmFolder = false },
+        )
     }
 
     if (picker) {

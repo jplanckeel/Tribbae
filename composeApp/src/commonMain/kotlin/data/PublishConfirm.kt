@@ -6,6 +6,8 @@ object PublishConfirm {
 
     const val IDEA_TITLE = "Publier cette idée ?"
     const val IDEA_TEXT = "Votre idée sera visible par toutes les familles dans Explorer. $NO_NAMES"
+    /** Rangée dans son dossier public, l'idée reste hors d'Explorer : seul le dossier la montre. */
+    const val IDEA_IN_FOLDER_TEXT = "Votre idée sera visible par toutes les familles dans ce dossier public. $NO_NAMES"
     const val FOLDER_TITLE = "Publier ce dossier ?"
 
     /** Idée rendue visible de tous par son dossier public (link.PublicFolderFilter). */
