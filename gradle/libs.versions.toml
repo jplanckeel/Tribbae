@@ -1,5 +1,5 @@
 [versions]
-agp = "9.4.1"
+agp = "9.5.0"
 kotlin = "2.4.21"
 compose = "1.9.4"
 compose-material3 = "1.4.0"
@@ -11,7 +11,7 @@ coroutines = "1.11.0"
 core-splashscreen = "1.2.0"
 jsoup = "1.23.2"
 # Fonctions exposées à Gemini (AppFunctions, Android 16+) ; le compilateur passe par KSP
-appfunctions = "1.0.0-alpha13"
+appfunctions = "1.0.0-beta01"
 ksp = "2.3.12"
 # Plus publié après 1.7.x : version propre
 compose-icons = "1.7.8"

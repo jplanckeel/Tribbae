@@ -696,7 +696,7 @@ function PendingCircleInvitation({ invitation, now, onChange }: {
   invitation: CircleInvitation; now: number; onChange: (inv: CircleInvitation | undefined) => void;
 }) {
   const folders = invitation.folderNames ?? [];
-  const role = invitation.role === "COLLABORATOR_ROLE_EDITOR" ? "éditeur" : "lecteur";
+  const role = invitation.role === "COLLABORATOR_ROLE_EDITOR" ? "peut ajouter" : "lecture seule";
   return (
     <PendingCard
       email={invitation.email}
@@ -759,7 +759,7 @@ function CircleCard({ member, index, canManage, onFolder }: {
           <span className="truncate text-[13px] text-sec">{plural(member.folders.length, "dossier ouvert", "dossiers ouverts")}</span>
         </span>
         <span className={`rounded-[10px] px-2.5 py-1 text-xs font-bold ${member.editor ? "bg-recette-bg text-recette-ink" : "bg-sable-2 text-sec"}`}>
-          {member.editor ? "Éditeur" : "Lecteur"}
+          {member.editor ? "Peut ajouter" : "Lecture seule"}
         </span>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -1128,7 +1128,7 @@ function CircleInviteForm({ folders, onDone }: { folders: Folder[]; onDone: (inv
         </div>
       </div>
       <div role="radiogroup" aria-label="Ses droits" className="flex gap-0.5 self-start rounded-small bg-sable-2 p-[3px]">
-        {([["COLLABORATOR_ROLE_VIEWER", "Lecteur"], ["COLLABORATOR_ROLE_EDITOR", "Éditeur"]] as const).map(([k, label]) => (
+        {([["COLLABORATOR_ROLE_VIEWER", "Lecture seule"], ["COLLABORATOR_ROLE_EDITOR", "Peut ajouter"]] as const).map(([k, label]) => (
           <button
             key={k}
             type="button"
@@ -1147,7 +1147,7 @@ function CircleInviteForm({ folders, onDone }: { folders: Folder[]; onDone: (inv
       <p className="text-center text-xs text-muted">
         Le lien expire dans 7 jours. Pas encore de compte ? Il pourra en créer un depuis le lien.{" "}
         {role === "COLLABORATOR_ROLE_EDITOR" ? "Il pourra ajouter ses idées" : "Il pourra consulter"} sans voir le reste de la tribu.
-        Vous pourrez changer les accès à tout moment.
+        Vous pourrez retirer cet accès à tout moment.
       </p>
     </form>
   );

@@ -197,7 +197,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             <Icon name="chevronLeft" size={22} />
           </button>
           <div className="flex gap-2">
-            <button type="button" onClick={share} aria-label="Partager" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-card">
+            <button type="button" onClick={share} aria-label="Envoyer l'idée" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/92 hover:bg-card">
               <Icon name="share" size={21} />
             </button>
             {session && (
@@ -367,7 +367,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
           <div className="flex flex-col gap-2">
             {canEdit && <MenuItem icon="pencil" label="Modifier" onClick={() => { setMenuOpen(false); editLink(link, onChange); }} />}
             {!canEdit && <MenuItem icon="bookmark" label="Enregistrer dans mes idées" onClick={() => { setMenuOpen(false); saveCopy(); }} />}
-            <MenuItem icon="share" label="Partager le lien" onClick={() => { setMenuOpen(false); share(); }} />
+            <MenuItem icon="share" label="Envoyer l'idée" onClick={() => { setMenuOpen(false); share(); }} />
             {ourIdea && <MenuItem icon="trash" label="Supprimer" danger onClick={remove} />}
           </div>
         </Sheet>

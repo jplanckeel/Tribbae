@@ -65,7 +65,7 @@ fun FolderDetailScreen(
         children = children,
         highlight = highlightLinkId,
         actions = {
-            if (viewModel != null) CircleIconButton(Icons.Outlined.PersonAdd, "Inviter et partager", { showShare = true }, background = PhotoVeil)
+            if (viewModel != null) CircleIconButton(Icons.Outlined.PersonAdd, "Partager le dossier", { showShare = true }, background = PhotoVeil)
             CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = PhotoVeil)
         },
         extra = {
@@ -100,7 +100,7 @@ fun FolderDetailScreen(
                         viewModel.updateFolder(folder.copy(pinned = !folder.pinned))
                     }
                 }
-                if (viewModel != null) MenuRow(Icons.Outlined.PersonAdd, "Inviter et partager") { showMenu = false; showShare = true }
+                if (viewModel != null) MenuRow(Icons.Outlined.PersonAdd, "Partager le dossier") { showMenu = false; showShare = true }
                 MenuRow(Icons.Outlined.Delete, "Supprimer le dossier", danger = true) { showMenu = false; showDelete = true }
             }
         }

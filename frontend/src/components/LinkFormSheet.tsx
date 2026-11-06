@@ -475,13 +475,13 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
           <label className="flex items-center gap-3 rounded-medium bg-card px-4 py-3.5 shadow-card">
             <Icon name="globe" size={20} className="text-activite-ic" />
             <span className="flex flex-1 flex-col">
-              <span className="text-sm font-bold">Partager avec la communauté</span>
+              <span className="text-sm font-bold">Publier dans la communauté</span>
               <span className="text-xs text-sec">{inMyPublicFolder ? "Visible par toutes les familles dans ce dossier" : "Visible dans l'Explorer par toutes les tribus"}</span>
               {!canPublish && <PublishLockedNote />}
             </span>
             {/* Publier attend la confirmation de l'adresse ; dépublier reste possible */}
             <Toggle
-              label="Partager avec la communauté"
+              label="Publier dans la communauté"
               checked={inMyPublicFolder || form.visibility === "public"}
               disabled={inMyPublicFolder || (!canPublish && form.visibility !== "public")}
               onChange={async (v) => {
@@ -493,7 +493,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
         ) : (
           <p role="note" className="flex items-start gap-2 rounded-medium bg-card px-4 py-3 text-xs text-sec">
             <Icon name="lock" size={15} className="mt-px shrink-0" />
-            Idée de {authorName || "un membre de la tribu"} : seul son auteur peut la partager avec la communauté.
+            Idée de {authorName || "un membre de la tribu"} : seul son auteur peut la publier dans la communauté.
           </p>
         )}
         {inMyPublicFolder && authorName === undefined && form.visibility !== "public" && (

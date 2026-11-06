@@ -624,7 +624,7 @@ private fun SortStep(
         val inPublicFolder = AddFlow.exposesIdeas(folder, viewModel.currentUserId())
         Icon(Icons.Outlined.Public, null, tint = BlueInk, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
-            Text("Inspirer d'autres familles", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+            Text("Publier dans la communauté", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
             Text(if (inPublicFolder) "Ce dossier est public : l'idée y sera visible par toutes les familles" else "Visible aussi dans Explorer", fontSize = 12.sp, color = TextSec)
             if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
         }
@@ -634,7 +634,7 @@ private fun SortStep(
         CampSwitch(
             draft.isPublic || inPublicFolder,
             { if (!inPublicFolder) { if (!it) onDraft(draft.copy(isPublic = false)) else if (canPublish) confirmPublish = true } },
-            "Inspirer d'autres familles",
+            "Publier dans la communauté",
         )
         if (confirmPublish) {
             ConfirmSheet(
