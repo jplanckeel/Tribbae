@@ -419,7 +419,7 @@ private fun ModernMainApp(
                         vm.addLink(
                             title = l.title, url = l.url, description = l.description, category = l.category,
                             folderId = folderId, tags = l.tags, ageRange = l.ageRange, location = l.location,
-                            price = l.price, imageUrl = l.imageUrl, rating = l.rating, ingredients = l.ingredients
+                            price = l.price, eventDate = l.eventDate, imageUrl = l.imageUrl, rating = l.rating, ingredients = l.ingredients
                         )
                     } else null,
                     folders = folders,
