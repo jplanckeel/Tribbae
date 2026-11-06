@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { AiCard, FolderCard, GridCard, IdeaCard, ListCard } from "../components/cards";
+import { AiCard, FolderCard, GridCard, IdeaCard, ListCard, RowCard } from "../components/cards";
 import { useComposer } from "../components/Composer";
 import Icon from "../components/Icon";
 import { Page } from "../components/Shell";
@@ -10,7 +10,7 @@ import * as api from "../lib/api";
 import { CATEGORIES, categoryBySlug, normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { ageInMonths, eventDateMs, matchesAge, matchesQuery, priceValue } from "../lib/format";
-import { byPopularity, byRecent, byRotation } from "../lib/links";
+import { byPopularity, byRecent, byRotation, searchMine } from "../lib/links";
 import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
 import { useDesktop } from "../lib/useMediaQuery";
@@ -134,12 +134,16 @@ export default function Explorer() {
     for (const l of pool) m.set(normalizeCategory(l.category), (m.get(normalizeCategory(l.category)) ?? 0) + 1);
     return m;
   }, [pool]);
+  const { links: myLinks } = useMyData();
+  const mine = useMemo(() => searchMine(myLinks, filters.q), [myLinks, filters.q]);
   const list = useMemo(() => {
-    const shown = pool.filter((l) => !filters.cats.length || filters.cats.includes(normalizeCategory(l.category)));
+    // Ses propres idées publiques ne figurent qu'une fois, dans « Dans vos idées »
+    const mineIds = new Set(mine.map((l) => l.id));
+    const shown = pool.filter((l) => !mineIds.has(l.id) && (!filters.cats.length || filters.cats.includes(normalizeCategory(l.category))));
     // « À la une » par défaut : un ordre qui change toutes les 6 heures
     if (filters.sort === "une") return byRotation(shown);
     return shown.sort(filters.sort === "recent" ? byRecent : byPopularity);
-  }, [pool, params]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pool, params, mine]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const single = filters.cats.length === 1 ? CATEGORIES.find((c) => c.key === filters.cats[0]) : undefined;
   const props: LayoutProps = {
@@ -149,6 +153,7 @@ export default function Explorer() {
     setDraft,
     single,
     list,
+    mine,
     counts,
     loading: all.loading,
     error: all.error,
@@ -179,6 +184,7 @@ interface LayoutProps {
   draft: string;
   setDraft: (v: string) => void;
   single?: (typeof CATEGORIES)[number];
+  mine: Link[];
   list: Link[];
   counts: Map<string, number>;
   loading: boolean;
@@ -230,8 +236,25 @@ function ResultCount({ n, q }: { n: number; q: string }) {
   return (
     <span className="text-sec">
       <strong className="text-ecorce">{n} idée{n > 1 ? "s" : ""}</strong>
-      {q ? <> pour « {q} »</> : <> partagée{n > 1 ? "s" : ""} par la communauté</>}
+      {q ? <> dans la communauté</> : <> partagée{n > 1 ? "s" : ""} par la communauté</>}
     </span>
+  );
+}
+
+/** « Dans vos idées » : monté avec `key={q}`, la liste se replie à chaque recherche. */
+function MyResults({ list }: { list: Link[] }) {
+  const [all, setAll] = useState(false);
+  if (!list.length) return null;
+  return (
+    <section aria-label="Dans vos idées" className="flex flex-col gap-2">
+      <h2 className="font-display text-lg font-bold">Dans vos idées ({list.length})</h2>
+      {(all ? list : list.slice(0, 3)).map((l) => <RowCard key={l.id} link={l} />)}
+      {!all && list.length > 3 && (
+        <button type="button" onClick={() => setAll(true)} className="self-start text-sm font-semibold text-link">
+          Voir tout ({list.length})
+        </button>
+      )}
+    </section>
   );
 }
 
@@ -329,9 +352,10 @@ function ExplorerMobile(p: LayoutProps) {
             </div>
           ) : (
             <>
+              <MyResults key={filters.q} list={p.mine} />
               <span className="text-[13px]"><ResultCount n={p.list.length} q={filters.q} /></span>
               {p.list.length === 0 ? (
-                <NoResult onAi={p.onAi} />
+                !p.mine.length && <NoResult onAi={p.onAi} />
               ) : (
                 // Comme l'app : deux colonnes remplies en alternance (1 à gauche,
                 // 2 à droite…), la carte IA en 4e position
@@ -520,6 +544,7 @@ function ExplorerDesktop(p: LayoutProps) {
           </aside>
 
           <section aria-label="Résultats" className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
+            <MyResults key={filters.q} list={p.mine} />
             <div className="flex flex-wrap items-center justify-between gap-2.5">
               <span className="text-[15px]">{!p.loading && !p.error && <ResultCount n={p.list.length} q={filters.q} />}</span>
               <label className="flex items-center gap-2 text-sm text-sec">

@@ -291,6 +291,7 @@ private fun ModernMainApp(
                             viewModel = vm,
                             initialQuery = exploreQuery,
                             initialCategory = exploreCategory,
+                            onOpenMine = ::openLink,
                             searchRequest = exploreRequest,
                             onNavigateToAI = { push(Screen.Ai(prompt = exploreQuery)) },
                             onOpenFolder = ::openCommunityFolder,
