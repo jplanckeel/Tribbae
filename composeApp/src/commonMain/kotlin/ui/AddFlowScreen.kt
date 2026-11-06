@@ -645,10 +645,11 @@ internal fun FolderPickerSheet(
     fun norm(t: String) = java.text.Normalizer.normalize(t.lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
     val query = q.trim()
     val match = folders.filter { query.isEmpty() || norm(it.name).contains(norm(query)) }
-    fun group(f: Folder) = when {
-        f.visibility.uppercase().contains("PUBLIC") -> 2
-        f.collaborators.isNotEmpty() -> 0
-        else -> 1
+    val audiences = LocalAudiences.current
+    fun group(f: Folder) = when (audiences.of(f)) {
+        data.Audience.SHARED -> 0
+        data.Audience.PRIVATE -> 1
+        data.Audience.PUBLIC -> 2
     }
     val canCreate = query.length > 1 && folders.none { norm(it.name) == norm(query) }
 

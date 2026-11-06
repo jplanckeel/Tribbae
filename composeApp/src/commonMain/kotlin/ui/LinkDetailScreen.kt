@@ -171,7 +171,7 @@ fun LinkDetailScreen(
                         fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false)
                     )
                     if (link.favorite) Icon(Icons.Filled.Star, "Favori", tint = Braise, modifier = Modifier.size(16.dp))
-                    if (link.visibility == "public") Icon(Icons.Outlined.Public, "Public", tint = TextSec, modifier = Modifier.size(16.dp))
+                    VisibilityBadge(LocalAudiences.current.of(link))
                     data.ConnectedApps.createdViaLabel(link.createdVia)?.let { label ->
                         Icon(Icons.Outlined.AutoAwesome, null, tint = TextSec, modifier = Modifier.size(14.dp))
                         Text(label, fontSize = 12.sp, color = TextSec, maxLines = 1)

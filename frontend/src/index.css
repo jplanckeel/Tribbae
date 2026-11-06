@@ -31,6 +31,13 @@
   --color-link: #c8492c;
   /* Texte ou icône posé sur une encre pleine (dossier, catégorie) */
   --color-on-solid: #ffffff;
+  /* Visibilité : Privé, Tribu (prune), Communauté (vert sapin, réservé à cet usage) */
+  --color-vis-private-bg: var(--color-sable-2);
+  --color-vis-private-ink: var(--color-sec);
+  --color-vis-shared-bg: var(--color-prune);
+  --color-vis-shared-ink: #fbf3e7;
+  --color-vis-public-bg: #ddefe6;
+  --color-vis-public-ink: #23664a;
   /* Ciel et sol des petites scènes (célébrations, année en idées) ; fonds teintés de sélection */
   --color-sky: #9fd3e6;
   --color-ground: #f7b57f;
@@ -163,6 +170,8 @@
   --color-card: #282019;
   --color-link: #f0855e;
   --color-on-solid: #1c1411;
+  --color-vis-public-bg: #163026;
+  --color-vis-public-ink: #8fd3b0;
   --color-sky: #17303a;
   --color-ground: #4a2e1b;
   --color-blush: #3b201b;

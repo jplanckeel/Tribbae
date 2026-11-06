@@ -3,6 +3,7 @@ import { folderColor } from "../lib/categories";
 import { plural } from "../lib/format";
 import { canEditFolder } from "../lib/links";
 import type { Folder, Link } from "../lib/types";
+import { folderAudience } from "../lib/visibility";
 import { FolderGlyph } from "./FolderCover";
 import Icon from "./Icon";
 import Sheet from "./Sheet";
@@ -30,10 +31,8 @@ export default function FolderPicker({ folders, links, current, userId, peers, o
   const norm = (t: string) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const query = q.trim();
   const match = folders.filter((f) => !query || norm(f.name).includes(norm(query)));
-  const groupOf = (f: Folder) =>
-    f.visibility === "VISIBILITY_PUBLIC" ? "public" : f.collaborators?.length || (f.ownerId !== userId && !peers.has(f.ownerId)) ? "shared" : "private";
   const groups = ([["shared", "Partagés"], ["private", "Privés"], ["public", "Publics"]] as const)
-    .map(([k, title]) => ({ title, items: match.filter((f) => groupOf(f) === k) }))
+    .map(([k, title]) => ({ title, items: match.filter((f) => folderAudience(f, peers) === k) }))
     .filter((g) => g.items.length);
   const canCreate = query.length > 1 && !folders.some((f) => norm(f.name) === norm(query));
 
