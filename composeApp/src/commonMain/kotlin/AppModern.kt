@@ -180,6 +180,10 @@ private fun ModernMainApp(
     fun openCommunityFolder(f: Folder) {
         push(folders.find { it.id == f.id }?.let { Screen.FolderDetail(it) } ?: Screen.PublicFolder(folder = f))
     }
+    // Une idée de mes idées ou de la tribu s'ouvre en mode normal, les autres en lecture seule
+    fun openPublicLink(l: Link) {
+        push(links.find { it.id == l.id }?.let { Screen.Detail(it) } ?: Screen.Detail(l, public = l.ownerId != sessionManager.getUserId()))
+    }
     fun openLink(id: String) { links.find { it.id == id }?.let { push(Screen.Detail(it)) } }
     fun openExplore(query: String = "", category: LinkCategory? = null) {
         exploreQuery = query; exploreCategory = category
@@ -261,7 +265,7 @@ private fun ModernMainApp(
                         onNavigateToAI = { push(Screen.Ai()) },
                         viewModel = vm,
                         onSearch = { openExplore(query = it) },
-                        onOpenCommunityLink = { push(Screen.Detail(it, public = it.ownerId != sessionManager.getUserId())) },
+                        onOpenCommunityLink = ::openPublicLink,
                         onAddWithCategory = { push(Screen.IdeaForm(category = it)) },
                         onNavigateToTribe = { tab = NavDestination.PROFILE },
                     )
@@ -269,13 +273,7 @@ private fun ModernMainApp(
                         ExploreScreen(
                             links = communityLinks,
                             onNavigateBack = { tab = NavDestination.HOME },
-                            onNavigateToDetail = { id ->
-                                communityLinks.find { it.id == id }?.let { l ->
-                                    // Ses propres idées publiques s'ouvrent en mode édition
-                                    val mine = links.find { it.id == id }
-                                    push(if (mine != null) Screen.Detail(mine) else Screen.Detail(l, public = true))
-                                }
-                            },
+                            onNavigateToDetail = { id -> communityLinks.find { it.id == id }?.let(::openPublicLink) },
                             onSaveLink = { vm.toggleFavorite(it.id) },
                             viewModel = vm,
                             initialQuery = exploreQuery,
