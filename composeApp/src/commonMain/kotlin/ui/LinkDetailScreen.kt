@@ -115,7 +115,7 @@ fun LinkDetailScreen(
         val body = listOf(link.title, link.url.ifBlank { if (link.visibility == "public") "${data.Backend.PRODUCTION}/links/${link.id}" else "" })
             .filter { it.isNotBlank() }.joinToString("\n")
         context.startActivity(
-            Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, body), "Partager l'idée")
+            Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, body), "Envoyer l'idée")
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
     }
@@ -136,7 +136,7 @@ fun LinkDetailScreen(
                 ) {
                     CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = PhotoVeil)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CircleIconButton(Icons.Outlined.IosShare, "Partager", share, background = PhotoVeil)
+                        CircleIconButton(Icons.Outlined.IosShare, "Envoyer l'idée", share, background = PhotoVeil)
                         CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = PhotoVeil)
                     }
                 }
@@ -388,7 +388,7 @@ fun LinkDetailScreen(
                     } else if (link.ownerId.isBlank() || link.ownerId == myId) {
                         MenuRow(
                             if (link.visibility == "public") Icons.Outlined.Lock else Icons.Outlined.Public,
-                            if (link.visibility == "public") "Ne plus partager avec la communauté" else "Partager avec la communauté"
+                            if (link.visibility == "public") "Retirer de la communauté" else "Publier dans la communauté"
                         ) {
                             showMenu = false
                             if (link.visibility == "public") viewModel?.updateLinkVisibility(link.id, "private") else confirmPublish = true
@@ -397,7 +397,7 @@ fun LinkDetailScreen(
                 } else if (onSaveToMyList != null) {
                     MenuRow(Icons.Outlined.BookmarkBorder, "Enregistrer dans mes idées") { showMenu = false; showSave = true }
                 }
-                MenuRow(Icons.Outlined.IosShare, "Partager") { showMenu = false; share() }
+                MenuRow(Icons.Outlined.IosShare, "Envoyer l'idée") { showMenu = false; share() }
                 if (!readOnly) MenuRow(Icons.Outlined.Delete, "Supprimer", danger = true) { showMenu = false; showDelete = true }
             }
         }

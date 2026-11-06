@@ -21,7 +21,7 @@ export default function ShareFolderSheet({ onClose, folder, onChange }: {
   const [created, setCreated] = useState<string>();
   const token = created ?? folder.shareToken;
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<CollaboratorRole>("COLLABORATOR_ROLE_EDITOR");
+  const [role, setRole] = useState<CollaboratorRole>("COLLABORATOR_ROLE_VIEWER");
   const [busy, setBusy] = useState(false);
   const [linkBusy, setLinkBusy] = useState(false);
   const [error, setError] = useState("");
