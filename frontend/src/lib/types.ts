@@ -38,6 +38,8 @@ export interface Link {
   updatedAt?: string;
   /** Provenance : "mcp" pour une idée ajoutée par une application connectée (Claude) */
   createdVia?: string;
+  /** Visible de tous parce que son auteur l'a rangée dans son dossier public. */
+  publicViaFolder?: boolean;
 }
 
 /** Champs modifiables d'une idée (création / édition). */

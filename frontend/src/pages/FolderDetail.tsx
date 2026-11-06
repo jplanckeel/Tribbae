@@ -18,6 +18,7 @@ import { byRecent, canEditFolder } from "../lib/links";
 import { useSession } from "../lib/session";
 import type { Folder, Link } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
+import { AUDIENCE_LABEL, folderAudience } from "../lib/visibility";
 import Seo from "../components/Seo";
 
 const LOOSE_ID = "non-rangees";
@@ -145,11 +146,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
   const collaborators = folder.collaborators ?? [];
   const visibilityLabel = virtual
     ? "Vos idées sans dossier"
-    : folder.visibility === "VISIBILITY_PUBLIC"
-      ? "Public"
-      : collaborators.length
-        ? "Partagé"
-        : "Privé";
+    : AUDIENCE_LABEL[folderAudience(folder, peers)];
 
   return (
     <div>

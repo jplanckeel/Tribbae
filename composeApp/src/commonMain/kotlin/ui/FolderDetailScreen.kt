@@ -52,11 +52,7 @@ fun FolderDetailScreen(
     var showMenu by remember { mutableStateOf(false) }
     var showShare by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
-    val visibility = when {
-        folder.visibility.uppercase().contains("PUBLIC") -> "Public"
-        folder.collaborators.isNotEmpty() -> "Partagé"
-        else -> "Privé"
-    }
+    val visibility = LocalAudiences.current.of(folder).label
 
     CollectionScaffold(
         title = folder.name,
@@ -179,7 +175,7 @@ fun PublicFolderScreen(
         extra = {
             if (f.aiGenerated) Tag("IA", Prune, Sable, Icons.Outlined.AutoAwesome)
             if (shareToken != null) Tag("Partagé avec vous", CardColor, Ecorce, Icons.Outlined.Link)
-            else Tag("Public", BlueBg, BlueInk, Icons.Outlined.Public)
+            else VisibilityBadge(data.Audience.PUBLIC)
         },
         buttons = {
             // Like réservé aux dossiers publics (un lien de partage n'est pas une publication)

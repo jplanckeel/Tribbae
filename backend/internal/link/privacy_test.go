@@ -87,6 +87,33 @@ func TestPublicFolderDoesNotPublishCollaboratorsIdeas(t *testing.T) {
 	}
 }
 
+// Le client d'un autre compte ne connaît pas le dossier : la réponse dit si
+// l'idée est visible de tous, selon la même règle que PublicFolderFilter.
+func TestStatsTellWhichIdeasAPublicFolderExposes(t *testing.T) {
+	_, db, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc := NewService(db.Collection("links"), db.Collection("folders"))
+
+	public := insertFolder(t, ctx, svc, "alice", "public", "bob")
+	private := insertFolder(t, ctx, svc, "alice", "private")
+	own, _ := svc.Create(ctx, "alice", &Link{Title: "D'Alice", Category: "LINK_CATEGORY_IDEE", FolderID: public})
+	collab, _ := svc.Create(ctx, "bob", &Link{Title: "De Bob", Category: "LINK_CATEGORY_IDEE", FolderID: public})
+	hidden, _ := svc.Create(ctx, "alice", &Link{Title: "Privée", Category: "LINK_CATEGORY_IDEE", FolderID: private})
+
+	h := &Handler{svc: svc}
+	st := svc.LoadStats(ctx, []*Link{own, collab, hidden}, "")
+	if !h.toProto(own, st).PublicViaFolder {
+		t.Error("l'idée de la propriétaire est visible de tous")
+	}
+	if h.toProto(collab, st).PublicViaFolder {
+		t.Error("l'idée d'un collaborateur reste réservée aux membres")
+	}
+	if h.toProto(hidden, st).PublicViaFolder {
+		t.Error("un dossier privé n'expose rien")
+	}
+}
+
 func TestOnlyAuthorCanMoveIdeaToAnotherFolder(t *testing.T) {
 	_, db, cleanup := setupTestDB(t)
 	defer cleanup()

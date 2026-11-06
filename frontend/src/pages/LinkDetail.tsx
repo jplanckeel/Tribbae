@@ -21,7 +21,9 @@ import { shareOrCopy } from "../lib/share";
 import type { Comment, Link } from "../lib/types";
 import { pushLink, useIdeaMorphTarget } from "../lib/transitions";
 import { useAsync } from "../lib/useAsync";
+import { ideaAudience } from "../lib/visibility";
 import Seo from "../components/Seo";
+import VisibilityBadge from "../components/VisibilityBadge";
 
 export default function LinkDetail() {
   const { id = "" } = useParams();
@@ -228,9 +230,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             {folder ? <> · dossier <RouterLink to={`/dossiers/${folder.id}`} {...pushLink(link.id)} className="font-semibold text-ecorce underline-offset-2 hover:underline">{folder.name}</RouterLink></> : ""}
           </span>
           {link.favorite && <Icon name="star" size={16} filled className="text-braise" />}
-          {link.visibility === "public" && (
-            <span className="flex items-center gap-1 text-xs text-sec"><Icon name="globe" size={14} />public</span>
-          )}
+          <VisibilityBadge audience={ideaAudience(link, folder, peers)} />
           {createdViaLabel(link.createdVia) && (
             <span className="flex items-center gap-1 text-xs text-sec"><Icon name="sparkles" size={14} />{createdViaLabel(link.createdVia)}</span>
           )}

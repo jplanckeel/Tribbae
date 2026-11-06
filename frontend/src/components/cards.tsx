@@ -6,11 +6,14 @@ import { countdown, keyDateOf, useFolderChildren } from "../lib/folderStyle";
 import { likeFeedback } from "../lib/feedback";
 import { useIdeaMorph } from "../lib/transitions";
 import { dayBadge, eventDateMs, metaLine, plural, safeImage } from "../lib/format";
+import { useMyData } from "../lib/data";
 import { useSession } from "../lib/session";
 import type { Folder, Link } from "../lib/types";
+import { AUDIENCE_LABEL, folderAudience } from "../lib/visibility";
 import { FolderCover, FolderGlyph } from "./FolderCover";
 import Icon from "./Icon";
 import { Avatar } from "./ui";
+import VisibilityBadge, { IdeaVisibility } from "./VisibilityBadge";
 
 /** Contour de l'idée d'où l'on vient (dossier ouvert depuis sa fiche). */
 const highlightStyle = (color?: string): React.CSSProperties | undefined =>
@@ -129,6 +132,7 @@ export function RailCard({ link }: { link: Link }) {
       <div className="relative">
         <IdeaVisual link={link} height={120} style={morph.visualStyle} />
         <CategoryBadge cat={cat} />
+        <IdeaVisibility link={link} className="absolute bottom-2 left-2" />
       </div>
       <div className="flex flex-col gap-1 px-3.5 pt-3 pb-3.5">
         <span className="line-clamp-2 font-display text-base leading-tight font-bold" style={morph.titleStyle}>{link.title}</span>
@@ -157,6 +161,7 @@ export function GridCard({ link, index = 0, onRequireAuth, highlight }: { link: 
       <div className="relative">
         <IdeaVisual link={link} height={MOSAIC[index % MOSAIC.length]} iconSize={40} style={morph.visualStyle} />
         <LikeButton link={link} onRequireAuth={onRequireAuth} className="absolute top-2 right-2" />
+        <IdeaVisibility link={link} className="absolute bottom-2 left-2" />
       </div>
       <div className="flex flex-col gap-1 px-3 pt-2.5 pb-3">
         <span className="line-clamp-3 font-display text-[15px] leading-tight font-bold" style={morph.titleStyle}>{link.title}</span>
@@ -186,6 +191,7 @@ export function MosaicTile({ link, large, highlight }: { link: Link; large?: boo
     >
       <IdeaVisual link={link} iconSize={large ? 56 : 36} className="h-full" style={morph.visualStyle} />
       <CategoryBadge cat={cat} />
+      <IdeaVisibility link={link} className="absolute top-2.5 right-2.5" />
       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(42,22,18,0.78)] to-transparent px-3 pt-8 pb-2.5">
         <span className={`line-clamp-2 font-display leading-tight font-bold text-white ${large ? "text-[17px]" : "text-sm"}`} style={morph.titleStyle}>{link.title}</span>
       </span>
@@ -207,6 +213,7 @@ export function RowCard({ link, trailing, highlight }: { link: Link; trailing?: 
         <span className="truncate text-[15px] font-bold" style={morph.titleStyle}>{link.title}</span>
         <span className="truncate text-[13px] text-sec">{[cat.label, meta, author].filter(Boolean).join(" · ")}</span>
       </span>
+      <IdeaVisibility link={link} />
       {trailing ?? <Icon name="chevronRight" size={18} className="text-muted" />}
     </RouterLink>
   );
@@ -262,9 +269,11 @@ function folderMeta(folder: Folder, n: number, showOwner?: boolean): string {
   const collaborators = folder.collaborators ?? [];
   const who = showOwner && folder.ownerDisplayName
     ? `par ${folder.ownerDisplayName}`
-    : collaborators.length
-      ? `avec ${collaborators[0].displayName || collaborators[0].email || "un proche"}${collaborators.length > 1 ? ` +${collaborators.length - 1}` : ""}`
-      : folder.visibility === "VISIBILITY_PUBLIC" ? "public" : (folder.childIds?.length ? "" : "privé");
+    : folder.visibility === "VISIBILITY_PUBLIC"
+      ? "public"
+      : collaborators.length
+        ? `avec ${collaborators[0].displayName || collaborators[0].email || "un proche"}${collaborators.length > 1 ? ` +${collaborators.length - 1}` : ""}`
+        : "privé";
   return [plural(n, "idée", "idées"), who].filter(Boolean).join(" · ");
 }
 
@@ -276,9 +285,12 @@ export function FolderCard({ folder, count, showOwner }: { folder: Folder; count
   const color = folderColor(folder.color);
   const n = count ?? folder.linkCount ?? 0;
   const cd = useCountdown(folder);
+  const { peers } = useMyData();
+  const audience = folderAudience(folder, peers);
+  const tab = audience === "public" ? "var(--color-vis-public-ink)" : audience === "shared" ? "var(--color-vis-shared-bg)" : color.mid;
   return (
-    <RouterLink to={`/dossiers/${folder.id}`} className="group relative block pt-2.5 transition-transform hover:-translate-y-0.5">
-      <span aria-hidden="true" className="absolute top-0 left-0 h-[22px] w-[58px] rounded-t-[10px] rounded-tr-[12px]" style={{ background: color.mid }} />
+    <RouterLink to={`/dossiers/${folder.id}`} aria-label={`${folder.name}, ${AUDIENCE_LABEL[audience]}`} className="group relative block pt-2.5 transition-transform hover:-translate-y-0.5">
+      <span aria-hidden="true" className="absolute top-0 left-0 h-[22px] w-[58px] rounded-t-[10px] rounded-tr-[12px]" style={{ background: tab }} />
       <div className="relative overflow-hidden rounded-[20px] rounded-tl-none bg-card shadow-card">
         <div className="relative h-16 overflow-hidden">
           <FolderCover folder={folder} />
@@ -294,8 +306,11 @@ export function FolderCard({ folder, count, showOwner }: { folder: Folder; count
           )}
         </div>
         <div className="relative -mt-[18px] flex flex-col gap-2 px-3 pb-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-[13px] border-[3px] border-card text-on-solid" style={{ background: color.solid }}>
-            <FolderGlyph icon={folder.icon} size={20} />
+          <span className="flex items-end justify-between">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[13px] border-[3px] border-card text-on-solid" style={{ background: color.solid }}>
+              <FolderGlyph icon={folder.icon} size={20} />
+            </span>
+            {audience !== "private" && <VisibilityBadge audience={audience} iconOnly />}
           </span>
           <span className="flex min-w-0 flex-col">
             <span className="line-clamp-2 font-display text-[15px] leading-tight font-bold">{folder.name}</span>
@@ -316,8 +331,10 @@ export function PinnedFolderCard({ folder, count }: { folder: Folder; count?: nu
   const n = count ?? folder.linkCount ?? 0;
   const cd = useCountdown(folder);
   const sub = [folder.description, plural(n, "idée", "idées")].filter(Boolean).join(" · ");
+  const { peers } = useMyData();
+  const audience = folderAudience(folder, peers);
   return (
-    <RouterLink to={`/dossiers/${folder.id}`} className="relative block overflow-hidden rounded-[24px] bg-card shadow-card transition-transform hover:-translate-y-0.5">
+    <RouterLink to={`/dossiers/${folder.id}`} aria-label={`${folder.name}, ${AUDIENCE_LABEL[audience]}`} className="relative block overflow-hidden rounded-[24px] bg-card shadow-card transition-transform hover:-translate-y-0.5">
       <div className="relative h-24 overflow-hidden">
         <FolderCover folder={folder} />
         {cd && (
@@ -328,6 +345,7 @@ export function PinnedFolderCard({ folder, count }: { folder: Folder; count?: nu
             {cd.label}
           </span>
         )}
+        <VisibilityBadge audience={audience} className="absolute top-3 right-3" />
       </div>
       <div className="relative -mt-[22px] flex items-center gap-3 px-3.5 pb-3.5">
         <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[17px] border-[3px] border-card text-on-solid" style={{ background: color.solid }}>
@@ -365,6 +383,7 @@ export function IdeaCard({ link, onRequireAuth }: { link: Link; onRequireAuth?: 
         <IdeaVisual link={link} height={160} iconSize={56} style={morph.visualStyle} />
         <span className={`absolute top-3 left-3 rounded-full bg-card px-2.5 py-[5px] text-xs font-bold ${cat.ink}`}>{badge}</span>
         <LikeButton link={link} onRequireAuth={onRequireAuth} className="absolute top-2.5 right-2.5" />
+        <IdeaVisibility link={link} className="absolute bottom-2.5 left-2.5" />
       </div>
       <div className="flex flex-col gap-1.5 px-4 pt-3.5 pb-4">
         <span className="line-clamp-2 font-display text-[17px] leading-[1.2] font-bold" style={morph.titleStyle}>{link.title}</span>
