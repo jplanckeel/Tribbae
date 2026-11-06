@@ -23,7 +23,7 @@ class ReminderReceiver : BroadcastReceiver() {
         )
 
         val notification = NotificationCompat.Builder(context, NotificationHelper.CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_stat_tribbae)
             .setColor(0xFFC8492C.toInt()) // terracotta, dans le volet de notifications
             .setContentTitle("Rappel Tribbae")
             .setContentText("Demain : $title")
