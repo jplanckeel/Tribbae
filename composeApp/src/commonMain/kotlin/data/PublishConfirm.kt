@@ -8,6 +8,10 @@ object PublishConfirm {
     const val IDEA_TEXT = "Votre idée sera visible par toutes les familles dans Explorer. $NO_NAMES"
     const val FOLDER_TITLE = "Publier ce dossier ?"
 
+    /** Idée rendue visible de tous par son dossier public (link.PublicFolderFilter). */
+    fun exposedBy(link: Link, folder: Folder): Boolean = link.folderId == folder.id &&
+        (link.ownerId == folder.ownerId || link.ownerId.isBlank() || link.visibility == "public")
+
     fun folderText(ideas: Int): String {
         val what = when {
             ideas > 1 -> "Les $ideas idées de ce dossier seront visibles"

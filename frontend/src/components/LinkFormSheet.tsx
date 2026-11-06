@@ -185,6 +185,10 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.title.trim()) return setError("Donnez un titre à votre idée.");
+    // Ranger une idée dans son dossier public la publie : même confirmation que l'interrupteur
+    const myPublicFolder = folders.find((f) => f.id === form.folderId && f.visibility === "VISIBILITY_PUBLIC" && f.ownerId === session?.userId);
+    const movedIn = !editing || initial.folderId !== form.folderId;
+    if (myPublicFolder && movedIn && form.visibility !== "public" && !(await confirm(PUBLISH_IDEA))) return;
     setSaving(true);
     setError("");
     try {
@@ -474,8 +478,8 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             {/* Publier attend la confirmation de l'adresse ; dépublier reste possible */}
             <Toggle
               label="Partager avec la communauté"
-              checked={form.visibility === "public"}
-              disabled={!canPublish && form.visibility !== "public"}
+              checked={inMyPublicFolder || form.visibility === "public"}
+              disabled={inMyPublicFolder || (!canPublish && form.visibility !== "public")}
               onChange={async (v) => {
                 if (v && !(await confirm(PUBLISH_IDEA))) return;
                 set("visibility", v ? "public" : "private");

@@ -10,8 +10,8 @@ import { formatLongDate, safeImage } from "../lib/format";
 import type { Folder, FolderInput, Visibility } from "../lib/types";
 import { CoverArt, FolderGlyph, IllustrationArt } from "./FolderCover";
 import Icon, { type IconName } from "./Icon";
-import { publishFolder } from "../lib/publish";
-import { useCanPublish } from "../lib/session";
+import { exposedBy, publishFolder } from "../lib/publish";
+import { useCanPublish, useSession } from "../lib/session";
 import Sheet from "./Sheet";
 import { PublishLockedNote } from "./VerifyEmailBanner";
 import { Avatar, Button, ErrorNote, Field, Toggle } from "./ui";
@@ -57,6 +57,9 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
   const canPublish = useCanPublish();
   const { confirm } = useFeedback();
   const publishLocked = !canPublish && folder?.visibility !== "VISIBILITY_PUBLIC";
+  // Le serveur ignore la visibilité envoyée par un autre compte que le propriétaire
+  const session = useSession();
+  const notOwner = !!folder && folder.ownerId !== session?.userId;
   const [saving, setSaving] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
   const [error, setError] = useState("");
@@ -386,10 +389,10 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                         key={v.key}
                         type="button"
                         aria-pressed={active}
-                        disabled={publishLocked && v.key === "VISIBILITY_PUBLIC"}
+                        disabled={notOwner || (publishLocked && v.key === "VISIBILITY_PUBLIC")}
                         onClick={async () => {
                           const publishing = v.key === "VISIBILITY_PUBLIC" && form.visibility !== "VISIBILITY_PUBLIC";
-                          if (publishing && !(await confirm(publishFolder(folder ? links.filter((l) => l.folderId === folder.id).length : 0)))) return;
+                          if (publishing && !(await confirm(publishFolder(folder ? links.filter((l) => exposedBy(l, folder)).length : 0)))) return;
                           set({ visibility: v.key });
                         }}
                         className={`flex flex-col items-start gap-1 rounded-medium border-2 p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${active ? "border-ecorce bg-card" : "border-transparent bg-sable-2"}`}
@@ -400,7 +403,9 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                     );
                   })}
                 </div>
-                {publishLocked && <div className="mt-2"><PublishLockedNote /></div>}
+                {notOwner
+                  ? <p className="mt-2 text-xs text-sec">Seul le propriétaire du dossier peut changer sa visibilité.</p>
+                  : publishLocked && <div className="mt-2"><PublishLockedNote /></div>}
               </Group>
             </>
           )}

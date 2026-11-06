@@ -157,8 +157,15 @@ fun IdeaFormScreen(
     // Lien partagé depuis une autre application ou collé dans « Ajouter » : aperçu tout de suite
     LaunchedEffect(Unit) { if (existing == null && url.isNotBlank()) fetchPreview() }
 
-    fun submit() {
+    val chosenFolder = folders.find { it.id == folderId }
+    val inMyPublicFolder = chosenFolder != null && chosenFolder.visibility.uppercase().contains("PUBLIC") &&
+        (chosenFolder.ownerId.isBlank() || chosenFolder.ownerId == viewModel.currentUserId())
+    var confirmMove by remember { mutableStateOf(false) }
+
+    fun submit(confirmed: Boolean = false) {
         if (title.isBlank()) { error = "Donnez un titre à votre idée."; return }
+        // Ranger une idée dans son dossier public la publie : même confirmation que l'interrupteur
+        if (!confirmed && inMyPublicFolder && !isPublic && existing?.folderId != folderId) { confirmMove = true; return }
         val ing = if (category == LinkCategory.RECETTE) ingredients.lines().map { it.trim() }.filter { it.isNotEmpty() } else existing?.ingredients ?: emptyList()
         val visibility = if (isPublic) "public" else "private"
         val remind = reminder && eventDate != null
@@ -368,7 +375,7 @@ fun IdeaFormScreen(
                     }
                     // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible
                     var confirmPublish by remember { mutableStateOf(false) }
-                    CampSwitch(isPublic, { if (!it) isPublic = false else if (canPublish) confirmPublish = true }, "Partager avec la communauté")
+                    CampSwitch(isPublic || inMyPublicFolder, { if (!inMyPublicFolder) { if (!it) isPublic = false else if (canPublish) confirmPublish = true } }, "Partager avec la communauté")
                     if (confirmPublish) {
                         ConfirmSheet(
                             data.PublishConfirm.IDEA_TITLE, data.PublishConfirm.IDEA_TEXT, "Publier",
@@ -378,18 +385,21 @@ fun IdeaFormScreen(
                     }
                 }
             }
+            if (confirmMove) {
+                ConfirmSheet(
+                    data.PublishConfirm.IDEA_TITLE, data.PublishConfirm.IDEA_TEXT, "Publier",
+                    onConfirm = { confirmMove = false; submit(confirmed = true) },
+                    onDismiss = { confirmMove = false },
+                )
+            }
             // Dans son propre dossier public, une idée est visible de tous même sans être partagée
             // à la communauté (les idées d'un collaborateur, elles, restent réservées aux membres).
-            val chosenFolder = folders.find { it.id == folderId }
             PublicFolderWaitingNote(viewModel, chosenFolder, Modifier.padding(horizontal = 4.dp))
-            val me = viewModel.currentUserId()
-            val inMyPublicFolder = chosenFolder != null && chosenFolder.visibility.uppercase().contains("PUBLIC") &&
-                (me == null || chosenFolder.collaborators.none { it.userId == me })
             if (inMyPublicFolder && !isPublic) {
                 Row(Modifier.padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Outlined.Visibility, null, tint = TextSec, modifier = Modifier.size(15.dp).padding(top = 1.dp))
                     Text(
-                        "Le dossier « ${chosenFolder!!.name} » est public : cette idée y sera visible par tous ses visiteurs.",
+                        "Le dossier « ${chosenFolder.name} » est public : cette idée y sera visible par tous ses visiteurs.",
                         fontSize = 12.sp, color = TextSec
                     )
                 }
