@@ -562,6 +562,8 @@ private fun ModernMainApp(
                 onOpenLink = { id -> showAdd = false; openLink(id) },
             )
         }
+
+        ui.campfire.ErrorToast(vm.actionErrors, Modifier.align(Alignment.BottomCenter).padding(start = 20.dp, end = 20.dp, bottom = 116.dp))
     }
 }
 
