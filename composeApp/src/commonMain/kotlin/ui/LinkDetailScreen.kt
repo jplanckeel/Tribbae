@@ -409,12 +409,11 @@ fun LinkDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text("Ranger dans…", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
-                // Une idée rangée dans un dossier public attend la confirmation de l'adresse
-                viewModel?.let { vm -> PublicFolderWaitingNote(vm, folders.firstOrNull { it.visibility.uppercase().contains("PUBLIC") }, Modifier.padding(bottom = 4.dp)) }
                 MenuRow(Icons.Outlined.BookmarkBorder, "Mes idées (sans dossier)") {
                     onSaveToMyList(link, null); savedCopy = true; showSave = false
                 }
-                folders.forEach { f ->
+                // La copie reste privée : un dossier public la publierait
+                folders.filterNot(data.AddFlow::isPublic).forEach { f ->
                     MenuRow(folderIconVector(f), f.name, tint = folderSolid(f.color)) {
                         onSaveToMyList(link, f.id); savedCopy = true; showSave = false
                     }

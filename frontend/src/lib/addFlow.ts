@@ -81,6 +81,11 @@ export function suggestFolders(cat: CategoryKey, folders: Folder[], links: Link[
   return out;
 }
 
+/** Dossier présélectionné : jamais un dossier public, qui publierait l'idée sans qu'on l'ait choisi. */
+export function defaultFolder(suggestions: FolderSuggestion[]): Folder | undefined {
+  return suggestions.find((s) => s.folder.visibility !== "VISIBILITY_PUBLIC")?.folder;
+}
+
 const firstName = (c: { displayName?: string; email?: string }) => c.displayName || c.email || "un proche";
 
 /** « Inès la verra », « Inès, Camille et 1 autre la verront », « Visible par vous seulement »… */

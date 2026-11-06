@@ -169,7 +169,7 @@ fun AddFlowSheet(
 
     fun toSort() {
         // Premier passage : le dossier le mieux placé est présélectionné
-        if (!folderPicked) { folderId = suggestions.firstOrNull()?.folder?.id; folderPicked = true }
+        if (!folderPicked) { folderId = AddFlow.defaultFolder(suggestions)?.id; folderPicked = true }
         step = AddStep.Sort
     }
 
@@ -596,14 +596,16 @@ private fun SortStep(
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         val canPublish by viewModel.emailVerified.collectAsState()
+        val inPublicFolder = folder?.let(AddFlow::isPublic) == true
         Icon(Icons.Outlined.Public, null, tint = BlueInk, modifier = Modifier.size(20.dp))
         Column(Modifier.weight(1f)) {
             Text("Inspirer d'autres familles", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
-            Text("Visible aussi dans Explorer", fontSize = 12.sp, color = TextSec)
+            Text(if (inPublicFolder) "Ce dossier est public : l'idée sera visible dans Explorer" else "Visible aussi dans Explorer", fontSize = 12.sp, color = TextSec)
             if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
         }
-        // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible
-        CampSwitch(draft.isPublic, { if (!it || canPublish) onDraft(draft.copy(isPublic = it)) }, "Inspirer d'autres familles")
+        // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible.
+        // Dans un dossier public, l'idée est publiée quoi qu'il arrive : l'interrupteur le montre
+        CampSwitch(draft.isPublic || inPublicFolder, { if (!inPublicFolder && (!it || canPublish)) onDraft(draft.copy(isPublic = it)) }, "Inspirer d'autres familles")
     }
 
     Text("Plus de détails (date, prix, lieu, tags…)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta, modifier = Modifier.clickable(role = Role.Button, onClick = onMore).padding(vertical = 4.dp))

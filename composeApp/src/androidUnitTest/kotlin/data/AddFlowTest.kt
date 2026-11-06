@@ -22,6 +22,15 @@ class AddFlowTest {
     }
 
     @Test
+    fun neverPreselectsAPublicFolder() {
+        val public = Folder(id = "p", name = "Public", visibility = "VISIBILITY_PUBLIC")
+        val private = Folder(id = "a", name = "Sorties", visibility = "VISIBILITY_PRIVATE")
+        assertEquals("a", AddFlow.defaultFolder(listOf(AddFlow.Suggestion(public, ""), AddFlow.Suggestion(private, "")))?.id)
+        assertEquals(null, AddFlow.defaultFolder(listOf(AddFlow.Suggestion(public, ""))))
+        assertEquals(null, AddFlow.defaultFolder(emptyList()))
+    }
+
+    @Test
     fun describesWhoSeesAndAges() {
         assertEquals("Inès la verra", AddFlow.whoSees(Folder(id = "b", name = "", collaborators = listOf(Collaborator(displayName = "Inès"))), false))
         assertEquals("Visible par toute la communauté", AddFlow.whoSees(null, true))

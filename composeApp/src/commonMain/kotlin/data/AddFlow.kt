@@ -75,6 +75,12 @@ object AddFlow {
         return out
     }
 
+    /** Dossier présélectionné : jamais un dossier public, qui publierait l'idée sans qu'on l'ait choisi. */
+    fun defaultFolder(suggestions: List<Suggestion>): Folder? =
+        suggestions.firstOrNull { !isPublic(it.folder) }?.folder
+
+    fun isPublic(folder: Folder) = folder.visibility.uppercase().contains("PUBLIC")
+
     private fun pluralOf(c: LinkCategory) = when (c) {
         LinkCategory.IDEE -> "Idées"; LinkCategory.CADEAU -> "Cadeaux"; LinkCategory.ACTIVITE -> "Activités"
         LinkCategory.EVENEMENT -> "Sorties"; LinkCategory.RECETTE -> "Recettes"; LinkCategory.LIVRE -> "Livres"
