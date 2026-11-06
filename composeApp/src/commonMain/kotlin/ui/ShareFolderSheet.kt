@@ -104,7 +104,7 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                                 val r = viewModel.shareFolder(current.id)
                                 linkBusy = false
                                 if (r == null) {
-                                    message = "Connexion requise pour partager un dossier."
+                                    message = "Le lien n'a pas pu être créé. Réessayez dans un instant."
                                 } else {
                                     sendLink(r.shareUrl.ifBlank { "${data.Backend.PRODUCTION}/share/${r.shareToken}" })
                                 }
@@ -134,7 +134,9 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
                                     Text(if (c.role == ROLE_EDITOR) "Peut ajouter des idées" else "Lecture seule", fontSize = 12.sp, color = TextSec)
                                 }
                                 CircleIconButton(Icons.Outlined.Close, "Retirer $name", {
-                                    scope.launch { viewModel.removeCollaborator(current.id, c.userId) }
+                                    scope.launch {
+                                        if (viewModel.removeCollaborator(current.id, c.userId) == null) message = "Cette personne n'a pas pu être retirée. Réessayez dans un instant."
+                                    }
                                 }, background = Sable2, size = 36.dp)
                             }
                             if (i < current.collaborators.lastIndex) HorizontalDivider(color = Sable2)
