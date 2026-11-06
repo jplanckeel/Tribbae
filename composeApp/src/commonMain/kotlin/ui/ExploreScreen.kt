@@ -151,7 +151,7 @@ fun ExploreScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             PageHeader(
-                category?.let { categoryUi(it).plural } ?: "Explorer",
+                category?.takeIf { view == 0 }?.let { categoryUi(it).plural } ?: "Explorer",
                 Modifier.padding(horizontal = 20.dp),
                 subtitle = if (view == 1) "Les dossiers publiés par les tribus" else "Les idées partagées par les tribus",
                 action = {
@@ -183,7 +183,7 @@ fun ExploreScreen(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp)
             )
 
-            SegmentedTabs(listOf("Idées", "Dossiers"), view, { view = it }, Modifier.padding(horizontal = 20.dp))
+            SegmentedTabs(listOf("Idées", "Dossiers publics"), view, { view = it }, Modifier.padding(horizontal = 20.dp))
 
             if (view == 1) {
                 CommunityFolderGrid(communityFolders, query, isRefreshing, onOpenFolder)
