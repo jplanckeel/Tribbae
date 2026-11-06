@@ -73,30 +73,30 @@ fun IdeaFormScreen(
     initialCategory: LinkCategory? = null,
     initialFolderId: String? = null,
     initialTitle: String? = null,
-    initialIngredients: List<String> = emptyList(),
+    draft: AddDraft? = null,
 ) {
     val folders by viewModel.folders.collectAsState()
     val kids by viewModel.children.collectAsState()
     val allLinks by viewModel.repository.links.collectAsState()
     val scope = rememberCoroutineScope()
 
-    var category by remember { mutableStateOf(existing?.category ?: initialCategory ?: LinkCategory.IDEE) }
-    var url by remember { mutableStateOf(existing?.url ?: initialUrl.orEmpty()) }
-    var title by remember { mutableStateOf(existing?.title ?: initialTitle.orEmpty()) }
-    var description by remember { mutableStateOf(existing?.description.orEmpty()) }
-    var imageUrl by remember { mutableStateOf(existing?.imageUrl.orEmpty()) }
-    var ingredients by remember { mutableStateOf((existing?.ingredients ?: initialIngredients).joinToString("\n")) }
-    var folderId by remember { mutableStateOf(existing?.folderId ?: initialFolderId) }
+    var category by remember { mutableStateOf(existing?.category ?: draft?.category ?: initialCategory ?: LinkCategory.IDEE) }
+    var url by remember { mutableStateOf(existing?.url ?: draft?.url ?: initialUrl.orEmpty()) }
+    var title by remember { mutableStateOf(existing?.title ?: draft?.title ?: initialTitle.orEmpty()) }
+    var description by remember { mutableStateOf(existing?.description ?: draft?.description.orEmpty()) }
+    var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: draft?.imageUrl.orEmpty()) }
+    var ingredients by remember { mutableStateOf((existing?.ingredients ?: draft?.ingredients.orEmpty()).joinToString("\n")) }
+    var folderId by remember { mutableStateOf(existing?.folderId ?: draft?.folderId ?: initialFolderId) }
     var tags by remember { mutableStateOf(existing?.tags ?: emptyList()) }
-    var ageRange by remember { mutableStateOf(existing?.ageRange.orEmpty()) }
-    var price by remember { mutableStateOf(existing?.price.orEmpty()) }
-    var location by remember { mutableStateOf(existing?.location.orEmpty()) }
-    var eventDate by remember { mutableStateOf(existing?.let { eventMs(it) }) }
+    var ageRange by remember { mutableStateOf(existing?.ageRange ?: draft?.ageRange.orEmpty()) }
+    var price by remember { mutableStateOf(existing?.price ?: draft?.price.orEmpty()) }
+    var location by remember { mutableStateOf(existing?.location ?: draft?.location.orEmpty()) }
+    var eventDate by remember { mutableStateOf(existing?.let { eventMs(it) } ?: draft?.eventDate) }
     var reminder by remember { mutableStateOf(existing?.reminderEnabled ?: false) }
     var rating by remember { mutableStateOf(existing?.rating ?: 0) }
-    var isPublic by remember { mutableStateOf(existing?.visibility == "public") }
+    var isPublic by remember { mutableStateOf(existing?.visibility == "public" || draft?.isPublic == true) }
     var more by remember {
-        mutableStateOf(existing != null && (price.isNotBlank() || location.isNotBlank() || rating > 0))
+        mutableStateOf(price.isNotBlank() || location.isNotBlank() || rating > 0)
     }
     var previewStatus by remember { mutableStateOf(PreviewStatus.Idle) }
     var previewUrl by remember { mutableStateOf<String?>(null) }
@@ -105,7 +105,7 @@ fun IdeaFormScreen(
     // Resynchronisation d'une idée existante : les infos de la page remplacent les siennes
     var previewResync by remember { mutableStateOf(false) }
     // La catégorie suggérée par la page ne remplace pas un choix explicite
-    var categoryChosen by remember { mutableStateOf(existing != null || (initialCategory != null && initialCategory != LinkCategory.IDEE)) }
+    var categoryChosen by remember { mutableStateOf(existing != null || (draft?.category ?: initialCategory ?: LinkCategory.IDEE) != LinkCategory.IDEE) }
     val autoFilled = remember { AutoFilled() }
     var requestId by remember { mutableStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }
