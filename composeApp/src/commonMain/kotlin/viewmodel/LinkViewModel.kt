@@ -332,6 +332,25 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         sessionManager?.clearSession()
     }
 
+    /**
+     * Dernière tentative d'envoi avant la déconnexion, qui efface ce qui reste sur
+     * l'appareil. Renvoie le nombre de changements qui seraient perdus.
+     */
+    suspend fun sendBeforeSignOut(): Int {
+        authenticatedClient?.let { client ->
+            try {
+                pushPending(client)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // Compté ci-dessous : la personne choisit de réessayer ou de partir
+            }
+        }
+        val ids = repository.links.value.map { it.id } + repository.folders.value.map { it.id } +
+            repository.children.value.map { it.id }
+        return data.SyncIds.unsentCount(repository.pending, ids)
+    }
+
     /** Export RGPD de toutes les données du compte (JSON), ou null en cas d'échec. */
     suspend fun exportAccount(): String? = authenticatedClient?.let { runCatching { it.exportAccount() }.getOrNull() }
 

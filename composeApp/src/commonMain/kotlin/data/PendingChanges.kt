@@ -27,6 +27,11 @@ object SyncIds {
     /** Identifiant donné par l'appareil (pas encore un ObjectId du serveur). */
     fun isLocal(id: String): Boolean = !serverId.matches(id)
 
+    /** Nombre de changements faits sur l'appareil que le serveur n'a pas encore reçus. */
+    fun unsentCount(pending: PendingChanges, ids: List<String>): Int =
+        ids.count(::isLocal) + pending.linkUpdates.size + pending.linkDeletes.size +
+            pending.folderUpdates.size + pending.childUpdates.size + pending.childDeletes.size
+
     /**
      * Liste après synchronisation : celle du serveur, sauf ce qui a été
      * supprimé ici sans que le serveur le sache encore, avec la version locale
