@@ -183,6 +183,12 @@ private fun ModernMainApp(
     fun openCommunityFolder(f: Folder) {
         push(folders.find { it.id == f.id }?.let { Screen.FolderDetail(it) } ?: Screen.PublicFolder(folder = f))
     }
+    // Action réservée aux comptes : sans compte, renvoie vers l'écran de connexion
+    fun ensureSignedIn(): Boolean {
+        if (sessionManager.hasToken()) return true
+        stack.clear(); tab = NavDestination.PROFILE
+        return false
+    }
     // Une idée de mes idées ou de la tribu s'ouvre en mode normal, les autres en lecture seule
     fun openPublicLink(l: Link) {
         push(links.find { it.id == l.id }?.let { Screen.Detail(it) } ?: Screen.Detail(l, public = l.ownerId != sessionManager.getUserId()))
@@ -275,6 +281,7 @@ private fun ModernMainApp(
                     NavDestination.EXPLORE -> {
                         ExploreScreen(
                             links = communityLinks,
+                            ensureSignedIn = ::ensureSignedIn,
                             onNavigateBack = { tab = NavDestination.HOME },
                             onNavigateToDetail = { id -> communityLinks.find { it.id == id }?.let(::openPublicLink) },
                             onSaveLink = { vm.toggleFavorite(it.id) },
@@ -429,6 +436,7 @@ private fun ModernMainApp(
                     sessionManager = sessionManager,
                     commentRepository = commentRepository,
                     viewModel = vm,
+                    ensureSignedIn = ::ensureSignedIn,
                     onOpenFolder = { f -> push(Screen.FolderDetail(f, fromLinkId = fresh.id)) },
                     onOpenShopping = if (screen.public) null else { { push(Screen.Shopping(fresh.id)) } },
                 )

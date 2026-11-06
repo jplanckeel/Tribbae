@@ -82,6 +82,7 @@ fun ExploreScreen(
     viewModel: viewmodel.LinkViewModel,
     initialQuery: String = "",
     initialCategory: LinkCategory? = null,
+    ensureSignedIn: () -> Boolean = { true },
     searchRequest: Int = 0,
     onNavigateToAI: () -> Unit = {},
     onOpenFolder: (data.Folder) -> Unit = {},
@@ -240,7 +241,8 @@ fun ExploreScreen(
                                 index = i,
                                 onClick = { onNavigateToDetail(l.id) },
                                 liked = liked,
-                                onLike = {
+                                onLike = like@{
+                                    if (!ensureSignedIn()) return@like
                                     val count = likes[l.id]?.second ?: l.likeCount
                                     likes[l.id] = !liked to (count + if (liked) -1 else 1)
                                     viewModel.toggleLike(l.id, liked) { ok, c -> likes[l.id] = ok to c }
