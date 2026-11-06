@@ -9,7 +9,7 @@ import { useMyData } from "../lib/data";
 import { eventDateMs, formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, toInput } from "../lib/links";
 import { usePhotoUpload } from "../lib/photo";
-import { PUBLISH_IDEA } from "../lib/publish";
+import { PUBLISH_IDEA, PUBLISH_IDEA_IN_FOLDER } from "../lib/publish";
 import { useCanPublish, useSession } from "../lib/session";
 import { PublicFolderNote, PublishLockedNote } from "./VerifyEmailBanner";
 import type { Folder, Link, LinkInput, LinkPreview } from "../lib/types";
@@ -165,6 +165,8 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
     const title = (draft.title || (draft.url ? hostname(draft.url) : "")).trim();
     if (!title) return setError("Donnez un titre à votre idée.");
     if (mode === "photo" && photo?.status === "failed") return setError("La photo n'est pas partie : réessayez ou changez-la.");
+    // Ranger une idée dans son dossier public la publie : même confirmation que le formulaire
+    if (inPublicFolder && draft.visibility !== "public" && !(await confirm(PUBLISH_IDEA_IN_FOLDER))) return;
     setSaving(true);
     setError("");
     try {

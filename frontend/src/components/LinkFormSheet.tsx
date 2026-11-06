@@ -6,7 +6,7 @@ import { useMyData } from "../lib/data";
 import { formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, tagCounts } from "../lib/links";
 import { usePhotoUpload, type PhotoUpload } from "../lib/photo";
-import { PUBLISH_IDEA } from "../lib/publish";
+import { PUBLISH_IDEA, PUBLISH_IDEA_IN_FOLDER } from "../lib/publish";
 import { useCanPublish, useSession } from "../lib/session";
 import { PublicFolderNote, PublishLockedNote } from "./VerifyEmailBanner";
 import type { CategoryKey, LinkInput, LinkPreview } from "../lib/types";
@@ -188,7 +188,11 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
     // Ranger une idée dans son dossier public la publie : même confirmation que l'interrupteur
     const myPublicFolder = folders.find((f) => f.id === form.folderId && f.visibility === "VISIBILITY_PUBLIC" && f.ownerId === session?.userId);
     const movedIn = !editing || initial.folderId !== form.folderId;
-    if (myPublicFolder && movedIn && form.visibility !== "public" && !(await confirm(PUBLISH_IDEA))) return;
+    if (myPublicFolder && movedIn) {
+      // Le serveur refuse de déplacer l'idée d'un autre vers un dossier public
+      if (authorName !== undefined) return setError("Seul son auteur peut ranger cette idée dans un dossier public.");
+      if (form.visibility !== "public" && !(await confirm(PUBLISH_IDEA_IN_FOLDER))) return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -472,7 +476,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             <Icon name="globe" size={20} className="text-activite-ic" />
             <span className="flex flex-1 flex-col">
               <span className="text-sm font-bold">Partager avec la communauté</span>
-              <span className="text-xs text-sec">Visible dans l'Explorer par toutes les tribus</span>
+              <span className="text-xs text-sec">{inMyPublicFolder ? "Visible par toutes les familles dans ce dossier" : "Visible dans l'Explorer par toutes les tribus"}</span>
               {!canPublish && <PublishLockedNote />}
             </span>
             {/* Publier attend la confirmation de l'adresse ; dépublier reste possible */}
@@ -492,7 +496,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             Idée de {authorName || "un membre de la tribu"} : seul son auteur peut la partager avec la communauté.
           </p>
         )}
-        {inMyPublicFolder && form.visibility !== "public" && (
+        {inMyPublicFolder && authorName === undefined && form.visibility !== "public" && (
           <p role="note" className="-mt-2 flex items-start gap-2 px-1 text-xs text-sec">
             <Icon name="eye" size={15} className="mt-px shrink-0" />
             Le dossier « {chosenFolder.name} » est public : cette idée y sera visible par tous ses visiteurs.

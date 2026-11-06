@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { exposedBy, PUBLISH_IDEA, publishFolder } from "./publish";
+import { exposedBy, PUBLISH_IDEA, PUBLISH_IDEA_IN_FOLDER, publishFolder } from "./publish";
 
 // Mêmes cas que data/PublishConfirmTest.kt côté Android
 describe("confirmation avant de publier", () => {
   it("dit ce que devient une idée", () => {
     expect(PUBLISH_IDEA.text).toBe("Votre idée sera visible par toutes les familles dans Explorer. Les prénoms des enfants ne sont jamais publiés.");
+  });
+
+  it("ne promet pas Explorer à une idée publiée par son dossier", () => {
+    expect(PUBLISH_IDEA_IN_FOLDER.text).toBe("Votre idée sera visible par toutes les familles dans ce dossier public. Les prénoms des enfants ne sont jamais publiés.");
   });
 
   it("ne compte que les idées que le dossier expose", () => {

@@ -161,11 +161,16 @@ fun IdeaFormScreen(
     val inMyPublicFolder = chosenFolder != null && chosenFolder.visibility.uppercase().contains("PUBLIC") &&
         (chosenFolder.ownerId.isBlank() || chosenFolder.ownerId == viewModel.currentUserId())
     var confirmMove by remember { mutableStateOf(false) }
+    val authorIsOther = existing != null && existing.ownerId.isNotBlank() && existing.ownerId != viewModel.currentUserId()
 
     fun submit(confirmed: Boolean = false) {
         if (title.isBlank()) { error = "Donnez un titre à votre idée."; return }
-        // Ranger une idée dans son dossier public la publie : même confirmation que l'interrupteur
-        if (!confirmed && inMyPublicFolder && !isPublic && existing?.folderId != folderId) { confirmMove = true; return }
+        // Ranger une idée dans son dossier public la publie : même confirmation que l'interrupteur.
+        // Le serveur refuse de déplacer l'idée d'un autre vers un dossier public
+        if (inMyPublicFolder && existing?.folderId != folderId) {
+            if (authorIsOther) { error = "Seul son auteur peut ranger cette idée dans un dossier public."; return }
+            if (!confirmed && !isPublic) { confirmMove = true; return }
+        }
         val ing = if (category == LinkCategory.RECETTE) ingredients.lines().map { it.trim() }.filter { it.isNotEmpty() } else existing?.ingredients ?: emptyList()
         val visibility = if (isPublic) "public" else "private"
         val remind = reminder && eventDate != null
@@ -348,7 +353,6 @@ fun IdeaFormScreen(
             }
 
             // Idée d'un autre membre de la tribu : modifiable, mais seul son auteur la publie
-            val authorIsOther = existing != null && existing.ownerId.isNotBlank() && existing.ownerId != viewModel.currentUserId()
             if (authorIsOther) {
                 Row(
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(horizontal = 16.dp, vertical = 12.dp),
@@ -370,7 +374,7 @@ fun IdeaFormScreen(
                     Icon(Icons.Outlined.Public, null, tint = Color(0xFF2F7393), modifier = Modifier.size(20.dp))
                     Column(Modifier.weight(1f)) {
                         Text("Partager avec la communauté", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
-                        Text("Visible dans l'Explorer par toutes les tribus", fontSize = 12.sp, color = TextSec)
+                        Text(if (inMyPublicFolder) "Visible par toutes les familles dans ce dossier" else "Visible dans l'Explorer par toutes les tribus", fontSize = 12.sp, color = TextSec)
                         if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
                     }
                     // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible
@@ -387,7 +391,7 @@ fun IdeaFormScreen(
             }
             if (confirmMove) {
                 ConfirmSheet(
-                    data.PublishConfirm.IDEA_TITLE, data.PublishConfirm.IDEA_TEXT, "Publier",
+                    data.PublishConfirm.IDEA_TITLE, data.PublishConfirm.IDEA_IN_FOLDER_TEXT, "Publier",
                     onConfirm = { confirmMove = false; submit(confirmed = true) },
                     onDismiss = { confirmMove = false },
                 )
@@ -395,7 +399,7 @@ fun IdeaFormScreen(
             // Dans son propre dossier public, une idée est visible de tous même sans être partagée
             // à la communauté (les idées d'un collaborateur, elles, restent réservées aux membres).
             PublicFolderWaitingNote(viewModel, chosenFolder, Modifier.padding(horizontal = 4.dp))
-            if (inMyPublicFolder && !isPublic) {
+            if (inMyPublicFolder && !authorIsOther && !isPublic) {
                 Row(Modifier.padding(horizontal = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Outlined.Visibility, null, tint = TextSec, modifier = Modifier.size(15.dp).padding(top = 1.dp))
                     Text(
