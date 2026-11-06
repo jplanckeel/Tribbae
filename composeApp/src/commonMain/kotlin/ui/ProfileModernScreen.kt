@@ -1424,7 +1424,7 @@ private fun SimpleAuthDialog(
     AlertDialog(onDismissRequest = { if (!isLoading) onDismiss() }) {
         Surface(
             shape = RoundedCornerShape(24.dp),
-            color = Color.White
+            color = SheetColor
         ) {
             Column(
                 modifier = Modifier
@@ -1473,7 +1473,7 @@ private fun SimpleAuthDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color(0xFFC8492C),
-                            focusedLabelColor = Color(0xFFC8492C)
+                            focusedLabelColor = TerracottaDark
                         )
                     )
                 }
@@ -1491,7 +1491,7 @@ private fun SimpleAuthDialog(
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFC8492C),
-                        focusedLabelColor = Color(0xFFC8492C)
+                        focusedLabelColor = TerracottaDark
                     )
                 )
 
@@ -1517,7 +1517,7 @@ private fun SimpleAuthDialog(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFC8492C),
-                        focusedLabelColor = Color(0xFFC8492C)
+                        focusedLabelColor = TerracottaDark
                     )
                 )
 
@@ -1527,7 +1527,7 @@ private fun SimpleAuthDialog(
                         modifier = Modifier.align(Alignment.End),
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
                     ) {
-                        Text("Mot de passe oublié ?", color = Color(0xFFC8492C), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Mot de passe oublié ?", color = TerracottaDark, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
 
@@ -1539,7 +1539,7 @@ private fun SimpleAuthDialog(
                     ) {
                         Text(
                             text = errorMessage ?: "",
-                            color = Color(0xFFB2412A),
+                            color = CoralInk,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(10.dp)
                         )
