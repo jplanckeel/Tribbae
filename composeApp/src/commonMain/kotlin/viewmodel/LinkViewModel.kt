@@ -942,7 +942,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 ownerDisplayName = apiLink.ownerDisplayName,
                 ownerIsAdmin = apiLink.ownerIsAdmin,
                 visibility = apiLink.visibility.ifBlank { "private" },
-                createdVia = apiLink.createdVia
+                createdVia = apiLink.createdVia,
+                publicViaFolder = apiLink.publicViaFolder
             )
         }
         val backendChildren = client.listChildren().children.map { apiChild ->

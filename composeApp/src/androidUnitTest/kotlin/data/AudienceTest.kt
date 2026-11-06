@@ -10,7 +10,8 @@ class AudienceTest {
     private val collaborator = Collaborator(userId = "camille", displayName = "Camille")
     private fun folder(visibility: String = "VISIBILITY_PRIVATE", collaborators: List<Collaborator> = emptyList(), ownerId: String = "moi") =
         Folder(id = "1", name = "Dossier", visibility = visibility, collaborators = collaborators, ownerId = ownerId)
-    private fun link(visibility: String) = Link(id = "1", title = "Idée", url = "", category = LinkCategory.IDEE, visibility = visibility)
+    private fun link(visibility: String = "private", ownerId: String = "moi") =
+        Link(id = "1", title = "Idée", url = "", category = LinkCategory.IDEE, visibility = visibility, ownerId = ownerId)
 
     @Test
     fun folderOfTheAccountOrTribeIsPrivate() {
@@ -39,7 +40,18 @@ class AudienceTest {
     }
 
     @Test
-    fun ideaInAPublicFolderIsCommunityEvenMarkedPrivate() {
-        assertEquals(Audience.PUBLIC, Audience.ofIdea(link("private"), folder("VISIBILITY_PUBLIC"), isPeer))
+    fun ideaInItsAuthorsPublicFolderIsCommunityEvenMarkedPrivate() {
+        assertEquals(Audience.PUBLIC, Audience.ofIdea(link(), folder("VISIBILITY_PUBLIC"), isPeer))
+        assertEquals(Audience.PUBLIC, Audience.ofIdea(link(ownerId = ""), folder("VISIBILITY_PUBLIC"), isPeer))
+    }
+
+    @Test
+    fun ideaInSomeoneElsesPublicFolderStaysTribe() {
+        assertEquals(Audience.SHARED, Audience.ofIdea(link(ownerId = "tribu"), folder("VISIBILITY_PUBLIC"), isPeer))
+    }
+
+    @Test
+    fun unknownFolderFollowsTheServer() {
+        assertEquals(Audience.PUBLIC, Audience.ofIdea(link(ownerId = "tata").copy(publicViaFolder = true), null, isPeer))
     }
 }

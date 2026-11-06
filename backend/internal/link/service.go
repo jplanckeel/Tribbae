@@ -654,22 +654,30 @@ type Stats struct {
 	LikeCount map[string]int32
 	LikedByMe map[string]bool
 	Owners    map[string]OwnerInfo
+	// Dossiers publics du lot et leur propriétaire : leurs idées à lui sont
+	// visibles de tous (même règle que PublicFolderFilter)
+	PublicFolders map[string]string
 }
 
 // LoadStats charge likes, "aimé par moi" et auteurs pour une liste de liens.
 func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *Stats {
 	st := &Stats{
-		LikeCount: map[string]int32{},
-		LikedByMe: map[string]bool{},
-		Owners:    map[string]OwnerInfo{},
+		LikeCount:     map[string]int32{},
+		LikedByMe:     map[string]bool{},
+		Owners:        map[string]OwnerInfo{},
+		PublicFolders: map[string]string{},
 	}
 	if len(links) == 0 {
 		return st
 	}
 	ids := make([]string, 0, len(links))
 	ownerSet := map[bson.ObjectID]struct{}{}
+	folderSet := map[bson.ObjectID]struct{}{}
 	for _, l := range links {
 		ids = append(ids, l.ID.Hex())
+		if fid, err := bson.ObjectIDFromHex(l.FolderID); err == nil {
+			folderSet[fid] = struct{}{}
+		}
 		if oid, err := bson.ObjectIDFromHex(l.OwnerID); err == nil {
 			ownerSet[oid] = struct{}{}
 		}
@@ -719,6 +727,25 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 		if cur.All(ctx, &rows) == nil {
 			for _, r := range rows {
 				st.Owners[r.ID.Hex()] = OwnerInfo{DisplayName: r.DisplayName, IsAdmin: r.IsAdmin}
+			}
+		}
+	}
+
+	fids := make([]bson.ObjectID, 0, len(folderSet))
+	for fid := range folderSet {
+		fids = append(fids, fid)
+	}
+	if len(fids) > 0 {
+		filter := bson.M{"_id": bson.M{"$in": fids}, "visibility": "public"}
+		if cur, err := s.folderCol.Find(ctx, filter, options.Find().SetProjection(bson.M{"owner_id": 1})); err == nil {
+			var rows []struct {
+				ID      bson.ObjectID `bson:"_id"`
+				OwnerID string        `bson:"owner_id"`
+			}
+			if cur.All(ctx, &rows) == nil {
+				for _, r := range rows {
+					st.PublicFolders[r.ID.Hex()] = r.OwnerID
+				}
 			}
 		}
 	}

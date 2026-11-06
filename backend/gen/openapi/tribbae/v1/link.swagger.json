@@ -623,6 +623,10 @@
         "createdVia": {
           "type": "string",
           "title": "Provenance : \"mcp\" pour une idée ajoutée par une application connectée\n(Claude), vide sinon"
+        },
+        "publicViaFolder": {
+          "type": "boolean",
+          "title": "Visible de tous parce que son auteur l'a rangée dans son dossier public"
         }
       }
     },

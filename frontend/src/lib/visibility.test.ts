@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Collaborator, Folder } from "./types";
+import type { Collaborator, Folder, Link } from "./types";
 import { folderAudience, ideaAudience } from "./visibility";
 
 const peers = new Set(["moi", "tribu"]);
@@ -25,14 +25,24 @@ describe("visibilité d'un dossier", () => {
 });
 
 describe("visibilité d'une idée", () => {
+  const idea = (visibility = "private", ownerId = "moi") => ({ visibility, ownerId }) as Link;
+
   it("suit l'idée puis son dossier", () => {
-    expect(ideaAudience({ visibility: "public" }, undefined, peers)).toBe("public");
-    expect(ideaAudience({ visibility: "private" }, undefined, peers)).toBe("private");
-    expect(ideaAudience({ visibility: "private" }, folder(), peers)).toBe("private");
-    expect(ideaAudience({ visibility: "private" }, folder({ collaborators: [collaborator] }), peers)).toBe("shared");
+    expect(ideaAudience(idea("public"), undefined, peers)).toBe("public");
+    expect(ideaAudience(idea(), undefined, peers)).toBe("private");
+    expect(ideaAudience(idea(), folder(), peers)).toBe("private");
+    expect(ideaAudience(idea(), folder({ collaborators: [collaborator] }), peers)).toBe("shared");
   });
 
-  it("est Communauté dans un dossier public, même marquée privée", () => {
-    expect(ideaAudience({ visibility: "private" }, folder({ visibility: "VISIBILITY_PUBLIC" }), peers)).toBe("public");
+  it("est Communauté dans le dossier public de son auteur, même marquée privée", () => {
+    expect(ideaAudience(idea(), folder({ visibility: "VISIBILITY_PUBLIC" }), peers)).toBe("public");
+  });
+
+  it("reste Tribu dans le dossier public de quelqu'un d'autre", () => {
+    expect(ideaAudience(idea("private", "tribu"), folder({ visibility: "VISIBILITY_PUBLIC" }), peers)).toBe("shared");
+  });
+
+  it("suit le serveur pour un dossier inconnu", () => {
+    expect(ideaAudience({ ...idea("private", "tata"), publicViaFolder: true }, undefined, peers)).toBe("public");
   });
 });

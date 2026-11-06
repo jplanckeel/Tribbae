@@ -16,11 +16,18 @@ enum class Audience(val label: String) {
             else -> PRIVATE
         }
 
-        /** Une idée rangée dans un dossier suit au moins la visibilité de ce dossier. */
+        /**
+         * Une idée suit la visibilité de son dossier, sauf dans un dossier public :
+         * seules les idées de son propriétaire y sont visibles de tous. Un dossier
+         * qu'on ne connaît pas (celui d'un autre compte) : le serveur a tranché.
+         * Une idée pas encore envoyée n'a pas d'auteur : c'est celle du compte.
+         */
         fun ofIdea(link: Link, folder: Folder?, isPeer: (String) -> Boolean): Audience = when {
             link.visibility == "public" -> PUBLIC
-            folder != null -> ofFolder(folder, isPeer)
-            else -> PRIVATE
+            folder == null -> if (link.publicViaFolder) PUBLIC else PRIVATE
+            !folder.visibility.uppercase().contains("PUBLIC") -> ofFolder(folder, isPeer)
+            link.ownerId == folder.ownerId || link.ownerId.isBlank() -> PUBLIC
+            else -> SHARED
         }
     }
 }
