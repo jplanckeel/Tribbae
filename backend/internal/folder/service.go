@@ -288,24 +288,62 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 	return nil
 }
 
+// GenerateShareToken renvoie le lien du dossier et ne le crée que s'il n'existe
+// pas : un lien déjà envoyé continue de marcher. Seul le propriétaire y accède.
 func (s *Service) GenerateShareToken(ctx context.Context, folderID, ownerID string) (string, string, error) {
 	id, err := bson.ObjectIDFromHex(folderID)
 	if err != nil {
-		return "", "", errors.New("invalid folder id")
+		return "", "", ErrInvalidInput
+	}
+	var f Folder
+	if err := s.col.FindOne(ctx, bson.M{"_id": id, "owner_id": ownerID}).Decode(&f); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return "", "", ErrNotFound
+		}
+		return "", "", err
+	}
+	if f.ShareToken != "" {
+		return f.ShareToken, s.baseURL + "/share/" + f.ShareToken, nil
 	}
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return "", "", err
 	}
 	token := hex.EncodeToString(b)
-	_, err = s.col.UpdateOne(ctx,
-		bson.M{"_id": id, "owner_id": ownerID},
+	// Deux demandes simultanées : seule la première écrit, l'autre reprend son lien
+	res, err := s.col.UpdateOne(ctx,
+		bson.M{"_id": id, "owner_id": ownerID, "share_token": bson.M{"$in": bson.A{nil, ""}}},
 		bson.M{"$set": bson.M{"share_token": token, "updated_at": time.Now()}},
 	)
 	if err != nil {
 		return "", "", err
 	}
+	if res.MatchedCount == 0 {
+		if err := s.col.FindOne(ctx, bson.M{"_id": id, "owner_id": ownerID}).Decode(&f); err != nil {
+			return "", "", err
+		}
+		token = f.ShareToken
+	}
 	return token, s.baseURL + "/share/" + token, nil
+}
+
+// RevokeShareToken coupe le lien du dossier : il cesse de marcher tout de suite.
+func (s *Service) RevokeShareToken(ctx context.Context, folderID, ownerID string) error {
+	id, err := bson.ObjectIDFromHex(folderID)
+	if err != nil {
+		return ErrInvalidInput
+	}
+	res, err := s.col.UpdateOne(ctx,
+		bson.M{"_id": id, "owner_id": ownerID},
+		bson.M{"$unset": bson.M{"share_token": ""}, "$set": bson.M{"updated_at": time.Now()}},
+	)
+	if err != nil {
+		return err
+	}
+	if res.MatchedCount == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // SharedLink : ce qu'un lien de partage montre d'une idée du dossier (lu sans

@@ -524,6 +524,34 @@
       }
     },
     "/v1/folders/{folderId}/share": {
+      "delete": {
+        "operationId": "FolderService_RevokeShareToken",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RevokeShareTokenResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      },
       "post": {
         "operationId": "FolderService_GenerateShareToken",
         "responses": {
@@ -1164,6 +1192,10 @@
         "visibility": {
           "type": "string",
           "title": "\"private\" | \"public\""
+        },
+        "createdVia": {
+          "type": "string",
+          "title": "Provenance : \"mcp\" pour une idée ajoutée par une application connectée\n(Claude), vide sinon"
         }
       }
     },
@@ -1241,6 +1273,9 @@
       }
     },
     "v1RevokeCircleInvitationResponse": {
+      "type": "object"
+    },
+    "v1RevokeShareTokenResponse": {
       "type": "object"
     },
     "v1UnlikeFolderResponse": {

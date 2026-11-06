@@ -356,6 +356,10 @@ class AuthenticatedApiClient(
         }
     }
 
+    suspend fun revokeShare(folderId: String) {
+        request("/v1/folders/$folderId/share", "DELETE", null) { _ -> Unit }
+    }
+
     // Collaborators
     suspend fun removeCollaborator(folderId: String, userId: String): AddCollaboratorResponse {
         return request("/v1/folders/$folderId/collaborators/$userId", "DELETE", null) { response ->

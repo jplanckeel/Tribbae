@@ -211,6 +211,7 @@ export const folders = {
     request<{ shareToken: string; shareUrl: string }>(`/folders/${encodeURIComponent(id)}/share`, {
       method: "POST", body: "{}",
     }),
+  unshare: (id: string) => request<void>(`/folders/${encodeURIComponent(id)}/share`, { method: "DELETE" }),
   removeCollaborator: (id: string, userId: string) =>
     request<{ folder: Folder }>(
       `/folders/${encodeURIComponent(id)}/collaborators/${encodeURIComponent(userId)}`,
