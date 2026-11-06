@@ -67,6 +67,15 @@ class AndroidStorage(context: Context) : Storage {
         checked = courses.getStringSet("checked", null)?.toSet().orEmpty(),
     )
 
+    override fun saveLiked(links: List<Link>) {
+        prefs.edit().putString("liked", json.encodeToString(links)).apply()
+    }
+
+    override fun loadLiked(): List<Link> {
+        val raw = prefs.getString("liked", null) ?: return emptyList()
+        return try { json.decodeFromString(raw) } catch (_: Exception) { emptyList() }
+    }
+
     override fun savePending(pending: PendingChanges) {
         prefs.edit().putString("pending", json.encodeToString(pending)).apply()
     }

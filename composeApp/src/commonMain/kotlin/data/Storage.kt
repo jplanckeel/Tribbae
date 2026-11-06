@@ -20,6 +20,10 @@ interface Storage {
     fun loadImageChecks(): Map<String, Long> = emptyMap()
 
     /** Changements pas encore reçus par le serveur (voir PendingChanges). */
+    /** Idées aimées : la dernière liste reçue, pour l'onglet J'aime hors ligne. */
+    fun saveLiked(links: List<Link>) {}
+    fun loadLiked(): List<Link> = emptyList()
+
     fun savePending(pending: PendingChanges) {}
     fun loadPending(): PendingChanges = PendingChanges()
 

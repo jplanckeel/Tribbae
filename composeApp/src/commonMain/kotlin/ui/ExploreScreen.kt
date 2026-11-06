@@ -255,7 +255,7 @@ fun ExploreScreen(
                                     if (!ensureSignedIn()) return@like
                                     val count = likes[l.id]?.second ?: l.likeCount
                                     likes[l.id] = !liked to (count + if (liked) -1 else 1)
-                                    viewModel.toggleLike(l.id, liked) { ok, c -> likes[l.id] = ok to c }
+                                    viewModel.toggleLike(l.id, liked, onFailed = { likes[l.id] = liked to count }) { ok, c -> likes[l.id] = ok to c }
                                 }
                             )
                         }

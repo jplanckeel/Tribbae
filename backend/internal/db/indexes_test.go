@@ -67,7 +67,7 @@ func TestEnsureIndexesDropsReplacedOnes(t *testing.T) {
 			t.Errorf("%s missing", name)
 		}
 	}
-	if likes := indexNames(t, db.Collection("link_likes")); !likes["idx_link_likes_user_id"] || likes["idx_link_likes_link_id"] {
+	if likes := indexNames(t, db.Collection("link_likes")); !likes["idx_link_likes_user_created_at"] || likes["idx_link_likes_user_id"] || likes["idx_link_likes_link_id"] {
 		t.Errorf("link_likes indexes: %v", likes)
 	}
 }

@@ -3,6 +3,7 @@ package link
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -504,6 +505,9 @@ func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 		return ErrForbidden
 	}
 
+	if _, err := s.linkLikeCol.DeleteMany(ctx, bson.M{"link_id": linkID}); err != nil {
+		return err
+	}
 	_, err = s.col.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
@@ -552,6 +556,102 @@ func (s *Service) GetLikeCount(ctx context.Context, linkID string) (int32, error
 	return int32(count), nil
 }
 
+// likedListLimit borne la liste « J'aime » d'un compte.
+const likedListLimit = 300
+
+// ListLiked retourne les idées aimées par le compte, la plus récemment aimée
+// d'abord, sans celles qu'il ne peut plus voir (redevenues privées). Le contrôle
+// d'accès n'interroge la base que pour les idées ni publiques ni de la tribu.
+func (s *Service) ListLiked(ctx context.Context, userID string) ([]*Link, error) {
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).
+		SetLimit(likedListLimit).SetProjection(bson.M{"link_id": 1})
+	cur, err := s.linkLikeCol.Find(ctx, bson.M{"user_id": userID}, opts)
+	if err != nil {
+		return nil, err
+	}
+	var likes []struct {
+		LinkID string `bson:"link_id"`
+	}
+	if err := cur.All(ctx, &likes); err != nil {
+		return nil, err
+	}
+	ids := make([]bson.ObjectID, 0, len(likes))
+	for _, l := range likes {
+		if id, err := bson.ObjectIDFromHex(l.LinkID); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	links := []*Link{}
+	if len(ids) == 0 {
+		return links, nil
+	}
+	cursor, err := s.col.Find(ctx, bson.M{"_id": bson.M{"$in": ids}})
+	if err != nil {
+		return nil, err
+	}
+	var found []*Link
+	if err := cursor.All(ctx, &found); err != nil {
+		return nil, err
+	}
+	byID := make(map[bson.ObjectID]*Link, len(found))
+	for _, l := range found {
+		byID[l.ID] = l
+	}
+	peers := map[string]bool{userID: true}
+	for _, p := range s.peerIDs(ctx, userID) {
+		peers[p] = true
+	}
+	orphans := bson.A{}
+	for _, id := range ids {
+		l := byID[id]
+		if l == nil {
+			orphans = append(orphans, id.Hex())
+		} else if l.Visibility == "public" || peers[l.OwnerID] || s.canAccessLink(ctx, l, userID) {
+			links = append(links, l)
+		}
+	}
+	// J'aime d'une idée supprimée avant leur nettoyage : ils prendraient une place de la liste
+	if len(orphans) > 0 {
+		if _, err := s.linkLikeCol.DeleteMany(ctx, bson.M{"user_id": userID, "link_id": bson.M{"$in": orphans}}); err != nil {
+			log.Printf("link: clean orphan likes: %v", err)
+		}
+	}
+	return links, nil
+}
+
+// MigrateFavorites transforme chaque favori en J'aime de l'auteur de l'idée.
+// Une idée reprise est marquée, sinon relancer la reprise annulerait le retrait
+// d'un J'aime. Le champ favorite reste pour les anciennes versions de l'app.
+func (s *Service) MigrateFavorites(ctx context.Context) (int, error) {
+	filter := bson.M{"favorite": true, "favorite_migrated": bson.M{"$ne": true}}
+	cur, err := s.col.Find(ctx, filter, options.Find().SetProjection(bson.M{"owner_id": 1, "updated_at": 1}))
+	if err != nil {
+		return 0, err
+	}
+	var rows []struct {
+		ID        bson.ObjectID `bson:"_id"`
+		OwnerID   string        `bson:"owner_id"`
+		UpdatedAt time.Time     `bson:"updated_at"`
+	}
+	if err := cur.All(ctx, &rows); err != nil {
+		return 0, err
+	}
+	for _, r := range rows {
+		if _, err := s.linkLikeCol.UpdateOne(ctx,
+			bson.M{"link_id": r.ID.Hex(), "user_id": r.OwnerID},
+			// Date de l'idée : un favori ancien ne passe pas devant les vrais J'aime récents
+			bson.M{"$setOnInsert": bson.M{"_id": bson.NewObjectID(), "created_at": r.UpdatedAt}},
+			options.UpdateOne().SetUpsert(true),
+		); err != nil {
+			return 0, err
+		}
+		if _, err := s.col.UpdateOne(ctx, bson.M{"_id": r.ID}, bson.M{"$set": bson.M{"favorite_migrated": true}}); err != nil {
+			return 0, err
+		}
+	}
+	return len(rows), nil
+}
+
 // ToggleFavorite bascule le statut favori d'un lien
 func (s *Service) ToggleFavorite(ctx context.Context, linkID, ownerID string) (bool, error) {
 	id, err := bson.ObjectIDFromHex(linkID)
@@ -572,7 +672,8 @@ func (s *Service) ToggleFavorite(ctx context.Context, linkID, ownerID string) (b
 	_, err = s.col.UpdateOne(
 		ctx,
 		bson.M{"_id": id},
-		bson.M{"$set": bson.M{"favorite": newFavorite, "updated_at": time.Now()}},
+		// Une ancienne version de l'app peut encore ajouter un favori : il sera repris
+		bson.M{"$set": bson.M{"favorite": newFavorite, "updated_at": time.Now()}, "$unset": bson.M{"favorite_migrated": ""}},
 	)
 	if err != nil {
 		return false, err

@@ -25,13 +25,14 @@ import data.Link
 import data.LinkCategory
 import ui.campfire.*
 
-/** « Mes idées » : dossiers, favoris et tags de la tribu. */
+/** « Mes idées » : dossiers, idées aimées et tags de la tribu. */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MyIdeasScreen(
     links: List<Link>,
     folders: List<Folder>,
     onNavigateToDetail: (String) -> Unit,
+    onOpenLiked: (Link) -> Unit,
     onSaveLink: (Link) -> Unit,
     onAddFolderClick: () -> Unit,
     onFolderClick: (Folder) -> Unit,
@@ -57,7 +58,7 @@ fun MyIdeasScreen(
     val pinned = remember(folders) { folders.filter { it.pinned } }
     val others = remember(folders, folderSort) { sortFolders(folders.filter { !it.pinned }, folderSort) }
     val tagTotal = remember(links) { links.flatMap { it.tags }.toSet().size }
-    val favTotal = remember(links) { links.count { it.favorite } }
+    val liked by viewModel.repository.liked.collectAsState()
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -78,7 +79,7 @@ fun MyIdeasScreen(
             )
 
             SegmentedTabs(
-                listOf(Triple("Dossiers", folders.size, 0), Triple("Favoris", favTotal, 1), Triple("Tags", tagTotal, 2)).map { (l, n, _) -> if (n > 0) "$l $n" else l },
+                listOf(Triple("Dossiers", folders.size, 0), Triple("J'aime", liked.size, 1), Triple("Tags", tagTotal, 2)).map { (l, n, _) -> if (n > 0) "$l $n" else l },
                 tab, { tab = it }, Modifier.fillMaxWidth()
             )
 
@@ -148,16 +149,15 @@ fun MyIdeasScreen(
                 }
 
                 1 -> {
-                    val favs = links.filter { it.favorite }.sortedByDescending { it.updatedAt }
-                    if (favs.isEmpty()) {
+                    if (liked.isEmpty()) {
                         EmptyBlock(
-                            Icons.Outlined.StarBorder,
-                            "Pas encore de favoris",
-                            "Ouvrez une idée et touchez l'étoile pour la retrouver ici en un clin d'œil."
+                            Icons.Outlined.FavoriteBorder,
+                            "Pas encore de J'aime",
+                            "Touchez le cœur d'une idée pour la retrouver ici en un clin d'œil."
                         )
                     } else {
-                        TwoColumnMosaic(favs) { l, i ->
-                            MosaicCard(l, i, { onNavigateToDetail(l.id) }, liked = true, onLike = { onSaveLink(l) })
+                        TwoColumnMosaic(liked) { l, i ->
+                            MosaicCard(l, i, { onOpenLiked(l) }, liked = true, onLike = { onSaveLink(l) })
                         }
                     }
                 }

@@ -75,8 +75,8 @@ export function LikeHeart({ liked, size }: { liked: boolean; size: number }) {
   );
 }
 
-export function LikeButton({ link, className = "", onRequireAuth }: {
-  link: Link; className?: string; onRequireAuth?: () => void;
+export function LikeButton({ link, className = "", onRequireAuth, onUnliked }: {
+  link: Link; className?: string; onRequireAuth?: () => void; onUnliked?: () => void;
 }) {
   const session = useSession();
   const [liked, setLiked] = useState(!!link.likedByMe);
@@ -96,6 +96,7 @@ export function LikeButton({ link, className = "", onRequireAuth }: {
     try {
       const r = next ? await api.links.like(link.id) : await api.links.unlike(link.id);
       if (typeof r?.likeCount === "number") setCount(r.likeCount);
+      if (!next) onUnliked?.();
     } catch {
       setLiked(!next);
       setCount((c) => c + (next ? -1 : 1));
@@ -145,8 +146,8 @@ export function RailCard({ link }: { link: Link }) {
 // Hauteurs variées pour l'effet mosaïque de l'Explorer
 const MOSAIC = [150, 110, 100, 120, 140, 96];
 
-/** Carte de la mosaïque (Explorer, favoris, dossiers). */
-export function GridCard({ link, index = 0, onRequireAuth, highlight }: { link: Link; index?: number; onRequireAuth?: () => void; highlight?: string }) {
+/** Carte de la mosaïque (Explorer, J'aime, dossiers). */
+export function GridCard({ link, index = 0, onRequireAuth, onUnliked, highlight }: { link: Link; index?: number; onRequireAuth?: () => void; onUnliked?: () => void; highlight?: string }) {
   const cat = categoryMeta(link.category);
   const meta = metaLine(link) || cat.label;
   const author = useAuthor(link);
@@ -160,7 +161,7 @@ export function GridCard({ link, index = 0, onRequireAuth, highlight }: { link: 
     >
       <div className="relative">
         <IdeaVisual link={link} height={MOSAIC[index % MOSAIC.length]} iconSize={40} style={morph.visualStyle} />
-        <LikeButton link={link} onRequireAuth={onRequireAuth} className="absolute top-2 right-2" />
+        <LikeButton link={link} onRequireAuth={onRequireAuth} onUnliked={onUnliked} className="absolute top-2 right-2" />
         <IdeaVisibility link={link} className="absolute bottom-2 left-2" />
       </div>
       <div className="flex flex-col gap-1 px-3 pt-2.5 pb-3">

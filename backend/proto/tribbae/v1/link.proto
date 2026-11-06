@@ -135,6 +135,12 @@ message UnlikeLinkResponse {
   int32 like_count = 1;
 }
 
+message ListLikedLinksRequest {}
+
+message ListLikedLinksResponse {
+  repeated Link links = 1;
+}
+
 message ToggleFavoriteLinkRequest {
   string link_id = 1;
 }
@@ -199,6 +205,13 @@ service LinkService {
       delete: "/v1/links/{link_id}/like"
     };
   }
+  // Idées aimées par le compte, la plus récemment aimée d'abord
+  rpc ListLikedLinks(ListLikedLinksRequest) returns (ListLikedLinksResponse) {
+    option (google.api.http) = {
+      get: "/v1/liked-links"
+    };
+  }
+  // Remplacé par le J'aime, gardé pour les anciennes versions des clients
   rpc ToggleFavoriteLink(ToggleFavoriteLinkRequest) returns (ToggleFavoriteLinkResponse) {
     option (google.api.http) = {
       post: "/v1/links/{link_id}/favorite"

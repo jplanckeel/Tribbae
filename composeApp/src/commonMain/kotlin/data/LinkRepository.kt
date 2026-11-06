@@ -40,6 +40,15 @@ class LinkRepository(private val storage: Storage? = null) {
      */
     val pushLock = Mutex()
 
+    private val _liked = MutableStateFlow(storage?.loadLiked().orEmpty())
+    /** Idées aimées par le compte (onglet J'aime), gardées pour le hors-ligne. */
+    val liked: kotlinx.coroutines.flow.StateFlow<List<Link>> = _liked
+
+    fun setLiked(links: List<Link>) {
+        _liked.value = links
+        storage?.saveLiked(links)
+    }
+
     private val _pending = MutableStateFlow(storage?.loadPending() ?: PendingChanges())
     /** Changements faits ici et pas encore reçus par le serveur. */
     val pending: PendingChanges get() = _pending.value
@@ -184,6 +193,8 @@ class LinkRepository(private val storage: Storage? = null) {
         _tags.value = emptyList()
         _pending.value = PendingChanges()
         storage?.savePending(PendingChanges())
+        _liked.value = emptyList()
+        storage?.saveLiked(emptyList())
         storage?.saveLinks(emptyList())
         storage?.saveFolders(emptyList())
         storage?.saveChildren(emptyList())

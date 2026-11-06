@@ -59,6 +59,14 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   const [menuOpen, setMenuOpen] = useState(false);
   const [liked, setLiked] = useState(!!link.likedByMe);
   const [likes, setLikes] = useState(link.likeCount ?? 0);
+  // La fiche s'ouvre sur la version en cache : celle du serveur corrige le cœur en arrivant
+  const serverLike = `${!!link.likedByMe}/${link.likeCount ?? 0}`;
+  const [lastLike, setLastLike] = useState(serverLike);
+  if (serverLike !== lastLike) {
+    setLastLike(serverLike);
+    setLiked(!!link.likedByMe);
+    setLikes(link.likeCount ?? 0);
+  }
   // Adresse de l'image qui n'a pas chargé : une nouvelle image l'efface d'elle-même
   const [brokenSrc, setBrokenSrc] = useState<string>();
   const [saving, setSaving] = useState(false);
@@ -126,17 +134,6 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
       toast(v ? "Rappel activé la veille" : "Rappel désactivé");
     } catch (e) {
       apply(prev);
-      toast((e as Error).message, "error");
-    }
-  };
-
-  const toggleFavorite = async () => {
-    setMenuOpen(false);
-    try {
-      const r = await api.links.toggleFavorite(link.id);
-      apply({ ...link, favorite: !!r.favorite });
-      toast(r.favorite ? "Ajoutée aux favoris" : "Retirée des favoris");
-    } catch (e) {
       toast((e as Error).message, "error");
     }
   };
@@ -229,7 +226,6 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             {link.ownerDisplayName ? `par ${link.ownerDisplayName}${isOwner ? " (vous)" : ""}` : isOwner ? "par vous" : ""}
             {folder ? <> · dossier <RouterLink to={`/dossiers/${folder.id}`} {...pushLink(link.id)} className="font-semibold text-ecorce underline-offset-2 hover:underline">{folder.name}</RouterLink></> : ""}
           </span>
-          {link.favorite && <Icon name="star" size={16} filled className="text-braise" />}
           <VisibilityBadge audience={ideaAudience(link, folder, peers)} />
           {createdViaLabel(link.createdVia) && (
             <span className="flex items-center gap-1 text-xs text-sec"><Icon name="sparkles" size={14} />{createdViaLabel(link.createdVia)}</span>
@@ -386,7 +382,6 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Idée">
           <div className="flex flex-col gap-2">
             {canEdit && <MenuItem icon="pencil" label="Modifier" onClick={() => { setMenuOpen(false); editLink(link, onChange); }} />}
-            {ourIdea && <MenuItem icon="star" label={link.favorite ? "Retirer des favoris" : "Ajouter aux favoris"} onClick={toggleFavorite} />}
             {!canEdit && <MenuItem icon="bookmark" label="Enregistrer dans mes idées" onClick={() => { setMenuOpen(false); saveCopy(); }} />}
             <MenuItem icon="share" label="Envoyer l'idée" onClick={() => { setMenuOpen(false); share(); }} />
             {ourIdea && <MenuItem icon="trash" label="Supprimer" danger onClick={remove} />}

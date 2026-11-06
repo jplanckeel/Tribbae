@@ -87,6 +87,29 @@
         ]
       }
     },
+    "/v1/liked-links": {
+      "get": {
+        "summary": "Idées aimées par le compte, la plus récemment aimée d'abord",
+        "operationId": "LinkService_ListLikedLinks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListLikedLinksResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "LinkService"
+        ]
+      }
+    },
     "/v1/links": {
       "get": {
         "operationId": "LinkService_ListLinks",
@@ -243,6 +266,7 @@
     },
     "/v1/links/{linkId}/favorite": {
       "post": {
+        "summary": "Remplacé par le J'aime, gardé pour les anciennes versions des clients",
         "operationId": "LinkService_ToggleFavoriteLink",
         "responses": {
           "200": {
@@ -645,6 +669,18 @@
       "default": "LINK_CATEGORY_UNSPECIFIED"
     },
     "v1ListCommunityLinksResponse": {
+      "type": "object",
+      "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Link"
+          }
+        }
+      }
+    },
+    "v1ListLikedLinksResponse": {
       "type": "object",
       "properties": {
         "links": {

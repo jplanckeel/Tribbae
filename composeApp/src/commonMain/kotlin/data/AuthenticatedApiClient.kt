@@ -398,6 +398,10 @@ class AuthenticatedApiClient(
     }
 
     // Link likes
+    suspend fun listLikedLinks(): ApiLinkListResponse {
+        return request("/v1/liked-links", "GET") { response -> json.decodeFromString(response) }
+    }
+
     suspend fun likeLink(linkId: String): Int {
         return request("/v1/links/$linkId/like", "POST", "{}") { response ->
             @Serializable
@@ -431,14 +435,6 @@ class AuthenticatedApiClient(
         }
     }
 
-    /** Favori personnel (distinct du like communautaire) : bascule et renvoie le nouvel état. */
-    suspend fun toggleFavorite(linkId: String): Boolean {
-        return request("/v1/links/$linkId/favorite", "POST", "{}") { response ->
-            @Serializable
-            data class FavoriteResponse(val favorite: Boolean = false)
-            json.decodeFromString<FavoriteResponse>(response).favorite
-        }
-    }
 
     // Droits RGPD sur le compte
     /** Toutes les données du compte, en JSON (export complet). */

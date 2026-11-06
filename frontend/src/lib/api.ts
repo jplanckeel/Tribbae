@@ -192,8 +192,7 @@ export const links = {
     request<{ likeCount?: number }>(`/links/${encodeURIComponent(id)}/like`, { method: "POST", body: "{}" }),
   unlike: (id: string) =>
     request<{ likeCount?: number }>(`/links/${encodeURIComponent(id)}/like`, { method: "DELETE" }),
-  toggleFavorite: (id: string) =>
-    request<{ favorite?: boolean }>(`/links/${encodeURIComponent(id)}/favorite`, { method: "POST", body: "{}" }),
+  liked: () => request<{ links?: Link[] }>("/liked-links").then((r) => r.links ?? []),
 };
 
 export const folders = {
