@@ -108,7 +108,8 @@ private sealed class Screen {
         val category: LinkCategory? = null,
         val folderId: String? = null,
         val title: String? = null,
-        val ingredients: List<String> = emptyList(),
+        /** Brouillon du parcours « + » repris par « Plus de détails ». */
+        val draft: AddDraft? = null,
     ) : Screen()
     data class FolderForm(val existing: Folder? = null) : Screen()
     /** `origin` : visuel de la carte touchée, d'où la fiche s'ouvre (et où elle revient). */
@@ -395,7 +396,7 @@ private fun ModernMainApp(
                 initialCategory = screen.category,
                 initialFolderId = screen.folderId,
                 initialTitle = screen.title,
-                initialIngredients = screen.ingredients,
+                draft = screen.draft,
                 onSaved = {
                     pop()
                     // Après une modification, la fiche affichée reprend la version à jour
@@ -557,7 +558,7 @@ private fun ModernMainApp(
                 presetFolderId = folderId,
                 onDismiss = { showAdd = false },
                 onAi = { showAdd = false; push(Screen.Ai(folderId = folderId)) },
-                onMore = { d -> showAdd = false; push(Screen.IdeaForm(url = d.url, category = d.category, folderId = d.folderId, title = d.title, ingredients = d.ingredients)) },
+                onMore = { d -> showAdd = false; push(Screen.IdeaForm(draft = d)) },
                 onNewFolder = { showAdd = false; push(Screen.FolderForm()) },
                 onOpenLink = { id -> showAdd = false; openLink(id) },
             )
