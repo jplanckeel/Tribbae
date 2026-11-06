@@ -5,13 +5,15 @@ import { useComposer } from "../components/Composer";
 import Icon from "../components/Icon";
 import { Page } from "../components/Shell";
 import { Button, EmptyState, ErrorNote, PageHeader, PageSpinner } from "../components/ui";
+import * as api from "../lib/api";
 import { categoryBySlug, normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { buildShoppingList } from "../lib/shopping";
 import { plural } from "../lib/format";
 import { countdown, keyDateOf } from "../lib/folderStyle";
 import { byRecent, tagCounts } from "../lib/links";
-import type { Folder } from "../lib/types";
+import type { Folder, Link } from "../lib/types";
+import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
 
 const FOLDER_SORTS = [
@@ -33,7 +35,7 @@ function sortFolders(list: Folder[], sort: FolderSort): Folder[] {
 
 const TABS = [
   { key: "dossiers", label: "Dossiers" },
-  { key: "favoris", label: "Favoris" },
+  { key: "jaime", label: "J'aime" },
   { key: "tags", label: "Tags" },
 ] as const;
 
@@ -41,7 +43,10 @@ export default function MyIdeas() {
   const { links, folders, loading, error, reload } = useMyData();
   const { newFolder, newLink } = useComposer();
   const [params, setParams] = useSearchParams();
-  const tab = TABS.find((t) => t.key === params.get("vue"))?.key ?? "dossiers";
+  // « favoris » : ancien nom de l'onglet, resté dans les liens déjà enregistrés
+  const vue = params.get("vue") === "favoris" ? "jaime" : params.get("vue");
+  const tab = TABS.find((t) => t.key === vue)?.key ?? "dossiers";
+  const liked = useAsync(() => api.links.liked(), []);
   const cat = categoryBySlug(params.get("cat") ?? undefined);
   const tag = params.get("tag") ?? "";
   const [folderSort, setFolderSort] = useState<FolderSort>("recent");
@@ -57,7 +62,7 @@ export default function MyIdeas() {
   const pinned = folders.filter((f) => f.pinned);
   const others = sortFolders(folders.filter((f) => !f.pinned), folderSort);
   const tagTotal = useMemo(() => tagCounts(links).length, [links]);
-  const tabCounts: Record<string, number> = { dossiers: folders.length, favoris: links.filter((l) => l.favorite).length, tags: tagTotal };
+  const tabCounts: Record<string, number> = { dossiers: folders.length, jaime: liked.data?.length ?? 0, tags: tagTotal };
   const recipes = links.filter((l) => normalizeCategory(l.category) === "LINK_CATEGORY_RECETTE" && l.ingredients?.length);
   // Comme la liste de courses : un produit compte une fois, quelles que soient les recettes
   const ingredientCount = buildShoppingList(recipes.map((r) => ({ title: r.title, ingredients: r.ingredients ?? [] }))).length;
@@ -204,7 +209,7 @@ export default function MyIdeas() {
         </>
       )}
 
-      {tab === "favoris" && <Favorites />}
+      {tab === "jaime" && <Liked list={liked.data ?? []} loading={liked.loading} />}
       {tab === "tags" && <Tags selected={tag} onSelect={(t) => setParams(t ? { vue: "tags", tag: t } : { vue: "tags" }, { replace: true })} />}
     </Page>
   );
@@ -219,15 +224,14 @@ function PinGlyph({ size = 14 }: { size?: number }) {
   );
 }
 
-function Favorites() {
-  const { links } = useMyData();
-  const list = links.filter((l) => l.favorite).sort(byRecent);
+function Liked({ list, loading }: { list: Link[]; loading: boolean }) {
   if (!list.length) {
+    if (loading) return null;
     return (
       <EmptyState
-        icon="star"
-        title="Pas encore de favoris"
-        text="Ouvrez une idée et touchez « Ajouter aux favoris » pour la retrouver ici en un clin d'œil."
+        icon="heart"
+        title="Pas encore de J'aime"
+        text="Touchez le cœur d'une idée pour la retrouver ici en un clin d'œil."
       />
     );
   }

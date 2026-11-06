@@ -103,6 +103,13 @@ func main() {
 	go aiSvc.Warmup(context.Background())
 	// Rattrape en continu l'image des idées qui n'en ont pas (lots de 20 toutes les 10 min)
 	go linkSvc.RunImageBackfill(context.Background(), 10*time.Minute, 20)
+	go func() {
+		if n, err := linkSvc.MigrateFavorites(context.Background()); err != nil {
+			log.Printf("favorites migration: %v", err)
+		} else if n > 0 {
+			log.Printf("favorites migration: %d ideas", n)
+		}
+	}()
 
 	// Handlers (gRPC servers)
 	authH := auth.NewHandler(authSvc)

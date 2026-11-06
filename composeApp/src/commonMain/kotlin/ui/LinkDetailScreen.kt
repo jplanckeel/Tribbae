@@ -172,7 +172,6 @@ fun LinkDetailScreen(
                         listOf(by, folder?.let { "dossier ${it.name}" }.orEmpty()).filter { it.isNotEmpty() }.joinToString(" · "),
                         fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false)
                     )
-                    if (link.favorite) Icon(Icons.Filled.Star, "Favori", tint = Braise, modifier = Modifier.size(16.dp))
                     VisibilityBadge(LocalAudiences.current.of(link))
                     data.ConnectedApps.createdViaLabel(link.createdVia)?.let { label ->
                         Icon(Icons.Outlined.AutoAwesome, null, tint = TextSec, modifier = Modifier.size(14.dp))
@@ -354,8 +353,9 @@ fun LinkDetailScreen(
                 if (viewModel == null || !ensureSignedIn()) return@ActionChip
                 val was = liked
                 liked = !was
+                val before = likeCount
                 likeCount += if (was) -1 else 1
-                viewModel.toggleLike(link.id, was) { l, c -> liked = l; likeCount = c }
+                viewModel.toggleLike(link.id, was, onFailed = { liked = was; likeCount = before }) { l, c -> liked = l; likeCount = c }
             }
             ActionChip(Icons.Outlined.ChatBubbleOutline, "${comments.size}", Ecorce, "Commentaires, ${comments.size}") {
                 scope.launch { scroll.animateScrollTo(commentsY) }
@@ -377,9 +377,6 @@ fun LinkDetailScreen(
                 Text("Idée", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
                 if (!readOnly) {
                     MenuRow(Icons.Outlined.Edit, "Modifier") { showMenu = false; onEdit() }
-                    MenuRow(if (link.favorite) Icons.Filled.Star else Icons.Outlined.StarBorder, if (link.favorite) "Retirer des favoris" else "Ajouter aux favoris") {
-                        showMenu = false; viewModel?.toggleFavorite(link.id)
-                    }
                     // Seul l'auteur décide de publier son idée (pas un autre membre de la tribu)
                     val canPublish = viewModel?.emailVerified?.collectAsState()?.value ?: true
                     if ((link.ownerId.isBlank() || link.ownerId == myId) && !canPublish && link.visibility != "public") {

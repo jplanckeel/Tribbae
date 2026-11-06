@@ -284,10 +284,10 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 		{
 			Collection: "link_likes",
 			Model: mongo.IndexModel{
-				// « J'aime » d'un compte (suppression du compte) ; le compte par idée
-				// passe par l'index unique (link_id, user_id)
-				Keys:    bson.D{{Key: "user_id", Value: 1}},
-				Options: options.Index().SetName("idx_link_likes_user_id"),
+				// « J'aime » d'un compte, les plus récents d'abord (onglet J'aime, suppression
+				// du compte) ; le compte par idée passe par l'index unique (link_id, user_id)
+				Keys:    bson.D{{Key: "user_id", Value: 1}, {Key: "created_at", Value: -1}},
+				Options: options.Index().SetName("idx_link_likes_user_created_at"),
 			},
 		},
 
@@ -464,6 +464,7 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 		{"links", "idx_links_folder_id"},         // préfixe de idx_links_folder_id_created_at
 		{"links", "idx_links_category"},          // la catégorie est toujours filtrée avec la visibilité
 		{"link_likes", "idx_link_likes_link_id"}, // préfixe de idx_link_likes_link_user_unique
+		{"link_likes", "idx_link_likes_user_id"}, // préfixe de idx_link_likes_user_created_at
 		{"folders", "idx_folders_visibility"},    // remplacé par idx_folders_visibility_id
 	}
 	for _, o := range obsolete {

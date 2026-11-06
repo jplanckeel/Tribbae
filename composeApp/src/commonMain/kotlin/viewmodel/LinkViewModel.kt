@@ -127,8 +127,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     private val _selectedChildId = MutableStateFlow<String?>(null)
     val selectedChildId: StateFlow<String?> = _selectedChildId.asStateFlow()
 
-    private val _favoritesOnly = MutableStateFlow(false)
-    val favoritesOnly: StateFlow<Boolean> = _favoritesOnly.asStateFlow()
 
     private val _filteredLinks = MutableStateFlow<List<Link>>(emptyList())
     val filteredLinks: StateFlow<List<Link>> = _filteredLinks.asStateFlow()
@@ -493,32 +491,11 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     fun addTag(tag: String) { repository.addTag(tag) }
     fun deleteTag(tag: String) { repository.deleteTag(tag) }
 
-    /** Toggle le favori d'un lien (étoile personnelle), synchronisé avec le backend */
-    fun toggleFavorite(linkId: String) {
-        val link = repository.links.value.find { it.id == linkId } ?: return
-        val newFavorite = !link.favorite
-        repository.updateLink(link.copy(favorite = newFavorite))
-        updateFilteredLinks()
-        
-        // Favori personnel, synchronisé via /favorite (le like est un geste communautaire distinct)
-        val client = authenticatedClient ?: return
-        viewModelScope.launch {
-            try {
-                val serverFavorite = client.toggleFavorite(linkId)
-                if (serverFavorite != newFavorite) {
-                    repository.links.value.find { it.id == linkId }?.let { repository.updateLink(it.copy(favorite = serverFavorite)) }
-                    updateFilteredLinks()
-                }
-            } catch (e: Exception) {
-                // Rollback en cas d'erreur
-                repository.updateLink(link.copy(favorite = !newFavorite))
-                updateFilteredLinks()
-            }
-        }
-    }
-
     /** Like/unlike direct sur l'API — pour les liens communautaires non présents dans le repository local */
-    fun toggleLike(linkId: String, currentlyLiked: Boolean, onResult: (liked: Boolean, likeCount: Int) -> Unit) {
+    fun toggleLike(
+        linkId: String, currentlyLiked: Boolean, onFailed: () -> Unit = {},
+        onResult: (liked: Boolean, likeCount: Int) -> Unit,
+    ) {
         val client = authenticatedClient ?: return
         viewModelScope.launch {
             try {
@@ -527,11 +504,31 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 } else {
                     client.likeLink(linkId)
                 }
+                setLikedLocally(linkId, !currentlyLiked, newCount)
                 onResult(!currentlyLiked, newCount)
+                refreshLiked(client)
             } catch (e: Exception) {
                 println("ERROR: Failed to toggle like for link $linkId - ${e.message}")
+                onFailed()
+                _actionErrors.tryEmit("Le J'aime n'a pas pu être enregistré. Vérifiez votre connexion.")
             }
         }
+    }
+
+    /** J'aime depuis une carte d'idée : la carte réagit tout de suite, puis suit le serveur. */
+    fun toggleMyLike(link: Link) {
+        setLikedLocally(link.id, !link.likedByMe, link.likeCount + if (link.likedByMe) -1 else 1)
+        toggleLike(link.id, link.likedByMe, onFailed = { setLikedLocally(link.id, link.likedByMe, link.likeCount) }) { _, _ -> }
+    }
+
+    private fun setLikedLocally(linkId: String, liked: Boolean, count: Int) {
+        repository.links.value.find { it.id == linkId }?.let { repository.updateLink(it.copy(likedByMe = liked, likeCount = count)) }
+        updateFilteredLinks()
+    }
+
+    /** Sans réseau, la dernière liste reçue reste affichée. */
+    private suspend fun refreshLiked(client: data.AuthenticatedApiClient) {
+        runCatching { client.listLikedLinks().links.map(::apiLinkToLink) }.onSuccess(repository::setLiked)
     }
 
     fun addChild(name: String, birthDate: Long) {
@@ -709,15 +706,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         val childAgeMonths = _selectedChildId.value?.let { id ->
             repository.children.value.find { it.id == id }?.let { ui.calculateAgeInMonths(it.birthDate) }
         }
-        var results = repository.searchLinks(
+        val results = repository.searchLinks(
             query = _searchQuery.value,
             category = _selectedCategory.value,
             folderId = _selectedFolderId.value,
             maxAgeMonths = childAgeMonths
         )
-        if (_favoritesOnly.value) {
-            results = results.filter { it.favorite }
-        }
         _filteredLinks.value = results
     }
     
@@ -940,6 +934,40 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
     
+    private fun apiLinkToLink(apiLink: data.ApiAuthLink): Link {
+        val category = try {
+            LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
+        } catch (_: Exception) { LinkCategory.IDEE }
+        return Link(
+            id = apiLink.id,
+            title = apiLink.title,
+            url = apiLink.url,
+            description = apiLink.description,
+            category = category,
+            folderId = apiLink.folderId.ifBlank { null },
+            tags = apiLink.tags,
+            ageRange = apiLink.ageRange,
+            location = apiLink.location,
+            price = apiLink.price,
+            imageUrl = apiLink.imageUrl,
+            eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
+            reminderEnabled = apiLink.reminderEnabled,
+            rating = apiLink.rating,
+            ingredients = apiLink.ingredients,
+            favorite = apiLink.favorite,
+            likeCount = apiLink.likeCount,
+            likedByMe = apiLink.likedByMe,
+            updatedAt = apiLink.updatedAt,
+            createdAt = apiLink.createdAt,
+            ownerId = apiLink.ownerId,
+            ownerDisplayName = apiLink.ownerDisplayName,
+            ownerIsAdmin = apiLink.ownerIsAdmin,
+            visibility = apiLink.visibility.ifBlank { "private" },
+            createdVia = apiLink.createdVia,
+            publicViaFolder = apiLink.publicViaFolder
+        )
+    }
+
     private suspend fun performSync(client: data.AuthenticatedApiClient) {
         // D'abord ce qui a été fait ici sans atteindre le serveur : la reprise des
         // données du serveur (qui fait foi) l'effacerait sinon. Sans réseau,
@@ -947,39 +975,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         pushPending(client)
 
         val backendFolders = client.listFolders().folders.map { apiFolderToFolder(it) }
-        val backendLinks = client.listLinks().links.map { apiLink ->
-            val category = try {
-                LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
-            } catch (_: Exception) { LinkCategory.IDEE }
-            Link(
-                id = apiLink.id,
-                title = apiLink.title,
-                url = apiLink.url,
-                description = apiLink.description,
-                category = category,
-                folderId = apiLink.folderId.ifBlank { null },
-                tags = apiLink.tags,
-                ageRange = apiLink.ageRange,
-                location = apiLink.location,
-                price = apiLink.price,
-                imageUrl = apiLink.imageUrl,
-                eventDate = if (apiLink.eventDate > 0) apiLink.eventDate else null,
-                reminderEnabled = apiLink.reminderEnabled,
-                rating = apiLink.rating,
-                ingredients = apiLink.ingredients,
-                favorite = apiLink.favorite,
-                likeCount = apiLink.likeCount,
-                likedByMe = apiLink.likedByMe,
-                updatedAt = apiLink.updatedAt,
-                createdAt = apiLink.createdAt,
-                ownerId = apiLink.ownerId,
-                ownerDisplayName = apiLink.ownerDisplayName,
-                ownerIsAdmin = apiLink.ownerIsAdmin,
-                visibility = apiLink.visibility.ifBlank { "private" },
-                createdVia = apiLink.createdVia,
-                publicViaFolder = apiLink.publicViaFolder
-            )
-        }
+        val backendLinks = client.listLinks().links.map(::apiLinkToLink)
+        refreshLiked(client)
         val backendChildren = client.listChildren().children.map { apiChild ->
             data.Child(id = apiChild.id, name = apiChild.name, birthDate = apiChild.birthDate, updatedAt = apiChild.updatedAt)
         }

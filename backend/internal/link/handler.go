@@ -213,6 +213,18 @@ func (h *Handler) UnlikeLink(ctx context.Context, req *pb.UnlikeLinkRequest) (*p
 	return &pb.UnlikeLinkResponse{LikeCount: count}, nil
 }
 
+func (h *Handler) ListLikedLinks(ctx context.Context, _ *pb.ListLikedLinksRequest) (*pb.ListLikedLinksResponse, error) {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+	links, err := h.svc.ListLiked(ctx, userID)
+	if err != nil {
+		return nil, toStatus("list liked links", err)
+	}
+	return &pb.ListLikedLinksResponse{Links: h.many(ctx, links, userID)}, nil
+}
+
 func (h *Handler) ToggleFavoriteLink(ctx context.Context, req *pb.ToggleFavoriteLinkRequest) (*pb.ToggleFavoriteLinkResponse, error) {
 	userID, err := interceptor.UserIDFromContext(ctx)
 	if err != nil {

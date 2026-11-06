@@ -374,7 +374,7 @@ private fun Ideas(
         }
         else -> TwoColumnMosaic(links) { l, i ->
             Box(Modifier.mark(l, 20)) {
-                MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.favorite, onLike = onFavorite?.let { fav -> { fav(l) } })
+                MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.likedByMe, onLike = onFavorite?.let { fav -> { fav(l) } })
             }
         }
     }
