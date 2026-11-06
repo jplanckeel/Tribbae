@@ -496,14 +496,14 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
           <div className="flex items-center gap-3 rounded-2xl bg-card px-3.5 py-3">
             <Icon name="globe" size={20} className="text-activite-ink" />
             <span className="flex flex-1 flex-col">
-              <span className="text-sm font-bold">Inspirer d'autres familles</span>
+              <span className="text-sm font-bold">Publier dans la communauté</span>
               <span className="text-xs text-sec">{inPublicFolder ? "Ce dossier est public : l'idée y sera visible par toutes les familles" : "Visible aussi dans Explorer"}</span>
               {!canPublish && <PublishLockedNote />}
             </span>
             {/* Publier attend la confirmation de l'adresse ; dépublier reste possible.
                 Dans un dossier public, l'idée est publiée quoi qu'il arrive : l'interrupteur le montre */}
             <Toggle
-              label="Inspirer d'autres familles"
+              label="Publier dans la communauté"
               checked={inPublicFolder || draft.visibility === "public"}
               disabled={inPublicFolder || (!canPublish && draft.visibility !== "public")}
               onChange={async (v) => {

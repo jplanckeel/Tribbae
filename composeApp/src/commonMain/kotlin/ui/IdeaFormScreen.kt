@@ -360,7 +360,7 @@ fun IdeaFormScreen(
                 ) {
                     Icon(Icons.Outlined.Lock, null, tint = TextSec, modifier = Modifier.size(15.dp).padding(top = 1.dp))
                     Text(
-                        "Idée de ${existing!!.ownerDisplayName.ifBlank { "un membre de la tribu" }} : seul son auteur peut la partager avec la communauté.",
+                        "Idée de ${existing!!.ownerDisplayName.ifBlank { "un membre de la tribu" }} : seul son auteur peut la publier dans la communauté.",
                         fontSize = 12.sp, color = TextSec
                     )
                 }
@@ -373,13 +373,13 @@ fun IdeaFormScreen(
                     val canPublish by viewModel.emailVerified.collectAsState()
                     Icon(Icons.Outlined.Public, null, tint = Color(0xFF2F7393), modifier = Modifier.size(20.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Partager avec la communauté", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+                        Text("Publier dans la communauté", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce)
                         Text(if (inMyPublicFolder) "Visible par toutes les familles dans ce dossier" else "Visible dans l'Explorer par toutes les tribus", fontSize = 12.sp, color = TextSec)
                         if (!canPublish) PublishLockedNote(Modifier.padding(top = 4.dp))
                     }
                     // Publier attend la confirmation de l'adresse ; dépublier reste toujours possible
                     var confirmPublish by remember { mutableStateOf(false) }
-                    CampSwitch(isPublic || inMyPublicFolder, { if (!inMyPublicFolder) { if (!it) isPublic = false else if (canPublish) confirmPublish = true } }, "Partager avec la communauté")
+                    CampSwitch(isPublic || inMyPublicFolder, { if (!inMyPublicFolder) { if (!it) isPublic = false else if (canPublish) confirmPublish = true } }, "Publier dans la communauté")
                     if (confirmPublish) {
                         ConfirmSheet(
                             data.PublishConfirm.IDEA_TITLE, data.PublishConfirm.IDEA_TEXT, "Publier",

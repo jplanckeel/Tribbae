@@ -169,7 +169,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
             </button>
             <div className="flex gap-2">
               {isOwner && (
-                <button type="button" onClick={() => setShareOpen(true)} aria-label="Inviter et partager" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-card">
+                <button type="button" onClick={() => setShareOpen(true)} aria-label="Partager le dossier" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-card">
                   <Icon name="personPlus" size={21} />
                 </button>
               )}
@@ -295,7 +295,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
             <div className="flex flex-col gap-2">
               <MenuItem icon="pencil" label="Personnaliser" onClick={() => { setMenuOpen(false); editFolder(folder, setFolder); }} />
               <MenuItem icon="pin" label={folder.pinned ? "Désépingler de Mes idées" : "Épingler en haut de Mes idées"} onClick={togglePin} />
-              <MenuItem icon="personPlus" label="Inviter et partager" onClick={() => { setMenuOpen(false); setShareOpen(true); }} />
+              <MenuItem icon="personPlus" label="Partager le dossier" onClick={() => { setMenuOpen(false); setShareOpen(true); }} />
               <MenuItem icon="trash" label="Supprimer le dossier" danger onClick={remove} />
             </div>
           </Sheet>

@@ -482,7 +482,7 @@ private fun TribeContent(
                                     Text("$n dossier${if (n > 1) "s" else ""} ouvert${if (n > 1) "s" else ""}", fontSize = 13.sp, color = TextSec)
                                 }
                                 Text(
-                                    if (c.editor) "Éditeur" else "Lecteur", fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                    if (c.editor) "Peut ajouter" else "Lecture seule", fontSize = 12.sp, fontWeight = FontWeight.Bold,
                                     color = if (c.editor) RecetteInk else TextSec,
                                     modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(if (c.editor) RecetteBg else Sable2).padding(horizontal = 9.dp, vertical = 4.dp)
                                 )
@@ -1159,7 +1159,7 @@ private fun CircleInviteForm(folders: List<data.Folder>, viewModel: LinkViewMode
             }
         }
         Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Sable2).padding(3.dp).selectableGroup(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-            listOf(false to "Lecteur", true to "Éditeur").forEach { (value, label) ->
+            listOf(false to "Lecture seule", true to "Peut ajouter").forEach { (value, label) ->
                 Text(
                     label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (editor == value) Ecorce else TextSec,
                     modifier = Modifier.height(30.dp).clip(RoundedCornerShape(9.dp)).background(if (editor == value) CardColor else Color.Transparent)
@@ -1188,7 +1188,7 @@ private fun CircleInviteForm(folders: List<data.Folder>, viewModel: LinkViewMode
         Text(
             "Le lien expire dans 7 jours. Pas encore de compte ? Il pourra en créer un depuis le lien. " +
                 (if (editor) "Il pourra ajouter ses idées" else "Il pourra consulter") +
-                " sans voir le reste de la tribu. Vous pourrez changer les accès à tout moment.",
+                " sans voir le reste de la tribu. Vous pourrez retirer cet accès à tout moment.",
             fontSize = 12.sp, color = TextMuted, textAlign = TextAlign.Center
         )
     }

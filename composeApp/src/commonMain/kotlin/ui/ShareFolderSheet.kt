@@ -44,7 +44,7 @@ fun ShareFolderSheet(folder: Folder, viewModel: LinkViewModel, onDismiss: () -> 
     var confirmCut by remember { mutableStateOf(false) }
     var linkBusy by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf(ROLE_EDITOR) }
+    var role by remember { mutableStateOf(ROLE_VIEWER) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     // Invitations en attente qui ouvrent ce dossier (envoyées par moi)
