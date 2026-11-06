@@ -393,7 +393,7 @@ function RecentSection() {
   if (!recent.length) return null;
   return (
     <section className="flex flex-col gap-[18px]">
-      <DesktopTitle title="Ajouté récemment" to="/mes-idees" action="Mes idées" />
+      <DesktopTitle title="De votre tribu" to="/mes-idees" action="Mes idées" />
       <div className="grid gap-2.5 md:grid-cols-2 lg:grid-cols-3">
         {recent.map((l) => <RowCard key={l.id} link={l} />)}
       </div>
