@@ -208,7 +208,7 @@ function ViewTabs({ view, update, className = "" }: Pick<LayoutProps, "view" | "
           onClick={() => update({ vue: v === "dossiers" ? "dossiers" : undefined })}
           className={`rounded-small text-sm transition-colors ${view === v ? "bg-card font-bold shadow-[0_1px_4px_rgba(58,33,27,0.1)]" : "font-semibold text-sec"}`}
         >
-          {v === "idees" ? "Idées" : "Dossiers"}
+          {v === "idees" ? "Idées" : "Dossiers publics"}
         </button>
       ))}
     </div>

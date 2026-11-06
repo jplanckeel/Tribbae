@@ -215,7 +215,8 @@ fun CategoryDetailScreen(
 ) {
     val cat = category?.let { categoryUi(it) }
     CollectionScaffold(
-        title = cat?.plural ?: "Non rangées",
+        // « Nos recettes » : Explorer garde « Recettes » pour les idées de la communauté
+        title = cat?.let { if (it.plural == "Déco") "Notre déco" else "Nos ${it.plural.lowercase()}" } ?: "Non rangées",
         subtitle = "${links.size} idée${if (links.size > 1) "s" else ""} dans la tribu",
         bg = cat?.bg ?: Sable2,
         solid = cat?.tint ?: TextSec,
