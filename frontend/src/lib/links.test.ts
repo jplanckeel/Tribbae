@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { byRotation, canEditFolder, copyInput, extractUrl, ROTATION_MS, rotationScore, tagCounts } from "./links";
+import { byRotation, canEditFolder, copyInput, extractUrl, ROTATION_MS, rotationScore, searchMine, tagCounts } from "./links";
 import type { Folder, Link } from "./types";
 
 describe("ordre « À la une »", () => {
@@ -93,5 +93,27 @@ describe("copie d'une idée", () => {
 
   it("n'invente pas de date pour une idée sans date", () => {
     expect(copyInput({ ...source, eventDate: undefined }).eventDate).toBe(0);
+  });
+});
+
+// Mêmes cas que data/IdeaSearchTest.kt côté Android
+describe("recherche dans ses idées", () => {
+  const links = [
+    { id: "a", title: "Crêpes de Mamie", createdAt: "2026-10-01" },
+    { id: "b", title: "Sortie au parc", createdAt: "2026-10-03", tags: ["crêpes"] },
+    { id: "c", title: "Goûter", createdAt: "2026-10-02", location: "Crêperie du port" },
+    { id: "d", title: "Lego", createdAt: "2026-10-04" },
+  ] as Link[];
+
+  it("cherche dans le titre, les tags et le lieu, les plus récentes d'abord", () => {
+    expect(searchMine(links, "crêpe").map((l) => l.id)).toEqual(["b", "c", "a"]);
+  });
+
+  it("ignore la casse et les espaces", () => {
+    expect(searchMine(links, "  LEGO ").map((l) => l.id)).toEqual(["d"]);
+  });
+
+  it("ne trouve rien tant que le champ est vide", () => {
+    expect(searchMine(links, "  ")).toEqual([]);
   });
 });

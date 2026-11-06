@@ -1,5 +1,5 @@
 import { normalizeCategory } from "./categories";
-import { eventDateMs } from "./format";
+import { eventDateMs, matchesQuery } from "./format";
 import type { Folder, Link, LinkInput } from "./types";
 
 /** Reconstitue les champs modifiables d'une idée (le PUT remplace tous les champs). */
@@ -130,4 +130,11 @@ export function extractUrl(text: string | null | undefined): string | undefined 
   } catch {
     return undefined;
   }
+}
+
+/** Recherche dans ses propres idées, les plus récentes d'abord : mêmes cas que data/IdeaSearch.kt. */
+export function searchMine(links: Link[], query: string): Link[] {
+  const q = query.trim();
+  if (!q) return [];
+  return links.filter((l) => matchesQuery(l, q)).sort((a, b) => (b.createdAt ?? b.updatedAt ?? "").localeCompare(a.createdAt ?? a.updatedAt ?? ""));
 }
