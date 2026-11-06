@@ -303,12 +303,6 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
 
         {href && <span className="text-xs text-muted">Source : {hostname(href)}</span>}
 
-        {!canEdit && session && (
-          <Button variant="secondary" icon="bookmark" loading={saving} onClick={saveCopy} className="self-start">
-            Enregistrer dans mes idées
-          </Button>
-        )}
-
         <section ref={commentsRef} id="commentaires" className="mt-2 flex scroll-mt-6 flex-col gap-3">
           <h2 className="text-xl font-bold">Commentaires{comments.data?.length ? ` (${comments.data.length})` : ""}</h2>
           <Comments
@@ -344,7 +338,23 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             <Icon name="comment" size={20} />
             {comments.data?.length ?? 0}
           </button>
-          {href ? (
+          {!canEdit ? (
+            <>
+              {/* L'idée d'un autre : la garder passe avant de visiter le site */}
+              <Button block icon="bookmark" loading={saving} className="!h-[54px]" onClick={saveCopy}>Enregistrer</Button>
+              {href && (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  aria-label="Voir le site"
+                  className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-medium border-[1.5px] border-line-2 bg-card transition-colors hover:bg-sable-2"
+                >
+                  <Icon name="external" size={20} />
+                </a>
+              )}
+            </>
+          ) : href ? (
             <a
               href={href}
               target="_blank"
@@ -354,11 +364,9 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
               Voir le site
               <Icon name="external" size={20} />
             </a>
-          ) : canEdit ? (
+          ) : (
             <Button block icon="pencil" className="!h-[54px]" onClick={() => editLink(link, onChange)}>Modifier</Button>
-          ) : !session ? (
-            <Button block onClick={requireAuth}>Rejoindre Tribbae</Button>
-          ) : null}
+          )}
         </div>
       </div>
 

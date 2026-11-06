@@ -290,15 +290,6 @@ fun LinkDetailScreen(
                     }
                 }
 
-                if (readOnly && onSaveToMyList != null) {
-                    CampButton(
-                        if (savedCopy) "Enregistrée dans mes idées" else "Enregistrer dans mes idées",
-                        { if (!savedCopy) showSave = true },
-                        kind = ButtonKind.Secondary,
-                        icon = if (savedCopy) Icons.Outlined.Check else Icons.Outlined.BookmarkBorder
-                    )
-                }
-
                 // ── Commentaires ──
                 Column(
                     Modifier.fillMaxWidth().padding(top = 8.dp).onGloballyPositioned { commentsY = it.positionInParent().y.toInt() },
@@ -361,11 +352,18 @@ fun LinkDetailScreen(
                 scope.launch { scroll.animateScrollTo(commentsY) }
             }
             when {
+                // L'idée d'un autre : la garder passe avant de visiter le site
+                readOnly && onSaveToMyList != null -> {
+                    CampButton(
+                        if (savedCopy) "Enregistrée" else "Enregistrer", { if (!savedCopy) showSave = true }, Modifier.weight(1f),
+                        icon = if (savedCopy) Icons.Outlined.Check else Icons.Outlined.BookmarkBorder, height = 54.dp,
+                    )
+                    if (link.url.isNotBlank()) CircleIconButton(Icons.Outlined.ArrowOutward, "Voir le site", { onOpenUrl?.invoke(link.url) })
+                }
                 link.url.isNotBlank() -> CampButton(
                     "Voir le site", { onOpenUrl?.invoke(link.url) }, Modifier.weight(1f), trailingIcon = Icons.Outlined.ArrowOutward, height = 54.dp
                 )
                 !readOnly -> CampButton("Modifier", onEdit, Modifier.weight(1f), icon = Icons.Outlined.Edit, height = 54.dp)
-                onSaveToMyList != null -> CampButton("Enregistrer", { showSave = true }, Modifier.weight(1f), icon = Icons.Outlined.BookmarkBorder, height = 54.dp)
             }
         }
     }

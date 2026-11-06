@@ -35,6 +35,7 @@ fun NewHomeScreen(
     onNavigateToCategory: (LinkCategory) -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onSaveLink: (Link) -> Unit,
+    onOpenMyIdeas: () -> Unit = {},
     sessionManager: data.SessionManager? = null,
     onNavigateToAI: () -> Unit = {},
     viewModel: viewmodel.LinkViewModel,
@@ -135,7 +136,7 @@ fun NewHomeScreen(
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(Modifier.padding(horizontal = 20.dp)) {
-                        SectionHeader("Nos catégories", "Tout voir", onNavigateToExplore)
+                        SectionHeader("Nos catégories", "Tout voir", onOpenMyIdeas)
                     }
                     HorizontalRail {
                         CategoryOrder.forEach { c ->
@@ -146,7 +147,7 @@ fun NewHomeScreen(
 
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(Modifier.padding(horizontal = 20.dp)) {
-                        SectionHeader("Ça plaît aux tribus", "Explorer", onNavigateToExplore)
+                        SectionHeader("De la communauté", "Tout voir dans Explorer", onNavigateToExplore)
                     }
                     if (popular.isEmpty()) {
                         Text(
@@ -161,7 +162,7 @@ fun NewHomeScreen(
                 }
 
                 Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SectionHeader("Ajouté récemment")
+                    SectionHeader("De votre tribu")
                     if (recent.isEmpty()) {
                         EmptyBlock(
                             Icons.Outlined.Cottage,

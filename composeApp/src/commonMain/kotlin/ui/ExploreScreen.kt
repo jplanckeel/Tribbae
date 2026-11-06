@@ -82,6 +82,7 @@ fun ExploreScreen(
     viewModel: viewmodel.LinkViewModel,
     initialQuery: String = "",
     initialCategory: LinkCategory? = null,
+    onOpenMine: (String) -> Unit = {},
     ensureSignedIn: () -> Boolean = { true },
     searchRequest: Int = 0,
     onNavigateToAI: () -> Unit = {},
@@ -110,10 +111,15 @@ fun ExploreScreen(
         links.flatMap { it.tags }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.take(20).map { it.key }
     }
 
-    val list = remember(links, query, category, ages, tags, minRating, budget, sort) {
+    val myLinks by viewModel.repository.links.collectAsState()
+    val mine = remember(myLinks, query) { data.IdeaSearch.mine(myLinks, query) }
+
+    val list = remember(links, query, category, ages, tags, minRating, budget, sort, mine) {
         val bands = AGES.filter { it.key in ages }
+        // Ses propres idées publiques ne figurent qu'une fois, dans « Dans vos idées »
+        val mineIds = mine.map { it.id }.toSet()
         links.filter { l ->
-            (query.isBlank() || listOf(l.title, l.description, l.location, l.ownerDisplayName).any { it.contains(query, true) } ||
+            l.id !in mineIds && (query.isBlank() || listOf(l.title, l.description, l.location, l.ownerDisplayName).any { it.contains(query, true) } ||
                 l.tags.any { it.contains(query, true) }) &&
                 (category == null || l.category == category) &&
                 (bands.isEmpty() || bands.any { matchesAge(l.ageRange, it.min, it.max) }) &&
@@ -151,7 +157,7 @@ fun ExploreScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             PageHeader(
-                category?.let { categoryUi(it).plural } ?: "Explorer",
+                category?.takeIf { view == 0 }?.let { categoryUi(it).plural } ?: "Explorer",
                 Modifier.padding(horizontal = 20.dp),
                 subtitle = if (view == 1) "Les dossiers publiés par les tribus" else "Les idées partagées par les tribus",
                 action = {
@@ -183,7 +189,7 @@ fun ExploreScreen(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp)
             )
 
-            SegmentedTabs(listOf("Idées", "Dossiers"), view, { view = it }, Modifier.padding(horizontal = 20.dp))
+            SegmentedTabs(listOf("Idées", "Dossiers publics"), view, { view = it }, Modifier.padding(horizontal = 20.dp))
 
             if (view == 1) {
                 CommunityFolderGrid(communityFolders, query, isRefreshing, onOpenFolder)
@@ -210,18 +216,22 @@ fun ExploreScreen(
                 }
             }
 
+            MyResults(mine, query, onOpenMine)
+
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Ecorce)) {
                         append("${list.size} idée${if (list.size > 1) "s" else ""}")
                     }
-                    append(" partagée${if (list.size > 1) "s" else ""} par la communauté")
+                    append(if (query.isBlank()) " partagée${if (list.size > 1) "s" else ""} par la communauté" else " dans la communauté")
                 },
                 fontSize = 13.sp, color = TextSec, modifier = Modifier.padding(horizontal = 20.dp)
             )
 
             Box(Modifier.padding(horizontal = 20.dp)) {
-                if (list.isEmpty()) {
+                if (list.isEmpty() && mine.isNotEmpty()) {
+                    // Déjà trouvé dans ses idées : pas d'impasse « Rien trouvé »
+                } else if (list.isEmpty()) {
                     EmptyBlock(
                         Icons.Outlined.Explore,
                         if (isRefreshing) "Chargement…" else "Rien trouvé par ici",
@@ -304,6 +314,23 @@ fun ExploreScreen(
                     CampButton("Voir ${list.size} idées", { showFilters = false }, Modifier.weight(1f), kind = ButtonKind.Dark)
                 }
             }
+        }
+    }
+}
+
+/** « Dans vos idées » : trois lignes, puis « Voir tout ». Se replie à chaque recherche. */
+@Composable
+private fun MyResults(found: List<Link>, query: String, onOpen: (String) -> Unit) {
+    if (found.isEmpty()) return
+    var all by remember(query) { mutableStateOf(false) }
+    Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Dans vos idées (${found.size})", style = display(18.sp, FontWeight.Bold))
+        (if (all) found else found.take(3)).forEach { l -> RowCard(l, { onOpen(l.id) }) }
+        if (!all && found.size > 3) {
+            Text(
+                "Voir tout (${found.size})", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TerracottaDark,
+                modifier = Modifier.clickable(role = Role.Button) { all = true }.padding(vertical = 4.dp),
+            )
         }
     }
 }

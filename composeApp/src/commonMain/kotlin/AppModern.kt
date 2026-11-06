@@ -270,6 +270,7 @@ private fun ModernMainApp(
                     NavDestination.HOME, NavDestination.ADD -> NewHomeScreen(
                         links = links,
                         onNavigateToExplore = { openExplore() },
+                        onOpenMyIdeas = { tab = NavDestination.MY_IDEAS },
                         onNavigateToCategory = { push(Screen.Category(it)) },
                         onNavigateToDetail = ::openLink,
                         onSaveLink = { vm.toggleMyLike(it) },
@@ -291,6 +292,7 @@ private fun ModernMainApp(
                             viewModel = vm,
                             initialQuery = exploreQuery,
                             initialCategory = exploreCategory,
+                            onOpenMine = ::openLink,
                             searchRequest = exploreRequest,
                             onNavigateToAI = { push(Screen.Ai(prompt = exploreQuery)) },
                             onOpenFolder = ::openCommunityFolder,
