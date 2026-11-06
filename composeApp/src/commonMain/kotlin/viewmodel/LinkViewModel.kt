@@ -523,6 +523,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     private fun setLikedLocally(linkId: String, liked: Boolean, count: Int) {
         repository.links.value.find { it.id == linkId }?.let { repository.updateLink(it.copy(likedByMe = liked, likeCount = count)) }
+        _communityLinks.value = _communityLinks.value.map { if (it.id == linkId) it.copy(likedByMe = liked, likeCount = count) else it }
         updateFilteredLinks()
     }
 

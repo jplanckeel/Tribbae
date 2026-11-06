@@ -81,8 +81,8 @@ fun LinkDetailScreen(
     val isLoggedIn = sessionManager?.hasToken() == true
     var confirmPublish by remember { mutableStateOf(false) }
 
-    var liked by remember(link.id) { mutableStateOf(link.likedByMe) }
-    var likeCount by remember(link.id) { mutableStateOf(link.likeCount) }
+    var liked by remember(link.id, link.likedByMe, link.likeCount) { mutableStateOf(link.likedByMe) }
+    var likeCount by remember(link.id, link.likedByMe, link.likeCount) { mutableStateOf(link.likeCount) }
     var isFollowing by remember { mutableStateOf<Boolean?>(null) }
     var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
     var commentsLoading by remember { mutableStateOf(commentRepository != null) }

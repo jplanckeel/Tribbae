@@ -3,6 +3,7 @@ package link
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -504,6 +505,9 @@ func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 		return ErrForbidden
 	}
 
+	if _, err := s.linkLikeCol.DeleteMany(ctx, bson.M{"link_id": linkID}); err != nil {
+		return err
+	}
 	_, err = s.col.DeleteOne(ctx, bson.M{"_id": id})
 	return err
 }
@@ -557,7 +561,7 @@ const likedListLimit = 300
 
 // ListLiked retourne les idées aimées par le compte, la plus récemment aimée
 // d'abord, sans celles qu'il ne peut plus voir (redevenues privées). Le contrôle
-// d'accès n'interroge la base que pour les idées non publiques.
+// d'accès n'interroge la base que pour les idées ni publiques ni de la tribu.
 func (s *Service) ListLiked(ctx context.Context, userID string) ([]*Link, error) {
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}}).
 		SetLimit(likedListLimit).SetProjection(bson.M{"link_id": 1})
@@ -593,9 +597,23 @@ func (s *Service) ListLiked(ctx context.Context, userID string) ([]*Link, error)
 	for _, l := range found {
 		byID[l.ID] = l
 	}
+	peers := map[string]bool{userID: true}
+	for _, p := range s.peerIDs(ctx, userID) {
+		peers[p] = true
+	}
+	orphans := bson.A{}
 	for _, id := range ids {
-		if l := byID[id]; l != nil && (l.Visibility == "public" || s.canAccessLink(ctx, l, userID)) {
+		l := byID[id]
+		if l == nil {
+			orphans = append(orphans, id.Hex())
+		} else if l.Visibility == "public" || peers[l.OwnerID] || s.canAccessLink(ctx, l, userID) {
 			links = append(links, l)
+		}
+	}
+	// J'aime d'une idée supprimée avant leur nettoyage : ils prendraient une place de la liste
+	if len(orphans) > 0 {
+		if _, err := s.linkLikeCol.DeleteMany(ctx, bson.M{"user_id": userID, "link_id": bson.M{"$in": orphans}}); err != nil {
+			log.Printf("link: clean orphan likes: %v", err)
 		}
 	}
 	return links, nil
@@ -606,13 +624,14 @@ func (s *Service) ListLiked(ctx context.Context, userID string) ([]*Link, error)
 // d'un J'aime. Le champ favorite reste pour les anciennes versions de l'app.
 func (s *Service) MigrateFavorites(ctx context.Context) (int, error) {
 	filter := bson.M{"favorite": true, "favorite_migrated": bson.M{"$ne": true}}
-	cur, err := s.col.Find(ctx, filter, options.Find().SetProjection(bson.M{"owner_id": 1}))
+	cur, err := s.col.Find(ctx, filter, options.Find().SetProjection(bson.M{"owner_id": 1, "updated_at": 1}))
 	if err != nil {
 		return 0, err
 	}
 	var rows []struct {
-		ID      bson.ObjectID `bson:"_id"`
-		OwnerID string        `bson:"owner_id"`
+		ID        bson.ObjectID `bson:"_id"`
+		OwnerID   string        `bson:"owner_id"`
+		UpdatedAt time.Time     `bson:"updated_at"`
 	}
 	if err := cur.All(ctx, &rows); err != nil {
 		return 0, err
@@ -620,7 +639,8 @@ func (s *Service) MigrateFavorites(ctx context.Context) (int, error) {
 	for _, r := range rows {
 		if _, err := s.linkLikeCol.UpdateOne(ctx,
 			bson.M{"link_id": r.ID.Hex(), "user_id": r.OwnerID},
-			bson.M{"$setOnInsert": bson.M{"_id": bson.NewObjectID(), "created_at": time.Now()}},
+			// Date de l'idée : un favori ancien ne passe pas devant les vrais J'aime récents
+			bson.M{"$setOnInsert": bson.M{"_id": bson.NewObjectID(), "created_at": r.UpdatedAt}},
 			options.UpdateOne().SetUpsert(true),
 		); err != nil {
 			return 0, err

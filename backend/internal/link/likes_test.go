@@ -112,3 +112,33 @@ func TestMigrateFavoritesRunsOncePerIdea(t *testing.T) {
 		t.Errorf("likes = %d, an unliked idea must stay unliked", count)
 	}
 }
+
+// Supprimer une idée retire ses J'aime, et ceux restés d'avant disparaissent à la lecture.
+func TestDeletedIdeasLeaveNoLikes(t *testing.T) {
+	_, db, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc := NewService(db.Collection("links"), db.Collection("folders"))
+
+	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Idée", Category: "LINK_CATEGORY_IDEE", Visibility: "public"})
+	if _, err := svc.LikeLink(ctx, idea.ID.Hex(), "bob"); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Delete(ctx, idea.ID.Hex(), "alice"); err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := db.Collection("link_likes").CountDocuments(ctx, bson.M{"user_id": "bob"}); n != 0 {
+		t.Errorf("%d likes left after deleting the idea", n)
+	}
+
+	orphan := bson.NewObjectID().Hex()
+	if _, err := db.Collection("link_likes").InsertOne(ctx, bson.M{"link_id": orphan, "user_id": "bob", "created_at": time.Now()}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.ListLiked(ctx, "bob"); err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := db.Collection("link_likes").CountDocuments(ctx, bson.M{"user_id": "bob"}); n != 0 {
+		t.Errorf("%d orphan likes left after reading the list", n)
+	}
+}

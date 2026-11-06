@@ -59,6 +59,14 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   const [menuOpen, setMenuOpen] = useState(false);
   const [liked, setLiked] = useState(!!link.likedByMe);
   const [likes, setLikes] = useState(link.likeCount ?? 0);
+  // La fiche s'ouvre sur la version en cache : celle du serveur corrige le cœur en arrivant
+  const serverLike = `${!!link.likedByMe}/${link.likeCount ?? 0}`;
+  const [lastLike, setLastLike] = useState(serverLike);
+  if (serverLike !== lastLike) {
+    setLastLike(serverLike);
+    setLiked(!!link.likedByMe);
+    setLikes(link.likeCount ?? 0);
+  }
   // Adresse de l'image qui n'a pas chargé : une nouvelle image l'efface d'elle-même
   const [brokenSrc, setBrokenSrc] = useState<string>();
   const [saving, setSaving] = useState(false);

@@ -209,7 +209,15 @@ export default function MyIdeas() {
         </>
       )}
 
-      {tab === "jaime" && <Liked list={liked.data ?? []} loading={liked.loading} />}
+      {tab === "jaime" && (
+        <Liked
+          list={liked.data ?? []}
+          loading={liked.loading}
+          error={liked.error}
+          onRetry={liked.reload}
+          onUnliked={(id) => liked.setData((list) => (list ?? []).filter((l) => l.id !== id))}
+        />
+      )}
       {tab === "tags" && <Tags selected={tag} onSelect={(t) => setParams(t ? { vue: "tags", tag: t } : { vue: "tags" }, { replace: true })} />}
     </Page>
   );
@@ -224,7 +232,17 @@ function PinGlyph({ size = 14 }: { size?: number }) {
   );
 }
 
-function Liked({ list, loading }: { list: Link[]; loading: boolean }) {
+function Liked({ list, loading, error, onRetry, onUnliked }: {
+  list: Link[]; loading: boolean; error?: Error; onRetry: () => void; onUnliked: (id: string) => void;
+}) {
+  if (error && !list.length) {
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <ErrorNote>{error.message}</ErrorNote>
+        <Button variant="ghost" size="sm" onClick={onRetry}>Réessayer</Button>
+      </div>
+    );
+  }
   if (!list.length) {
     if (loading) return null;
     return (
@@ -237,7 +255,7 @@ function Liked({ list, loading }: { list: Link[]; loading: boolean }) {
   }
   return (
     <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
-      {list.map((l, i) => <GridCard key={l.id} link={l} index={i} />)}
+      {list.map((l, i) => <GridCard key={l.id} link={l} index={i} onUnliked={() => onUnliked(l.id)} />)}
     </div>
   );
 }

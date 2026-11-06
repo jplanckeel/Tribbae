@@ -275,7 +275,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
             </div>
           ) : (
             <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
-              {shown.map((l, i) => <GridCard key={l.id} link={l} index={i} highlight={mark(l.id)} />)}
+              {shown.map((l, i) => <GridCard key={l.id} link={l} index={i} highlight={mark(l.id)} onRequireAuth={() => navigate(`/bienvenue?next=/dossiers/${folder.id}`)} />)}
             </div>
           )
         ) : (
