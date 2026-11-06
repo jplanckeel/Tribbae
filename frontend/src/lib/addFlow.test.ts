@@ -1,11 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { ago, agoShort, bandsToAge, selectedBands, suggestFolders, whoSees } from "./addFlow";
+import { ago, agoShort, bandsToAge, defaultFolder, exposesIdeas, selectedBands, suggestFolders, whoSees } from "./addFlow";
 import type { Collaborator, Folder, Link } from "./types";
 
 // Mêmes règles qu'Android (composeApp/.../data/AddFlowTest.kt).
 const now = Date.parse("2026-10-21T12:00:00Z");
 const folder = (f: Partial<Folder>) => ({ ownerId: "o", name: "", ...f }) as Folder;
 const collab = (displayName: string) => ({ userId: displayName, displayName, role: "COLLABORATOR_ROLE_VIEWER" }) as Collaborator;
+
+describe("dossier public", () => {
+  const publicFolder = folder({ id: "p", visibility: "VISIBILITY_PUBLIC", ownerId: "o" });
+
+  // Mêmes cas que AddFlowTest.onlyTheOwnersIdeasAreExposed
+  it("n'expose que les idées de son propriétaire", () => {
+    expect(exposesIdeas(publicFolder, "o")).toBe(true);
+    expect(exposesIdeas(publicFolder, "dan")).toBe(false);
+    expect(whoSees(publicFolder, false, "o")).toBe("Visible par toute la communauté");
+    expect(whoSees(publicFolder, false, "dan")).toBe("Visible par les membres du dossier");
+    expect(whoSees(publicFolder, true, "dan")).toBe("Visible par toute la communauté");
+  });
+});
+
+describe("dossier présélectionné", () => {
+  const publicFolder = folder({ id: "p", visibility: "VISIBILITY_PUBLIC" });
+  const privateFolder = folder({ id: "a", visibility: "VISIBILITY_PRIVATE" });
+
+  // Mêmes cas que AddFlowTest.neverPreselectsAPublicFolder
+  it("n'est jamais un dossier public", () => {
+    expect(defaultFolder([{ folder: publicFolder, reason: "" }, { folder: privateFolder, reason: "" }])?.id).toBe("a");
+    expect(defaultFolder([{ folder: publicFolder, reason: "" }])).toBeUndefined();
+    expect(defaultFolder([])).toBeUndefined();
+  });
+});
 
 describe("dossiers suggérés", () => {
   const sorties = folder({ id: "a", name: "Sorties d'automne", updatedAt: "2026-10-01" });
@@ -41,7 +66,6 @@ describe("qui la verra", () => {
     [folder({ id: "b", collaborators: [collab("Inès")] }), false, "Inès la verra"],
     [folder({ id: "b", collaborators: [collab("Inès"), collab("Camille")] }), false, "Inès et Camille la verront"],
     [folder({ id: "b", collaborators: ["Inès", "Camille", "Jo", "Léa"].map(collab) }), false, "Inès, Camille et 2 autres la verront"],
-    [folder({ id: "b", visibility: "VISIBILITY_PUBLIC" }), false, "Visible par toute la communauté"],
     [undefined, true, "Visible par toute la communauté"],
     [undefined, false, "Visible par vous et votre tribu"],
   ])("%#", (f, isPublic, expected) => {
