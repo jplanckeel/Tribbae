@@ -120,7 +120,7 @@ describe("buildShoppingList", () => {
   });
 });
 
-// Mêmes cas que ShoppingListTest.picksEveryIdeaWithIngredients côté Android
+// Mêmes cas que ShoppingListTest.picksRecipesAndThoseToComplete côté Android
 describe("recettes proposées", () => {
   const links = [
     { id: "a", category: "LINK_CATEGORY_RECETTE", ingredients: ["200 g de farine"] },
@@ -130,9 +130,9 @@ describe("recettes proposées", () => {
     { id: "e", category: "LINK_CATEGORY_ACTIVITE" },
   ];
 
-  it("prend toute idée avec ingrédients et met à part les recettes sans", () => {
+  it("ne prend que les recettes, et met à part celles sans ingrédients", () => {
     const { ready, missing } = pickRecipes(links);
-    expect(ready.map((l) => l.id)).toEqual(["a", "b"]);
+    expect(ready.map((l) => l.id)).toEqual(["a"]);
     expect(missing.map((l) => l.id)).toEqual(["c", "d"]);
   });
 });

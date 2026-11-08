@@ -8,7 +8,7 @@ import kotlin.test.assertNull
 /** Mêmes cas que le web (frontend/src/lib/shopping.test.ts). */
 class ShoppingListTest {
     @Test
-    fun picksEveryIdeaWithIngredients() {
+    fun picksRecipesAndThoseToComplete() {
         fun idea(id: String, category: LinkCategory, ingredients: List<String> = emptyList()) =
             Link(id = id, title = id, url = "", category = category, ingredients = ingredients)
         val (ready, missing) = ShoppingList.pick(
@@ -20,7 +20,7 @@ class ShoppingListTest {
                 idea("e", LinkCategory.ACTIVITE),
             )
         )
-        assertEquals(listOf("a", "b"), ready.map { it.id })
+        assertEquals(listOf("a"), ready.map { it.id })
         assertEquals(listOf("c", "d"), missing.map { it.id })
     }
 
