@@ -1,6 +1,7 @@
 package ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +27,9 @@ import androidx.compose.ui.unit.sp
 import ui.campfire.CircleIconButton
 import ui.campfire.CampSwitch
 import ui.campfire.display
+
+/** Vrai pour l'onglet affiché sans écran par-dessus (les onglets cachés restent composés). */
+val LocalTabActive = androidx.compose.runtime.compositionLocalOf { true }
 
 /** Ce que l'écran Réglages affiche ; les actions restent celles de Ma tribu. */
 class SettingsState(
@@ -83,7 +87,8 @@ fun SettingsScreen(s: SettingsState, a: SettingsActions, dataMessage: String?, m
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Box(Modifier.size(56.dp).clip(RoundedCornerShape(20.dp)).background(Braise), contentAlignment = Alignment.Center) {
-                Text(s.name.trim().take(1).uppercase().ifEmpty { "?" }, style = display(24.sp, color = Ecorce))
+                // Initiale brun foncé sur le disque braise, de jour comme de soir (contraste)
+                Text(s.name.trim().take(1).uppercase().ifEmpty { "?" }, style = display(24.sp, color = Color(0xFF3A211B)))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(s.name, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Ecorce)
@@ -139,6 +144,7 @@ fun SettingsScreen(s: SettingsState, a: SettingsActions, dataMessage: String?, m
 
         Row(
             Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(18.dp)).background(CardColor)
+                .border(1.5.dp, CoralBg, RoundedCornerShape(18.dp))
                 .clickable(role = Role.Button, onClick = a.onLogout),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
         ) {

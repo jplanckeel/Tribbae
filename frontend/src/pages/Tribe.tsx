@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Link as RouterLink, useNavigate, useSearchParams } from "react-router";
+import { Link as RouterLink, useLocation, useNavigate, useSearchParams } from "react-router";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
 import { FolderGlyph } from "../components/FolderCover";
@@ -60,12 +60,16 @@ export default function Tribe() {
   const panel = params.get("ouvrir");
   const settingsOpen = panel === "parametres";
   const appsOpen = panel === "applications";
+  const location = useLocation();
+  // Les Réglages sont un écran : on les empile dans l'historique, pour que le
+  // retour du navigateur revienne à Ma tribu
   const openPanel = (name: "parametres" | "applications" | null) =>
     setParams((p) => {
       if (name) p.set("ouvrir", name);
       else p.delete("ouvrir");
       return p;
-    }, { replace: true });
+    }, name === "parametres" ? { state: { fromTribe: true } } : { replace: true });
+  const closeSettings = () => ((location.state as { fromTribe?: boolean } | null)?.fromTribe ? navigate(-1) : openPanel(null));
   const [deleteOpen, setDeleteOpen] = useState(false);
   // Applications connectées ouvertes depuis les Réglages : on y revient en fermant
   const [appsFromSettings, setAppsFromSettings] = useState(false);
@@ -131,7 +135,7 @@ export default function Tribe() {
     const email = account.data?.email;
     if (!email) return toast("Adresse du compte introuvable, réessayez dans un instant.", "error");
     const ok = await confirm({
-      title: "Changer de mot de passe ?",
+      title: "Changer de mot de passe\u00a0?",
       text: `Nous envoyons à ${email} un lien pour choisir un nouveau mot de passe.`,
       confirmLabel: "Envoyer le lien",
     });
@@ -170,10 +174,10 @@ export default function Tribe() {
           childrenLabel={children.length ? children.map((c) => c.name).join(", ") : undefined}
           followingCount={following.data?.length}
           exporting={exporting}
-          onBack={() => openPanel(null)}
+          onBack={closeSettings}
           onRename={() => setNameOpen(true)}
           onMembers={() => setMembersOpen(true)}
-          onChildren={() => { openPanel(null); setTab("foyer"); }}
+          onChildren={() => { closeSettings(); setTab("foyer"); }}
           onFollowing={() => setFollowingOpen(true)}
           onApps={() => setAppsFromSettings(true)}
           onPassword={() => void sendPasswordLink()}
@@ -197,7 +201,7 @@ export default function Tribe() {
             <button
               type="button"
               onClick={() => openPanel("parametres")}
-              aria-label="Paramètres"
+              aria-label="Réglages"
               // Sur grand écran, les paramètres sont dans le menu du compte de l'en-tête
               className={`flex h-11 w-11 items-center justify-center rounded-full bg-card text-ecorce shadow-soft hover:bg-sable-2 md:hidden ${PRESS}`}
             >

@@ -33,9 +33,9 @@ export default function SettingsView(p: {
   onLogout: () => void;
 }) {
   return (
-    <Page className="max-w-2xl">
+    <Page>
       <Seo title="Réglages · Tribbae" noindex />
-      <div className="flex flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
         <div className="flex items-center gap-3">
           <button type="button" onClick={p.onBack} aria-label="Retour à Ma tribu" className="flex h-10 w-10 items-center justify-center rounded-full bg-sable-2 text-ecorce hover:bg-card">
             <Icon name="chevronLeft" size={20} />
@@ -48,7 +48,7 @@ export default function SettingsView(p: {
         </div>
 
         <section aria-label="Votre compte" className="flex items-center gap-3.5 rounded-large bg-card p-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] bg-braise font-display text-2xl font-extrabold text-ecorce">{initial(p.name)}</span>
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] bg-braise font-display text-2xl font-extrabold text-[#3a211b]">{initial(p.name)}</span>
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-[17px] font-bold">{p.name}</span>
             {p.email && <span className="truncate text-[13px] text-sec">{p.email}</span>}
@@ -69,7 +69,7 @@ export default function SettingsView(p: {
 
         <Group title="Outils">
           <Row icon="cart" label="Liste de courses" to="/courses" />
-          <Row icon="sparkles" label="Applications connectées" sub="Voir et retirer l'accès donné à Claude" onClick={p.onApps} last />
+          <Row icon="sparkles" iconClass="text-prune" label="Applications connectées" sub="Voir et retirer l'accès donné à Claude" onClick={p.onApps} last />
         </Group>
 
         <Group title="Compte et données">
@@ -109,13 +109,13 @@ function Group({ title, note, children }: { title: string; note?: string; childr
   );
 }
 
-function Row({ icon, label, sub, value, badge, to, onClick, last, danger }: {
-  icon: IconName; label: string; sub?: string; value?: string; badge?: string; to?: string; onClick?: () => void; last?: boolean; danger?: boolean;
+function Row({ icon, iconClass = "text-sec", label, sub, value, badge, to, onClick, last, danger }: {
+  icon: IconName; iconClass?: string; label: string; sub?: string; value?: string; badge?: string; to?: string; onClick?: () => void; last?: boolean; danger?: boolean;
 }) {
   const cls = `flex w-full items-center gap-3 px-4 py-[13px] text-left transition-colors hover:bg-sable/60 ${last ? "" : "border-b border-sable-2"} ${danger ? "text-sortie-ink" : ""}`;
   const content = (
     <>
-      <Icon name={icon} size={20} className={danger ? "" : "text-sec"} />
+      <Icon name={icon} size={20} className={danger ? "" : iconClass} />
       <span className="flex min-w-0 flex-1 flex-col gap-px">
         <span className="text-[15px] font-semibold">{label}</span>
         {sub && <span className="truncate text-[13px] text-sec">{sub}</span>}

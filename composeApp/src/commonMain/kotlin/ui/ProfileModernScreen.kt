@@ -294,7 +294,7 @@ private fun TribeContent(
     LaunchedEffect(showSettings) { if (showSettings && accountEmail == null) accountEmail = viewModel.account()?.email?.ifBlank { null } }
 
     if (showSettings) {
-        androidx.activity.compose.BackHandler { showSettings = false }
+        androidx.activity.compose.BackHandler(enabled = LocalTabActive.current) { showSettings = false }
         val me = tribe?.members?.find { it.userId == userId }
         SettingsScreen(
             SettingsState(
@@ -316,7 +316,7 @@ private fun TribeContent(
                 onFollowing = { showFollowing = true },
                 onShopping = onOpenShopping,
                 onApps = { showApps = true },
-                onPassword = { showPassword = true },
+                onPassword = { if (accountEmail != null) showPassword = true else dataMessage = "Adresse du compte introuvable, réessayez dans un instant." },
                 onPrivacy = { uriHandler.openUri(PRIVACY_URL) },
                 onExport = { exportLauncher.launch("tribbae-mes-donnees-${java.time.LocalDate.now()}.json") },
                 onDelete = { showDelete = true },
@@ -859,7 +859,7 @@ private fun TribeContent(
     if (showPassword) {
         val email = accountEmail
         ConfirmSheet(
-            "Changer de mot de passe ?",
+            "Changer de mot de passe ?",
             if (email != null) "Nous envoyons à $email un lien pour choisir un nouveau mot de passe." else "Adresse du compte introuvable, réessayez dans un instant.",
             "Envoyer le lien",
             onConfirm = {

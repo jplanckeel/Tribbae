@@ -127,7 +127,7 @@ private val faqSections = listOf(
         items = listOf(
             FaqItem(
                 "Comment changer mon mot de passe ?",
-                "La modification du mot de passe n'est pas encore disponible directement dans l'app. Contactez le support à contact@tribbae.fr pour obtenir de l'aide."
+                "Dans « Ma tribu », touchez l'engrenage puis « Mot de passe » : nous envoyons à l'adresse de votre compte un lien pour choisir un nouveau mot de passe. Depuis l'écran de connexion, « Mot de passe oublié ? » fait de même."
             ),
             FaqItem(
                 "Mes données sont-elles sécurisées ?",
