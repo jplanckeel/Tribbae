@@ -107,9 +107,12 @@ class MainActivity : ComponentActivity() {
                         try {
                             appContext.startActivity(geo)
                         } catch (_: android.content.ActivityNotFoundException) {
-                            appContext.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(data.Maps.searchUrl(address))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            )
+                            // Ni app de cartes ni navigateur (profil professionnel verrouillé) : rien à ouvrir
+                            runCatching {
+                                appContext.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(data.Maps.searchUrl(address))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                )
+                            }
                         }
                     }
                     it.imagePickerGallery = { onResult -> imagePicker.pickFromGallery(onResult) }
