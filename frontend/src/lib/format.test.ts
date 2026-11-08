@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventDateMs, formatTime, hostname, matchesQuery, priceLabel, priceValue, safeHref, safeNext } from "./format";
+import { eventDateMs, formatTime, hostname, matchesQuery, priceLabel, priceValue, safeHref, safeNext, mapsUrl } from "./format";
 import type { Link } from "./types";
 
 describe("liens sûrs", () => {
@@ -75,4 +75,13 @@ it("recherche dans le titre, la description, le lieu et les tags", () => {
   expect(matchesQuery(l, "lyon")).toBe(true);
   expect(matchesQuery(l, "automne")).toBe(true);
   expect(matchesQuery(l, "plage")).toBe(false);
+});
+
+// Mêmes cas que data/MapsTest.kt côté Android
+describe("adresse dans Google Maps", () => {
+  it("encode l'adresse", () => {
+    expect(mapsUrl("  Parc de la Tête d'Or, Lyon ")).toBe("https://www.google.com/maps/search/?api=1&query=Parc%20de%20la%20T%C3%AAte%20d'Or%2C%20Lyon");
+    expect(mapsUrl("12 rue & place")).toBe("https://www.google.com/maps/search/?api=1&query=12%20rue%20%26%20place");
+    expect(mapsUrl("Gare (Nord) ! ~")).toBe("https://www.google.com/maps/search/?api=1&query=Gare%20(Nord)%20!%20~");
+  });
 });

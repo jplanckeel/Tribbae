@@ -12,7 +12,7 @@ import * as api from "../lib/api";
 import { AVATAR_COLORS, categoryMeta, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { likeFeedback } from "../lib/feedback";
-import { eventDateMs, formatShortDate, formatTime, hostname, safeHref, safeImage } from "../lib/format";
+import { eventDateMs, formatShortDate, formatTime, hostname, mapsUrl, safeHref, safeImage } from "../lib/format";
 import { canEditFolder, copyInput, toInput } from "../lib/links";
 import { ideaSeoDescription, ideaSeoTitle } from "../lib/seo";
 import { useSession } from "../lib/session";
@@ -171,10 +171,10 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
     if (r === "copied") toast(link.visibility === "public" ? "Lien copié" : "Lien copié — visible par les membres du dossier");
   };
 
-  const infos: { icon: IconName; label: string; value: string }[] = [];
+  const infos: { icon: IconName; label: string; value: string; href?: string }[] = [];
   if (at) infos.push({ icon: "calendar", label: "Quand", value: [formatShortDate(at), formatTime(at)].filter(Boolean).join(" · ") });
   if (link.ageRange) infos.push({ icon: "person", label: "Âge", value: link.ageRange });
-  if (link.location) infos.push({ icon: "pin", label: "Où", value: link.location });
+  if (link.location) infos.push({ icon: "pin", label: "Où", value: link.location, href: mapsUrl(link.location) });
   if (link.price) infos.push({ icon: "euro", label: "Prix", value: link.price });
 
   return (
@@ -243,7 +243,13 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
                 <Icon name={i.icon} size={20} className={cat.ic} />
                 <div className="flex min-w-0 flex-col">
                   <dt className="text-xs text-sec">{i.label}</dt>
-                  <dd className="truncate text-sm font-bold" title={i.value}>{i.value}</dd>
+                  <dd className="truncate text-sm font-bold" title={i.value}>
+                    {i.href ? (
+                      <a href={i.href} target="_blank" rel="noopener noreferrer" aria-label={`Ouvrir « ${i.value} » dans Google Maps`} className="text-link underline-offset-2 hover:underline">
+                        {i.value}
+                      </a>
+                    ) : i.value}
+                  </dd>
                 </div>
               </div>
             ))}

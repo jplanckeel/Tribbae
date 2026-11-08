@@ -208,7 +208,11 @@ fun LinkDetailScreen(
                 if (infos.isNotEmpty()) {
                     infos.chunked(2).forEach { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            row.forEach { (icon, label, value) -> InfoTile(icon, label, value, cat.tint, Modifier.weight(1f)) }
+                            row.forEach { (icon, label, value) ->
+                                // L'adresse s'ouvre dans Google Maps
+                                val open = if (icon == Icons.Outlined.Place) onOpenUrl?.let { o -> { o(data.Maps.searchUrl(value)) } } else null
+                                InfoTile(icon, label, value, cat.tint, Modifier.weight(1f), open)
+                            }
                             if (row.size == 1) Spacer(Modifier.weight(1f))
                         }
                     }
@@ -442,16 +446,18 @@ fun LinkDetailScreen(
 }
 
 @Composable
-private fun InfoTile(icon: ImageVector, label: String, value: String, tint: Color, modifier: Modifier) {
+private fun InfoTile(icon: ImageVector, label: String, value: String, tint: Color, modifier: Modifier, onClick: (() -> Unit)? = null) {
     Row(
-        modifier.clip(RoundedCornerShape(16.dp)).background(CardColor).padding(12.dp),
+        modifier.clip(RoundedCornerShape(16.dp)).background(CardColor)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClickLabel = "Ouvrir dans Google Maps", onClick = onClick) else Modifier)
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
         Column {
             Text(label, fontSize = 12.sp, color = TextSec)
-            Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (onClick != null) TerracottaDark else Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
