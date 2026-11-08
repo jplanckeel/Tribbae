@@ -109,7 +109,7 @@ fun ShoppingListScreen(
                             Icon(if (on) Icons.Outlined.Check else Icons.Outlined.Add, null, tint = if (on) Color.White else rc.ink, modifier = Modifier.size(14.dp))
                         }
                         Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (on) Color.White else rc.ink, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 220.dp))
-                        Text("${r.ingredients.size}", fontSize = 13.sp, color = (if (on) Color.White else rc.ink).copy(alpha = 0.7f))
+                        Text("${r.ingredients.count { it.isNotBlank() }}", fontSize = 13.sp, color = (if (on) Color.White else rc.ink).copy(alpha = 0.7f))
                     }
                 }
                 // Recettes sans ingrédients : grisées, on les complète d'un toucher
@@ -124,21 +124,21 @@ fun ShoppingListScreen(
                         Box(Modifier.size(24.dp).clip(CircleShape).background(CardColor), contentAlignment = Alignment.Center) {
                             Icon(Icons.Outlined.Edit, null, tint = TextSec, modifier = Modifier.size(14.dp))
                         }
-                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 160.dp))
-                        Text("Ajouter les ingrédients", fontSize = 13.sp, color = TextSec)
+                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                        Text("+ ingrédients", fontSize = 13.sp, color = TextSec, maxLines = 1)
                     }
                 }
             }
             if (missing.isNotEmpty()) {
                 Text(
-                    "${missing.size} recette${if (missing.size > 1) "s" else ""} sans ingrédients : touchez-${if (missing.size > 1) "les" else "la"} pour les compléter.",
+                    "${missing.size} recette${if (missing.size > 1) "s" else ""} sans ingrédients : ${if (missing.size > 1) "touchez-les pour les compléter." else "touchez-la pour la compléter."}",
                     fontSize = 13.sp, color = TextSec,
                 )
             }
         }
 
         if (items.isEmpty()) {
-            Text("Touchez une ou plusieurs recettes pour composer la liste.", fontSize = 14.sp, color = TextSec)
+            if (recipes.isNotEmpty()) Text("Touchez une ou plusieurs recettes pour composer la liste.", fontSize = 14.sp, color = TextSec)
         } else {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 Text("${items.size} ingrédient${if (items.size > 1) "s" else ""}", style = display(18.sp, FontWeight.Bold))

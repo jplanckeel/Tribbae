@@ -146,7 +146,6 @@ object ShoppingList {
         val from = mutableListOf<String>()
     }
 
-    /** Regroupe les ingrédients des recettes choisies, triés par nom. */
     /**
      * Recettes de la liste de courses : celles qui ont des ingrédients, et à part
      * celles qui n'en ont pas encore, à compléter. Mêmes cas que `pickRecipes` du web.
@@ -157,6 +156,7 @@ object ShoppingList {
         return ready to missing
     }
 
+    /** Regroupe les ingrédients des recettes choisies, triés par nom. */
     fun build(recipes: List<Recipe>): List<Item> {
         val groups = linkedMapOf<String, Group>()
         for (r in recipes) {

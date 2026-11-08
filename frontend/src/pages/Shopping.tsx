@@ -110,7 +110,7 @@ export default function Shopping() {
                       <Icon name={on ? "check" : "plus"} size={14} strokeWidth={2.6} />
                     </span>
                     <span className="max-w-[220px] truncate" title={r.title}>{r.title}</span>
-                    <span className="opacity-70">{r.ingredients!.length}</span>
+                    <span className="opacity-70">{r.ingredients!.filter((i) => i.trim()).length}</span>
                   </button>
                 );
               })}
@@ -126,14 +126,14 @@ export default function Shopping() {
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-card">
                     <Icon name="pencil" size={14} strokeWidth={2.6} />
                   </span>
-                  <span className="max-w-[160px] truncate" title={r.title}>{r.title}</span>
-                  <span className="font-normal">Ajouter les ingrédients</span>
+                  <span className="min-w-0 truncate" title={r.title}>{r.title}</span>
+                  <span className="shrink-0 font-normal whitespace-nowrap">+ ingrédients</span>
                 </button>
               ))}
             </div>
             {missing.length > 0 && (
               <p className="text-[13px] text-sec">
-                {plural(missing.length, "recette", "recettes")} sans ingrédients : {missing.length > 1 ? "touchez-les" : "touchez-la"} pour les compléter.
+                {plural(missing.length, "recette", "recettes")} sans ingrédients : {missing.length > 1 ? "touchez-les pour les compléter." : "touchez-la pour la compléter."}
               </p>
             )}
           </section>
@@ -177,7 +177,7 @@ export default function Shopping() {
               </ul>
             </section>
           ) : (
-            <p className="text-sm text-sec">Touchez une ou plusieurs recettes pour composer la liste.</p>
+            recipes.length > 0 && <p className="text-sm text-sec">Touchez une ou plusieurs recettes pour composer la liste.</p>
           )}
         </>
       )}
