@@ -7,6 +7,23 @@ import kotlin.test.assertNull
 
 /** Mêmes cas que le web (frontend/src/lib/shopping.test.ts). */
 class ShoppingListTest {
+    @Test
+    fun picksEveryIdeaWithIngredients() {
+        fun idea(id: String, category: LinkCategory, ingredients: List<String> = emptyList()) =
+            Link(id = id, title = id, url = "", category = category, ingredients = ingredients)
+        val (ready, missing) = ShoppingList.pick(
+            listOf(
+                idea("a", LinkCategory.RECETTE, listOf("200 g de farine")),
+                idea("b", LinkCategory.IDEE, listOf("2 œufs")),
+                idea("c", LinkCategory.RECETTE),
+                idea("d", LinkCategory.RECETTE, listOf("  ")),
+                idea("e", LinkCategory.ACTIVITE),
+            )
+        )
+        assertEquals(listOf("a", "b"), ready.map { it.id })
+        assertEquals(listOf("c", "d"), missing.map { it.id })
+    }
+
     private fun r(title: String, vararg ingredients: String) = ShoppingList.Recipe(title, ingredients.toList())
     private fun labels(vararg recipes: ShoppingList.Recipe) = ShoppingList.build(recipes.toList()).map { it.label }
 

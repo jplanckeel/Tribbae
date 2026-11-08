@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildShoppingList, ingredientKey, parseIngredient } from "./shopping";
+import { buildShoppingList, ingredientKey, parseIngredient, pickRecipes } from "./shopping";
 
 // Mêmes cas que ShoppingListTest (Android)
 const labels = (recipes: { title: string; ingredients: string[] }[]) => buildShoppingList(recipes).map((i) => i.label);
@@ -119,3 +119,21 @@ describe("buildShoppingList", () => {
     expect(labels([{ title: "A", ingredients: ["", "  ", "Poivre"] }])).toEqual(["Poivre"]);
   });
 });
+
+// Mêmes cas que ShoppingListTest.picksEveryIdeaWithIngredients côté Android
+describe("recettes proposées", () => {
+  const links = [
+    { id: "a", category: "LINK_CATEGORY_RECETTE", ingredients: ["200 g de farine"] },
+    { id: "b", category: "LINK_CATEGORY_IDEE", ingredients: ["2 œufs"] },
+    { id: "c", category: "LINK_CATEGORY_RECETTE", ingredients: [] },
+    { id: "d", category: "LINK_CATEGORY_RECETTE", ingredients: ["  "] },
+    { id: "e", category: "LINK_CATEGORY_ACTIVITE" },
+  ];
+
+  it("prend toute idée avec ingrédients et met à part les recettes sans", () => {
+    const { ready, missing } = pickRecipes(links);
+    expect(ready.map((l) => l.id)).toEqual(["a", "b"]);
+    expect(missing.map((l) => l.id)).toEqual(["c", "d"]);
+  });
+});
+

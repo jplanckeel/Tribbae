@@ -147,6 +147,16 @@ object ShoppingList {
     }
 
     /** Regroupe les ingrédients des recettes choisies, triés par nom. */
+    /**
+     * Idées proposées : toute idée qui a des ingrédients, quelle que soit sa
+     * catégorie (une recette importée peut être rangée ailleurs), et à part les
+     * recettes encore sans ingrédients, à compléter. Mêmes cas que `pickRecipes` du web.
+     */
+    fun pick(links: List<Link>): Pair<List<Link>, List<Link>> {
+        val hasIngredients = { l: Link -> l.ingredients.any { it.isNotBlank() } }
+        return links.filter(hasIngredients) to links.filter { it.category == LinkCategory.RECETTE && !hasIngredients(it) }
+    }
+
     fun build(recipes: List<Recipe>): List<Item> {
         val groups = linkedMapOf<String, Group>()
         for (r in recipes) {

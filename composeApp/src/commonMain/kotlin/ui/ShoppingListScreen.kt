@@ -41,6 +41,7 @@ fun ShoppingListScreen(
     recipeId: String? = null,
     onBack: () -> Unit = {},
     onAddRecipe: () -> Unit = {},
+    onEditRecipe: (data.Link) -> Unit = {},
 ) {
     val repository = viewModel.repository
     val links by repository.links.collectAsState()
@@ -48,7 +49,9 @@ fun ShoppingListScreen(
     val selected = shopping.recipes
     val checked = shopping.checked
 
-    val recipes = remember(links) { links.filter { it.category == LinkCategory.RECETTE && it.ingredients.isNotEmpty() } }
+    val picked = remember(links) { ShoppingList.pick(links) }
+    val recipes = picked.first
+    val missing = picked.second
     fun listFor(ids: Set<String>) = ShoppingList.build(recipes.filter { it.id in ids }.map { ShoppingList.Recipe(it.title, it.ingredients) })
     val items = remember(recipes, selected) { listFor(selected) }
     val remaining = items.count { it.key !in checked }
@@ -80,7 +83,7 @@ fun ShoppingListScreen(
             }
         }
 
-        if (recipes.isEmpty()) {
+        if (recipes.isEmpty() && missing.isEmpty()) {
             EmptyBlock(
                 Icons.Outlined.Restaurant, "Aucune recette avec ingrédients",
                 "Ajoutez une recette et listez ses ingrédients : ils se retrouveront ici, regroupés."
@@ -107,6 +110,28 @@ fun ShoppingListScreen(
                         Text("${r.ingredients.size}", fontSize = 13.sp, color = (if (on) Color.White else rc.ink).copy(alpha = 0.7f))
                     }
                 }
+                // Recettes sans ingrédients : grisées, on les complète d'un toucher
+                missing.forEach { r ->
+                    Row(
+                        Modifier.clip(CircleShape).background(Sable2)
+                            .clickable(role = Role.Button, onClickLabel = "Ajouter les ingrédients") { onEditRecipe(r) }
+                            .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(Modifier.size(24.dp).clip(CircleShape).background(CardColor), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.Edit, null, tint = TextSec, modifier = Modifier.size(14.dp))
+                        }
+                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec, maxLines = 1)
+                        Text("Ajouter les ingrédients", fontSize = 13.sp, color = TextSec)
+                    }
+                }
+            }
+            if (missing.isNotEmpty()) {
+                Text(
+                    "${missing.size} recette${if (missing.size > 1) "s" else ""} sans ingrédients : touchez-${if (missing.size > 1) "les" else "la"} pour les compléter.",
+                    fontSize = 13.sp, color = TextSec,
+                )
             }
         }
 

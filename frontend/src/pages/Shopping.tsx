@@ -4,10 +4,9 @@ import { useComposer } from "../components/Composer";
 import Icon from "../components/Icon";
 import { Page } from "../components/Shell";
 import { Button, EmptyState } from "../components/ui";
-import { normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { plural } from "../lib/format";
-import { buildShoppingList, type ShoppingItem } from "../lib/shopping";
+import { buildShoppingList, type ShoppingItem, pickRecipes } from "../lib/shopping";
 import Seo from "../components/Seo";
 
 // Sélection des recettes et ingrédients cochés : conservés sur l'appareil
@@ -36,7 +35,7 @@ function keepChecked(checked: string[], items: ShoppingItem[]): string[] {
 
 export default function Shopping() {
   const navigate = useNavigate();
-  const { newLink } = useComposer();
+  const { newLink, editLink } = useComposer();
   const { links } = useMyData();
   const [params] = useSearchParams();
   // « Préparer la liste de courses » depuis une recette : elle est ajoutée à la sélection
@@ -54,10 +53,7 @@ export default function Shopping() {
     }
   }, [state]);
 
-  const recipes = useMemo(
-    () => links.filter((l) => normalizeCategory(l.category) === "LINK_CATEGORY_RECETTE" && l.ingredients?.length),
-    [links],
-  );
+  const { ready: recipes, missing } = useMemo(() => pickRecipes(links), [links]);
   const listFor = (ids: string[]) =>
     buildShoppingList(recipes.filter((r) => ids.includes(r.id)).map((r) => ({ title: r.title, ingredients: r.ingredients ?? [] })));
 
@@ -88,7 +84,7 @@ export default function Shopping() {
         </div>
       </div>
 
-      {recipes.length === 0 ? (
+      {recipes.length === 0 && missing.length === 0 ? (
         <EmptyState
           icon="recette"
           title="Aucune recette avec ingrédients"
@@ -118,7 +114,28 @@ export default function Shopping() {
                   </button>
                 );
               })}
+              {/* Recettes sans ingrédients : grisées, on les complète d'un clic */}
+              {missing.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => editLink(r)}
+                  aria-label={`${r.title} : ajouter les ingrédients`}
+                  className="flex shrink-0 items-center gap-2 rounded-full bg-sable-2 py-2 pr-4 pl-2 text-sm font-semibold text-sec"
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-card">
+                    <Icon name="pencil" size={14} strokeWidth={2.6} />
+                  </span>
+                  {r.title}
+                  <span className="font-normal">Ajouter les ingrédients</span>
+                </button>
+              ))}
             </div>
+            {missing.length > 0 && (
+              <p className="text-[13px] text-sec">
+                {plural(missing.length, "recette", "recettes")} sans ingrédients : {missing.length > 1 ? "touchez-les" : "touchez-la"} pour les compléter.
+              </p>
+            )}
           </section>
 
           {items.length > 0 ? (
