@@ -3,7 +3,7 @@ import { Link as RouterLink, useNavigate, useSearchParams } from "react-router";
 import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
 import { FolderGlyph } from "../components/FolderCover";
-import Icon, { type IconName } from "../components/Icon";
+import Icon from "../components/Icon";
 import ShareFolderSheet from "../components/ShareFolderSheet";
 import Sheet from "../components/Sheet";
 import { Button, EmptyState, ErrorNote, Field, PageHeader, Spinner, Toggle } from "../components/ui";
@@ -17,9 +17,9 @@ import { scopeLabels } from "../lib/oauth";
 import { clearSession, useSession } from "../lib/session";
 import { birthdayLabel, circleOf, ideasForChild, monthName, RING_SLOTS, ringPosition, yearInIdeas, type CircleMember } from "../lib/tribe";
 import type { Child, CircleInvitation, CollaboratorRole, ConnectedApp, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
-import { setThemePref, useThemePref, type ThemePref } from "../lib/theme";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
+import SettingsView from "../components/SettingsView";
 import { Page } from "../components/Shell";
 
 const CARD = "rounded-large bg-card shadow-[0_1px_0_rgba(58,33,27,0.06),0_8px_24px_rgba(58,33,27,0.06)]";
@@ -44,7 +44,7 @@ interface Seat {
 export default function Tribe() {
   const session = useSession()!;
   const navigate = useNavigate();
-  const { toast } = useFeedback();
+  const { toast, confirm } = useFeedback();
   const { links, folders, children, upsertFolder, tribe, setTribe, isTribePeer } = useMyData();
   const { openAi } = useComposer();
   const [tab, setTab] = useState<"foyer" | "cercle">("foyer");
@@ -67,6 +67,8 @@ export default function Tribe() {
       return p;
     }, { replace: true });
   const [deleteOpen, setDeleteOpen] = useState(false);
+  // Applications connectées ouvertes depuis les Réglages : on y revient en fermant
+  const [appsFromSettings, setAppsFromSettings] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [now] = useState(() => Date.now());
   const following = useAsync(() => api.follows.following(session.userId), [session.userId]);
@@ -123,6 +125,24 @@ export default function Tribe() {
     clearSession();
     navigate("/bienvenue", { replace: true });
   };
+  // Adresse du compte, pour la carte des Réglages et le lien de mot de passe
+  const account = useAsync(() => (settingsOpen ? api.auth.me() : Promise.resolve(undefined)), [settingsOpen]);
+  const sendPasswordLink = async () => {
+    const email = account.data?.email;
+    if (!email) return toast("Adresse du compte introuvable, réessayez dans un instant.", "error");
+    const ok = await confirm({
+      title: "Changer de mot de passe ?",
+      text: `Nous envoyons à ${email} un lien pour choisir un nouveau mot de passe.`,
+      confirmLabel: "Envoyer le lien",
+    });
+    if (!ok) return;
+    try {
+      await api.auth.forgotPassword(email);
+      toast(`Lien envoyé à ${email}`);
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
   const exportData = async () => {
     setExporting(true);
     try {
@@ -139,9 +159,31 @@ export default function Tribe() {
 
   return (
     <div>
-      <Seo title="Ma tribu · Tribbae" noindex />
-
+      {settingsOpen ? (
+        <SettingsView
+          name={session.displayName}
+          email={account.data?.email}
+          owner={!tribe?.members?.length || me?.role === "TRIBE_ROLE_OWNER"}
+          isAdmin={!!session.isAdmin}
+          tribeName={tribeName}
+          membersLabel={[String(accounts.length), invitations.length ? `${invitations.length} en attente` : ""].filter(Boolean).join(" · ")}
+          childrenLabel={children.length ? children.map((c) => c.name).join(", ") : undefined}
+          followingCount={following.data?.length}
+          exporting={exporting}
+          onBack={() => openPanel(null)}
+          onRename={() => setNameOpen(true)}
+          onMembers={() => setMembersOpen(true)}
+          onChildren={() => { openPanel(null); setTab("foyer"); }}
+          onFollowing={() => setFollowingOpen(true)}
+          onApps={() => setAppsFromSettings(true)}
+          onPassword={() => void sendPasswordLink()}
+          onExport={() => void exportData()}
+          onDelete={() => setDeleteOpen(true)}
+          onLogout={logout}
+        />
+      ) : (
       <Page>
+      <Seo title="Ma tribu · Tribbae" noindex />
         <PageHeader
           title="Ma tribu"
           subtitle={
@@ -377,28 +419,11 @@ export default function Tribe() {
           </p>
         </section>
 
-        <section className="flex flex-col gap-2.5" aria-labelledby="settings-title">
-          <h2 id="settings-title" className="font-display text-xl font-bold">Réglages</h2>
-          <nav aria-label="Réglages" className="overflow-hidden rounded-large bg-card">
-            <AppearanceRow />
-            <ListRow icon="heart" label="Tribus suivies" value={following.data ? String(following.data.length) : undefined} onClick={() => setFollowingOpen(true)} />
-            <ListRow icon="cart" label="Liste de courses" to="/courses" />
-            <ListRow icon="lock" label="Confidentialité & mes données" to="/confidentialite" />
-            <ListRow icon="help" label="Aide & FAQ" to="/aide" />
-            <ListRow icon="tipi" label="À propos de Tribbae" to="/a-propos" last={!session.isAdmin} />
-            {session.isAdmin && <ListRow icon="crown" label="Administration" to="/admin" last />}
-          </nav>
-          <p className="py-1 text-center text-xs text-muted">
-            Connecté en tant que {session.displayName} ·{" "}
-            <button type="button" onClick={logout} className="font-semibold text-sec underline-offset-2 hover:text-terracotta hover:underline">
-              Se déconnecter
-            </button>
-          </p>
-        </section>
       </Page>
+      )}
 
       {deleteOpen && <DeleteAccountSheet onClose={() => setDeleteOpen(false)} />}
-      {appsOpen && <ConnectedAppsSheet onClose={() => openPanel(null)} />}
+      {(appsOpen || appsFromSettings) && <ConnectedAppsSheet onClose={() => (appsFromSettings ? setAppsFromSettings(false) : openPanel(null))} />}
       {kid && (
         <KidSheet
           kid={kid}
@@ -468,59 +493,6 @@ export default function Tribe() {
         )}
       </Sheet>
 
-      <Sheet open={settingsOpen} onClose={() => openPanel(null)} title="Paramètres">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 rounded-medium bg-card p-3.5">
-            <span className="flex h-12 w-12 items-center justify-center rounded-medium bg-braise font-display text-xl font-extrabold">{initial(session.displayName)}</span>
-            <span className="flex flex-col">
-              <span className="font-bold">{session.displayName}</span>
-              <span className="text-xs text-sec">{session.isAdmin ? "Administrateur" : "Membre"}</span>
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => { openPanel(null); setNameOpen(true); }}
-            className="flex items-center gap-3 rounded-medium bg-card p-3.5 text-left hover:bg-sable-2"
-          >
-            <Icon name="tipi" size={20} className="text-terracotta" />
-            <span className="flex flex-1 flex-col">
-              <span className="text-xs text-sec">Nom de la tribu</span>
-              <span className="font-bold">La tribu {tribeName}</span>
-            </span>
-            <Icon name="pencil" size={17} className="text-sec" />
-          </button>
-          <button
-            type="button"
-            onClick={() => openPanel("applications")}
-            className="flex items-center gap-3 rounded-medium bg-card p-3.5 text-left hover:bg-sable-2"
-          >
-            <Icon name="sparkles" size={20} className="text-prune" />
-            <span className="flex flex-1 flex-col">
-              <span className="font-bold">Applications connectées</span>
-              <span className="text-xs text-sec">Voir et retirer l'accès donné à Claude</span>
-            </span>
-            <Icon name="dots" size={17} className="text-sec" />
-          </button>
-          <section aria-labelledby="my-data" className="flex flex-col gap-2 rounded-medium bg-card p-3.5">
-            <h3 id="my-data" className="font-bold">Mes données</h3>
-            <p className="text-sm text-sec">
-              Récupérez tout ce que Tribbae conserve sur vous, ou supprimez votre compte. Détails dans la{" "}
-              <RouterLink to="/confidentialite" className="font-semibold text-terracotta">politique de confidentialité</RouterLink>.
-            </p>
-            <Button variant="ghost" size="sm" icon="send" loading={exporting} onClick={() => void exportData()}>
-              Télécharger mes données
-            </Button>
-            <Button variant="danger" size="sm" icon="trash" onClick={() => { openPanel(null); setDeleteOpen(true); }}>
-              Supprimer mon compte
-            </Button>
-          </section>
-          <p className="text-sm text-sec">
-            Pour modifier votre mot de passe, écrivez-nous à{" "}
-            <a href="mailto:contact@tribbae.fr" className="font-semibold text-terracotta">contact@tribbae.fr</a>.
-          </p>
-          <Button variant="danger" icon="logout" onClick={logout}>Se déconnecter</Button>
-        </div>
-      </Sheet>
     </div>
   );
 }
@@ -534,46 +506,6 @@ function YearTile({ n, label, color }: { n: number; label: string; color: string
   );
 }
 
-/** « Apparence » : jour, soir (mode sombre « veillée ») ou comme l'appareil. Retenue sur cet appareil. */
-function AppearanceRow() {
-  const pref = useThemePref();
-  const options: [ThemePref, string][] = [["jour", "Jour"], ["soir", "Soir"], ["auto", "Auto"]];
-  return (
-    <div className="flex items-center gap-3 border-b border-sable-2 px-4 py-3">
-      <Icon name="sun" size={20} className="text-sec" />
-      <span id="appearance-label" className="flex-1 text-[15px] font-semibold">Apparence</span>
-      <div role="radiogroup" aria-labelledby="appearance-label" className="flex gap-0.5 rounded-small bg-sable-2 p-[3px]">
-        {options.map(([k, label]) => (
-          <button
-            key={k}
-            type="button"
-            role="radio"
-            aria-checked={pref === k}
-            onClick={() => setThemePref(k)}
-            className={`h-[30px] rounded-[9px] px-2.5 text-xs font-bold transition-colors ${pref === k ? "bg-card text-ecorce" : "text-sec"}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ListRow({ icon, label, value, to, onClick, last }: {
-  icon: IconName; label: string; value?: string; to?: string; onClick?: () => void; last?: boolean;
-}) {
-  const cls = `flex w-full items-center gap-3 px-4 py-3.5 text-left text-[15px] font-semibold transition-colors hover:bg-sable/60 ${last ? "" : "border-b border-sable-2"}`;
-  const content = (
-    <>
-      <Icon name={icon} size={20} className="text-sec" />
-      <span className="flex-1">{label}</span>
-      {value && <span className="text-[13px] font-normal text-sec">{value}</span>}
-      <Icon name="chevronRight" size={18} className="text-muted" />
-    </>
-  );
-  return to ? <RouterLink to={to} className={cls}>{content}</RouterLink> : <button type="button" onClick={onClick} className={cls}>{content}</button>;
-}
 
 function UnfollowButton({ userId, onDone }: { userId: string; onDone: () => void }) {
   const [busy, setBusy] = useState(false);

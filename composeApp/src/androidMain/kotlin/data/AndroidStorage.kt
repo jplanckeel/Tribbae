@@ -27,6 +27,13 @@ class AndroidStorage(context: Context) : Storage {
         settings.edit().putString("appearance", value).apply()
     }
 
+    /** Interrupteur général des rappels (Réglages), allumé par défaut. */
+    fun loadRemindersEnabled(): Boolean = settings.getBoolean("reminders", true)
+
+    fun saveRemindersEnabled(value: Boolean) {
+        settings.edit().putBoolean("reminders", value).apply()
+    }
+
     override fun saveLinks(links: List<Link>) {
         prefs.edit().putString("links", json.encodeToString(links)).apply()
     }
