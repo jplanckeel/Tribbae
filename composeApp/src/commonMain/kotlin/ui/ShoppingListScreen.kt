@@ -34,6 +34,7 @@ import viewmodel.LinkViewModel
  * dans le dépôt (gardée sur l'appareil, suit l'identifiant donné par le serveur).
  * [recipeId] : recette d'où l'on vient (« Préparer la liste de courses »), ajoutée à la sélection.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ShoppingListScreen(
     viewModel: LinkViewModel,
@@ -93,7 +94,8 @@ fun ShoppingListScreen(
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Recettes", style = display(18.sp, FontWeight.Bold))
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Les pastilles passent à la ligne : un long titre (import Instagram) ne cache plus les suivantes
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 recipes.forEach { r ->
                     val on = r.id in selected
                     Row(
@@ -106,7 +108,7 @@ fun ShoppingListScreen(
                         Box(Modifier.size(24.dp).clip(CircleShape).background(if (on) Color.White.copy(alpha = 0.25f) else CardColor), contentAlignment = Alignment.Center) {
                             Icon(if (on) Icons.Outlined.Check else Icons.Outlined.Add, null, tint = if (on) Color.White else rc.ink, modifier = Modifier.size(14.dp))
                         }
-                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (on) Color.White else rc.ink, maxLines = 1)
+                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (on) Color.White else rc.ink, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 220.dp))
                         Text("${r.ingredients.size}", fontSize = 13.sp, color = (if (on) Color.White else rc.ink).copy(alpha = 0.7f))
                     }
                 }
@@ -122,7 +124,7 @@ fun ShoppingListScreen(
                         Box(Modifier.size(24.dp).clip(CircleShape).background(CardColor), contentAlignment = Alignment.Center) {
                             Icon(Icons.Outlined.Edit, null, tint = TextSec, modifier = Modifier.size(14.dp))
                         }
-                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec, maxLines = 1)
+                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 160.dp))
                         Text("Ajouter les ingrédients", fontSize = 13.sp, color = TextSec)
                     }
                 }

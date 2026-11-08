@@ -95,7 +95,7 @@ export default function Shopping() {
         <>
           <section className="flex flex-col gap-2.5">
             <h2 className="text-lg font-bold">Recettes</h2>
-            <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+            <div className="flex flex-wrap gap-2">
               {recipes.map((r) => {
                 const on = state.recipes.includes(r.id);
                 return (
@@ -104,12 +104,12 @@ export default function Shopping() {
                     type="button"
                     aria-pressed={on}
                     onClick={() => toggleRecipe(r.id)}
-                    className={`flex shrink-0 items-center gap-2 rounded-full py-2 pr-4 pl-2 text-sm font-semibold transition-colors ${on ? "bg-recette-ic text-white" : "bg-recette-bg text-recette-ink"}`}
+                    className={`flex max-w-full items-center gap-2 rounded-full py-2 pr-4 pl-2 text-sm font-semibold transition-colors ${on ? "bg-recette-ic text-white" : "bg-recette-bg text-recette-ink"}`}
                   >
                     <span className={`flex h-6 w-6 items-center justify-center rounded-full ${on ? "bg-white/25" : "bg-card"}`}>
                       <Icon name={on ? "check" : "plus"} size={14} strokeWidth={2.6} />
                     </span>
-                    {r.title}
+                    <span className="max-w-[220px] truncate" title={r.title}>{r.title}</span>
                     <span className="opacity-70">{r.ingredients!.length}</span>
                   </button>
                 );
@@ -121,12 +121,12 @@ export default function Shopping() {
                   type="button"
                   onClick={() => editLink(r)}
                   aria-label={`${r.title} : ajouter les ingrédients`}
-                  className="flex shrink-0 items-center gap-2 rounded-full bg-sable-2 py-2 pr-4 pl-2 text-sm font-semibold text-sec"
+                  className="flex max-w-full items-center gap-2 rounded-full bg-sable-2 py-2 pr-4 pl-2 text-sm font-semibold text-sec"
                 >
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-card">
                     <Icon name="pencil" size={14} strokeWidth={2.6} />
                   </span>
-                  {r.title}
+                  <span className="max-w-[160px] truncate" title={r.title}>{r.title}</span>
                   <span className="font-normal">Ajouter les ingrédients</span>
                 </button>
               ))}
