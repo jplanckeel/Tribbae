@@ -110,6 +110,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     /** Fonction pour ouvrir une URL dans le navigateur — injectée côté Android */
     var urlOpener: ((String) -> Unit)? = null
+    /** Ouvre une adresse dans l'app de cartes du téléphone (fourni par l'activité). */
+    var addressOpener: ((String) -> Unit)? = null
 
     /** Lance le picker d'image (galerie ou caméra) — injectée côté Android */
     var imagePickerGallery: ((onResult: (String) -> Unit) -> Unit)? = null

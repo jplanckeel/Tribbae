@@ -111,3 +111,8 @@ export function priceValue(price: string | undefined): number | undefined {
   const m = p.match(/\d+(?:[.,]\d+)?/);
   return m ? Number(m[0].replace(",", ".")) : undefined;
 }
+
+/** Adresse d'une idée ouverte dans Google Maps (l'app sur mobile). Mêmes cas que data/Maps.kt. */
+export function mapsUrl(location: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.trim())}`;
+}
