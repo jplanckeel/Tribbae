@@ -8,7 +8,7 @@ import { Button, EmptyState, ErrorNote, PageHeader, PageSpinner } from "../compo
 import * as api from "../lib/api";
 import { categoryBySlug, normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
-import { buildShoppingList } from "../lib/shopping";
+import { buildShoppingList, pickRecipes } from "../lib/shopping";
 import { plural } from "../lib/format";
 import { countdown, keyDateOf } from "../lib/folderStyle";
 import { byRecent, tagCounts } from "../lib/links";
@@ -63,7 +63,8 @@ export default function MyIdeas() {
   const others = sortFolders(folders.filter((f) => !f.pinned), folderSort);
   const tagTotal = useMemo(() => tagCounts(links).length, [links]);
   const tabCounts: Record<string, number> = { dossiers: folders.length, jaime: liked.data?.length ?? 0, tags: tagTotal };
-  const recipes = links.filter((l) => normalizeCategory(l.category) === "LINK_CATEGORY_RECETTE" && l.ingredients?.length);
+  // Même règle que la liste de courses
+  const recipes = pickRecipes(links).ready;
   // Comme la liste de courses : un produit compte une fois, quelles que soient les recettes
   const ingredientCount = buildShoppingList(recipes.map((r) => ({ title: r.title, ingredients: r.ingredients ?? [] }))).length;
 

@@ -494,7 +494,7 @@ private fun ModernMainApp(
                 },
             )
 
-            is Screen.Shopping -> ShoppingListScreen(vm, recipeId = screen.recipeId, onBack = ::pop, onAddRecipe = { push(Screen.IdeaForm(category = LinkCategory.RECETTE)) })
+            is Screen.Shopping -> ShoppingListScreen(vm, recipeId = screen.recipeId, onBack = ::pop, onAddRecipe = { push(Screen.IdeaForm(category = LinkCategory.RECETTE)) }, onEditRecipe = { push(Screen.IdeaForm(existing = it)) })
 
             Screen.Faq -> FaqScreen(onBack = ::pop)
             is Screen.PublicFolder -> PublicFolderScreen(

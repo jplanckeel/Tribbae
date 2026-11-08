@@ -184,3 +184,17 @@ export function buildShoppingList(recipes: ShoppingRecipe[]): ShoppingItem[] {
   });
   return items.sort((a, b) => a.key.localeCompare(b.key, "fr"));
 }
+
+/**
+ * Recettes de la liste de courses : celles qui ont des ingrédients, et à part
+ * celles qui n'en ont pas encore, à compléter. Mêmes cas que ShoppingList.pick
+ * côté Android.
+ */
+export function pickRecipes<T extends { category?: string; ingredients?: string[] }>(links: T[]): { ready: T[]; missing: T[] } {
+  const isRecipe = (l: T) => (l.category ?? "").replace("LINK_CATEGORY_", "") === "RECETTE";
+  return {
+    ready: links.filter((l) => isRecipe(l) && l.ingredients?.some((i) => i.trim())),
+    missing: links.filter((l) => isRecipe(l) && !l.ingredients?.some((i) => i.trim())),
+  };
+}
+

@@ -146,6 +146,16 @@ object ShoppingList {
         val from = mutableListOf<String>()
     }
 
+    /**
+     * Recettes de la liste de courses : celles qui ont des ingrédients, et à part
+     * celles qui n'en ont pas encore, à compléter. Mêmes cas que `pickRecipes` du web.
+     */
+    fun pick(links: List<Link>): Pair<List<Link>, List<Link>> {
+        val (ready, missing) = links.filter { it.category == LinkCategory.RECETTE }
+            .partition { r -> r.ingredients.any { it.isNotBlank() } }
+        return ready to missing
+    }
+
     /** Regroupe les ingrédients des recettes choisies, triés par nom. */
     fun build(recipes: List<Recipe>): List<Item> {
         val groups = linkedMapOf<String, Group>()

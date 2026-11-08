@@ -34,6 +34,7 @@ import viewmodel.LinkViewModel
  * dans le dépôt (gardée sur l'appareil, suit l'identifiant donné par le serveur).
  * [recipeId] : recette d'où l'on vient (« Préparer la liste de courses »), ajoutée à la sélection.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ShoppingListScreen(
     viewModel: LinkViewModel,
@@ -41,6 +42,7 @@ fun ShoppingListScreen(
     recipeId: String? = null,
     onBack: () -> Unit = {},
     onAddRecipe: () -> Unit = {},
+    onEditRecipe: (data.Link) -> Unit = {},
 ) {
     val repository = viewModel.repository
     val links by repository.links.collectAsState()
@@ -48,7 +50,9 @@ fun ShoppingListScreen(
     val selected = shopping.recipes
     val checked = shopping.checked
 
-    val recipes = remember(links) { links.filter { it.category == LinkCategory.RECETTE && it.ingredients.isNotEmpty() } }
+    val picked = remember(links) { ShoppingList.pick(links) }
+    val recipes = picked.first
+    val missing = picked.second
     fun listFor(ids: Set<String>) = ShoppingList.build(recipes.filter { it.id in ids }.map { ShoppingList.Recipe(it.title, it.ingredients) })
     val items = remember(recipes, selected) { listFor(selected) }
     val remaining = items.count { it.key !in checked }
@@ -80,7 +84,7 @@ fun ShoppingListScreen(
             }
         }
 
-        if (recipes.isEmpty()) {
+        if (recipes.isEmpty() && missing.isEmpty()) {
             EmptyBlock(
                 Icons.Outlined.Restaurant, "Aucune recette avec ingrédients",
                 "Ajoutez une recette et listez ses ingrédients : ils se retrouveront ici, regroupés."
@@ -90,7 +94,8 @@ fun ShoppingListScreen(
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Recettes", style = display(18.sp, FontWeight.Bold))
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Les pastilles passent à la ligne : un long titre (import Instagram) ne cache plus les suivantes
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 recipes.forEach { r ->
                     val on = r.id in selected
                     Row(
@@ -103,15 +108,37 @@ fun ShoppingListScreen(
                         Box(Modifier.size(24.dp).clip(CircleShape).background(if (on) Color.White.copy(alpha = 0.25f) else CardColor), contentAlignment = Alignment.Center) {
                             Icon(if (on) Icons.Outlined.Check else Icons.Outlined.Add, null, tint = if (on) Color.White else rc.ink, modifier = Modifier.size(14.dp))
                         }
-                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (on) Color.White else rc.ink, maxLines = 1)
-                        Text("${r.ingredients.size}", fontSize = 13.sp, color = (if (on) Color.White else rc.ink).copy(alpha = 0.7f))
+                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (on) Color.White else rc.ink, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 220.dp))
+                        Text("${r.ingredients.count { it.isNotBlank() }}", fontSize = 13.sp, color = (if (on) Color.White else rc.ink).copy(alpha = 0.7f))
                     }
                 }
+                // Recettes sans ingrédients : grisées, on les complète d'un toucher
+                missing.forEach { r ->
+                    Row(
+                        Modifier.clip(CircleShape).background(Sable2)
+                            .clickable(role = Role.Button, onClickLabel = "Ajouter les ingrédients") { onEditRecipe(r) }
+                            .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(Modifier.size(24.dp).clip(CircleShape).background(CardColor), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.Edit, null, tint = TextSec, modifier = Modifier.size(14.dp))
+                        }
+                        Text(r.title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                        Text("+ ingrédients", fontSize = 13.sp, color = TextSec, maxLines = 1)
+                    }
+                }
+            }
+            if (missing.isNotEmpty()) {
+                Text(
+                    "${missing.size} recette${if (missing.size > 1) "s" else ""} sans ingrédients : ${if (missing.size > 1) "touchez-les pour les compléter." else "touchez-la pour la compléter."}",
+                    fontSize = 13.sp, color = TextSec,
+                )
             }
         }
 
         if (items.isEmpty()) {
-            Text("Touchez une ou plusieurs recettes pour composer la liste.", fontSize = 14.sp, color = TextSec)
+            if (recipes.isNotEmpty()) Text("Touchez une ou plusieurs recettes pour composer la liste.", fontSize = 14.sp, color = TextSec)
         } else {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 Text("${items.size} ingrédient${if (items.size > 1) "s" else ""}", style = display(18.sp, FontWeight.Bold))
