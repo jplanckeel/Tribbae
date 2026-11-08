@@ -6,6 +6,11 @@ import kotlin.test.assertEquals
 /** Mêmes cas que « adresse dans Google Maps » de frontend/src/lib/format.test.ts. */
 class MapsTest {
     @Test
+    fun opensTheDefaultMapsApp() {
+        assertEquals("geo:0,0?q=Parc%20de%20la%20T%C3%AAte%20d'Or%2C%20Lyon", Maps.geoUri("  Parc de la Tête d'Or, Lyon "))
+    }
+
+    @Test
     fun encodesTheAddress() {
         assertEquals(
             "https://www.google.com/maps/search/?api=1&query=Parc%20de%20la%20T%C3%AAte%20d'Or%2C%20Lyon",

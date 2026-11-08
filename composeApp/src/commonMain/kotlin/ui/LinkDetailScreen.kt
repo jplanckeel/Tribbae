@@ -209,8 +209,8 @@ fun LinkDetailScreen(
                     infos.chunked(2).forEach { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             row.forEach { (icon, label, value) ->
-                                // L'adresse s'ouvre dans Google Maps
-                                val open = if (icon == Icons.Outlined.Place) onOpenUrl?.let { o -> { o(data.Maps.searchUrl(value)) } } else null
+                                // L'adresse s'ouvre dans l'app de cartes du téléphone
+                                val open = if (icon == Icons.Outlined.Place) viewModel?.addressOpener?.let { o -> { o(value) } } else null
                                 InfoTile(icon, label, value, cat.tint, Modifier.weight(1f), open)
                             }
                             if (row.size == 1) Spacer(Modifier.weight(1f))
@@ -449,7 +449,7 @@ fun LinkDetailScreen(
 private fun InfoTile(icon: ImageVector, label: String, value: String, tint: Color, modifier: Modifier, onClick: (() -> Unit)? = null) {
     Row(
         modifier.clip(RoundedCornerShape(16.dp)).background(CardColor)
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClickLabel = "Ouvrir dans Google Maps", onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClickLabel = "Ouvrir dans une app de cartes", onClick = onClick) else Modifier)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)

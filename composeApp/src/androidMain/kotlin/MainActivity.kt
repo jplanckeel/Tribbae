@@ -101,6 +101,17 @@ class MainActivity : ComponentActivity() {
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         appContext.startActivity(intent)
                     }
+                    // App de cartes par défaut (ou choix) ; sans app de cartes, Google Maps dans le navigateur
+                    it.addressOpener = { address ->
+                        val geo = Intent(Intent.ACTION_VIEW, Uri.parse(data.Maps.geoUri(address))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        try {
+                            appContext.startActivity(geo)
+                        } catch (_: android.content.ActivityNotFoundException) {
+                            appContext.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(data.Maps.searchUrl(address))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }
+                    }
                     it.imagePickerGallery = { onResult -> imagePicker.pickFromGallery(onResult) }
                     it.imagePickerCamera = { onResult -> imagePicker.pickFromCamera(onResult) }
                     it.fetchMissingImages()
