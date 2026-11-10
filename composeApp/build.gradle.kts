@@ -50,6 +50,7 @@ kotlin {
 }
 
 dependencies {
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     // Génère le service et la description (XML) des fonctions AppFunctions
     add("kspAndroid", libs.androidx.appfunctions.compiler)
 }
@@ -126,5 +127,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // java.time (dates des idées, rappels, applications connectées) n'existe qu'à
+        // partir d'Android 8 : sans cela, l'app plante sur Android 7 (minSdk 24)
+        isCoreLibraryDesugaringEnabled = true
     }
 }
