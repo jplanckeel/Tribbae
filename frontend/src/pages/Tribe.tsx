@@ -20,6 +20,7 @@ import type { Child, CircleInvitation, CollaboratorRole, ConnectedApp, Folder, T
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
 import SettingsView from "../components/SettingsView";
+import BlockedSheet from "../components/BlockedSheet";
 import { Page } from "../components/Shell";
 
 const CARD = "rounded-large bg-card shadow-[0_1px_0_rgba(58,33,27,0.06),0_8px_24px_rgba(58,33,27,0.06)]";
@@ -71,6 +72,7 @@ export default function Tribe() {
     }, name === "parametres" ? { state: { fromTribe: true } } : { replace: true });
   const closeSettings = () => ((location.state as { fromTribe?: boolean } | null)?.fromTribe ? navigate(-1) : openPanel(null));
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [blockedOpen, setBlockedOpen] = useState(false);
   // Applications connectées ouvertes depuis les Réglages : on y revient en fermant
   const [appsFromSettings, setAppsFromSettings] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -179,6 +181,7 @@ export default function Tribe() {
           onMembers={() => setMembersOpen(true)}
           onChildren={() => { closeSettings(); setTab("foyer"); }}
           onFollowing={() => setFollowingOpen(true)}
+          onBlocked={() => setBlockedOpen(true)}
           onApps={() => setAppsFromSettings(true)}
           onPassword={() => void sendPasswordLink()}
           onExport={() => void exportData()}
@@ -427,6 +430,7 @@ export default function Tribe() {
       )}
 
       {deleteOpen && <DeleteAccountSheet onClose={() => setDeleteOpen(false)} />}
+      {blockedOpen && <BlockedSheet onClose={() => setBlockedOpen(false)} />}
       {(appsOpen || appsFromSettings) && <ConnectedAppsSheet onClose={() => (appsFromSettings ? setAppsFromSettings(false) : openPanel(null))} />}
       {kid && (
         <KidSheet

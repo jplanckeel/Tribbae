@@ -292,6 +292,7 @@ private fun TribeContent(
     // Adresse du compte : demandée à l'ouverture des Réglages
     var accountEmail by remember { mutableStateOf<String?>(null) }
     var showPassword by remember { mutableStateOf(false) }
+    var showBlocked by remember { mutableStateOf(false) }
     LaunchedEffect(showSettings) { if (showSettings && accountEmail == null) accountEmail = viewModel.account()?.email?.ifBlank { null } }
 
     if (showSettings) {
@@ -315,6 +316,7 @@ private fun TribeContent(
                 onMembers = { showMembers = true },
                 onChildren = { showSettings = false; tab = 0 },
                 onFollowing = { showFollowing = true },
+                onBlocked = { showBlocked = true },
                 onShopping = onOpenShopping,
                 onApps = { showApps = true },
                 onPassword = { if (accountEmail != null) showPassword = true else dataMessage = "Adresse du compte introuvable, réessayez dans un instant." },
@@ -857,6 +859,8 @@ private fun TribeContent(
             )
         }
     }
+
+    if (showBlocked) BlockedSheet(viewModel, onDismiss = { showBlocked = false })
 
     if (showPassword) {
         val email = accountEmail

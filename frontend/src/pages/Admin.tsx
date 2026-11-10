@@ -11,6 +11,8 @@ import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
 
+import AdminReports from "../components/AdminReports";
+
 // Graphiques (Recharts) chargés seulement sur cette page
 const AdminStats = lazy(() => import("../components/AdminStats"));
 
@@ -54,6 +56,7 @@ export default function Admin() {
       <Suspense fallback={<PageSpinner />}>
         <AdminStats />
       </Suspense>
+      <AdminReports />
       <SectionTitle title="Comptes" />
       <label className="flex h-[52px] items-center gap-2.5 rounded-medium bg-card px-4 text-muted shadow-card focus-within:ring-2 focus-within:ring-terracotta">
         <Icon name="search" size={20} />
