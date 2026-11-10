@@ -88,6 +88,11 @@ fun LinkDetailScreen(
     var commentsLoading by remember { mutableStateOf(commentRepository != null) }
     var commentsY by remember { mutableStateOf(0) }
     var showMenu by remember { mutableStateOf(false) }
+    // Signalement en cours ("idea", "account" ou "comment") et blocage de l'auteur
+    var reporting by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var confirmBlock by remember { mutableStateOf(false) }
+    // L'idée d'un autre compte, hors tribu : on peut la signaler ou bloquer son auteur
+    val othersIdea = link.ownerId.isNotBlank() && link.ownerId != myId && viewModel?.isTribePeer(link.ownerId) != true
     var showSave by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     var savedCopy by remember { mutableStateOf(false) }
@@ -304,7 +309,10 @@ fun LinkDetailScreen(
                         commentsLoading -> CircularProgressIndicator(color = Terracotta, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                         comments.isEmpty() -> Text("Pas encore de commentaire. Une astuce, un retour d'expérience ?", fontSize = 14.sp, color = TextSec)
                         else -> comments.forEachIndexed { i, c ->
-                            CommentBubble(c, i, canDelete = c.userId == myId || (!readOnly)) {
+                            CommentBubble(
+                                c, i, canDelete = c.userId == myId || (!readOnly),
+                                onReport = if (isLoggedIn && c.userId != myId) { { reporting = "comment" to c.id } } else null,
+                            ) {
                                 scope.launch {
                                     commentRepository?.deleteComment(c.id)?.onSuccess { comments = comments.filterNot { it.id == c.id } }
                                 }
@@ -398,6 +406,12 @@ fun LinkDetailScreen(
                 }
                 MenuRow(Icons.Outlined.IosShare, "Envoyer l'idée") { showMenu = false; share() }
                 if (!readOnly) MenuRow(Icons.Outlined.Delete, "Supprimer", danger = true) { showMenu = false; showDelete = true }
+                if (othersIdea && isLoggedIn) {
+                    val author = link.ownerDisplayName.ifBlank { "l'auteur" }
+                    MenuRow(Icons.Outlined.Flag, "Signaler l'idée") { showMenu = false; reporting = "idea" to link.id }
+                    MenuRow(Icons.Outlined.Flag, "Signaler $author") { showMenu = false; reporting = "account" to link.ownerId }
+                    MenuRow(Icons.Outlined.Block, "Bloquer $author", danger = true) { showMenu = false; confirmBlock = true }
+                }
             }
         }
     }
@@ -408,6 +422,31 @@ fun LinkDetailScreen(
             data.PublishConfirm.IDEA_TITLE, data.PublishConfirm.IDEA_TEXT, "Publier",
             onConfirm = { viewModel?.updateLinkVisibility(link.id, "public"); confirmPublish = false },
             onDismiss = { confirmPublish = false },
+        )
+    }
+
+    reporting?.let { (type, id) ->
+        ReportSheet(
+            type,
+            onSend = { reason, details ->
+                viewModel?.report(type, id, reason, details).also { err ->
+                    if (err == null) android.widget.Toast.makeText(context, "Merci, nous allons regarder ce signalement.", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            },
+            onDismiss = { reporting = null },
+        )
+    }
+    if (confirmBlock) {
+        val author = link.ownerDisplayName.ifBlank { "ce compte" }
+        ConfirmSheet(
+            "Bloquer $author\u00a0?",
+            "Ses idées, ses dossiers publics et ses commentaires ne s'afficheront plus pour vous. Vous pourrez le débloquer dans les Réglages.",
+            "Bloquer",
+            onConfirm = {
+                confirmBlock = false
+                scope.launch { if (viewModel?.blockUser(link.ownerId) == true) onBack() }
+            },
+            onDismiss = { confirmBlock = false },
         )
     }
 
@@ -495,7 +534,7 @@ fun MenuRow(icon: ImageVector, label: String, danger: Boolean = false, tint: Col
 }
 
 @Composable
-private fun CommentBubble(c: Comment, index: Int, canDelete: Boolean, onDelete: () -> Unit) {
+private fun CommentBubble(c: Comment, index: Int, canDelete: Boolean, onReport: (() -> Unit)? = null, onDelete: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         InitialAvatar(c.userDisplayName, index, 34.dp, 12.dp, 14.sp)
         Column(
@@ -509,6 +548,12 @@ private fun CommentBubble(c: Comment, index: Int, canDelete: Boolean, onDelete: 
                     Icon(
                         Icons.Outlined.Delete, "Supprimer le commentaire", tint = TextMuted,
                         modifier = Modifier.size(18.dp).clip(CircleShape).clickable(onClick = onDelete)
+                    )
+                }
+                if (onReport != null) {
+                    Icon(
+                        Icons.Outlined.Flag, "Signaler le commentaire", tint = TextMuted,
+                        modifier = Modifier.size(18.dp).clip(CircleShape).clickable(onClick = onReport)
                     )
                 }
             }

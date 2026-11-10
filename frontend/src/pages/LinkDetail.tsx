@@ -23,6 +23,8 @@ import { pushLink, useIdeaMorphTarget } from "../lib/transitions";
 import { useAsync } from "../lib/useAsync";
 import { ideaAudience } from "../lib/visibility";
 import Seo from "../components/Seo";
+import ReportSheet from "../components/ReportSheet";
+import type { ReportTarget } from "../lib/moderation";
 import VisibilityBadge from "../components/VisibilityBadge";
 
 export default function LinkDetail() {
@@ -57,6 +59,8 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   const { folders, upsertLink, removeLink, peers, isTribePeer, links: myLinks } = useMyData();
   const { toast, confirm } = useFeedback();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Signalement en cours : l'idée, son auteur ou un commentaire
+  const [reporting, setReporting] = useState<{ type: ReportTarget; id: string }>();
   const [liked, setLiked] = useState(!!link.likedByMe);
   const [likes, setLikes] = useState(link.likeCount ?? 0);
   // La fiche s'ouvre sur la version en cache : celle du serveur corrige le cœur en arrivant
@@ -150,6 +154,26 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
       toast((e as Error).message, "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Bloquer l'auteur : ses idées et ses commentaires disparaissent pour moi
+  const blockAuthor = async () => {
+    setMenuOpen(false);
+    const name = link.ownerDisplayName || "ce compte";
+    const ok = await confirm({
+      title: `Bloquer ${name}\u00a0?`,
+      text: "Ses idées, ses dossiers publics et ses commentaires ne s'afficheront plus pour vous. Vous pourrez le débloquer dans les Réglages.",
+      confirmLabel: "Bloquer",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.moderation.block(link.ownerId);
+      toast(`${name} est bloqué`);
+      navigate(-1);
+    } catch (e) {
+      toast((e as Error).message, "error");
     }
   };
 
@@ -327,6 +351,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             onChange={(c) => comments.setData(c)}
             canModerate={ourIdea}
             onRequireAuth={requireAuth}
+            onReport={(id) => setReporting({ type: "comment", id })}
           />
         </section>
       </div>
@@ -392,9 +417,17 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             {!canEdit && <MenuItem icon="bookmark" label="Enregistrer dans mes idées" onClick={() => { setMenuOpen(false); saveCopy(); }} />}
             <MenuItem icon="share" label="Envoyer l'idée" onClick={() => { setMenuOpen(false); share(); }} />
             {ourIdea && <MenuItem icon="trash" label="Supprimer" danger onClick={remove} />}
+            {!ourIdea && link.ownerId && (
+              <>
+                <MenuItem icon="flag" label="Signaler l'idée" onClick={() => { setMenuOpen(false); setReporting({ type: "idea", id: link.id }); }} />
+                <MenuItem icon="flag" label={`Signaler ${link.ownerDisplayName || "l'auteur"}`} onClick={() => { setMenuOpen(false); setReporting({ type: "account", id: link.ownerId }); }} />
+                <MenuItem icon="block" label={`Bloquer ${link.ownerDisplayName || "l'auteur"}`} danger onClick={() => void blockAuthor()} />
+              </>
+            )}
           </div>
         </Sheet>
       )}
+      {reporting && <ReportSheet type={reporting.type} id={reporting.id} onClose={() => setReporting(undefined)} />}
     </article>
   );
 }
@@ -433,8 +466,9 @@ function FollowAuthor({ userId, name }: { userId: string; name?: string }) {
 
 const timeFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
-function Comments({ linkId, list, loading, onChange, canModerate, onRequireAuth }: {
+function Comments({ linkId, list, loading, onChange, canModerate, onRequireAuth, onReport }: {
   linkId: string; list: Comment[]; loading: boolean; onChange: (c: Comment[]) => void; canModerate: boolean; onRequireAuth: () => void;
+  onReport: (commentId: string) => void;
 }) {
   const session = useSession();
   const { toast, confirm } = useFeedback();
@@ -487,6 +521,11 @@ function Comments({ linkId, list, loading, onChange, canModerate, onRequireAuth 
                     {(mine || canModerate) && (
                       <button type="button" onClick={() => remove(c)} aria-label="Supprimer le commentaire" className="ml-auto text-muted hover:text-sortie-ink">
                         <Icon name="trash" size={15} />
+                      </button>
+                    )}
+                    {session && !mine && (
+                      <button type="button" onClick={() => onReport(c.id)} aria-label="Signaler le commentaire" className={`${canModerate ? "" : "ml-auto"} text-muted hover:text-sortie-ink`}>
+                        <Icon name="flag" size={15} />
                       </button>
                     )}
                   </span>
