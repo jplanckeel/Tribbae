@@ -93,6 +93,8 @@ func main() {
 	tribeSvc.SetNotifier(mailer, strings.TrimRight(cfg.SiteURL, "/")+"/invitation")
 	followSvc := follow.NewService(database.Col("follows"), database.Col("users"))
 	commentSvc := comment.NewService(database.Col("comments"), database.Col("links"), database.Col("users"))
+	// Supprimer un commentaire : son auteur, ou l'auteur de l'idée et sa tribu
+	commentSvc.SetTribePeers(tribeSvc.Peers)
 	aiSvc := ai.NewService(ai.Config{
 		OllamaURL:       cfg.OllamaURL,
 		OllamaModel:     cfg.OllamaModel,
