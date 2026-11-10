@@ -56,6 +56,7 @@ const router = createBrowserRouter([
       { path: "/mes-idees", element: auth(<MyIdeas />) },
       { path: "/courses", element: auth(<Shopping />) },
       { path: "/tribu", element: auth(<Tribe />) },
+      { path: "/reglages", element: <Navigate to="/tribu?ouvrir=parametres" replace /> },
       { path: "/admin", element: auth(<Admin />) },
       { path: "/partager", element: auth(<ShareTarget />) },
       // Anciennes URLs (favoris, liens partagés, référencement)

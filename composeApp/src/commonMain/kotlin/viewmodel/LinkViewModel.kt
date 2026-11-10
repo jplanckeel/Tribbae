@@ -110,6 +110,16 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     /** Fonction pour ouvrir une URL dans le navigateur — injectée côté Android */
     var urlOpener: ((String) -> Unit)? = null
+    /** Version de l'app, affichée en bas des Réglages (fournie par l'activité). */
+    var appVersion: String = ""
+
+    /** Compte connecté (adresse pour les Réglages), ou null hors ligne. */
+    suspend fun account(): data.AuthenticatedApiClient.ApiAccount? =
+        authenticatedClient?.let { runCatching { it.getAccount() }.getOrNull() }
+
+    /** Envoie le lien de choix d'un nouveau mot de passe ; vrai si c'est parti. */
+    suspend fun sendPasswordLink(email: String): Boolean =
+        runCatching { data.AuthRepository().forgotPassword(email) }.isSuccess
     /** Ouvre une adresse dans l'app de cartes du téléphone (fourni par l'activité). */
     var addressOpener: ((String) -> Unit)? = null
 
