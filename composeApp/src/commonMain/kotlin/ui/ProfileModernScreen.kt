@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Logout
@@ -721,7 +722,7 @@ private fun TribeContent(
                     exportLauncher.launch("tribbae-mes-donnees-${java.time.LocalDate.now()}.json")
                 }
                 MenuRow(Icons.Outlined.Lock, "Politique de confidentialité") { uriHandler.openUri(PRIVACY_URL) }
-                MenuRow(Icons.Outlined.Gavel, "Conditions d'utilisation") { uriHandler.openUri(TERMS_URL) }
+                MenuRow(Icons.Outlined.Description, "Conditions d'utilisation") { uriHandler.openUri(TERMS_URL) }
                 MenuRow(Icons.Outlined.Info, "Mentions légales") { uriHandler.openUri(LEGAL_NOTICE_URL) }
                 MenuRow(Icons.Outlined.DeleteForever, "Supprimer mon compte", danger = true) { showSettings = false; showDelete = true }
                 dataMessage?.let { Text(it, fontSize = 13.sp, color = TextSec) }
