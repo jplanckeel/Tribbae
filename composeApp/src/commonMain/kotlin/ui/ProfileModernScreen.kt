@@ -721,6 +721,8 @@ private fun TribeContent(
                     exportLauncher.launch("tribbae-mes-donnees-${java.time.LocalDate.now()}.json")
                 }
                 MenuRow(Icons.Outlined.Lock, "Politique de confidentialité") { uriHandler.openUri(PRIVACY_URL) }
+                MenuRow(Icons.Outlined.Gavel, "Conditions d'utilisation") { uriHandler.openUri(TERMS_URL) }
+                MenuRow(Icons.Outlined.Info, "Mentions légales") { uriHandler.openUri(LEGAL_NOTICE_URL) }
                 MenuRow(Icons.Outlined.DeleteForever, "Supprimer mon compte", danger = true) { showSettings = false; showDelete = true }
                 dataMessage?.let { Text(it, fontSize = 13.sp, color = TextSec) }
                 Text(
@@ -1334,6 +1336,8 @@ private fun KidSheet(
 
 /** Politique de confidentialité, publiée sur le site. */
 private const val PRIVACY_URL = "${data.Backend.PRODUCTION}/confidentialite"
+internal const val TERMS_URL = "${data.Backend.PRODUCTION}/cgu"
+internal const val LEGAL_NOTICE_URL = "${data.Backend.PRODUCTION}/mentions-legales"
 
 /** Page À propos (pourquoi Tribbae, principes), publiée sur le site. */
 private const val ABOUT_URL = "${data.Backend.PRODUCTION}/a-propos"
@@ -1588,6 +1592,11 @@ private fun SimpleAuthDialog(
 
                 if (!isLoginMode) {
                     val uri = androidx.compose.ui.platform.LocalUriHandler.current
+                    Text(
+                        "En créant votre compte, vous acceptez les conditions d'utilisation.",
+                        fontSize = 12.sp, color = TerracottaDark, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { uri.openUri(TERMS_URL) }.padding(4.dp)
+                    )
                     Text(
                         "Vos idées restent privées tant que vous ne les partagez pas. Ce que nous conservons et comment supprimer votre compte : politique de confidentialité.",
                         fontSize = 12.sp, color = TextSec,

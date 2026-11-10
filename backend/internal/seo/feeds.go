@@ -81,6 +81,8 @@ func (h *Handler) sitemap(ctx context.Context) ([]byte, error) {
 		add("/a-propos", time.Time{}, "yearly", "0.4", "")
 	}
 	add("/confidentialite", time.Time{}, "yearly", "0.3", "")
+	add("/cgu", time.Time{}, "yearly", "0.2", "")
+	add("/mentions-legales", time.Time{}, "yearly", "0.2", "")
 	for _, i := range ideas {
 		add("/links/"+i.ID, i.Updated, "", "0.6", absoluteImage(i.ImageURL))
 	}
