@@ -31,6 +31,8 @@ type User struct {
 	// LastSeenAt : dernière connexion ou dernier renouvellement de session
 	// (à l'heure près, voir TouchLastSeen). Seule la dernière est gardée.
 	LastSeenAt *time.Time `bson:"last_seen_at,omitempty"`
+	// SuspendedAt : compte suspendu par la modération (connexion et sessions refusées)
+	SuspendedAt *time.Time `bson:"suspended_at,omitempty"`
 }
 
 type Service struct {
@@ -67,6 +69,9 @@ var ErrInvalidInput = errors.New("invalid input")
 
 // ErrInvalidCredentials est volontairement identique que l'email existe ou non.
 var ErrInvalidCredentials = errors.New("invalid credentials")
+
+// ErrAccountSuspended : compte suspendu par la modération.
+var ErrAccountSuspended = errors.New("account suspended")
 
 // dummyHash sert à garder un temps de réponse constant quand l'email est inconnu
 // (sinon le temps de réponse révèle quels emails ont un compte).
@@ -151,6 +156,9 @@ func (s *Service) Login(ctx context.Context, email, password string) (*User, str
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return nil, "", ErrInvalidCredentials
 	}
+	if user.SuspendedAt != nil {
+		return nil, "", ErrAccountSuspended
+	}
 	s.TouchLastSeen(ctx, user.ID.Hex())
 	token, err := s.generateToken(user.ID.Hex())
 	return &user, token, err
@@ -205,9 +213,12 @@ func (s *Service) ValidateToken(tokenStr string) (string, error) {
 // sinon il recréerait des données orphelines. Après un changement de mot de
 // passe, les sessions ouvertes avant sont fermées.
 func (s *Service) SessionValid(userID string, since time.Time) error {
-	changedAt, ok := s.passwordChangedAt(userID)
+	changedAt, suspended, ok := s.sessionState(userID)
 	if !ok {
 		return errors.New("account no longer exists")
+	}
+	if suspended {
+		return ErrAccountSuspended
 	}
 	if changedAt != nil && since.Unix() < changedAt.Unix() {
 		return errors.New("session closed by a password change")
@@ -215,23 +226,24 @@ func (s *Service) SessionValid(userID string, since time.Time) error {
 	return nil
 }
 
-// passwordChangedAt retourne la date du dernier changement de mot de passe
-// (nil si jamais) et false si le compte n'existe pas.
-func (s *Service) passwordChangedAt(userID string) (*time.Time, bool) {
+// sessionState retourne la date du dernier changement de mot de passe (nil si
+// jamais), si le compte est suspendu, et false si le compte n'existe pas.
+func (s *Service) sessionState(userID string) (*time.Time, bool, bool) {
 	id, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
-		return nil, false
+		return nil, false, false
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	var u struct {
 		PasswordChangedAt *time.Time `bson:"password_changed_at"`
+		SuspendedAt       *time.Time `bson:"suspended_at"`
 	}
-	err = s.col.FindOne(ctx, bson.M{"_id": id}, options.FindOne().SetProjection(bson.M{"password_changed_at": 1})).Decode(&u)
+	err = s.col.FindOne(ctx, bson.M{"_id": id}, options.FindOne().SetProjection(bson.M{"password_changed_at": 1, "suspended_at": 1})).Decode(&u)
 	if err != nil {
-		return nil, false
+		return nil, false, false
 	}
-	return u.PasswordChangedAt, true
+	return u.PasswordChangedAt, u.SuspendedAt != nil, true
 }
 
 // CheckPassword vérifie le mot de passe d'un compte connecté, avant une

@@ -22,6 +22,8 @@ const (
 	AdminService_ListUsers_FullMethodName         = "/tribbae.v1.AdminService/ListUsers"
 	AdminService_UpdateUserPremium_FullMethodName = "/tribbae.v1.AdminService/UpdateUserPremium"
 	AdminService_GetStats_FullMethodName          = "/tribbae.v1.AdminService/GetStats"
+	AdminService_ListReports_FullMethodName       = "/tribbae.v1.AdminService/ListReports"
+	AdminService_ResolveReport_FullMethodName     = "/tribbae.v1.AdminService/ResolveReport"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -31,6 +33,8 @@ type AdminServiceClient interface {
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
 	UpdateUserPremium(ctx context.Context, in *UpdateUserPremiumRequest, opts ...grpc.CallOption) (*UpdateUserPremiumResponse, error)
 	GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error)
+	ListReports(ctx context.Context, in *ListReportsRequest, opts ...grpc.CallOption) (*ListReportsResponse, error)
+	ResolveReport(ctx context.Context, in *ResolveReportRequest, opts ...grpc.CallOption) (*ResolveReportResponse, error)
 }
 
 type adminServiceClient struct {
@@ -71,6 +75,26 @@ func (c *adminServiceClient) GetStats(ctx context.Context, in *GetStatsRequest, 
 	return out, nil
 }
 
+func (c *adminServiceClient) ListReports(ctx context.Context, in *ListReportsRequest, opts ...grpc.CallOption) (*ListReportsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListReportsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListReports_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ResolveReport(ctx context.Context, in *ResolveReportRequest, opts ...grpc.CallOption) (*ResolveReportResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveReportResponse)
+	err := c.cc.Invoke(ctx, AdminService_ResolveReport_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations should embed UnimplementedAdminServiceServer
 // for forward compatibility.
@@ -78,6 +102,8 @@ type AdminServiceServer interface {
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
 	UpdateUserPremium(context.Context, *UpdateUserPremiumRequest) (*UpdateUserPremiumResponse, error)
 	GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error)
+	ListReports(context.Context, *ListReportsRequest) (*ListReportsResponse, error)
+	ResolveReport(context.Context, *ResolveReportRequest) (*ResolveReportResponse, error)
 }
 
 // UnimplementedAdminServiceServer should be embedded to have
@@ -95,6 +121,12 @@ func (UnimplementedAdminServiceServer) UpdateUserPremium(context.Context, *Updat
 }
 func (UnimplementedAdminServiceServer) GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetStats not implemented")
+}
+func (UnimplementedAdminServiceServer) ListReports(context.Context, *ListReportsRequest) (*ListReportsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListReports not implemented")
+}
+func (UnimplementedAdminServiceServer) ResolveReport(context.Context, *ResolveReportRequest) (*ResolveReportResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolveReport not implemented")
 }
 func (UnimplementedAdminServiceServer) testEmbeddedByValue() {}
 
@@ -170,6 +202,42 @@ func _AdminService_GetStats_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListReports_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListReportsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListReports(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListReports_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListReports(ctx, req.(*ListReportsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ResolveReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ResolveReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ResolveReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ResolveReport(ctx, req.(*ResolveReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -188,6 +256,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetStats",
 			Handler:    _AdminService_GetStats_Handler,
+		},
+		{
+			MethodName: "ListReports",
+			Handler:    _AdminService_ListReports_Handler,
+		},
+		{
+			MethodName: "ResolveReport",
+			Handler:    _AdminService_ResolveReport_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

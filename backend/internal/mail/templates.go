@@ -50,6 +50,7 @@ const (
 	tmplTribeRemoved   = "tribe_member_removed"
 	tmplTribeNewOwner  = "tribe_new_owner"
 	tmplCollabAdded    = "collaborator_added"
+	tmplReport         = "report_received"
 )
 
 var (
@@ -58,7 +59,7 @@ var (
 )
 
 func init() {
-	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify, tmplCircleInvite, tmplTribeRemoved, tmplTribeNewOwner, tmplCollabAdded} {
+	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify, tmplCircleInvite, tmplTribeRemoved, tmplTribeNewOwner, tmplCollabAdded, tmplReport} {
 		htmlTemplates[name] = htmltemplate.Must(htmltemplate.New("").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
@@ -453,6 +454,28 @@ func collaboratorAddedEmail(siteURL string, c CollaboratorAdded) (content, error
 		FolderURL:    siteURL + "/dossiers/" + url.PathEscape(c.FolderID),
 	}
 	return render(tmplCollabAdded, d.base, d)
+}
+
+// --- Signalement (à l'administration) ---
+
+type reportData struct {
+	base
+	Kind, Reason, AdminURL string
+}
+
+var reportKinds = map[string]string{"idea": "une idée", "comment": "un commentaire", "account": "un compte"}
+var reportReasons = map[string]string{"spam": "spam ou publicité", "inappropriate": "contenu inapproprié", "harassment": "harcèlement", "other": "autre"}
+
+func reportEmail(siteURL, kind, reason string) (content, error) {
+	k, r := reportKinds[kind], reportReasons[reason]
+	if k == "" {
+		k = "un contenu"
+	}
+	if r == "" {
+		r = "autre"
+	}
+	d := reportData{base: newBase(siteURL, "Nouveau signalement : "+k), Kind: k, Reason: r, AdminURL: siteURL + "/admin"}
+	return render(tmplReport, d.base, d)
 }
 
 // --- Suppression du compte ---

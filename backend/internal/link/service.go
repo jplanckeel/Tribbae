@@ -29,9 +29,12 @@ type Link struct {
 	Rating          int32         `bson:"rating"           json:"rating"`
 	Ingredients     []string      `bson:"ingredients"      json:"ingredients"`
 	Visibility      string        `bson:"visibility"       json:"visibility"` // "private" | "public"
-	Favorite        bool          `bson:"favorite"         json:"favorite"`
-	CreatedAt       time.Time     `bson:"created_at"       json:"created_at"`
-	UpdatedAt       time.Time     `bson:"updated_at"       json:"updated_at"`
+	// Hidden : retirée par la modération. Son auteur la garde, sans pouvoir la
+	// republier ni l'exposer dans un dossier public.
+	Hidden    bool      `bson:"hidden,omitempty" json:"hidden,omitempty"`
+	Favorite  bool      `bson:"favorite"         json:"favorite"`
+	CreatedAt time.Time `bson:"created_at"       json:"created_at"`
+	UpdatedAt time.Time `bson:"updated_at"       json:"updated_at"`
 	// Provenance : "mcp" pour une idée ajoutée par une application connectée
 	// (Claude), avec l'identifiant de son client OAuth. Absente sinon, et
 	// jamais modifiée ensuite (Update ne touche pas ces champs).
@@ -151,7 +154,7 @@ func (s *Service) canAccessLink(ctx context.Context, l *Link, userID string) boo
 		return true
 	}
 	member, publicOwner := s.folderAccess(ctx, l.FolderID, userID)
-	return member || (publicOwner != "" && l.OwnerID == publicOwner)
+	return member || (publicOwner != "" && l.OwnerID == publicOwner && !l.Hidden)
 }
 
 // CanView indique si l'utilisateur (éventuellement anonyme) peut voir le lien.
@@ -395,7 +398,7 @@ func (s *Service) List(ctx context.Context, ownerID, folderID string) ([]*Link, 
 // membres (dossier public, lien de partage) : celles de son propriétaire et
 // celles que leur auteur a rendues publiques.
 func PublicFolderFilter(folderID, folderOwnerID string) bson.M {
-	return bson.M{"folder_id": folderID, "$or": bson.A{
+	return bson.M{"folder_id": folderID, "hidden": bson.M{"$ne": true}, "$or": bson.A{
 		bson.M{"owner_id": folderOwnerID},
 		bson.M{"visibility": "public"},
 	}}
@@ -461,7 +464,12 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 	}
 	// La publier, ou la ranger dans un dossier public, exige une adresse confirmée
 	publishes := l.Visibility == "public" && existing.Visibility != "public"
-	if publishes || (l.FolderID != existing.FolderID && l.FolderID != "" && s.folderIsPublic(ctx, l.FolderID)) {
+	intoPublicFolder := l.FolderID != existing.FolderID && l.FolderID != "" && s.folderIsPublic(ctx, l.FolderID)
+	// Retirée par la modération : elle ne peut plus être republiée
+	if existing.Hidden && (publishes || intoPublicFolder) {
+		return nil, ErrForbidden
+	}
+	if publishes || intoPublicFolder {
 		if err := s.requireVerified(ctx, userID); err != nil {
 			return nil, err
 		}

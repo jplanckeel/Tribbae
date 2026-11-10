@@ -150,3 +150,28 @@ func TestPasswordResetLinkExpires(t *testing.T) {
 		t.Errorf("jeton inventé accepté : %v", err)
 	}
 }
+
+// Un compte suspendu par la modération ne se connecte plus, et ses sessions tombent.
+func TestSuspendedAccountIsLockedOut(t *testing.T) {
+	svc, db, _ := setupReset(t)
+	ctx := context.Background()
+	alice, session, err := svc.Register(ctx, "alice@example.com", "mot-de-passe", "Alice")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.ValidateToken(session); err != nil {
+		t.Fatalf("before suspension: %v", err)
+	}
+	if _, err := db.Collection("users").UpdateByID(ctx, alice.ID, bson.M{"$set": bson.M{"suspended_at": time.Now()}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.ValidateToken(session); !errors.Is(err, ErrAccountSuspended) {
+		t.Errorf("session of a suspended account: %v", err)
+	}
+	if _, _, err := svc.Login(ctx, "alice@example.com", "mot-de-passe"); !errors.Is(err, ErrAccountSuspended) {
+		t.Errorf("login of a suspended account: %v", err)
+	}
+	if _, _, err := svc.Login(ctx, "alice@example.com", "mauvais"); !errors.Is(err, ErrInvalidCredentials) {
+		t.Errorf("a wrong password must not reveal the suspension: %v", err)
+	}
+}

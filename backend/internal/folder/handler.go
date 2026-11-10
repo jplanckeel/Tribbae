@@ -17,6 +17,13 @@ import (
 type Handler struct {
 	pb.UnimplementedFolderServiceServer
 	svc *Service
+	// blocked : comptes bloqués par l'utilisateur, dont on cache les dossiers publics
+	blocked func(ctx context.Context, userID string) map[string]bool
+}
+
+// SetBlocked branche le blocage entre comptes (modération).
+func (h *Handler) SetBlocked(fn func(ctx context.Context, userID string) map[string]bool) {
+	h.blocked = fn
 }
 
 func NewHandler(svc *Service) *Handler {
@@ -317,6 +324,17 @@ func (h *Handler) ListCommunityFolders(ctx context.Context, req *pb.ListCommunit
 	folders, nextToken, err := h.svc.ListCommunity(ctx, req.Search, req.PageSize, req.PageToken)
 	if err != nil {
 		return nil, toStatus("list community folders", err)
+	}
+	if userID, err := interceptor.UserIDFromContext(ctx); err == nil && h.blocked != nil {
+		if blocked := h.blocked(ctx, userID); len(blocked) > 0 {
+			kept := folders[:0:0]
+			for _, f := range folders {
+				if !blocked[f.OwnerID] {
+					kept = append(kept, f)
+				}
+			}
+			folders = kept
+		}
 	}
 	pbFolders := h.many(ctx, folders)
 	return &pb.ListCommunityFoldersResponse{Folders: pbFolders, NextPageToken: nextToken}, nil

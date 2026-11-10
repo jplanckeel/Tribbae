@@ -16,6 +16,75 @@
     "application/json"
   ],
   "paths": {
+    "/v1/admin/reports": {
+      "get": {
+        "operationId": "AdminService_ListReports",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListReportsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "status",
+            "description": "\"open\" (défaut) | \"closed\"",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
+    "/v1/admin/reports/{reportId}/resolve": {
+      "post": {
+        "operationId": "AdminService_ResolveReport",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ResolveReportResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AdminServiceResolveReportBody"
+            }
+          }
+        ],
+        "tags": [
+          "AdminService"
+        ]
+      }
+    },
     "/v1/admin/stats": {
       "get": {
         "operationId": "AdminService_GetStats",
@@ -117,6 +186,15 @@
     }
   },
   "definitions": {
+    "AdminServiceResolveReportBody": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "title": "\"dismiss\" : rien à faire ; \"remove\" : retirer l'idée (dépubliée et masquée)\nou le commentaire (effacé) ; \"suspend\" : suspendre le compte, ce qui\ndépublie et masque ses idées publiques"
+        }
+      }
+    },
     "AdminServiceUpdateUserPremiumBody": {
       "type": "object",
       "properties": {
@@ -201,6 +279,18 @@
       },
       "description": "Séries alignées : chacune a exactement count points, du plus ancien au plus\nrécent (la dernière période est en cours)."
     },
+    "v1ListReportsResponse": {
+      "type": "object",
+      "properties": {
+        "reports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Report"
+          }
+        }
+      }
+    },
     "v1ListUsersResponse": {
       "type": "object",
       "properties": {
@@ -212,6 +302,59 @@
           }
         }
       }
+    },
+    "v1Report": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "targetType": {
+          "type": "string"
+        },
+        "targetId": {
+          "type": "string"
+        },
+        "targetOwnerId": {
+          "type": "string"
+        },
+        "targetOwnerName": {
+          "type": "string"
+        },
+        "targetSummary": {
+          "type": "string",
+          "title": "Titre de l'idée, texte du commentaire ou nom du compte au moment du signalement"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        },
+        "reporterName": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "title": "\"open\" | \"resolved\" | \"dismissed\""
+        },
+        "action": {
+          "type": "string",
+          "title": "Action prise : \"remove\" | \"suspend\" | \"dismiss\""
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "linkId": {
+          "type": "string",
+          "title": "Idée commentée (signalement d'un commentaire), pour l'ouvrir"
+        }
+      },
+      "description": "Signalement vu par l'administration (regroupés par contenu côté clients)."
+    },
+    "v1ResolveReportResponse": {
+      "type": "object"
     },
     "v1StatsPoint": {
       "type": "object",

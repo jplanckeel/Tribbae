@@ -66,6 +66,46 @@ message GetStatsResponse {
   StatsTotals totals = 7;
 }
 
+// Signalement vu par l'administration (regroupés par contenu côté clients).
+message Report {
+  string id = 1;
+  string target_type = 2;
+  string target_id = 3;
+  string target_owner_id = 4;
+  string target_owner_name = 5;
+  // Titre de l'idée, texte du commentaire ou nom du compte au moment du signalement
+  string target_summary = 6;
+  string reason = 7;
+  string details = 8;
+  string reporter_name = 9;
+  // "open" | "resolved" | "dismissed"
+  string status = 10;
+  // Action prise : "remove" | "suspend" | "dismiss"
+  string action = 11;
+  int64 created_at = 12;
+  // Idée commentée (signalement d'un commentaire), pour l'ouvrir
+  string link_id = 13;
+}
+
+message ListReportsRequest {
+  // "open" (défaut) | "closed"
+  string status = 1;
+}
+
+message ListReportsResponse {
+  repeated Report reports = 1;
+}
+
+message ResolveReportRequest {
+  string report_id = 1;
+  // "dismiss" : rien à faire ; "remove" : retirer l'idée (dépubliée et masquée)
+  // ou le commentaire (effacé) ; "suspend" : suspendre le compte, ce qui
+  // dépublie et masque ses idées publiques
+  string action = 2;
+}
+
+message ResolveReportResponse {}
+
 service AdminService {
   rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
     option (google.api.http) = {
@@ -83,6 +123,19 @@ service AdminService {
   rpc GetStats(GetStatsRequest) returns (GetStatsResponse) {
     option (google.api.http) = {
       get: "/v1/admin/stats"
+    };
+  }
+
+  rpc ListReports(ListReportsRequest) returns (ListReportsResponse) {
+    option (google.api.http) = {
+      get: "/v1/admin/reports"
+    };
+  }
+
+  rpc ResolveReport(ResolveReportRequest) returns (ResolveReportResponse) {
+    option (google.api.http) = {
+      post: "/v1/admin/reports/{report_id}/resolve"
+      body: "*"
     };
   }
 }

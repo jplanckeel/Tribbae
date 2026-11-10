@@ -562,6 +562,331 @@ func (x *GetStatsResponse) GetTotals() *StatsTotals {
 	return nil
 }
 
+// Signalement vu par l'administration (regroupés par contenu côté clients).
+type Report struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	TargetType      string                 `protobuf:"bytes,2,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	TargetId        string                 `protobuf:"bytes,3,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	TargetOwnerId   string                 `protobuf:"bytes,4,opt,name=target_owner_id,json=targetOwnerId,proto3" json:"target_owner_id,omitempty"`
+	TargetOwnerName string                 `protobuf:"bytes,5,opt,name=target_owner_name,json=targetOwnerName,proto3" json:"target_owner_name,omitempty"`
+	// Titre de l'idée, texte du commentaire ou nom du compte au moment du signalement
+	TargetSummary string `protobuf:"bytes,6,opt,name=target_summary,json=targetSummary,proto3" json:"target_summary,omitempty"`
+	Reason        string `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
+	Details       string `protobuf:"bytes,8,opt,name=details,proto3" json:"details,omitempty"`
+	ReporterName  string `protobuf:"bytes,9,opt,name=reporter_name,json=reporterName,proto3" json:"reporter_name,omitempty"`
+	// "open" | "resolved" | "dismissed"
+	Status string `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`
+	// Action prise : "remove" | "suspend" | "dismiss"
+	Action    string `protobuf:"bytes,11,opt,name=action,proto3" json:"action,omitempty"`
+	CreatedAt int64  `protobuf:"varint,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Idée commentée (signalement d'un commentaire), pour l'ouvrir
+	LinkId        string `protobuf:"bytes,13,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Report) Reset() {
+	*x = Report{}
+	mi := &file_tribbae_v1_admin_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Report) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Report) ProtoMessage() {}
+
+func (x *Report) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_admin_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Report.ProtoReflect.Descriptor instead.
+func (*Report) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_admin_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *Report) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Report) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *Report) GetTargetId() string {
+	if x != nil {
+		return x.TargetId
+	}
+	return ""
+}
+
+func (x *Report) GetTargetOwnerId() string {
+	if x != nil {
+		return x.TargetOwnerId
+	}
+	return ""
+}
+
+func (x *Report) GetTargetOwnerName() string {
+	if x != nil {
+		return x.TargetOwnerName
+	}
+	return ""
+}
+
+func (x *Report) GetTargetSummary() string {
+	if x != nil {
+		return x.TargetSummary
+	}
+	return ""
+}
+
+func (x *Report) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *Report) GetDetails() string {
+	if x != nil {
+		return x.Details
+	}
+	return ""
+}
+
+func (x *Report) GetReporterName() string {
+	if x != nil {
+		return x.ReporterName
+	}
+	return ""
+}
+
+func (x *Report) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *Report) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *Report) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *Report) GetLinkId() string {
+	if x != nil {
+		return x.LinkId
+	}
+	return ""
+}
+
+type ListReportsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// "open" (défaut) | "closed"
+	Status        string `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListReportsRequest) Reset() {
+	*x = ListReportsRequest{}
+	mi := &file_tribbae_v1_admin_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListReportsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListReportsRequest) ProtoMessage() {}
+
+func (x *ListReportsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_admin_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListReportsRequest.ProtoReflect.Descriptor instead.
+func (*ListReportsRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_admin_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListReportsRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type ListReportsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Reports       []*Report              `protobuf:"bytes,1,rep,name=reports,proto3" json:"reports,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListReportsResponse) Reset() {
+	*x = ListReportsResponse{}
+	mi := &file_tribbae_v1_admin_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListReportsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListReportsResponse) ProtoMessage() {}
+
+func (x *ListReportsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_admin_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListReportsResponse.ProtoReflect.Descriptor instead.
+func (*ListReportsResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_admin_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListReportsResponse) GetReports() []*Report {
+	if x != nil {
+		return x.Reports
+	}
+	return nil
+}
+
+type ResolveReportRequest struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	ReportId string                 `protobuf:"bytes,1,opt,name=report_id,json=reportId,proto3" json:"report_id,omitempty"`
+	// "dismiss" : rien à faire ; "remove" : retirer l'idée (dépubliée et masquée)
+	// ou le commentaire (effacé) ; "suspend" : suspendre le compte, ce qui
+	// dépublie et masque ses idées publiques
+	Action        string `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveReportRequest) Reset() {
+	*x = ResolveReportRequest{}
+	mi := &file_tribbae_v1_admin_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveReportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveReportRequest) ProtoMessage() {}
+
+func (x *ResolveReportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_admin_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveReportRequest.ProtoReflect.Descriptor instead.
+func (*ResolveReportRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_admin_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ResolveReportRequest) GetReportId() string {
+	if x != nil {
+		return x.ReportId
+	}
+	return ""
+}
+
+func (x *ResolveReportRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+type ResolveReportResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveReportResponse) Reset() {
+	*x = ResolveReportResponse{}
+	mi := &file_tribbae_v1_admin_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveReportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveReportResponse) ProtoMessage() {}
+
+func (x *ResolveReportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_admin_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveReportResponse.ProtoReflect.Descriptor instead.
+func (*ResolveReportResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_admin_proto_rawDescGZIP(), []int{13}
+}
+
 var File_tribbae_v1_admin_proto protoreflect.FileDescriptor
 
 const file_tribbae_v1_admin_proto_rawDesc = "" +
@@ -606,11 +931,38 @@ const file_tribbae_v1_admin_proto_rawDesc = "" +
 	"\rprivate_ideas\x18\x04 \x03(\v2\x16.tribbae.v1.StatsPointR\fprivateIdeas\x123\n" +
 	"\tnew_users\x18\x05 \x03(\v2\x16.tribbae.v1.StatsPointR\bnewUsers\x129\n" +
 	"\factive_users\x18\x06 \x03(\v2\x16.tribbae.v1.StatsPointR\vactiveUsers\x12/\n" +
-	"\x06totals\x18\a \x01(\v2\x17.tribbae.v1.StatsTotalsR\x06totals2\xe2\x02\n" +
+	"\x06totals\x18\a \x01(\v2\x17.tribbae.v1.StatsTotalsR\x06totals\"\x90\x03\n" +
+	"\x06Report\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
+	"\vtarget_type\x18\x02 \x01(\tR\n" +
+	"targetType\x12\x1b\n" +
+	"\ttarget_id\x18\x03 \x01(\tR\btargetId\x12&\n" +
+	"\x0ftarget_owner_id\x18\x04 \x01(\tR\rtargetOwnerId\x12*\n" +
+	"\x11target_owner_name\x18\x05 \x01(\tR\x0ftargetOwnerName\x12%\n" +
+	"\x0etarget_summary\x18\x06 \x01(\tR\rtargetSummary\x12\x16\n" +
+	"\x06reason\x18\a \x01(\tR\x06reason\x12\x18\n" +
+	"\adetails\x18\b \x01(\tR\adetails\x12#\n" +
+	"\rreporter_name\x18\t \x01(\tR\freporterName\x12\x16\n" +
+	"\x06status\x18\n" +
+	" \x01(\tR\x06status\x12\x16\n" +
+	"\x06action\x18\v \x01(\tR\x06action\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\f \x01(\x03R\tcreatedAt\x12\x17\n" +
+	"\alink_id\x18\r \x01(\tR\x06linkId\",\n" +
+	"\x12ListReportsRequest\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\"C\n" +
+	"\x13ListReportsResponse\x12,\n" +
+	"\areports\x18\x01 \x03(\v2\x12.tribbae.v1.ReportR\areports\"K\n" +
+	"\x14ResolveReportRequest\x12\x1b\n" +
+	"\treport_id\x18\x01 \x01(\tR\breportId\x12\x16\n" +
+	"\x06action\x18\x02 \x01(\tR\x06action\"\x17\n" +
+	"\x15ResolveReportResponse2\xd6\x04\n" +
 	"\fAdminService\x12a\n" +
 	"\tListUsers\x12\x1c.tribbae.v1.ListUsersRequest\x1a\x1d.tribbae.v1.ListUsersResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/v1/admin/users\x12\x8e\x01\n" +
 	"\x11UpdateUserPremium\x12$.tribbae.v1.UpdateUserPremiumRequest\x1a%.tribbae.v1.UpdateUserPremiumResponse\",\x82\xd3\xe4\x93\x02&:\x01*\x1a!/v1/admin/users/{user_id}/premium\x12^\n" +
-	"\bGetStats\x12\x1b.tribbae.v1.GetStatsRequest\x1a\x1c.tribbae.v1.GetStatsResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/v1/admin/statsB5Z3github.com/tribbae/backend/gen/tribbae/v1;tribbaev1b\x06proto3"
+	"\bGetStats\x12\x1b.tribbae.v1.GetStatsRequest\x1a\x1c.tribbae.v1.GetStatsResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/v1/admin/stats\x12i\n" +
+	"\vListReports\x12\x1e.tribbae.v1.ListReportsRequest\x1a\x1f.tribbae.v1.ListReportsResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/admin/reports\x12\x86\x01\n" +
+	"\rResolveReport\x12 .tribbae.v1.ResolveReportRequest\x1a!.tribbae.v1.ResolveReportResponse\"0\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/admin/reports/{report_id}/resolveB5Z3github.com/tribbae/backend/gen/tribbae/v1;tribbaev1b\x06proto3"
 
 var (
 	file_tribbae_v1_admin_proto_rawDescOnce sync.Once
@@ -624,7 +976,7 @@ func file_tribbae_v1_admin_proto_rawDescGZIP() []byte {
 	return file_tribbae_v1_admin_proto_rawDescData
 }
 
-var file_tribbae_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_tribbae_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_tribbae_v1_admin_proto_goTypes = []any{
 	(*User)(nil),                      // 0: tribbae.v1.User
 	(*ListUsersRequest)(nil),          // 1: tribbae.v1.ListUsersRequest
@@ -635,29 +987,39 @@ var file_tribbae_v1_admin_proto_goTypes = []any{
 	(*StatsPoint)(nil),                // 6: tribbae.v1.StatsPoint
 	(*StatsTotals)(nil),               // 7: tribbae.v1.StatsTotals
 	(*GetStatsResponse)(nil),          // 8: tribbae.v1.GetStatsResponse
-	(*timestamppb.Timestamp)(nil),     // 9: google.protobuf.Timestamp
+	(*Report)(nil),                    // 9: tribbae.v1.Report
+	(*ListReportsRequest)(nil),        // 10: tribbae.v1.ListReportsRequest
+	(*ListReportsResponse)(nil),       // 11: tribbae.v1.ListReportsResponse
+	(*ResolveReportRequest)(nil),      // 12: tribbae.v1.ResolveReportRequest
+	(*ResolveReportResponse)(nil),     // 13: tribbae.v1.ResolveReportResponse
+	(*timestamppb.Timestamp)(nil),     // 14: google.protobuf.Timestamp
 }
 var file_tribbae_v1_admin_proto_depIdxs = []int32{
 	0,  // 0: tribbae.v1.ListUsersResponse.users:type_name -> tribbae.v1.User
 	0,  // 1: tribbae.v1.UpdateUserPremiumResponse.user:type_name -> tribbae.v1.User
-	9,  // 2: tribbae.v1.StatsPoint.bucket_start:type_name -> google.protobuf.Timestamp
+	14, // 2: tribbae.v1.StatsPoint.bucket_start:type_name -> google.protobuf.Timestamp
 	6,  // 3: tribbae.v1.GetStatsResponse.ideas:type_name -> tribbae.v1.StatsPoint
 	6,  // 4: tribbae.v1.GetStatsResponse.public_ideas:type_name -> tribbae.v1.StatsPoint
 	6,  // 5: tribbae.v1.GetStatsResponse.private_ideas:type_name -> tribbae.v1.StatsPoint
 	6,  // 6: tribbae.v1.GetStatsResponse.new_users:type_name -> tribbae.v1.StatsPoint
 	6,  // 7: tribbae.v1.GetStatsResponse.active_users:type_name -> tribbae.v1.StatsPoint
 	7,  // 8: tribbae.v1.GetStatsResponse.totals:type_name -> tribbae.v1.StatsTotals
-	1,  // 9: tribbae.v1.AdminService.ListUsers:input_type -> tribbae.v1.ListUsersRequest
-	3,  // 10: tribbae.v1.AdminService.UpdateUserPremium:input_type -> tribbae.v1.UpdateUserPremiumRequest
-	5,  // 11: tribbae.v1.AdminService.GetStats:input_type -> tribbae.v1.GetStatsRequest
-	2,  // 12: tribbae.v1.AdminService.ListUsers:output_type -> tribbae.v1.ListUsersResponse
-	4,  // 13: tribbae.v1.AdminService.UpdateUserPremium:output_type -> tribbae.v1.UpdateUserPremiumResponse
-	8,  // 14: tribbae.v1.AdminService.GetStats:output_type -> tribbae.v1.GetStatsResponse
-	12, // [12:15] is the sub-list for method output_type
-	9,  // [9:12] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	9,  // 9: tribbae.v1.ListReportsResponse.reports:type_name -> tribbae.v1.Report
+	1,  // 10: tribbae.v1.AdminService.ListUsers:input_type -> tribbae.v1.ListUsersRequest
+	3,  // 11: tribbae.v1.AdminService.UpdateUserPremium:input_type -> tribbae.v1.UpdateUserPremiumRequest
+	5,  // 12: tribbae.v1.AdminService.GetStats:input_type -> tribbae.v1.GetStatsRequest
+	10, // 13: tribbae.v1.AdminService.ListReports:input_type -> tribbae.v1.ListReportsRequest
+	12, // 14: tribbae.v1.AdminService.ResolveReport:input_type -> tribbae.v1.ResolveReportRequest
+	2,  // 15: tribbae.v1.AdminService.ListUsers:output_type -> tribbae.v1.ListUsersResponse
+	4,  // 16: tribbae.v1.AdminService.UpdateUserPremium:output_type -> tribbae.v1.UpdateUserPremiumResponse
+	8,  // 17: tribbae.v1.AdminService.GetStats:output_type -> tribbae.v1.GetStatsResponse
+	11, // 18: tribbae.v1.AdminService.ListReports:output_type -> tribbae.v1.ListReportsResponse
+	13, // 19: tribbae.v1.AdminService.ResolveReport:output_type -> tribbae.v1.ResolveReportResponse
+	15, // [15:20] is the sub-list for method output_type
+	10, // [10:15] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_tribbae_v1_admin_proto_init() }
@@ -671,7 +1033,7 @@ func file_tribbae_v1_admin_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tribbae_v1_admin_proto_rawDesc), len(file_tribbae_v1_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

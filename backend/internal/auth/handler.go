@@ -36,6 +36,9 @@ func (h *Handler) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Re
 
 func (h *Handler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
 	user, token, err := h.svc.Login(ctx, req.Email, req.Password)
+	if errors.Is(err, ErrAccountSuspended) {
+		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, ErrInvalidCredentials.Error())
 	}

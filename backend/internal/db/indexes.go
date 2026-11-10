@@ -291,6 +291,64 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── reports (modération) ──────────────────────────────
+		{
+			// Un seul signalement ouvert par compte et par contenu
+			Collection: "reports",
+			Model: mongo.IndexModel{
+				Keys: bson.D{{Key: "reporter_id", Value: 1}, {Key: "target_type", Value: 1}, {Key: "target_id", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_reports_reporter_target_open").
+					SetPartialFilterExpression(bson.M{"status": "open"}),
+			},
+		},
+		{
+			// Quota de signalements sur 24 h
+			Collection: "reports",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "reporter_id", Value: 1}, {Key: "created_at", Value: -1}},
+				Options: options.Index().SetName("idx_reports_reporter_created_at"),
+			},
+		},
+		{
+			// File de l'administration, et décision sur tous les signalements d'un contenu
+			Collection: "reports",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "status", Value: 1}, {Key: "created_at", Value: -1}},
+				Options: options.Index().SetName("idx_reports_status_created_at"),
+			},
+		},
+		{
+			Collection: "reports",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "target_type", Value: 1}, {Key: "target_id", Value: 1}, {Key: "status", Value: 1}},
+				Options: options.Index().SetName("idx_reports_target_status"),
+			},
+		},
+		{
+			// Suppression d'un compte visé par des signalements
+			Collection: "reports",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "target_owner_id", Value: 1}},
+				Options: options.Index().SetName("idx_reports_target_owner_id"),
+			},
+		},
+
+		// ── blocks (modération) ───────────────────────────────
+		{
+			Collection: "blocks",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "user_id", Value: 1}, {Key: "blocked_id", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_blocks_user_blocked_unique"),
+			},
+		},
+		{
+			Collection: "blocks",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "blocked_id", Value: 1}},
+				Options: options.Index().SetName("idx_blocks_blocked_id"),
+			},
+		},
+
 		// ── children ──────────────────────────────────────────
 		{
 			Collection: "children",

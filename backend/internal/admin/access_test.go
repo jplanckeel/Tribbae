@@ -8,6 +8,7 @@ import (
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
 	"github.com/tribbae/backend/internal/auth"
 	"github.com/tribbae/backend/internal/interceptor"
+	"github.com/tribbae/backend/internal/moderation"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -42,7 +43,7 @@ func TestAdminAccess(t *testing.T) {
 		interceptor.UnaryAuth(authSvc),
 		interceptor.UnaryAdminAuth(authSvc),
 	))
-	pb.RegisterAdminServiceServer(srv, NewHandler(authSvc, NewStatsService(db.Collection("links"), db.Collection("users"))))
+	pb.RegisterAdminServiceServer(srv, NewHandler(authSvc, NewStatsService(db.Collection("links"), db.Collection("users")), moderation.NewService(db)))
 	go func() { _ = srv.Serve(lis) }()
 	t.Cleanup(srv.Stop)
 	conn, err := grpc.NewClient("passthrough:///bufnet",
