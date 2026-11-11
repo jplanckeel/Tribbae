@@ -4,13 +4,15 @@ import Icon from "../components/Icon";
 import Seo from "../components/Seo";
 import { Page } from "../components/Shell";
 import { Toggle } from "../components/ui";
+import { LEGAL } from "../lib/legal";
 
 // À compléter avant publication : identité de l'éditeur (nom ou raison sociale,
 // adresse) et hébergeur du serveur (nom, pays). Obligatoires (RGPD art. 13,
 // loi pour la confiance dans l'économie numérique).
-const EDITOR = "[à compléter : nom et adresse de l'éditeur de Tribbae]";
-const HOST = "[à compléter : hébergeur du serveur et pays]";
-const CONTACT = "contact@tribbae.fr";
+// Identité de l'éditeur et de l'hébergeur : une seule source, lib/legal.ts
+const EDITOR = `${LEGAL.editorName}, ${LEGAL.editorAddress}`;
+const HOST = `${LEGAL.hostName}, ${LEGAL.hostCountry}`;
+const CONTACT = LEGAL.contact;
 const UPDATED = "20 octobre 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

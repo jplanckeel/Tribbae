@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Logout
@@ -322,6 +323,8 @@ private fun TribeContent(
                 onDelete = { showDelete = true },
                 onFaq = onFaq,
                 onAbout = { uriHandler.openUri(ABOUT_URL) },
+                onTerms = { uriHandler.openUri(TERMS_URL) },
+                onLegalNotice = { uriHandler.openUri(LEGAL_NOTICE_URL) },
                 onAdmin = onOpenAdmin,
                 onLogout = { showLogout = true },
             ),
@@ -1339,6 +1342,8 @@ private fun KidSheet(
 
 /** Politique de confidentialité, publiée sur le site. */
 private const val PRIVACY_URL = "${data.Backend.PRODUCTION}/confidentialite"
+internal const val TERMS_URL = "${data.Backend.PRODUCTION}/cgu"
+internal const val LEGAL_NOTICE_URL = "${data.Backend.PRODUCTION}/mentions-legales"
 
 /** Page À propos (pourquoi Tribbae, principes), publiée sur le site. */
 private const val ABOUT_URL = "${data.Backend.PRODUCTION}/a-propos"
@@ -1577,6 +1582,11 @@ private fun SimpleAuthDialog(
 
                 if (!isLoginMode) {
                     val uri = androidx.compose.ui.platform.LocalUriHandler.current
+                    Text(
+                        "En créant votre compte, vous acceptez les conditions d'utilisation.",
+                        fontSize = 12.sp, color = TerracottaDark, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { uri.openUri(TERMS_URL) }.padding(4.dp)
+                    )
                     Text(
                         "Vos idées restent privées tant que vous ne les partagez pas. Ce que nous conservons et comment supprimer votre compte : politique de confidentialité.",
                         fontSize = 12.sp, color = TextSec,

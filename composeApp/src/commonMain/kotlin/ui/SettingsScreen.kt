@@ -58,6 +58,8 @@ class SettingsActions(
     val onDelete: () -> Unit,
     val onFaq: () -> Unit,
     val onAbout: () -> Unit,
+    val onTerms: () -> Unit,
+    val onLegalNotice: () -> Unit,
     val onAdmin: () -> Unit,
     val onLogout: () -> Unit,
 )
@@ -138,7 +140,9 @@ fun SettingsScreen(s: SettingsState, a: SettingsActions, dataMessage: String?, m
 
         Group("Aide") {
             SettingsRow(Icons.Outlined.HelpOutline, "Aide & FAQ", onClick = a.onFaq)
-            SettingsRow(Icons.Outlined.Info, "À propos de Tribbae", last = !s.isAdmin, onClick = a.onAbout)
+            SettingsRow(Icons.Outlined.Info, "À propos de Tribbae", onClick = a.onAbout)
+            SettingsRow(Icons.Outlined.Description, "Conditions d'utilisation", onClick = a.onTerms)
+            SettingsRow(Icons.Outlined.Gavel, "Mentions légales", last = !s.isAdmin, onClick = a.onLegalNotice)
             if (s.isAdmin) SettingsRow(Icons.Outlined.AdminPanelSettings, "Administration", badge = "Admin", last = true, onClick = a.onAdmin)
         }
 

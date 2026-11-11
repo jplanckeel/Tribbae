@@ -81,7 +81,9 @@ export default function SettingsView(p: {
 
         <Group title="Aide">
           <Row icon="help" label="Aide & FAQ" to="/aide" />
-          <Row icon="tipi" label="À propos de Tribbae" to="/a-propos" last={!p.isAdmin} />
+          <Row icon="tipi" label="À propos de Tribbae" to="/a-propos" />
+          <Row icon="clipboard" label="Conditions d'utilisation" to="/cgu" />
+          <Row icon="globe" label="Mentions légales" to="/mentions-legales" last={!p.isAdmin} />
           {p.isAdmin && <Row icon="crown" label="Administration" to="/admin" badge="Admin" last />}
         </Group>
 
