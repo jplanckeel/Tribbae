@@ -51,7 +51,6 @@ class CommentRepository(
         deserializer: (String) -> T
     ): T = withContext(Dispatchers.IO) {
         val token = sessionManager.getToken() ?: throw Exception("Not authenticated")
-        println("DEBUG: CommentRepository request - path=$path, method=$method")
         
         val conn = URL("$baseUrl$path").openConnection() as HttpURLConnection
         conn.requestMethod = method
@@ -67,11 +66,9 @@ class CommentRepository(
 
         try {
             val responseCode = conn.responseCode
-            println("DEBUG: CommentRepository response code: $responseCode")
             
             if (responseCode in 200..299) {
                 val response = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
-                println("DEBUG: CommentRepository response: $response")
                 deserializer(response)
             } else {
                 val errorStream = conn.errorStream
@@ -80,7 +77,7 @@ class CommentRepository(
                 } else {
                     "HTTP $responseCode"
                 }
-                println("ERROR: CommentRepository error: $error")
+                println("ERROR: CommentRepository HTTP $responseCode")
                 throw Exception("API error ($responseCode): $error")
             }
         } catch (e: Exception) {

@@ -509,7 +509,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 client.deleteFolder(id)
                 repository.deleteFolder(id)
                 updateFilteredLinks()
-                println("DEBUG: Folder $id deleted successfully")
                 onSuccess()
             } catch (e: Exception) {
                 println("ERROR: Failed to delete folder $id - ${e.message}")
@@ -866,7 +865,6 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 }
                 _communityLinks.value = lists.flatten().distinctBy { it.id }.map { it.toLink().copy(visibility = "public") }
                 communityLoadedAt = System.currentTimeMillis()
-                println("DEBUG: Loaded ${_communityLinks.value.size} community links")
             } catch (e: Exception) {
                 println("ERROR: Failed to load community links - ${e.message}")
             } finally {

@@ -43,7 +43,6 @@ class FollowRepository(
         deserializer: (String) -> T
     ): T = withContext(Dispatchers.IO) {
         val token = sessionManager.getToken() ?: throw Exception("Not authenticated")
-        println("DEBUG: FollowRepository request - path=$path, method=$method")
         
         val conn = URL("$baseUrl$path").openConnection() as HttpURLConnection
         conn.requestMethod = method
@@ -59,11 +58,9 @@ class FollowRepository(
 
         try {
             val responseCode = conn.responseCode
-            println("DEBUG: FollowRepository response code: $responseCode")
             
             if (responseCode in 200..299) {
                 val response = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
-                println("DEBUG: FollowRepository response: $response")
                 deserializer(response)
             } else {
                 val errorStream = conn.errorStream
@@ -72,7 +69,7 @@ class FollowRepository(
                 } else {
                     "HTTP $responseCode"
                 }
-                println("ERROR: FollowRepository error: $error")
+                println("ERROR: FollowRepository HTTP $responseCode")
                 throw Exception("API error ($responseCode): $error")
             }
         } catch (e: Exception) {
