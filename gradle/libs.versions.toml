@@ -9,7 +9,7 @@ serialization = "1.12.0"
 coil = "2.7.0"
 coroutines = "1.11.0"
 core-splashscreen = "1.2.0"
-jsoup = "1.23.2"
+jsoup = "1.24.1"
 # Fonctions exposées à Gemini (AppFunctions, Android 16+) ; le compilateur passe par KSP
 appfunctions = "1.0.0-beta01"
 ksp = "2.3.12"
