@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link as RouterLink, useParams } from "react-router";
+import GiftList from "../components/GiftList";
 import { IdeaVisual } from "../components/cards";
 import { FolderGlyph } from "../components/FolderCover";
 import Icon from "../components/Icon";
@@ -15,7 +17,8 @@ import Seo from "../components/Seo";
 export default function SharedFolder() {
   const { token = "" } = useParams();
   const session = useSession();
-  const res = useAsync(() => api.shared.get(token), [token]);
+  const [version, setVersion] = useState(0);
+  const res = useAsync(() => api.shared.get(token), [token, version]);
 
   if (res.loading) return <PageSpinner />;
   if (res.error || !res.data) {
@@ -32,6 +35,9 @@ export default function SharedFolder() {
   }
 
   const { folder, links = [] } = res.data;
+  // Liste de cadeaux : ses idées Cadeau se réservent, les autres restent des idées
+  const gifts = links.filter((l) => l.category === "LINK_CATEGORY_CADEAU");
+  const others = links.filter((l) => l.category !== "LINK_CATEGORY_CADEAU");
   const color = folderColor(folder.color);
 
   return (
@@ -47,7 +53,7 @@ export default function SharedFolder() {
             </span>
             <div className="flex flex-col gap-1">
               <span className="text-sm font-semibold text-ecorce-2">
-                {folder.ownerDisplayName ? `La tribu ${folder.ownerDisplayName} vous partage` : "Dossier partagé"}
+                {folder.giftReservations ? "Liste de cadeaux" : folder.ownerDisplayName ? `La tribu ${folder.ownerDisplayName} vous partage` : "Dossier partagé"}
               </span>
               <h1 className="font-display text-[30px] leading-[1.05] font-extrabold tracking-[-0.6px] md:text-[38px]">{folder.name}</h1>
               <span className="text-sm text-ecorce-2">{plural(links.length, "idée", "idées")}</span>
@@ -57,11 +63,15 @@ export default function SharedFolder() {
       </header>
 
       <div className="mx-auto flex max-w-4xl flex-col gap-3 px-5 pt-6 md:px-8">
+        {folder.giftReservations && gifts.length > 0 && (
+          <GiftList token={token} folder={folder} links={gifts} onChanged={() => setVersion((v) => v + 1)} />
+        )}
+        {folder.giftReservations && gifts.length > 0 && others.length > 0 && <h2 className="mt-4 font-display text-xl font-bold">Les autres idées</h2>}
         {links.length === 0 ? (
           <EmptyState icon="tipi" title="Ce dossier est encore vide" />
         ) : (
           <ul className="grid gap-3 md:grid-cols-2">
-            {links.map((l) => {
+            {(folder.giftReservations ? others : links).map((l) => {
               const cat = categoryMeta(l.category);
               const href = safeHref(l.url);
               const meta = metaLine(l);

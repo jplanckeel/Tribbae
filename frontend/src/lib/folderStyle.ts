@@ -174,6 +174,7 @@ export function folderInput(f: Folder): FolderInput {
     viewMode: f.viewMode ?? "",
     sort: f.sort ?? "",
     pinned: !!f.pinned,
+    giftReservations: !!f.giftReservations,
   };
 }
 

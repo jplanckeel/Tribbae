@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useFeedback } from "./feedback";
+import * as api from "../lib/api";
 import { FOLDER_COLORS, FOLDER_ICONS, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import {
@@ -31,7 +32,7 @@ type Tab = (typeof TABS)[number]["key"];
 
 const empty: FolderInput = {
   name: "", icon: "CAMPING", color: "ORANGE", visibility: "VISIBILITY_PRIVATE",
-  description: "", cover: "", illustration: "", keyDate: 0, keyDateType: "", childIds: [], viewMode: "", sort: "", pinned: false,
+  description: "", cover: "", illustration: "", keyDate: 0, keyDateType: "", childIds: [], viewMode: "", sort: "", pinned: false, giftReservations: false,
 };
 
 const inDays = (n: number) => {
@@ -55,7 +56,24 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
   const [tab, setTab] = useState<Tab>(folder ? "style" : "infos");
   // Publier attend la confirmation de l'adresse (un dossier déjà public le reste)
   const canPublish = useCanPublish();
-  const { confirm } = useFeedback();
+  const { confirm, toast } = useFeedback();
+  // Liste de cadeaux : effacer toutes les réservations (les proches peuvent à nouveau tout réserver)
+  const resetGifts = async () => {
+    if (!folder) return;
+    const ok = await confirm({
+      title: "Remettre les réservations à zéro ?",
+      text: "Les cadeaux redeviennent libres pour tous vos proches.",
+      confirmLabel: "Tout remettre à zéro",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await api.gifts.reset(folder.id);
+      toast("Réservations remises à zéro");
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
   const publishLocked = !canPublish && folder?.visibility !== "VISIBILITY_PUBLIC";
   // Le serveur ignore la visibilité envoyée par un autre compte que le propriétaire
   const session = useSession();
@@ -456,6 +474,23 @@ export default function FolderFormSheet({ onClose, folder, onSubmit }: {
                   <span className="text-xs text-sec">Toujours sous la main</span>
                 </span>
                 <Toggle label="Épingler en haut de Mes idées" checked={!!form.pinned} onChange={(pinned) => set({ pinned })} />
+              </div>
+              {/* « Offrir une idée » : les proches réservent les idées Cadeau, sans que personne sache qui offre quoi */}
+              <div className="flex flex-col gap-2.5 rounded-2xl bg-card p-3.5">
+                <div className="flex items-center gap-3">
+                  <Icon name="cadeau" size={20} className="text-cadeau-ic" />
+                  <span className="flex flex-1 flex-col">
+                    <span className="text-[15px] font-bold">C'est une liste de cadeaux</span>
+                    <span className="text-xs text-sec">Avec le lien du dossier, vos proches disent « Je l'offre » sur une idée Cadeau. Personne ne voit qui offre quoi.</span>
+                  </span>
+                  <Toggle label="C'est une liste de cadeaux" checked={!!form.giftReservations} onChange={(giftReservations) => set({ giftReservations })} />
+                </div>
+                {folder?.giftReservations && (
+                  <div className="flex items-center justify-between gap-2 border-t border-line pt-2.5 text-xs text-sec">
+                    <span>Les réservations restent jusqu'à ce que vous les effaciez.</span>
+                    <button type="button" onClick={resetGifts} className="shrink-0 font-semibold text-link">Tout remettre à zéro</button>
+                  </div>
+                )}
               </div>
             </>
           )}
