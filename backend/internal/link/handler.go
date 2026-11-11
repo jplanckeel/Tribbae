@@ -98,6 +98,7 @@ func (h *Handler) toProto(l *Link, st *Stats) *pb.Link {
 		CreatedVia:       l.CreatedVia,
 		PublicViaFolder:  l.FolderID != "" && st.PublicFolders[l.FolderID] == l.OwnerID && !l.Hidden,
 		Hidden:           l.Hidden,
+		GiftStatus:       st.Gifts[id],
 	}
 }
 

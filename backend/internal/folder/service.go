@@ -62,6 +62,10 @@ type Service struct {
 	notify       CircleNotifier
 	markVerified func(ctx context.Context, userID string) error
 
+	// Liste de cadeaux (gifts.go)
+	giftNotify  GiftNotifier
+	giftCanView func(ctx context.Context, linkID, userID string) bool
+
 	// Emails d'ajout comme collaborateur déjà envoyés (limite d'envoi)
 	collabMu     sync.Mutex
 	collabEmails map[string][]collabEmail
@@ -272,6 +276,9 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 	}
 
 	s.forgetFolder(ctx, folderID)
+	if _, err := s.gifts().DeleteMany(ctx, bson.M{"folder_id": folderID}); err != nil {
+		return err
+	}
 
 	// Orphan associated links by setting their folder_id to empty string
 	// This preserves user data while removing the folder association

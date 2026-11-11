@@ -25,6 +25,7 @@ import { ideaAudience } from "../lib/visibility";
 import Seo from "../components/Seo";
 import ReportSheet from "../components/ReportSheet";
 import type { ReportTarget } from "../lib/moderation";
+import GiftPanel from "../components/GiftPanel";
 import VisibilityBadge from "../components/VisibilityBadge";
 
 export default function LinkDetail() {
@@ -255,6 +256,16 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             <span className="flex items-center gap-1 text-xs text-sec"><Icon name="sparkles" size={14} />{createdViaLabel(link.createdVia)}</span>
           )}
         </div>
+        {/* Liste de cadeaux : la famille de la liste voit l'état, les autres proches peuvent l'offrir */}
+        {link.category === "LINK_CATEGORY_CADEAU" && (folder?.giftReservations || !!link.giftStatus) && (
+          <GiftPanel
+            linkId={link.id}
+            title={link.title}
+            status={link.giftStatus ?? ""}
+            canOffer={!!session && !!folder?.giftReservations && !isTribePeer(folder.ownerId)}
+            onStatus={(giftStatus) => apply({ ...link, giftStatus })}
+          />
+        )}
         {link.hidden && (
           <p role="note" className="flex items-start gap-2 rounded-medium bg-card px-4 py-3 text-sm text-sec">
             <Icon name="flag" size={16} className="mt-0.5 shrink-0" />

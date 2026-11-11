@@ -1,6 +1,6 @@
 import { clearSession, getSession, setSession, shouldRenew } from "./session";
 import { withinLimits } from "./preview";
-import type { AdminReport, AdminStats, AdminUser, AiIdea, BlockedUser, Child, CircleInvitation, CircleInvitationInfo, CollaboratorRole, Comment, ConnectedApp, Folder, FolderInput, Link, LinkInput, LinkPreview, OAuthConsent, StatsPeriod, Tribe, TribeInvitationInfo, UserProfile } from "./types";
+import type { AdminReport, AdminStats, AdminUser, AiIdea, BlockedUser, Child, CircleInvitation, CircleInvitationInfo, CollaboratorRole, Comment, ConnectedApp, Folder, FolderInput, GiftReservation, Link, LinkInput, LinkPreview, OAuthConsent, StatsPeriod, Tribe, TribeInvitationInfo, UserProfile } from "./types";
 
 const BASE = "/v1";
 
@@ -15,6 +15,9 @@ export class ApiError extends Error {
 /** Traduit les messages d'erreur serveur les plus courants. */
 export function frenchMessage(status: number, message: string): string {
   if (/too many reports/i.test(message)) return "Vous avez envoyé beaucoup de signalements aujourd'hui : réessayez demain.";
+  if (/gift already reserved/i.test(message)) return "Quelqu'un vient de le réserver.";
+  if (/gift reservations are off/i.test(message)) return "Cette liste n'accepte plus de réservations.";
+  if (/too many gift reservations/i.test(message)) return "Vous avez déjà réservé 5 cadeaux sur cette liste aujourd'hui : réessayez demain.";
   if (status === 429 && /ai is busy/i.test(message)) return "L'IA prépare déjà des idées pour une autre tribu. Réessayez dans une trentaine de secondes.";
   if (status === 429) return "Trop de tentatives, réessayez dans une minute.";
   if (/idea generation failed/i.test(message)) return "L'IA n'a pas réussi à préparer d'idées. Réessayez ou reformulez votre demande.";
@@ -228,6 +231,21 @@ export const folders = {
 export const shared = {
   get: (token: string) =>
     request<{ folder: Folder; links?: Link[] }>(`/share/${encodeURIComponent(token)}`),
+  /** « Je l'offre » depuis le lien ; sans compte, prénom et e-mail à confirmer. */
+  reserveGift: (token: string, linkId: string, who?: { name: string; email: string }) =>
+    request<{ status?: string }>(`/share/${encodeURIComponent(token)}/links/${encodeURIComponent(linkId)}/reservation`, {
+      method: "POST",
+      body: JSON.stringify(who ?? {}),
+    }),
+};
+
+/** Mes réservations de cadeaux : avec le lien reçu par e-mail, ou avec mon compte. */
+export const gifts = {
+  manage: (token: string, action: "confirm" | "bought" | "unbought" | "release" | "view") =>
+    request<{ gift: GiftReservation }>("/gifts/manage", { method: "POST", body: JSON.stringify({ token, action }) }).then((r) => r.gift),
+  mine: (linkId: string, action: "reserve" | "bought" | "unbought" | "release") =>
+    request<{ gift: GiftReservation }>(`/links/${encodeURIComponent(linkId)}/gift`, { method: "POST", body: JSON.stringify({ action }) }).then((r) => r.gift),
+  reset: (folderId: string) => request<unknown>(`/folders/${encodeURIComponent(folderId)}/reservations`, { method: "DELETE" }),
 };
 
 export const community = {

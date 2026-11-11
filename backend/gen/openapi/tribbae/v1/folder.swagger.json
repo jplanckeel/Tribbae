@@ -523,6 +523,36 @@
         ]
       }
     },
+    "/v1/folders/{folderId}/reservations": {
+      "delete": {
+        "operationId": "FolderService_ResetGiftReservations",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ResetGiftReservationsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
     "/v1/folders/{folderId}/share": {
       "delete": {
         "operationId": "FolderService_RevokeShareToken",
@@ -589,6 +619,76 @@
         ]
       }
     },
+    "/v1/gifts/manage": {
+      "post": {
+        "operationId": "FolderService_ManageGift",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GiftReservationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ManageGiftRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/links/{linkId}/gift": {
+      "post": {
+        "operationId": "FolderService_ManageMyGift",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GiftReservationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FolderServiceManageMyGiftBody"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
     "/v1/share/{shareToken}": {
       "get": {
         "operationId": "FolderService_GetSharedFolder",
@@ -618,6 +718,50 @@
           "FolderService"
         ]
       }
+    },
+    "/v1/share/{shareToken}/links/{linkId}/reservation": {
+      "post": {
+        "operationId": "FolderService_ReserveSharedGift",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ReserveSharedGiftResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "shareToken",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FolderServiceReserveSharedGiftBody"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -637,6 +781,27 @@
     },
     "FolderServiceLikeFolderBody": {
       "type": "object"
+    },
+    "FolderServiceManageMyGiftBody": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "title": "reserve | bought | unbought | release | view"
+        }
+      }
+    },
+    "FolderServiceReserveSharedGiftBody": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Sans compte : prénom (emails seulement) et email où confirmer"
+        },
+        "email": {
+          "type": "string"
+        }
+      }
     },
     "FolderServiceUpdateFolderBody": {
       "type": "object",
@@ -696,6 +861,9 @@
           "type": "string"
         },
         "pinned": {
+          "type": "boolean"
+        },
+        "giftReservations": {
           "type": "boolean"
         }
       }
@@ -999,6 +1167,10 @@
         "pinned": {
           "type": "boolean",
           "title": "épinglé en haut de « Mes idées »"
+        },
+        "giftReservations": {
+          "type": "boolean",
+          "title": "Liste de cadeaux : les visiteurs du lien de partage peuvent dire « Je l'offre »\nsur ses idées Cadeau, sans dire qui ils sont"
         }
       }
     },
@@ -1068,6 +1240,46 @@
             "type": "object",
             "$ref": "#/definitions/v1Link"
           }
+        }
+      }
+    },
+    "v1GiftReservation": {
+      "type": "object",
+      "properties": {
+        "linkId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "folderName": {
+          "type": "string"
+        },
+        "shareToken": {
+          "type": "string"
+        },
+        "keyDate": {
+          "type": "string",
+          "format": "int64"
+        },
+        "status": {
+          "type": "string",
+          "title": "pending | reserved | bought ; vide une fois libéré"
+        }
+      },
+      "title": "Un cadeau réservé, vu par son offreur"
+    },
+    "v1GiftReservationResponse": {
+      "type": "object",
+      "properties": {
+        "gift": {
+          "$ref": "#/definitions/v1GiftReservation"
         }
       }
     },
@@ -1196,6 +1408,18 @@
         "createdVia": {
           "type": "string",
           "title": "Provenance : \"mcp\" pour une idée ajoutée par une application connectée\n(Claude), vide sinon"
+        },
+        "publicViaFolder": {
+          "type": "boolean",
+          "title": "Visible de tous parce que son auteur l'a rangée dans son dossier public"
+        },
+        "hidden": {
+          "type": "boolean",
+          "title": "Retirée par la modération : seul son auteur la voit, sans pouvoir la republier"
+        },
+        "giftStatus": {
+          "type": "string",
+          "description": "Liste de cadeaux : \"\" (libre), reserved, bought, ou mine / mine_bought\npour le lecteur qui l'offre. Personne ne voit qui offre quoi."
         }
       }
     },
@@ -1264,6 +1488,19 @@
         }
       }
     },
+    "v1ManageGiftRequest": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "title": "Jeton du lien reçu par email"
+        },
+        "action": {
+          "type": "string",
+          "title": "confirm | bought | unbought | release | view"
+        }
+      }
+    },
     "v1RemoveCollaboratorResponse": {
       "type": "object",
       "properties": {
@@ -1271,6 +1508,18 @@
           "$ref": "#/definitions/v1Folder"
         }
       }
+    },
+    "v1ReserveSharedGiftResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "title": "\"pending\" (sans compte : confirmer par email) ou \"reserved\""
+        }
+      }
+    },
+    "v1ResetGiftReservationsResponse": {
+      "type": "object"
     },
     "v1RevokeCircleInvitationResponse": {
       "type": "object"

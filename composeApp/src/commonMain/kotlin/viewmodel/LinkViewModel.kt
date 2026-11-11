@@ -566,6 +566,38 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         updateFilteredLinks()
     }
 
+    /**
+     * Liste de cadeaux : « Je l'offre » (reserve), « C'est acheté » (bought),
+     * « Finalement, pas encore acheté » (unbought), « Libérer » (release).
+     * Renvoie le nouveau statut vu par moi, ou null en cas d'erreur (déjà affichée).
+     */
+    suspend fun giftAction(linkId: String, action: String): String? {
+        val client = authenticatedClient ?: return null
+        return try {
+            val status = data.Gifts.mineFrom(client.giftAction(linkId, action))
+            repository.links.value.find { it.id == linkId }?.let { repository.updateLink(it.copy(giftStatus = status)) }
+            _communityLinks.value = _communityLinks.value.map { if (it.id == linkId) it.copy(giftStatus = status) else it }
+            updateFilteredLinks()
+            status
+        } catch (e: Exception) {
+            val m = e.message.orEmpty()
+            _actionErrors.tryEmit(when {
+                "gift already reserved" in m -> "Quelqu'un vient de le réserver."
+                "gift reservations are off" in m -> "Cette liste n'accepte plus de réservations."
+                else -> "Le cadeau n'a pas pu être mis à jour. Vérifiez votre connexion."
+            })
+            null
+        }
+    }
+
+    /** Remet à zéro toutes les réservations d'une liste de cadeaux. */
+    suspend fun resetGifts(folderId: String): Boolean {
+        val client = authenticatedClient ?: return false
+        return runCatching { client.resetGifts(folderId) }
+            .onFailure { _actionErrors.tryEmit("Les réservations n'ont pas pu être effacées. Vérifiez votre connexion.") }
+            .isSuccess.also { ok -> if (ok) sessionManager?.let { syncWithBackend(it) } }
+    }
+
     /** Sans réseau, la dernière liste reçue reste affichée. */
     private suspend fun refreshLiked(client: data.AuthenticatedApiClient) {
         runCatching { client.listLikedLinks().links.map(::apiLinkToLink) }.onSuccess(repository::setLiked)
@@ -1004,7 +1036,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             visibility = apiLink.visibility.ifBlank { "private" },
             createdVia = apiLink.createdVia,
             publicViaFolder = apiLink.publicViaFolder,
-            hidden = apiLink.hidden
+            hidden = apiLink.hidden,
+            giftStatus = apiLink.giftStatus
         )
     }
 
@@ -1192,7 +1225,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         folderId = f.id, name = f.name, icon = f.icon.name, color = f.color.name, visibility = visibilityParam(f.visibility),
         bannerUrl = f.bannerUrl, tags = f.tags, description = f.description, cover = f.cover,
         illustration = f.illustration, keyDate = f.keyDate, keyDateType = f.keyDateType, childIds = f.childIds,
-        setChildIds = true, viewMode = f.viewMode, sort = f.sort, pinned = f.pinned,
+        setChildIds = true, viewMode = f.viewMode, sort = f.sort, pinned = f.pinned, giftReservations = f.giftReservations,
     )
 
     private fun createLinkRequest(l: Link) = data.CreateLinkRequest(
@@ -1325,6 +1358,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             viewMode = apiFolder.viewMode,
             sort = apiFolder.sort,
             pinned = apiFolder.pinned,
+            giftReservations = apiFolder.giftReservations,
         )
     }
     

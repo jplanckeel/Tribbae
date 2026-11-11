@@ -13,6 +13,7 @@ import { AUDIENCE_LABEL, folderAudience } from "../lib/visibility";
 import { FolderCover, FolderGlyph } from "./FolderCover";
 import Icon from "./Icon";
 import { Avatar } from "./ui";
+import GiftTag from "./GiftTag";
 import VisibilityBadge, { IdeaVisibility } from "./VisibilityBadge";
 
 /** Contour de l'idée d'où l'on vient (dossier ouvert depuis sa fiche). */
@@ -46,6 +47,8 @@ export function IdeaVisual({ link, height, iconSize = 46, className = "", style 
       ) : (
         <Icon name={cat.icon} size={iconSize} className="opacity-55" />
       )}
+      {/* Liste de cadeaux : réservé ou offert, jamais par qui */}
+      {link.giftStatus && <GiftTag status={link.giftStatus} className="absolute bottom-2 left-2 shadow-[0_0_0_2px_var(--color-card)]" />}
     </div>
   );
 }

@@ -60,6 +60,9 @@ const (
 	TagTribeNewOwner  = "tribe-new-owner"
 	TagCollabAdded    = "collaborator-added"
 	TagReport         = "report-received"
+	TagGiftConfirm    = "gift-confirm"
+	TagGiftTaken      = "gift-taken"
+	TagGiftReleased   = "gift-released"
 
 	sendTimeout = 30 * time.Second
 )
@@ -267,4 +270,38 @@ func (m *Mailer) send(email, name, tag string, c content, err error) {
 			log.Printf("mail: %q email failed: %v", tag, err)
 		}
 	}()
+}
+
+// --- Liste de cadeaux : jamais de nom d'offreur dans ces emails ---
+
+// GiftConfirm : confirmer une réservation faite sans compte (le lien sert
+// ensuite à marquer le cadeau acheté ou à le libérer).
+type GiftConfirm struct {
+	Email, Name, Gift, List, URL string
+	Validity                     time.Duration
+}
+
+func (m *Mailer) GiftConfirm(g GiftConfirm) {
+	c, err := giftConfirmEmail(m.siteURL, g)
+	m.send(g.Email, g.Name, TagGiftConfirm, c, err)
+}
+
+// GiftTaken : à la créatrice de la liste, sans dire quel cadeau ni par qui.
+type GiftTaken struct {
+	Email, Name, List, URL string
+}
+
+func (m *Mailer) GiftTaken(g GiftTaken) {
+	c, err := giftTakenEmail(m.siteURL, g)
+	m.send(g.Email, g.Name, TagGiftTaken, c, err)
+}
+
+// GiftReleased : aux autres offreurs, un cadeau de la liste est de nouveau libre.
+type GiftReleased struct {
+	Email, Name, Gift, List, URL string
+}
+
+func (m *Mailer) GiftReleased(g GiftReleased) {
+	c, err := giftReleasedEmail(m.siteURL, g)
+	m.send(g.Email, g.Name, TagGiftReleased, c, err)
 }

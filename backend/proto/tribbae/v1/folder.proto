@@ -58,6 +58,9 @@ message Folder {
   string view_mode = 25;          // grid | list | mosaic
   string sort = 26;               // recent | date | category
   bool pinned = 27;               // épinglé en haut de « Mes idées »
+  // Liste de cadeaux : les visiteurs du lien de partage peuvent dire « Je l'offre »
+  // sur ses idées Cadeau, sans dire qui ils sont
+  bool gift_reservations = 28;
 }
 
 message CreateFolderRequest {
@@ -116,6 +119,7 @@ message UpdateFolderRequest {
   optional string view_mode = 15;
   optional string sort = 16;
   optional bool pinned = 17;
+  optional bool gift_reservations = 18;
 }
 
 message UpdateFolderResponse {
@@ -151,6 +155,57 @@ message GetSharedFolderResponse {
   Folder folder = 1;
   repeated Link links = 2;
 }
+
+// --- Liste de cadeaux (« Offrir une idée ») : personne ne voit qui offre quoi ---
+
+message ReserveSharedGiftRequest {
+  string share_token = 1;
+  string link_id = 2;
+  // Sans compte : prénom (emails seulement) et email où confirmer
+  string name = 3;
+  string email = 4;
+}
+
+message ReserveSharedGiftResponse {
+  // "pending" (sans compte : confirmer par email) ou "reserved"
+  string status = 1;
+}
+
+// Un cadeau réservé, vu par son offreur
+message GiftReservation {
+  string link_id = 1;
+  string title = 2;
+  string image_url = 3;
+  string price = 4;
+  string folder_name = 5;
+  string share_token = 6;
+  int64 key_date = 7;
+  // pending | reserved | bought ; vide une fois libéré
+  string status = 8;
+}
+
+message ManageGiftRequest {
+  // Jeton du lien reçu par email
+  string token = 1;
+  // confirm | bought | unbought | release | view
+  string action = 2;
+}
+
+message ManageMyGiftRequest {
+  string link_id = 1;
+  // reserve | bought | unbought | release | view
+  string action = 2;
+}
+
+message GiftReservationResponse {
+  GiftReservation gift = 1;
+}
+
+message ResetGiftReservationsRequest {
+  string folder_id = 1;
+}
+
+message ResetGiftReservationsResponse {}
 
 // --- Collaborateurs ---
 
@@ -313,6 +368,29 @@ service FolderService {
   rpc GetSharedFolder(GetSharedFolderRequest) returns (GetSharedFolderResponse) {
     option (google.api.http) = {
       get: "/v1/share/{share_token}"
+    };
+  }
+  rpc ReserveSharedGift(ReserveSharedGiftRequest) returns (ReserveSharedGiftResponse) {
+    option (google.api.http) = {
+      post: "/v1/share/{share_token}/links/{link_id}/reservation"
+      body: "*"
+    };
+  }
+  rpc ManageGift(ManageGiftRequest) returns (GiftReservationResponse) {
+    option (google.api.http) = {
+      post: "/v1/gifts/manage"
+      body: "*"
+    };
+  }
+  rpc ManageMyGift(ManageMyGiftRequest) returns (GiftReservationResponse) {
+    option (google.api.http) = {
+      post: "/v1/links/{link_id}/gift"
+      body: "*"
+    };
+  }
+  rpc ResetGiftReservations(ResetGiftReservationsRequest) returns (ResetGiftReservationsResponse) {
+    option (google.api.http) = {
+      delete: "/v1/folders/{folder_id}/reservations"
     };
   }
   rpc AddCollaborator(AddCollaboratorRequest) returns (AddCollaboratorResponse) {

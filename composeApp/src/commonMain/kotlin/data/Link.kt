@@ -38,6 +38,8 @@ data class Folder(
     val viewMode: String = "",         // grid | list | mosaic
     val sort: String = "",             // recent | date | category
     val pinned: Boolean = false,
+    /** Liste de cadeaux : les proches peuvent dire « Je l'offre » */
+    val giftReservations: Boolean = false,
     val ownerId: String = "",          // "" = dossier local pas encore synchronisé (le mien)
 )
 
@@ -73,7 +75,9 @@ data class Link(
     /** Visible de tous parce que son auteur l'a rangée dans son dossier public. */
     val publicViaFolder: Boolean = false,
     /** Retirée par la modération : son auteur la garde, sans pouvoir la republier. */
-    val hidden: Boolean = false
+    val hidden: Boolean = false,
+    /** Liste de cadeaux : "" (libre), reserved, bought, mine, mine_bought. Jamais qui offre. */
+    val giftStatus: String = ""
 )
 
 @Serializable

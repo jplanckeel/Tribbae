@@ -50,6 +50,7 @@ data class ApiAuthFolder(
     val viewMode: String = "",
     val sort: String = "",
     val pinned: Boolean = false,
+    val giftReservations: Boolean = false,
 )
 
 /** Membre d'une tribu (compte). `sharing` : son contenu est partagé avec la tribu. */
@@ -135,7 +136,8 @@ data class ApiAuthLink(
     val visibility: String = "private",
     val createdVia: String = "",
     val publicViaFolder: Boolean = false,
-    val hidden: Boolean = false
+    val hidden: Boolean = false,
+    val giftStatus: String = ""
 )
 
 /** Application connectée (Claude) à laquelle le compte a donné accès. */
@@ -201,6 +203,7 @@ data class UpdateFolderRequest(
     val viewMode: String,
     val sort: String,
     val pinned: Boolean,
+    val giftReservations: Boolean,
 )
 
 @Serializable
@@ -442,6 +445,19 @@ class AuthenticatedApiClient(
     suspend fun exportAccount(): String = request("/v1/account/export", "GET") { it }
 
     // Modération : signaler un contenu, bloquer un compte
+    /** Liste de cadeaux : reserve | bought | unbought | release ; renvoie le statut (pending/reserved/bought, vide une fois libéré). */
+    suspend fun giftAction(linkId: String, action: String): String =
+        request("/v1/links/$linkId/gift", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject { put("action", kotlinx.serialization.json.JsonPrimitive(action)) })) { body ->
+            val gift = json.parseToJsonElement(body).let { it as? kotlinx.serialization.json.JsonObject }?.get("gift") as? kotlinx.serialization.json.JsonObject
+            (gift?.get("status") as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+        }
+
+    /** Remet à zéro les réservations d'une liste de cadeaux (sa tribu). */
+    suspend fun resetGifts(folderId: String) {
+        request("/v1/folders/$folderId/reservations", "DELETE", null) { _ -> Unit }
+    }
+
     suspend fun report(targetType: String, targetId: String, reason: String, details: String) {
         request("/v1/reports", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
             kotlinx.serialization.json.buildJsonObject {

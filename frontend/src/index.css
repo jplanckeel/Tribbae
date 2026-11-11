@@ -481,3 +481,11 @@
   .ai-msg { animation: none !important; opacity: 1; }
   .ai-out { animation-duration: 0.01ms !important; }
 }
+
+/* « Offrir une idée » : paquet qui s'ouvre et confettis (maquette « Offrir une idée ») */
+.gift-spark { position: absolute; left: 50%; top: 60px; width: 8px; height: 8px; border-radius: 2px; animation: gift-spark .95s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes gift-spark { 0% { opacity: 0; transform: translate(0, 0) scale(.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(170deg) scale(1); } }
+.gift-lid { animation: gift-lid 1s cubic-bezier(.34, 1.56, .64, 1) .15s both; transform-origin: 50% 100%; transform-box: fill-box; }
+@keyframes gift-lid { 0% { transform: translateY(0); } 40% { transform: translateY(-14px) rotate(-8deg); } 100% { transform: translateY(-6px) rotate(-4deg); } }
+.gift-bow { animation: gift-bow .9s cubic-bezier(.34, 1.56, .64, 1) both; transform-origin: 50% 60%; transform-box: fill-box; }
+@keyframes gift-bow { 0% { transform: scale(.2) rotate(-25deg); opacity: 0; } 55% { transform: scale(1.15) rotate(6deg); opacity: 1; } 100% { transform: none; } }

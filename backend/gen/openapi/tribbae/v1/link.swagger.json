@@ -655,6 +655,10 @@
         "hidden": {
           "type": "boolean",
           "title": "Retirée par la modération : seul son auteur la voit, sans pouvoir la republier"
+        },
+        "giftStatus": {
+          "type": "string",
+          "description": "Liste de cadeaux : \"\" (libre), reserved, bought, ou mine / mine_bought\npour le lecteur qui l'offre. Personne ne voit qui offre quoi."
         }
       }
     },

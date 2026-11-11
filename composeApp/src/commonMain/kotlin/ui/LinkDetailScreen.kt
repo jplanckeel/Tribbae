@@ -186,6 +186,12 @@ fun LinkDetailScreen(
 
                 Text(link.title, style = display(28.sp))
 
+                // Liste de cadeaux : la famille de la liste voit l'état, les autres proches peuvent l'offrir
+                if (viewModel != null && link.category == data.LinkCategory.CADEAU && (folder?.giftReservations == true || link.giftStatus.isNotEmpty())) {
+                    val family = folder == null || folder.ownerId.isBlank() || folder.ownerId == myId || viewModel.isTribePeer(folder.ownerId)
+                    GiftPanel(viewModel, link.id, link.title, link.giftStatus, canOffer = isLoggedIn && folder?.giftReservations == true && !family)
+                }
+
                 if (link.hidden) {
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CardColor).padding(horizontal = 14.dp, vertical = 12.dp),

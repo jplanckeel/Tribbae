@@ -40,6 +40,8 @@ export interface Link {
   createdVia?: string;
   /** Visible de tous parce que son auteur l'a rangée dans son dossier public. */
   publicViaFolder?: boolean;
+  /** Liste de cadeaux : "" (libre), reserved, bought, mine, mine_bought. Jamais qui offre. */
+  giftStatus?: import("./gifts").GiftStatus;
   /** Retirée par la modération : seul son auteur (et sa tribu) la voit, sans pouvoir la republier. */
   hidden?: boolean;
 }
@@ -203,6 +205,8 @@ export interface Folder {
   viewMode?: string;
   sort?: string;
   pinned?: boolean;
+  /** Liste de cadeaux : les proches peuvent dire « Je l'offre » */
+  giftReservations?: boolean;
 }
 
 export interface FolderInput {
@@ -223,6 +227,8 @@ export interface FolderInput {
   viewMode?: string;
   sort?: string;
   pinned?: boolean;
+  /** Liste de cadeaux : les proches peuvent dire « Je l'offre » */
+  giftReservations?: boolean;
 }
 
 export interface Child {
@@ -312,5 +318,18 @@ export interface AdminReport {
   action?: string;
   createdAt?: string | number;
   linkId?: string;
+}
+
+/** Un cadeau réservé, vu par son offreur (page /offrir ou app). */
+export interface GiftReservation {
+  linkId: string;
+  title?: string;
+  imageUrl?: string;
+  price?: string;
+  folderName?: string;
+  shareToken?: string;
+  keyDate?: number | string;
+  /** pending | reserved | bought ; vide une fois libéré */
+  status?: string;
 }
 

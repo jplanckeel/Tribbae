@@ -10,6 +10,7 @@ import LegalNotice from "./pages/LegalNotice";
 import FolderDetail from "./pages/FolderDetail";
 import Home from "./pages/Home";
 import CircleInvitation from "./pages/CircleInvitation";
+import OfferGift from "./pages/OfferGift";
 import ConnectApp from "./pages/ConnectApp";
 import Invitation from "./pages/Invitation";
 import LinkDetail from "./pages/LinkDetail";
@@ -37,6 +38,7 @@ const router = createBrowserRouter([
       { path: "/connexion", element: <Auth /> },
       { path: "/invitation", element: <Invitation /> },
       { path: "/invitation-cercle", element: <CircleInvitation /> },
+      { path: "/offrir", element: <OfferGift /> },
       { path: "/connecter-application", element: <ConnectApp /> },
       { path: "/mot-de-passe/oublie", element: <ForgotPassword /> },
       { path: "/mot-de-passe/nouveau", element: <NewPassword /> },

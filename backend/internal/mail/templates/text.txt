@@ -151,3 +151,35 @@ Voir les signalements : {{.AdminURL}}
 Vous recevez cet email car vous administrez Tribbae.
 
 {{template "footer" .}}{{end}}
+
+{{define "gift_confirm"}}Vous offrez « {{.Gift}} » (liste « {{.List}} »)
+
+Bonjour {{.Name}}, confirmez votre réservation pour que les autres sachent que ce cadeau est pris. Personne ne verra votre nom :
+
+{{.URL}}
+
+Sans confirmation sous {{.Validity}}, le cadeau redevient libre. Gardez cet email : le même lien sert ensuite à dire « C'est acheté » ou à libérer le cadeau.
+
+Vous recevez cet email car votre adresse a servi à réserver un cadeau sur une liste Tribbae. Ce n'est pas vous ? Ignorez ce message : la réservation sera annulée.
+
+{{template "footer" .}}{{end}}
+
+{{define "gift_taken"}}Une surprise se prépare (liste « {{.List}} »)
+
+{{if .Name}}Bonjour {{.Name}}, un{{else}}Un{{end}} cadeau de votre liste a trouvé preneur. Pour garder la surprise, personne ne voit qui offre quoi.
+
+Voir ma liste : {{.URL}}
+
+Vous recevez cet email car vous avez partagé une liste de cadeaux sur Tribbae.
+
+{{template "footer" .}}{{end}}
+
+{{define "gift_released"}}Un cadeau s'est libéré (liste « {{.List}} »)
+
+{{if .Name}}Bonjour {{.Name}}, « {{.Gift}} »{{else}}« {{.Gift}} »{{end}} n'est plus réservé : il est de nouveau libre sur la liste.
+
+Voir la liste : {{.URL}}
+
+Vous recevez cet email car vous offrez un cadeau de cette liste sur Tribbae.
+
+{{template "footer" .}}{{end}}

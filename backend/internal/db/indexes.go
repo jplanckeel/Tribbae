@@ -333,6 +333,59 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── gift_reservations (liste de cadeaux) ──────────────
+		{
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "link_id", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_gift_reservations_link_unique"),
+			},
+		},
+		{
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "folder_id", Value: 1}},
+				Options: options.Index().SetName("idx_gift_reservations_folder_id"),
+			},
+		},
+		{
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "owner_id", Value: 1}},
+				Options: options.Index().SetName("idx_gift_reservations_owner_id"),
+			},
+		},
+		{
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys: bson.D{{Key: "token_hash", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_gift_reservations_token_hash").
+					SetPartialFilterExpression(bson.M{"token_hash": bson.M{"$type": "string"}}),
+			},
+		},
+		{
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "user_id", Value: 1}},
+				Options: options.Index().SetName("idx_gift_reservations_user_id").SetSparse(true),
+			},
+		},
+		{
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "folder_id", Value: 1}, {Key: "email", Value: 1}, {Key: "created_at", Value: 1}},
+				Options: options.Index().SetName("idx_gift_reservations_folder_email_created"),
+			},
+		},
+		{
+			// Réservation en attente non confirmée : effacée à expiration
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "expires_at", Value: 1}},
+				Options: options.Index().SetExpireAfterSeconds(0).SetName("idx_gift_reservations_expires_ttl"),
+			},
+		},
+
 		// ── blocks (modération) ───────────────────────────────
 		{
 			Collection: "blocks",
