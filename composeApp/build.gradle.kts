@@ -134,6 +134,12 @@ android {
         }
     }
     
+    // L'aperçu Compose de l'IDE (synchro Gradle) exige les ressources Android
+    // compilées dans les tests unitaires : sans cela, la synchro échoue.
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
