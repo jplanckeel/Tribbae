@@ -50,6 +50,9 @@ message Link {
   bool public_via_folder = 26;
   // Retirée par la modération : seul son auteur la voit, sans pouvoir la republier
   bool hidden = 27;
+  // Cadeau réservé par un visiteur du lien de partage (dossier en liste de
+  // cadeaux) ; personne ne sait par qui
+  bool reserved = 28;
 }
 
 message CreateLinkRequest {

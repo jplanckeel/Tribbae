@@ -89,6 +89,22 @@ func Limit(rl *RateLimiter, paths map[string]bool, next http.Handler) http.Handl
 	})
 }
 
+// LimitMatch applique le limiteur aux requêtes dont le chemin satisfait match
+// (routes à identifiants, comme les réservations d'une liste de cadeaux), une
+// seule enveloppe par adresse IP pour toutes ces routes.
+func LimitMatch(rl *RateLimiter, name string, match func(path string) bool, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodOptions && match(r.URL.Path) && !rl.Allow(name+"|"+ClientIP(r)) {
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Retry-After", "60")
+			w.WriteHeader(http.StatusTooManyRequests)
+			_ = json.NewEncoder(w).Encode(map[string]string{"message": "too many requests, please retry later"})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // contentSecurityPolicy n'autorise que les ressources servies par l'application ;
 // les images peuvent venir de n'importe quel site https (aperçus des liens).
 // Exception : la mesure d'audience Umami (script et envoi des visites).

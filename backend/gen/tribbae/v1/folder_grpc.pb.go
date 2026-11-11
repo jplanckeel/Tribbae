@@ -27,6 +27,9 @@ const (
 	FolderService_GenerateShareToken_FullMethodName     = "/tribbae.v1.FolderService/GenerateShareToken"
 	FolderService_RevokeShareToken_FullMethodName       = "/tribbae.v1.FolderService/RevokeShareToken"
 	FolderService_GetSharedFolder_FullMethodName        = "/tribbae.v1.FolderService/GetSharedFolder"
+	FolderService_ReserveSharedGift_FullMethodName      = "/tribbae.v1.FolderService/ReserveSharedGift"
+	FolderService_CancelSharedGift_FullMethodName       = "/tribbae.v1.FolderService/CancelSharedGift"
+	FolderService_ResetGiftReservations_FullMethodName  = "/tribbae.v1.FolderService/ResetGiftReservations"
 	FolderService_AddCollaborator_FullMethodName        = "/tribbae.v1.FolderService/AddCollaborator"
 	FolderService_RemoveCollaborator_FullMethodName     = "/tribbae.v1.FolderService/RemoveCollaborator"
 	FolderService_InviteToCircle_FullMethodName         = "/tribbae.v1.FolderService/InviteToCircle"
@@ -52,6 +55,9 @@ type FolderServiceClient interface {
 	GenerateShareToken(ctx context.Context, in *GenerateShareTokenRequest, opts ...grpc.CallOption) (*GenerateShareTokenResponse, error)
 	RevokeShareToken(ctx context.Context, in *RevokeShareTokenRequest, opts ...grpc.CallOption) (*RevokeShareTokenResponse, error)
 	GetSharedFolder(ctx context.Context, in *GetSharedFolderRequest, opts ...grpc.CallOption) (*GetSharedFolderResponse, error)
+	ReserveSharedGift(ctx context.Context, in *ReserveSharedGiftRequest, opts ...grpc.CallOption) (*ReserveSharedGiftResponse, error)
+	CancelSharedGift(ctx context.Context, in *CancelSharedGiftRequest, opts ...grpc.CallOption) (*CancelSharedGiftResponse, error)
+	ResetGiftReservations(ctx context.Context, in *ResetGiftReservationsRequest, opts ...grpc.CallOption) (*ResetGiftReservationsResponse, error)
 	AddCollaborator(ctx context.Context, in *AddCollaboratorRequest, opts ...grpc.CallOption) (*AddCollaboratorResponse, error)
 	RemoveCollaborator(ctx context.Context, in *RemoveCollaboratorRequest, opts ...grpc.CallOption) (*RemoveCollaboratorResponse, error)
 	InviteToCircle(ctx context.Context, in *InviteToCircleRequest, opts ...grpc.CallOption) (*InviteToCircleResponse, error)
@@ -147,6 +153,36 @@ func (c *folderServiceClient) GetSharedFolder(ctx context.Context, in *GetShared
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetSharedFolderResponse)
 	err := c.cc.Invoke(ctx, FolderService_GetSharedFolder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) ReserveSharedGift(ctx context.Context, in *ReserveSharedGiftRequest, opts ...grpc.CallOption) (*ReserveSharedGiftResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReserveSharedGiftResponse)
+	err := c.cc.Invoke(ctx, FolderService_ReserveSharedGift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) CancelSharedGift(ctx context.Context, in *CancelSharedGiftRequest, opts ...grpc.CallOption) (*CancelSharedGiftResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CancelSharedGiftResponse)
+	err := c.cc.Invoke(ctx, FolderService_CancelSharedGift_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *folderServiceClient) ResetGiftReservations(ctx context.Context, in *ResetGiftReservationsRequest, opts ...grpc.CallOption) (*ResetGiftReservationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResetGiftReservationsResponse)
+	err := c.cc.Invoke(ctx, FolderService_ResetGiftReservations_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -275,6 +311,9 @@ type FolderServiceServer interface {
 	GenerateShareToken(context.Context, *GenerateShareTokenRequest) (*GenerateShareTokenResponse, error)
 	RevokeShareToken(context.Context, *RevokeShareTokenRequest) (*RevokeShareTokenResponse, error)
 	GetSharedFolder(context.Context, *GetSharedFolderRequest) (*GetSharedFolderResponse, error)
+	ReserveSharedGift(context.Context, *ReserveSharedGiftRequest) (*ReserveSharedGiftResponse, error)
+	CancelSharedGift(context.Context, *CancelSharedGiftRequest) (*CancelSharedGiftResponse, error)
+	ResetGiftReservations(context.Context, *ResetGiftReservationsRequest) (*ResetGiftReservationsResponse, error)
 	AddCollaborator(context.Context, *AddCollaboratorRequest) (*AddCollaboratorResponse, error)
 	RemoveCollaborator(context.Context, *RemoveCollaboratorRequest) (*RemoveCollaboratorResponse, error)
 	InviteToCircle(context.Context, *InviteToCircleRequest) (*InviteToCircleResponse, error)
@@ -318,6 +357,15 @@ func (UnimplementedFolderServiceServer) RevokeShareToken(context.Context, *Revok
 }
 func (UnimplementedFolderServiceServer) GetSharedFolder(context.Context, *GetSharedFolderRequest) (*GetSharedFolderResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSharedFolder not implemented")
+}
+func (UnimplementedFolderServiceServer) ReserveSharedGift(context.Context, *ReserveSharedGiftRequest) (*ReserveSharedGiftResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReserveSharedGift not implemented")
+}
+func (UnimplementedFolderServiceServer) CancelSharedGift(context.Context, *CancelSharedGiftRequest) (*CancelSharedGiftResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelSharedGift not implemented")
+}
+func (UnimplementedFolderServiceServer) ResetGiftReservations(context.Context, *ResetGiftReservationsRequest) (*ResetGiftReservationsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetGiftReservations not implemented")
 }
 func (UnimplementedFolderServiceServer) AddCollaborator(context.Context, *AddCollaboratorRequest) (*AddCollaboratorResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddCollaborator not implemented")
@@ -512,6 +560,60 @@ func _FolderService_GetSharedFolder_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(FolderServiceServer).GetSharedFolder(ctx, req.(*GetSharedFolderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_ReserveSharedGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReserveSharedGiftRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).ReserveSharedGift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_ReserveSharedGift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).ReserveSharedGift(ctx, req.(*ReserveSharedGiftRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_CancelSharedGift_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelSharedGiftRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).CancelSharedGift(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_CancelSharedGift_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).CancelSharedGift(ctx, req.(*CancelSharedGiftRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FolderService_ResetGiftReservations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetGiftReservationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FolderServiceServer).ResetGiftReservations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FolderService_ResetGiftReservations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FolderServiceServer).ResetGiftReservations(ctx, req.(*ResetGiftReservationsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -752,6 +854,18 @@ var FolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSharedFolder",
 			Handler:    _FolderService_GetSharedFolder_Handler,
+		},
+		{
+			MethodName: "ReserveSharedGift",
+			Handler:    _FolderService_ReserveSharedGift_Handler,
+		},
+		{
+			MethodName: "CancelSharedGift",
+			Handler:    _FolderService_CancelSharedGift_Handler,
+		},
+		{
+			MethodName: "ResetGiftReservations",
+			Handler:    _FolderService_ResetGiftReservations_Handler,
 		},
 		{
 			MethodName: "AddCollaborator",

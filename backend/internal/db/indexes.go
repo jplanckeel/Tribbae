@@ -333,6 +333,29 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── gift_reservations (liste de cadeaux) ──────────────
+		{
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "link_id", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_gift_reservations_link_unique"),
+			},
+		},
+		{
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "folder_id", Value: 1}},
+				Options: options.Index().SetName("idx_gift_reservations_folder_id"),
+			},
+		},
+		{
+			Collection: "gift_reservations",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "owner_id", Value: 1}},
+				Options: options.Index().SetName("idx_gift_reservations_owner_id"),
+			},
+		},
+
 		// ── blocks (modération) ───────────────────────────────
 		{
 			Collection: "blocks",

@@ -116,6 +116,7 @@ func (h *Handler) toProto(ctx context.Context, f *Folder, st *Stats) *pb.Folder 
 		Illustration:     f.Illustration,
 		ViewMode:         f.ViewMode,
 		Sort:             f.Sort,
+		GiftReservations: f.GiftReservations,
 	}
 	// Date clé, enfants concernés et épinglage restent dans la famille
 	// (et chez les collaborateurs invités) : pas pour un visiteur d'un dossier public.
@@ -152,6 +153,8 @@ func toStatus(op string, err error) error {
 		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, ErrInvalidInvitation):
 		return status.Error(codes.NotFound, err.Error())
+	case errors.Is(err, ErrGiftTaken), errors.Is(err, ErrNotAGiftList):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		log.Printf("folder: %s: %v", op, err)
 		return status.Errorf(codes.Internal, "failed to %s", op)
@@ -225,6 +228,7 @@ func stylePatch(req *pb.UpdateFolderRequest) StylePatch {
 		Description: req.Description, Cover: req.Cover, Illustration: req.Illustration,
 		KeyDate: req.KeyDate, KeyDateType: req.KeyDateType,
 		ViewMode: req.ViewMode, Sort: req.Sort, Pinned: req.Pinned,
+		GiftReservations: req.GiftReservations,
 	}
 	if req.SetChildIds {
 		p.ChildIDs = &req.ChildIds
@@ -272,6 +276,10 @@ func (h *Handler) GetSharedFolder(ctx context.Context, req *pb.GetSharedFolderRe
 		return nil, toStatus("get shared folder", err)
 	}
 	pbLinks := make([]*pb.Link, 0, len(rawLinks))
+	reserved := map[string]bool{}
+	if f.GiftReservations {
+		reserved = h.svc.ReservedGifts(ctx, f.ID.Hex())
+	}
 	for _, m := range rawLinks {
 		l := &pb.Link{
 			Id:          m.ID.Hex(),
@@ -284,6 +292,7 @@ func (h *Handler) GetSharedFolder(ctx context.Context, req *pb.GetSharedFolderRe
 			AgeRange:    m.AgeRange,
 			Location:    m.Location,
 			Price:       m.Price,
+			Reserved:    reserved[m.ID.Hex()],
 		}
 		if !m.CreatedAt.IsZero() {
 			l.CreatedAt = timestamppb.New(m.CreatedAt)
@@ -470,4 +479,32 @@ func (h *Handler) AcceptCircleInvitation(ctx context.Context, req *pb.AcceptCirc
 		return nil, toStatus("accept circle invitation", err)
 	}
 	return &pb.AcceptCircleInvitationResponse{Folders: h.many(ctx, folders)}, nil
+}
+
+// --- Liste de cadeaux ---
+
+func (h *Handler) ReserveSharedGift(ctx context.Context, req *pb.ReserveSharedGiftRequest) (*pb.ReserveSharedGiftResponse, error) {
+	token, err := h.svc.ReserveGift(ctx, req.ShareToken, req.LinkId)
+	if err != nil {
+		return nil, toStatus("reserve gift", err)
+	}
+	return &pb.ReserveSharedGiftResponse{CancelToken: token}, nil
+}
+
+func (h *Handler) CancelSharedGift(ctx context.Context, req *pb.CancelSharedGiftRequest) (*pb.CancelSharedGiftResponse, error) {
+	if err := h.svc.CancelGift(ctx, req.ShareToken, req.LinkId, req.CancelToken); err != nil {
+		return nil, toStatus("cancel gift", err)
+	}
+	return &pb.CancelSharedGiftResponse{}, nil
+}
+
+func (h *Handler) ResetGiftReservations(ctx context.Context, req *pb.ResetGiftReservationsRequest) (*pb.ResetGiftReservationsResponse, error) {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+	if err := h.svc.ResetGifts(ctx, req.FolderId, userID); err != nil {
+		return nil, toStatus("reset gift reservations", err)
+	}
+	return &pb.ResetGiftReservationsResponse{}, nil
 }

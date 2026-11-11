@@ -273,7 +273,7 @@ func (s *Service) DeleteCreatedByClient(ctx context.Context, ownerID, clientID s
 		ids = append(ids, d.ID)
 		hexIDs = append(hexIDs, d.ID.Hex())
 	}
-	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments")} {
+	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments"), s.col.Database().Collection("gift_reservations")} {
 		if _, err := c.DeleteMany(ctx, bson.M{"link_id": bson.M{"$in": hexIDs}}); err != nil {
 			return 0, err
 		}
@@ -514,7 +514,7 @@ func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 	}
 
 	// Ses « j'aime » et ses commentaires partent avec elle (pas d'orphelins en base)
-	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments")} {
+	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments"), s.col.Database().Collection("gift_reservations")} {
 		if _, err := c.DeleteMany(ctx, bson.M{"link_id": linkID}); err != nil {
 			return err
 		}
@@ -769,6 +769,8 @@ type Stats struct {
 	// Dossiers publics du lot et leur propriétaire : leurs idées à lui sont
 	// visibles de tous (même règle que PublicFolderFilter)
 	PublicFolders map[string]string
+	// Cadeaux réservés depuis le lien de partage d'une liste de cadeaux
+	Reserved map[string]bool
 }
 
 // LoadStats charge likes, "aimé par moi" et auteurs pour une liste de liens.
@@ -778,6 +780,7 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 		LikedByMe:     map[string]bool{},
 		Owners:        map[string]OwnerInfo{},
 		PublicFolders: map[string]string{},
+		Reserved:      map[string]bool{},
 	}
 	if len(links) == 0 {
 		return st
@@ -861,7 +864,51 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 			}
 		}
 	}
+	s.loadReserved(ctx, links, ids, st)
 	return st
+}
+
+// loadReserved marque les cadeaux réservés : une réservation compte si l'idée
+// est toujours dans le dossier réservé et qu'il est encore en liste de cadeaux.
+func (s *Service) loadReserved(ctx context.Context, links []*Link, ids []string, st *Stats) {
+	cur, err := s.col.Database().Collection("gift_reservations").Find(ctx, bson.M{"link_id": bson.M{"$in": ids}},
+		options.Find().SetProjection(bson.M{"link_id": 1, "folder_id": 1}))
+	if err != nil {
+		return
+	}
+	var rows []struct {
+		LinkID   string `bson:"link_id"`
+		FolderID string `bson:"folder_id"`
+	}
+	if cur.All(ctx, &rows) != nil || len(rows) == 0 {
+		return
+	}
+	folderOf := make(map[string]string, len(links))
+	for _, l := range links {
+		folderOf[l.ID.Hex()] = l.FolderID
+	}
+	fids := bson.A{}
+	for _, r := range rows {
+		if fid, err := bson.ObjectIDFromHex(r.FolderID); err == nil {
+			fids = append(fids, fid)
+		}
+	}
+	lists := map[string]bool{}
+	if cur, err := s.folderCol.Find(ctx, bson.M{"_id": bson.M{"$in": fids}, "gift_reservations": true}, options.Find().SetProjection(bson.M{"_id": 1})); err == nil {
+		var fs []struct {
+			ID bson.ObjectID `bson:"_id"`
+		}
+		if cur.All(ctx, &fs) == nil {
+			for _, f := range fs {
+				lists[f.ID.Hex()] = true
+			}
+		}
+	}
+	for _, r := range rows {
+		if folderOf[r.LinkID] == r.FolderID && lists[r.FolderID] {
+			st.Reserved[r.LinkID] = true
+		}
+	}
 }
 
 // ListPublished retourne les idées publiées par leur auteur, les plus

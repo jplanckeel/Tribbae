@@ -21,20 +21,23 @@ type Style struct {
 	ViewMode     string   `bson:"view_mode,omitempty"`
 	Sort         string   `bson:"sort,omitempty"`
 	Pinned       bool     `bson:"pinned,omitempty"`
+	// GiftReservations : liste de cadeaux, réservable depuis le lien de partage
+	GiftReservations bool `bson:"gift_reservations,omitempty"`
 }
 
 // StylePatch : champs de Style à modifier (nil = inchangé), pour qu'un client
 // qui ne connaît pas encore la personnalisation ne l'efface pas.
 type StylePatch struct {
-	Description  *string
-	Cover        *string
-	Illustration *string
-	KeyDate      *int64
-	KeyDateType  *string
-	ChildIDs     *[]string
-	ViewMode     *string
-	Sort         *string
-	Pinned       *bool
+	Description      *string
+	Cover            *string
+	Illustration     *string
+	KeyDate          *int64
+	KeyDateType      *string
+	ChildIDs         *[]string
+	ViewMode         *string
+	Sort             *string
+	Pinned           *bool
+	GiftReservations *bool
 }
 
 var (
@@ -65,6 +68,9 @@ func (p StylePatch) apply(st Style) Style {
 	}
 	if p.Pinned != nil {
 		st.Pinned = *p.Pinned
+	}
+	if p.GiftReservations != nil {
+		st.GiftReservations = *p.GiftReservations
 	}
 	return st
 }

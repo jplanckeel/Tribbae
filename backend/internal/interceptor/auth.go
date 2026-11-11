@@ -33,8 +33,11 @@ var publicMethods = map[string]bool{
 	"/tribbae.v1.AuthService/RequestPasswordReset": true,
 	"/tribbae.v1.AuthService/ResetPassword":        true,
 	// Lien de confirmation de l'adresse, parfois ouvert sur un autre appareil
-	"/tribbae.v1.AuthService/VerifyEmail":            true,
-	"/tribbae.v1.FolderService/GetSharedFolder":      true,
+	"/tribbae.v1.AuthService/VerifyEmail":       true,
+	"/tribbae.v1.FolderService/GetSharedFolder": true,
+	// Liste de cadeaux : on réserve et on annule depuis le lien de partage, sans compte
+	"/tribbae.v1.FolderService/ReserveSharedGift":    true,
+	"/tribbae.v1.FolderService/CancelSharedGift":     true,
 	"/tribbae.v1.FolderService/ListCommunityFolders": true,
 	"/tribbae.v1.FolderService/ListTopFolders":       true,
 	"/tribbae.v1.LinkService/ListCommunityLinks":     true,

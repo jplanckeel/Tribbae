@@ -268,6 +268,11 @@ func main() {
 	handler = withOAuth(oauthH, handler)
 	handler = withMCP(mcpH, handler)
 	handler = httpx.Limit(oauthLimiter, map[string]bool{oauth.PathAuthorize: true, oauth.PathToken: true, oauth.PathRevoke: true, oauth.PathConsentInfo: true}, handler)
+	// Liste de cadeaux : réserver / annuler sans compte, 30 par minute et par IP
+	giftLimiter := httpx.NewRateLimiter(30, time.Minute)
+	handler = httpx.LimitMatch(giftLimiter, "gifts", func(p string) bool {
+		return strings.HasPrefix(p, "/v1/share/") && (strings.HasSuffix(p, "/reservation") || strings.HasSuffix(p, "/reservation/cancel"))
+	}, handler)
 	handler = httpx.Limit(costlyLimiter, map[string]bool{"/v1/ai/generate": true, "/v1/links/preview": true, "/v1/tribe/members": true, "/v1/circle/invitations": true}, handler)
 	handler = httpx.Limit(authLimiter, map[string]bool{"/v1/auth/login": true, "/v1/auth/register": true, "/v1/auth/refresh": true, "/v1/auth/password/forgot": true, "/v1/auth/password/reset": true, "/v1/auth/email/verify": true, "/v1/auth/email/resend": true, account.DeletePath: true, oauth.PathRegister: true, oauth.PathConsent: true}, handler)
 	handler = httpx.MaxBody(1<<20, handler)

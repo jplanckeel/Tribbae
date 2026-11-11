@@ -58,6 +58,9 @@ message Folder {
   string view_mode = 25;          // grid | list | mosaic
   string sort = 26;               // recent | date | category
   bool pinned = 27;               // épinglé en haut de « Mes idées »
+  // Liste de cadeaux : les visiteurs du lien de partage peuvent dire « Je l'offre »
+  // sur ses idées Cadeau, sans dire qui ils sont
+  bool gift_reservations = 28;
 }
 
 message CreateFolderRequest {
@@ -116,6 +119,7 @@ message UpdateFolderRequest {
   optional string view_mode = 15;
   optional string sort = 16;
   optional bool pinned = 17;
+  optional bool gift_reservations = 18;
 }
 
 message UpdateFolderResponse {
@@ -151,6 +155,32 @@ message GetSharedFolderResponse {
   Folder folder = 1;
   repeated Link links = 2;
 }
+
+// --- Liste de cadeaux : réservations anonymes depuis le lien de partage ---
+
+message ReserveSharedGiftRequest {
+  string share_token = 1;
+  string link_id = 2;
+}
+
+message ReserveSharedGiftResponse {
+  // Secret gardé par le navigateur qui a réservé : lui seul peut annuler
+  string cancel_token = 1;
+}
+
+message CancelSharedGiftRequest {
+  string share_token = 1;
+  string link_id = 2;
+  string cancel_token = 3;
+}
+
+message CancelSharedGiftResponse {}
+
+message ResetGiftReservationsRequest {
+  string folder_id = 1;
+}
+
+message ResetGiftReservationsResponse {}
 
 // --- Collaborateurs ---
 
@@ -313,6 +343,23 @@ service FolderService {
   rpc GetSharedFolder(GetSharedFolderRequest) returns (GetSharedFolderResponse) {
     option (google.api.http) = {
       get: "/v1/share/{share_token}"
+    };
+  }
+  rpc ReserveSharedGift(ReserveSharedGiftRequest) returns (ReserveSharedGiftResponse) {
+    option (google.api.http) = {
+      post: "/v1/share/{share_token}/links/{link_id}/reservation"
+      body: "*"
+    };
+  }
+  rpc CancelSharedGift(CancelSharedGiftRequest) returns (CancelSharedGiftResponse) {
+    option (google.api.http) = {
+      post: "/v1/share/{share_token}/links/{link_id}/reservation/cancel"
+      body: "*"
+    };
+  }
+  rpc ResetGiftReservations(ResetGiftReservationsRequest) returns (ResetGiftReservationsResponse) {
+    option (google.api.http) = {
+      delete: "/v1/folders/{folder_id}/reservations"
     };
   }
   rpc AddCollaborator(AddCollaboratorRequest) returns (AddCollaboratorResponse) {
