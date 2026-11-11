@@ -63,7 +63,17 @@ val appVersionCode = appVersion.split(".").map { it.toInt() }.let { (major, mino
     major * 10000 + minor * 100 + patch
 }
 
+// FAQ : une seule source, celle du site (frontend/public/faq.json), copiée dans
+// les assets de l'app à chaque build (voir data/Faq.kt)
+val faqAssets = layout.buildDirectory.dir("generated/faq")
+val syncFaq = tasks.register<Sync>("syncFaq") {
+    from(rootProject.file("frontend/public/faq.json"))
+    into(faqAssets)
+}
+tasks.named("preBuild") { dependsOn(syncFaq) }
+
 android {
+    sourceSets["main"].assets.srcDir(faqAssets.get().asFile)
     // Paquet du code Kotlin (R, BuildConfig) ; l'identifiant sur le Play Store est applicationId
     namespace = "com.linkkeeper.app"
     // 37 : exigé par androidx.appfunctions (targetSdk reste à 36)
