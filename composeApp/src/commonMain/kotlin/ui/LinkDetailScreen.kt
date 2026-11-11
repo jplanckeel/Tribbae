@@ -408,11 +408,11 @@ fun LinkDetailScreen(
                     MenuRow(Icons.Outlined.Edit, "Modifier") { showMenu = false; onEdit() }
                     // Seul l'auteur décide de publier son idée (pas un autre membre de la tribu)
                     val canPublish = viewModel?.emailVerified?.collectAsState()?.value ?: true
-                    if ((link.ownerId.isBlank() || link.ownerId == myId) && !canPublish && link.visibility != "public") {
+                    if (link.hidden) {
+                        // Retirée par la modération : plus de publication
+                    } else if ((link.ownerId.isBlank() || link.ownerId == myId) && !canPublish && link.visibility != "public") {
                         // Publier attend la confirmation de l'adresse
                         PublishLockedNote(Modifier.padding(horizontal = 4.dp, vertical = 8.dp))
-                    } else if (link.hidden) {
-                        // Retirée par la modération : plus de publication
                     } else if (link.ownerId.isBlank() || link.ownerId == myId) {
                         MenuRow(
                             if (link.visibility == "public") Icons.Outlined.Lock else Icons.Outlined.Public,

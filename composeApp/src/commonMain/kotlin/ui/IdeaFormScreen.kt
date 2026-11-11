@@ -169,6 +169,7 @@ fun IdeaFormScreen(
         // Le serveur refuse de déplacer l'idée d'un autre vers un dossier public
         if (inMyPublicFolder && existing?.folderId != folderId) {
             if (authorIsOther) { error = "Seul son auteur peut ranger cette idée dans un dossier public."; return }
+            if (existing?.hidden == true) { error = "Cette idée a été retirée par la modération : elle ne peut plus être publiée."; return }
             if (!confirmed && !isPublic) { confirmMove = true; return }
         }
         val ing = if (category == LinkCategory.RECETTE) ingredients.lines().map { it.trim() }.filter { it.isNotEmpty() } else existing?.ingredients ?: emptyList()
