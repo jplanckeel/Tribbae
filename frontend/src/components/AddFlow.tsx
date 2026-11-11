@@ -688,7 +688,7 @@ function Done({ link, folder, onReminder }: { link: Link; folder?: Folder; onRem
           className={`add-later flex items-center gap-3 rounded-2xl border-2 px-3.5 py-3 text-left transition-colors ${link.reminderEnabled ? "border-terracotta bg-blush" : "border-transparent bg-card"}`}
         >
           <Icon name="bell" size={20} className={`text-terracotta ${link.reminderEnabled ? "add-pop" : ""}`} />
-          <span className="flex-1 text-sm font-bold">{link.reminderEnabled ? `Rappel la veille, le ${formatShortDate(at - 86_400_000).toLowerCase()}, c'est noté` : "Me le rappeler la veille"}</span>
+          <span className="flex-1 text-sm font-bold">{link.reminderEnabled ? `Rappel la veille, le ${formatShortDate(at - 86_400_000).toLowerCase()}, c'est noté` : "Me le rappeler la veille (app Android)"}</span>
         </button>
       )}
     </div>

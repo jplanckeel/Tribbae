@@ -2,6 +2,7 @@ package comment
 
 import (
 	"context"
+	"errors"
 	"log"
 	"strings"
 	"unicode/utf8"
@@ -151,16 +152,15 @@ func (h *Handler) DeleteComment(ctx context.Context, req *pb.DeleteCommentReques
 
 	// Delete comment
 	if err := h.svc.DeleteComment(ctx, req.CommentId, userID); err != nil {
-		log.Printf("ERROR: Failed to delete comment: %v", err)
-		if err.Error() == "invalid comment id" {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid comment id")
+		switch {
+		case errors.Is(err, ErrInvalidID):
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		case errors.Is(err, ErrNotFound):
+			return nil, status.Error(codes.NotFound, err.Error())
+		case errors.Is(err, ErrNotAllowed):
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
-		if err.Error() == "comment not found" {
-			return nil, status.Errorf(codes.NotFound, "comment not found")
-		}
-		if err.Error() == "not authorized to delete this comment" {
-			return nil, status.Errorf(codes.PermissionDenied, "not authorized to delete this comment")
-		}
+		log.Printf("comment: delete: %v", err)
 		return nil, status.Errorf(codes.Internal, "failed to delete comment")
 	}
 

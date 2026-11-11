@@ -513,8 +513,11 @@ func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 		return ErrForbidden
 	}
 
-	if _, err := s.linkLikeCol.DeleteMany(ctx, bson.M{"link_id": linkID}); err != nil {
-		return err
+	// Ses « j'aime » et ses commentaires partent avec elle (pas d'orphelins en base)
+	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments")} {
+		if _, err := c.DeleteMany(ctx, bson.M{"link_id": linkID}); err != nil {
+			return err
+		}
 	}
 	_, err = s.col.DeleteOne(ctx, bson.M{"_id": id})
 	return err

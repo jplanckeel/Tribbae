@@ -37,6 +37,7 @@ type Service struct {
 	col     *mongo.Collection
 	linkCol *mongo.Collection
 	userCol *mongo.Collection
+	peers   func(ctx context.Context, userID string) []string
 }
 
 // NewService creates a new comment service
@@ -108,53 +109,65 @@ func (s *Service) GetComments(ctx context.Context, linkID string) ([]CommentWith
 	return s.withUsers(ctx, comments), nil
 }
 
-// DeleteComment deletes a comment
-// Authorization: comment author or link owner can delete
+// Erreurs de DeleteComment (typées : le handler les traduit en codes gRPC).
+var (
+	ErrInvalidID  = errors.New("invalid comment id")
+	ErrNotFound   = errors.New("comment not found")
+	ErrNotAllowed = errors.New("not authorized to delete this comment")
+)
+
+// SetTribePeers branche la tribu : peers(userID) retourne les comptes dont
+// userID gère le contenu comme le sien (lui compris).
+func (s *Service) SetTribePeers(peers func(ctx context.Context, userID string) []string) {
+	s.peers = peers
+}
+
+// DeleteComment supprime un commentaire. Règle unique, la même sur les deux
+// clients : son auteur, ou l'auteur de l'idée et sa tribu (qui gèrent ses
+// idées comme les leurs).
 func (s *Service) DeleteComment(ctx context.Context, commentID, userID string) error {
-	// Get the comment
 	commentOID, err := bson.ObjectIDFromHex(commentID)
 	if err != nil {
-		return errors.New("invalid comment id")
+		return ErrInvalidID
 	}
-
 	var comment Comment
-	err = s.col.FindOne(ctx, bson.M{"_id": commentOID}).Decode(&comment)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return errors.New("comment not found")
+	if err := s.col.FindOne(ctx, bson.M{"_id": commentOID}).Decode(&comment); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return ErrNotFound
 		}
 		return err
 	}
-
-	// Check if user is the comment author
-	if comment.UserID == userID {
-		// Author can delete their own comment
-		_, err := s.col.DeleteOne(ctx, bson.M{"_id": commentOID})
-		return err
+	if comment.UserID != userID && !s.managesIdea(ctx, comment.LinkID, userID) {
+		return ErrNotAllowed
 	}
+	_, err = s.col.DeleteOne(ctx, bson.M{"_id": commentOID})
+	return err
+}
 
-	// Check if user is the link owner
-	linkOID, err := bson.ObjectIDFromHex(comment.LinkID)
+// managesIdea : userID est l'auteur de l'idée ou de sa tribu.
+func (s *Service) managesIdea(ctx context.Context, linkID, userID string) bool {
+	linkOID, err := bson.ObjectIDFromHex(linkID)
 	if err != nil {
-		return errors.New("invalid link id")
+		return false
 	}
-
 	var link struct {
 		OwnerID string `bson:"owner_id"`
 	}
-	err = s.linkCol.FindOne(ctx, bson.M{"_id": linkOID}).Decode(&link)
-	if err != nil {
-		return errors.New("link not found")
+	if err := s.linkCol.FindOne(ctx, bson.M{"_id": linkOID}).Decode(&link); err != nil {
+		return false
 	}
-
 	if link.OwnerID == userID {
-		// Link owner can delete any comment on their link
-		_, err := s.col.DeleteOne(ctx, bson.M{"_id": commentOID})
-		return err
+		return true
 	}
-
-	// User is neither author nor link owner
-	return errors.New("not authorized to delete this comment")
+	if s.peers == nil {
+		return false
+	}
+	for _, p := range s.peers(ctx, userID) {
+		if p == link.OwnerID {
+			return true
+		}
+	}
+	return false
 }
 
 // GetCommentCount compte les commentaires affichés d'une idée : sans ceux des

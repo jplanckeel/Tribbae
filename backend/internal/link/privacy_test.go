@@ -211,3 +211,27 @@ func TestHiddenIdeaStaysUnpublished(t *testing.T) {
 		t.Errorf("republishing a removed idea: %v", err)
 	}
 }
+
+// Supprimer une idée efface aussi ses commentaires.
+func TestDeletingAnIdeaDeletesItsComments(t *testing.T) {
+	_, db, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc := NewService(db.Collection("links"), db.Collection("folders"))
+	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Idée", Category: "LINK_CATEGORY_IDEE"})
+	other, _ := svc.Create(ctx, "alice", &Link{Title: "Autre", Category: "LINK_CATEGORY_IDEE"})
+	for _, l := range []*Link{idea, other} {
+		if _, err := db.Collection("comments").InsertOne(ctx, bson.M{"link_id": l.ID.Hex(), "user_id": "bob", "text": "Super"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := svc.Delete(ctx, idea.ID.Hex(), "alice"); err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := db.Collection("comments").CountDocuments(ctx, bson.M{"link_id": idea.ID.Hex()}); n != 0 {
+		t.Errorf("%d comments left on the deleted idea", n)
+	}
+	if n, _ := db.Collection("comments").CountDocuments(ctx, bson.M{"link_id": other.ID.Hex()}); n != 1 {
+		t.Error("comments of other ideas must stay")
+	}
+}

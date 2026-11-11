@@ -105,3 +105,7 @@ jobs:
       
       - name: Build debug APK
         run: ./gradlew assembleDebug
+
+      # Tests unitaires (dont la parité avec le web) et lint Android
+      - name: Test and lint
+        run: ./gradlew check
