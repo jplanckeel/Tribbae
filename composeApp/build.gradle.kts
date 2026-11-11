@@ -1,3 +1,4 @@
+import com.android.build.api.variant.HostTestBuilder
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -145,3 +146,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
+
+// L'aperçu Compose de l'IDE (AGP 9.5+) prépare les ressources de chaque variante
+// à travers ses tests unitaires : sans tests unitaires sur release, la synchro
+// Gradle échoue dès qu'on choisit la variante release.
+androidComponents {
+    beforeVariants { variant ->
+        variant.hostTests[HostTestBuilder.UNIT_TEST_TYPE]?.enable = true
+    }
+}
+
