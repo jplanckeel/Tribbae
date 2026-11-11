@@ -54,4 +54,9 @@ class AudienceTest {
     fun unknownFolderFollowsTheServer() {
         assertEquals(Audience.PUBLIC, Audience.ofIdea(link(ownerId = "tata").copy(publicViaFolder = true), null, isPeer))
     }
+
+    @Test
+    fun removedIdeaIsNoLongerExposedByItsPublicFolder() {
+        assertEquals(Audience.PRIVATE, Audience.ofIdea(link().copy(hidden = true), folder("VISIBILITY_PUBLIC"), isPeer))
+    }
 }

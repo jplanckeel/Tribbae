@@ -44,7 +44,7 @@ export default function AdminReports() {
 
   const groups = groupReports(reports.data ?? []);
   return (
-    <section className="flex flex-col gap-3" aria-labelledby="reports-title">
+    <section className="flex flex-col gap-3" aria-label="Signalements">
       <SectionTitle title="Signalements" />
       <div className="flex gap-2">
         <Chip active={!closed} onClick={() => setClosed(false)}>À traiter</Chip>

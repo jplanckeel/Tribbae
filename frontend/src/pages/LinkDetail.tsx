@@ -255,6 +255,12 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             <span className="flex items-center gap-1 text-xs text-sec"><Icon name="sparkles" size={14} />{createdViaLabel(link.createdVia)}</span>
           )}
         </div>
+        {link.hidden && (
+          <p role="note" className="flex items-start gap-2 rounded-medium bg-card px-4 py-3 text-sm text-sec">
+            <Icon name="flag" size={16} className="mt-0.5 shrink-0" />
+            Idée retirée par la modération : elle reste dans vos idées et celles de votre tribu, mais ne peut plus être publiée.
+          </p>
+        )}
 
         <h1 className="self-start font-display text-[28px] leading-[1.1] font-extrabold tracking-[-0.6px] md:text-[36px]" style={morph.titleStyle}>{link.title}</h1>
 
@@ -524,7 +530,7 @@ function Comments({ linkId, list, loading, onChange, canModerate, onRequireAuth,
                       </button>
                     )}
                     {session && !mine && (
-                      <button type="button" onClick={() => onReport(c.id)} aria-label="Signaler le commentaire" className={`${canModerate ? "" : "ml-auto"} text-muted hover:text-sortie-ink`}>
+                      <button type="button" onClick={() => onReport(c.id)} aria-label="Signaler le commentaire" className={`${canModerate ? "" : "ml-auto"} -m-2 grid size-8 place-items-center rounded-full text-muted hover:text-sortie-ink`}>
                         <Icon name="flag" size={15} />
                       </button>
                     )}

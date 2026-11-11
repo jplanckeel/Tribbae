@@ -119,8 +119,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         return try {
             client.report(targetType, targetId, reason, details); null
         } catch (e: Exception) {
-            if (e.message.orEmpty().contains("(429)")) "Trop de signalements aujourd'hui. Réessayez demain."
-            else "Le signalement n'a pas pu partir. Vérifiez votre connexion."
+            data.Moderation.reportError(e.message.orEmpty())
         }
     }
 
@@ -135,7 +134,9 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     suspend fun unblockUser(userId: String): Boolean {
         val client = authenticatedClient ?: return false
-        return runCatching { client.unblockUser(userId) }.isSuccess.also { if (it) loadCommunityLinks() }
+        return runCatching { client.unblockUser(userId) }
+            .onFailure { _actionErrors.tryEmit("Le déblocage n'a pas pu être enregistré. Vérifiez votre connexion.") }
+            .isSuccess.also { if (it) loadCommunityLinks() }
     }
 
     suspend fun blockedUsers(): List<data.ApiBlockedUser>? = authenticatedClient?.let { runCatching { it.blockedUsers() }.getOrNull() }
@@ -1004,7 +1005,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             ownerIsAdmin = apiLink.ownerIsAdmin,
             visibility = apiLink.visibility.ifBlank { "private" },
             createdVia = apiLink.createdVia,
-            publicViaFolder = apiLink.publicViaFolder
+            publicViaFolder = apiLink.publicViaFolder,
+            hidden = apiLink.hidden
         )
     }
 

@@ -186,6 +186,19 @@ fun LinkDetailScreen(
 
                 Text(link.title, style = display(28.sp))
 
+                if (link.hidden) {
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CardColor).padding(horizontal = 14.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Outlined.Flag, null, tint = TextSec, modifier = Modifier.size(16.dp).padding(top = 1.dp))
+                        Text(
+                            "Idée retirée par la modération : elle reste dans vos idées et celles de votre tribu, mais ne peut plus être publiée.",
+                            fontSize = 13.sp, color = TextSec
+                        )
+                    }
+                }
+
                 if (readOnly && isFollowing != null && link.ownerId.isNotEmpty()) {
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CardColor).padding(10.dp),
@@ -398,6 +411,8 @@ fun LinkDetailScreen(
                     if ((link.ownerId.isBlank() || link.ownerId == myId) && !canPublish && link.visibility != "public") {
                         // Publier attend la confirmation de l'adresse
                         PublishLockedNote(Modifier.padding(horizontal = 4.dp, vertical = 8.dp))
+                    } else if (link.hidden) {
+                        // Retirée par la modération : plus de publication
                     } else if (link.ownerId.isBlank() || link.ownerId == myId) {
                         MenuRow(
                             if (link.visibility == "public") Icons.Outlined.Lock else Icons.Outlined.Public,
@@ -557,10 +572,11 @@ private fun CommentBubble(c: Comment, index: Int, canDelete: Boolean, onReport: 
                     )
                 }
                 if (onReport != null) {
-                    Icon(
-                        Icons.Outlined.Flag, "Signaler le commentaire", tint = TextMuted,
-                        modifier = Modifier.size(18.dp).clip(CircleShape).clickable(onClick = onReport)
-                    )
+                    // Cible tactile de 48 dp autour d'une petite icône
+                    Box(
+                        Modifier.minimumInteractiveComponentSize().clip(CircleShape).clickable(onClick = onReport),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Outlined.Flag, "Signaler le commentaire", tint = TextMuted, modifier = Modifier.size(18.dp)) }
                 }
             }
             Text(c.text, fontSize = 14.sp, lineHeight = 20.sp, color = Ecorce2)

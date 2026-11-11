@@ -364,6 +364,14 @@ fun IdeaFormScreen(
                         fontSize = 12.sp, color = TextSec
                     )
                 }
+            } else if (existing?.hidden == true) {
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Outlined.Flag, null, tint = TextSec, modifier = Modifier.size(15.dp).padding(top = 1.dp))
+                    Text("Idée retirée par la modération : elle ne peut plus être publiée.", fontSize = 12.sp, color = TextSec)
+                }
             } else {
                 Row(
                     Modifier.fillMaxWidth().card(RoundedCornerShape(18.dp), 4.dp).padding(horizontal = 16.dp, vertical = 14.dp),

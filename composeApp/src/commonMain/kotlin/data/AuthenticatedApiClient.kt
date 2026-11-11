@@ -134,7 +134,8 @@ data class ApiAuthLink(
     val ownerIsAdmin: Boolean = false,
     val visibility: String = "private",
     val createdVia: String = "",
-    val publicViaFolder: Boolean = false
+    val publicViaFolder: Boolean = false,
+    val hidden: Boolean = false
 )
 
 /** Application connectée (Claude) à laquelle le compte a donné accès. */

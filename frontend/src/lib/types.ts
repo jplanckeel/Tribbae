@@ -40,6 +40,8 @@ export interface Link {
   createdVia?: string;
   /** Visible de tous parce que son auteur l'a rangée dans son dossier public. */
   publicViaFolder?: boolean;
+  /** Retirée par la modération : seul son auteur (et sa tribu) la voit, sans pouvoir la republier. */
+  hidden?: boolean;
 }
 
 /** Champs modifiables d'une idée (création / édition). */
