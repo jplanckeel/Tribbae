@@ -22,8 +22,10 @@ export function folderAudience(folder: FolderLike, peers: ReadonlySet<string>): 
  * les idées de son propriétaire y sont visibles de tous (PublicFolderFilter). Un
  * dossier qu'on ne connaît pas (celui d'un autre compte) : le serveur a tranché.
  */
-export function ideaAudience(link: Pick<Link, "visibility" | "ownerId" | "publicViaFolder">, folder: FolderLike | undefined, peers: ReadonlySet<string>): Audience {
+export function ideaAudience(link: Pick<Link, "visibility" | "ownerId" | "publicViaFolder" | "hidden">, folder: FolderLike | undefined, peers: ReadonlySet<string>): Audience {
   if (link.visibility === "public") return "public";
+  // Retirée par la modération : plus exposée par son dossier public
+  if (link.hidden) return "private";
   if (!folder) return link.publicViaFolder ? "public" : "private";
   if (folder.visibility !== "VISIBILITY_PUBLIC") return folderAudience(folder, peers);
   return link.ownerId === folder.ownerId ? "public" : "shared";

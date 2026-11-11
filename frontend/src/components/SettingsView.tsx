@@ -26,6 +26,7 @@ export default function SettingsView(p: {
   onMembers: () => void;
   onChildren: () => void;
   onFollowing: () => void;
+  onBlocked: () => void;
   onApps: () => void;
   onPassword: () => void;
   onExport: () => void;
@@ -60,7 +61,8 @@ export default function SettingsView(p: {
           <Row icon="tipi" label="Nom de la tribu" sub={`La tribu ${p.tribeName}`} onClick={p.onRename} />
           <Row icon="people" label="Membres et invitations" value={p.membersLabel} onClick={p.onMembers} />
           <Row icon="person" label="Les enfants" value={p.childrenLabel} onClick={p.onChildren} />
-          <Row icon="heart" label="Tribus suivies" value={p.followingCount === undefined ? undefined : String(p.followingCount)} onClick={p.onFollowing} last />
+          <Row icon="heart" label="Tribus suivies" value={p.followingCount === undefined ? undefined : String(p.followingCount)} onClick={p.onFollowing} />
+          <Row icon="block" label="Comptes bloqués" onClick={p.onBlocked} last />
         </Group>
 
         <Group title="Préférences" note="L'apparence est retenue sur cet appareil.">

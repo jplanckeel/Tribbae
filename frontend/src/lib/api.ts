@@ -1,8 +1,6 @@
 import { clearSession, getSession, setSession, shouldRenew } from "./session";
 import { withinLimits } from "./preview";
-import type {
-  AdminStats, AdminUser, AiIdea, Child, CircleInvitation, CircleInvitationInfo, Comment, ConnectedApp, Folder, FolderInput, Link, LinkInput, LinkPreview, OAuthConsent, Tribe, TribeInvitationInfo, UserProfile, CollaboratorRole, StatsPeriod,
-} from "./types";
+import type { AdminReport, AdminStats, AdminUser, AiIdea, BlockedUser, Child, CircleInvitation, CircleInvitationInfo, CollaboratorRole, Comment, ConnectedApp, Folder, FolderInput, Link, LinkInput, LinkPreview, OAuthConsent, StatsPeriod, Tribe, TribeInvitationInfo, UserProfile } from "./types";
 
 const BASE = "/v1";
 
@@ -19,7 +17,12 @@ function frenchMessage(status: number, message: string): string {
   if (status === 429 && /ai is busy/i.test(message)) return "L'IA prépare déjà des idées pour une autre tribu. Réessayez dans une trentaine de secondes.";
   if (status === 429) return "Trop de tentatives, réessayez dans une minute.";
   if (/idea generation failed/i.test(message)) return "L'IA n'a pas réussi à préparer d'idées. Réessayez ou reformulez votre demande.";
+  if (/too many reports/i.test(message)) return "Vous avez envoyé beaucoup de signalements aujourd'hui : réessayez demain.";
   if (status === 401 && /credentials/i.test(message)) return "Email ou mot de passe incorrect.";
+  if (/account suspended/i.test(message)) return "Ce compte a été suspendu par la modération. Pour en savoir plus, écrivez à contact@tribbae.fr.";
+  if (/idea removed by moderation/i.test(message)) return "Cette idée a été retirée par la modération : elle ne peut plus être publiée.";
+  if (/cannot report your own content/i.test(message)) return "Vous ne pouvez pas signaler votre contenu ni celui de votre tribu.";
+  if (/admin accounts cannot be suspended/i.test(message)) return "Un compte administrateur ne peut pas être suspendu.";
   if (status === 401) return "Votre session a expiré, reconnectez-vous.";
   if (status === 403) return "Vous n'avez pas les droits pour cette action.";
   if (/invalid or expired invitation/i.test(message)) return "Cette invitation n'est plus valable : elle a expiré, a été annulée ou a déjà servi.";
@@ -326,11 +329,24 @@ export const ai = {
     }).then((r) => r.ideas ?? []),
 };
 
+/** Modération : signaler un contenu, bloquer un compte. */
+export const moderation = {
+  report: (targetType: string, targetId: string, reason: string, details: string) =>
+    request<void>("/reports", { method: "POST", body: json({ targetType, targetId, reason, details }) }),
+  block: (userId: string) => request<void>("/blocks", { method: "POST", body: json({ userId }) }),
+  unblock: (userId: string) => request<void>(`/blocks/${encodeURIComponent(userId)}`, { method: "DELETE" }),
+  blocked: () => request<{ users?: BlockedUser[] }>("/blocks").then((r) => r.users ?? []),
+};
+
 export const admin = {
   listUsers: () => request<{ users?: AdminUser[] }>("/admin/users").then((r) => r.users ?? []),
   setPremium: (userId: string, isPremium: boolean) =>
     request(`/admin/users/${encodeURIComponent(userId)}/premium`, { method: "PUT", body: json({ isPremium }) }),
   stats: (period: StatsPeriod, count = 12) => request<AdminStats>(`/admin/stats?period=${period}&count=${count}`),
+  reports: (closed = false) =>
+    request<{ reports?: AdminReport[] }>(`/admin/reports${closed ? "?status=closed" : ""}`).then((r) => r.reports ?? []),
+  resolve: (reportId: string, action: "dismiss" | "remove" | "suspend") =>
+    request<void>(`/admin/reports/${encodeURIComponent(reportId)}/resolve`, { method: "POST", body: json({ action }) }),
 };
 
 /** Photos des idées : envoyées au serveur, qui les garde et renvoie leur adresse. */

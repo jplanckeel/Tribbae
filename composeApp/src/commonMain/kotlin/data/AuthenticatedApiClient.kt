@@ -134,7 +134,8 @@ data class ApiAuthLink(
     val ownerIsAdmin: Boolean = false,
     val visibility: String = "private",
     val createdVia: String = "",
-    val publicViaFolder: Boolean = false
+    val publicViaFolder: Boolean = false,
+    val hidden: Boolean = false
 )
 
 /** Application connectée (Claude) à laquelle le compte a donné accès. */
@@ -440,6 +441,29 @@ class AuthenticatedApiClient(
     /** Toutes les données du compte, en JSON (export complet). */
     suspend fun exportAccount(): String = request("/v1/account/export", "GET") { it }
 
+    // Modération : signaler un contenu, bloquer un compte
+    suspend fun report(targetType: String, targetId: String, reason: String, details: String) {
+        request("/v1/reports", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject {
+                put("targetType", kotlinx.serialization.json.JsonPrimitive(targetType))
+                put("targetId", kotlinx.serialization.json.JsonPrimitive(targetId))
+                put("reason", kotlinx.serialization.json.JsonPrimitive(reason))
+                put("details", kotlinx.serialization.json.JsonPrimitive(details))
+            })) { it }
+    }
+
+    suspend fun blockUser(userId: String) {
+        request("/v1/blocks", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
+            kotlinx.serialization.json.buildJsonObject { put("userId", kotlinx.serialization.json.JsonPrimitive(userId)) })) { it }
+    }
+
+    suspend fun unblockUser(userId: String) {
+        request("/v1/blocks/$userId", "DELETE") { it }
+    }
+
+    suspend fun blockedUsers(): List<ApiBlockedUser> =
+        request("/v1/blocks", "GET") { json.decodeFromString<ApiBlockedUsers>(it).users }
+
     /** Suppression définitive du compte ; le mot de passe est exigé. */
     suspend fun deleteAccount(password: String) {
         request("/v1/account/delete", "POST", json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(),
@@ -585,3 +609,10 @@ data class ApiChild(
     val createdAt: String = "",
     val updatedAt: String = ""
 )
+
+@Serializable
+data class ApiBlockedUser(val userId: String = "", val displayName: String = "")
+
+@Serializable
+data class ApiBlockedUsers(val users: List<ApiBlockedUser> = emptyList())
+

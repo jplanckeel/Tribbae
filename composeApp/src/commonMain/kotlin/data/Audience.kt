@@ -24,6 +24,8 @@ enum class Audience(val label: String) {
          */
         fun ofIdea(link: Link, folder: Folder?, isPeer: (String) -> Boolean): Audience = when {
             link.visibility == "public" -> PUBLIC
+            // Retirée par la modération : plus exposée par son dossier public
+            link.hidden -> PRIVATE
             folder == null -> if (link.publicViaFolder) PUBLIC else PRIVATE
             !folder.visibility.uppercase().contains("PUBLIC") -> ofFolder(folder, isPeer)
             link.ownerId == folder.ownerId || link.ownerId.isBlank() -> PUBLIC

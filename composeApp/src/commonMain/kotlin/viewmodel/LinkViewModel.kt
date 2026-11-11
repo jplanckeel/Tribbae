@@ -113,6 +113,34 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     /** Version de l'app, affichée en bas des Réglages (fournie par l'activité). */
     var appVersion: String = ""
 
+    /** Signale un contenu ; null si c'est parti, sinon le message à afficher. */
+    suspend fun report(targetType: String, targetId: String, reason: String, details: String): String? {
+        val client = authenticatedClient ?: return "Connectez-vous pour signaler un contenu."
+        return try {
+            client.report(targetType, targetId, reason, details); null
+        } catch (e: Exception) {
+            data.Moderation.reportError(e.message.orEmpty())
+        }
+    }
+
+    /** Bloque un compte : ses idées disparaissent de la communauté chargée ici. */
+    suspend fun blockUser(userId: String): Boolean {
+        val client = authenticatedClient ?: return false
+        return runCatching { client.blockUser(userId) }.onSuccess {
+            _communityLinks.value = _communityLinks.value.filterNot { it.ownerId == userId }
+            _communityFolders.value = _communityFolders.value.filterNot { it.ownerId == userId }
+        }.onFailure { _actionErrors.tryEmit("Le blocage n'a pas pu être enregistré. Vérifiez votre connexion.") }.isSuccess
+    }
+
+    suspend fun unblockUser(userId: String): Boolean {
+        val client = authenticatedClient ?: return false
+        return runCatching { client.unblockUser(userId) }
+            .onFailure { _actionErrors.tryEmit("Le déblocage n'a pas pu être enregistré. Vérifiez votre connexion.") }
+            .isSuccess.also { if (it) loadCommunityLinks() }
+    }
+
+    suspend fun blockedUsers(): List<data.ApiBlockedUser>? = authenticatedClient?.let { runCatching { it.blockedUsers() }.getOrNull() }
+
     /** Compte connecté (adresse pour les Réglages), ou null hors ligne. */
     suspend fun account(): data.AuthenticatedApiClient.ApiAccount? =
         authenticatedClient?.let { runCatching { it.getAccount() }.getOrNull() }
@@ -975,7 +1003,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             ownerIsAdmin = apiLink.ownerIsAdmin,
             visibility = apiLink.visibility.ifBlank { "private" },
             createdVia = apiLink.createdVia,
-            publicViaFolder = apiLink.publicViaFolder
+            publicViaFolder = apiLink.publicViaFolder,
+            hidden = apiLink.hidden
         )
     }
 

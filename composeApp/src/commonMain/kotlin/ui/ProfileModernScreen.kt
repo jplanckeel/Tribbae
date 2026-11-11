@@ -292,6 +292,7 @@ private fun TribeContent(
     // Adresse du compte : demandée à l'ouverture des Réglages
     var accountEmail by remember { mutableStateOf<String?>(null) }
     var showPassword by remember { mutableStateOf(false) }
+    var showBlocked by remember { mutableStateOf(false) }
     LaunchedEffect(showSettings) { if (showSettings && accountEmail == null) accountEmail = viewModel.account()?.email?.ifBlank { null } }
 
     if (showSettings) {
@@ -315,6 +316,7 @@ private fun TribeContent(
                 onMembers = { showMembers = true },
                 onChildren = { showSettings = false; tab = 0 },
                 onFollowing = { showFollowing = true },
+                onBlocked = { showBlocked = true },
                 onShopping = onOpenShopping,
                 onApps = { showApps = true },
                 onPassword = { if (accountEmail != null) showPassword = true else dataMessage = "Adresse du compte introuvable, réessayez dans un instant." },
@@ -857,6 +859,8 @@ private fun TribeContent(
             )
         }
     }
+
+    if (showBlocked) BlockedSheet(viewModel, onDismiss = { showBlocked = false })
 
     if (showPassword) {
         val email = accountEmail
@@ -1608,13 +1612,15 @@ private fun SimpleAuthDialog(
                             } catch (e: Exception) {
                                 println("ERROR: Auth failed - ${e.message}")
                                 errorMessage = when {
+                                    e.message?.contains("account suspended") == true ->
+                                        "Ce compte a été suspendu par la modération. Pour en savoir plus, écrivez à contact@tribbae.fr."
                                     e.message?.contains("401") == true || e.message?.contains("invalid credentials") == true ->
                                         "Email ou mot de passe incorrect"
                                     e.message?.contains("409") == true || e.message?.contains("already exists") == true ->
                                         "Cet email est déjà utilisé"
                                     e.message?.contains("timeout") == true || e.message?.contains("Connection") == true ->
                                         "Impossible de se connecter au serveur"
-                                    else -> "Erreur: ${e.message}"
+                                    else -> "La connexion n'a pas abouti. Réessayez dans un instant."
                                 }
                             } finally {
                                 isLoading = false

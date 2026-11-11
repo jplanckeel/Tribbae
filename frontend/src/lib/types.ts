@@ -40,6 +40,8 @@ export interface Link {
   createdVia?: string;
   /** Visible de tous parce que son auteur l'a rangée dans son dossier public. */
   publicViaFolder?: boolean;
+  /** Retirée par la modération : seul son auteur (et sa tribu) la voit, sans pouvoir la republier. */
+  hidden?: boolean;
 }
 
 /** Champs modifiables d'une idée (création / édition). */
@@ -287,3 +289,28 @@ export interface AdminStats {
   /** Totaux sur toute la fenêtre (int64 : chaînes en JSON). */
   totals?: Partial<Record<"ideas" | "publicIdeas" | "privateIdeas" | "newUsers" | "activeUsers", string | number>>;
 }
+
+/** Compte bloqué : ses idées et commentaires sont cachés. */
+export interface BlockedUser {
+  userId: string;
+  displayName: string;
+  blockedAt?: string | number;
+}
+
+/** Signalement vu par l'administration. */
+export interface AdminReport {
+  id: string;
+  targetType: "idea" | "comment" | "account";
+  targetId: string;
+  targetOwnerId?: string;
+  targetOwnerName?: string;
+  targetSummary?: string;
+  reason: string;
+  details?: string;
+  reporterName?: string;
+  status: "open" | "resolved" | "dismissed";
+  action?: string;
+  createdAt?: string | number;
+  linkId?: string;
+}
+

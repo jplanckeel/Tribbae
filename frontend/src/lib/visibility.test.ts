@@ -42,6 +42,10 @@ describe("visibilité d'une idée", () => {
     expect(ideaAudience(idea("private", "tribu"), folder({ visibility: "VISIBILITY_PUBLIC" }), peers)).toBe("shared");
   });
 
+  it("une idée retirée par la modération n'est plus exposée par son dossier public", () => {
+    expect(ideaAudience({ ...idea("private", "moi"), hidden: true }, folder({ visibility: "VISIBILITY_PUBLIC" }), peers)).toBe("private");
+  });
+
   it("suit le serveur pour un dossier inconnu", () => {
     expect(ideaAudience({ ...idea("private", "tata"), publicViaFolder: true }, undefined, peers)).toBe("public");
   });

@@ -128,6 +128,7 @@ export function ComposerProvider({ children }: { children: ReactNode }) {
           onClose={() => setLinkForm(null)}
           initial={linkForm.initial}
           editing={!!linkForm.link}
+          removed={!!linkForm.link?.hidden}
           authorName={linkForm.link && linkForm.link.ownerId !== session?.userId ? linkForm.link.ownerDisplayName ?? "" : undefined}
           onSubmit={submitLink}
         />

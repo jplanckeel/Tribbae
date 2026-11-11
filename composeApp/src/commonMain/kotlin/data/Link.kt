@@ -71,7 +71,9 @@ data class Link(
     /** Provenance : "mcp" pour une idée ajoutée par une application connectée (Claude) */
     val createdVia: String = "",
     /** Visible de tous parce que son auteur l'a rangée dans son dossier public. */
-    val publicViaFolder: Boolean = false
+    val publicViaFolder: Boolean = false,
+    /** Retirée par la modération : son auteur la garde, sans pouvoir la republier. */
+    val hidden: Boolean = false
 )
 
 @Serializable

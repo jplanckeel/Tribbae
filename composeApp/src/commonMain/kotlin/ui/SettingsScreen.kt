@@ -50,6 +50,7 @@ class SettingsActions(
     val onMembers: () -> Unit,
     val onChildren: () -> Unit,
     val onFollowing: () -> Unit,
+    val onBlocked: () -> Unit,
     val onShopping: () -> Unit,
     val onApps: () -> Unit,
     val onPassword: () -> Unit,
@@ -108,7 +109,8 @@ fun SettingsScreen(s: SettingsState, a: SettingsActions, dataMessage: String?, m
             SettingsRow(Icons.Outlined.Cottage, "Nom de la tribu", sub = "La tribu ${s.tribeName}", onClick = a.onRename)
             SettingsRow(Icons.Outlined.Group, "Membres et invitations", value = s.membersLabel, onClick = a.onMembers)
             SettingsRow(Icons.Outlined.Person, "Les enfants", value = s.childrenLabel, onClick = a.onChildren)
-            SettingsRow(Icons.Outlined.FavoriteBorder, "Tribus suivies", value = s.followingCount?.toString(), last = true, onClick = a.onFollowing)
+            SettingsRow(Icons.Outlined.FavoriteBorder, "Tribus suivies", value = s.followingCount?.toString(), onClick = a.onFollowing)
+            SettingsRow(Icons.Outlined.Block, "Comptes bloqués", last = true, onClick = a.onBlocked)
         }
 
         Group("Préférences", "L'apparence et les rappels sont retenus sur cet appareil.") {

@@ -23,6 +23,8 @@ export interface LinkFormProps {
   /** Valeurs initiales (édition ou création pré-remplie). */
   initial: LinkInput;
   editing: boolean;
+  /** Retirée par la modération : plus de publication possible */
+  removed?: boolean;
   /**
    * Nom de l'auteur quand l'idée appartient à un autre membre de la tribu :
    * on peut la modifier, mais seul son auteur décide de la publier.
@@ -60,7 +62,7 @@ const replace = <T,>(current: T | undefined, _previousAuto: T | undefined, next:
 
 const NEW_FOLDER = "__new__";
 
-export default function LinkFormSheet({ onClose, initial, editing, authorName, onSubmit }: LinkFormProps) {
+export default function LinkFormSheet({ onClose, initial, editing, removed, authorName, onSubmit }: LinkFormProps) {
   const { folders, links, peers, upsertFolder, children } = useMyData();
   const session = useSession();
   const [form, setForm] = useState<LinkInput>(initial);
@@ -471,7 +473,12 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
           </div>
         )}
 
-        {authorName === undefined ? (
+        {removed ? (
+          <p role="note" className="flex items-start gap-2 rounded-medium bg-card px-4 py-3 text-xs text-sec">
+            <Icon name="flag" size={15} className="mt-px shrink-0" />
+            Idée retirée par la modération : elle ne peut plus être publiée.
+          </p>
+        ) : authorName === undefined ? (
           <label className="flex items-center gap-3 rounded-medium bg-card px-4 py-3.5 shadow-card">
             <Icon name="globe" size={20} className="text-activite-ic" />
             <span className="flex flex-1 flex-col">
@@ -496,7 +503,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             Idée de {authorName || "un membre de la tribu"} : seul son auteur peut la publier dans la communauté.
           </p>
         )}
-        {inMyPublicFolder && authorName === undefined && form.visibility !== "public" && (
+        {inMyPublicFolder && !removed && authorName === undefined && form.visibility !== "public" && (
           <p role="note" className="-mt-2 flex items-start gap-2 px-1 text-xs text-sec">
             <Icon name="eye" size={15} className="mt-px shrink-0" />
             Le dossier « {chosenFolder.name} » est public : cette idée y sera visible par tous ses visiteurs.
