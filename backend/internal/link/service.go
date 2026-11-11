@@ -769,8 +769,9 @@ type Stats struct {
 	// Dossiers publics du lot et leur propriétaire : leurs idées à lui sont
 	// visibles de tous (même règle que PublicFolderFilter)
 	PublicFolders map[string]string
-	// Cadeaux réservés depuis le lien de partage d'une liste de cadeaux
-	Reserved map[string]bool
+	// Liste de cadeaux : statut de chaque cadeau vu par le lecteur
+	// (reserved, bought, mine, mine_bought) ; personne ne voit qui offre quoi
+	Gifts map[string]string
 }
 
 // LoadStats charge likes, "aimé par moi" et auteurs pour une liste de liens.
@@ -780,7 +781,7 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 		LikedByMe:     map[string]bool{},
 		Owners:        map[string]OwnerInfo{},
 		PublicFolders: map[string]string{},
-		Reserved:      map[string]bool{},
+		Gifts:         map[string]string{},
 	}
 	if len(links) == 0 {
 		return st
@@ -864,21 +865,24 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 			}
 		}
 	}
-	s.loadReserved(ctx, links, ids, st)
+	s.loadGifts(ctx, links, ids, userID, st)
 	return st
 }
 
-// loadReserved marque les cadeaux réservés : une réservation compte si l'idée
-// est toujours dans le dossier réservé et qu'il est encore en liste de cadeaux.
-func (s *Service) loadReserved(ctx context.Context, links []*Link, ids []string, st *Stats) {
+// loadGifts : statut des cadeaux réservés, tant que l'idée est dans le dossier
+// réservé et que le dossier reste une liste de cadeaux.
+func (s *Service) loadGifts(ctx context.Context, links []*Link, ids []string, viewerID string, st *Stats) {
 	cur, err := s.col.Database().Collection("gift_reservations").Find(ctx, bson.M{"link_id": bson.M{"$in": ids}},
-		options.Find().SetProjection(bson.M{"link_id": 1, "folder_id": 1}))
+		options.Find().SetProjection(bson.M{"link_id": 1, "folder_id": 1, "status": 1, "user_id": 1, "expires_at": 1}))
 	if err != nil {
 		return
 	}
 	var rows []struct {
-		LinkID   string `bson:"link_id"`
-		FolderID string `bson:"folder_id"`
+		LinkID    string     `bson:"link_id"`
+		FolderID  string     `bson:"folder_id"`
+		Status    string     `bson:"status"`
+		UserID    string     `bson:"user_id"`
+		ExpiresAt *time.Time `bson:"expires_at"`
 	}
 	if cur.All(ctx, &rows) != nil || len(rows) == 0 {
 		return
@@ -905,8 +909,22 @@ func (s *Service) loadReserved(ctx context.Context, links []*Link, ids []string,
 		}
 	}
 	for _, r := range rows {
-		if folderOf[r.LinkID] == r.FolderID && lists[r.FolderID] {
-			st.Reserved[r.LinkID] = true
+		if folderOf[r.LinkID] != r.FolderID || !lists[r.FolderID] {
+			continue
+		}
+		if r.Status == "pending" && r.ExpiresAt != nil && r.ExpiresAt.Before(time.Now()) {
+			continue
+		}
+		mine := viewerID != "" && r.UserID == viewerID
+		switch {
+		case r.Status == "bought" && mine:
+			st.Gifts[r.LinkID] = "mine_bought"
+		case r.Status == "bought":
+			st.Gifts[r.LinkID] = "bought"
+		case mine:
+			st.Gifts[r.LinkID] = "mine"
+		default:
+			st.Gifts[r.LinkID] = "reserved"
 		}
 	}
 }

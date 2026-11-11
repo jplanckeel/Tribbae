@@ -98,6 +98,8 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 		// Modération : ses signalements et les comptes qu'il a bloqués
 		{"reports", "reports", bson.M{"reporter_id": userID}},
 		{"blockedAccounts", "blocks", bson.M{"user_id": userID}},
+		// Cadeaux qu'il offre (avec son compte, ou sans compte avec son adresse)
+		{"giftReservations", "gift_reservations", bson.M{"$or": bson.A{bson.M{"user_id": userID}, bson.M{"email": strings.ToLower(fmt.Sprint(user["email"]))}}}},
 	}
 	// Demande de mot de passe oublié en cours : sa date seulement, pas le jeton
 	var reset bson.M
@@ -261,7 +263,7 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		{"reports", bson.M{"$or": bson.A{bson.M{"reporter_id": userID}, bson.M{"target_owner_id": userID}}}},
 		{"blocks", bson.M{"$or": bson.A{bson.M{"user_id": userID}, bson.M{"blocked_id": userID}}}},
 		// Liste de cadeaux : réservations (anonymes) faites sur ses dossiers
-		{"gift_reservations", bson.M{"owner_id": userID}},
+		{"gift_reservations", bson.M{"$or": bson.A{bson.M{"owner_id": userID}, bson.M{"user_id": userID}, bson.M{"email": strings.ToLower(user.Email)}}}},
 	}
 	for _, d := range deletes {
 		if _, err := s.col(d.col).DeleteMany(ctx, d.filter); err != nil {

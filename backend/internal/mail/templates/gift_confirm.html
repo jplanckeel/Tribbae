@@ -1,0 +1,18 @@
+{{define "preheader"}}Confirmez votre réservation : le lien est valable {{.Validity}}.{{end}}
+
+{{define "card"}}
+{{template "icon" (dict "Bg" "#FCE3D0" "Src" (print .Assets "/logo.png") "Size" 36)}}
+{{template "overline" (dict "Color" "#A04812" "Text" (print "Liste « " .List " »"))}}
+{{template "h1" (print "Vous offrez « " .Gift " »")}}
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">Bonjour {{.Name}}, confirmez votre réservation pour que les autres sachent que ce cadeau est pris. Personne ne verra votre nom, ni sur la liste ni ailleurs.</p>
+{{template "button" (dict "URL" .URL "Label" "Confirmer et voir mon cadeau")}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:20px;"><tr><td style="background:#FBEACB;border-radius:18px;padding:14px 18px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td valign="middle" width="20"><img src="{{.Assets}}/clock.png" width="20" height="20" alt="" style="display:block;border:0;"></td>
+<td valign="middle" style="padding-left:12px;font-size:15px;line-height:22px;color:#3A211B;">Sans confirmation sous <strong>{{.Validity}}</strong>, le cadeau redevient libre. Gardez cet email : le même lien sert ensuite à dire <strong>« C'est acheté »</strong> ou à <strong>libérer</strong> le cadeau.</td>
+</tr></table>
+</td></tr></table>
+{{template "fallback" .URL}}
+{{end}}
+
+{{define "footer"}}Vous recevez cet email car votre adresse a servi à réserver un cadeau sur une liste Tribbae. Ce n'est pas vous ? Ignorez ce message : la réservation sera annulée.{{end}}

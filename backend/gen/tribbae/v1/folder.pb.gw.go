@@ -390,24 +390,43 @@ func local_request_FolderService_ReserveSharedGift_0(ctx context.Context, marsha
 	return msg, metadata, err
 }
 
-func request_FolderService_CancelSharedGift_0(ctx context.Context, marshaler runtime.Marshaler, client FolderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_FolderService_ManageGift_0(ctx context.Context, marshaler runtime.Marshaler, client FolderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq CancelSharedGiftRequest
+		protoReq ManageGiftRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.ManageGift(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_FolderService_ManageGift_0(ctx context.Context, marshaler runtime.Marshaler, server FolderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ManageGiftRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.ManageGift(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_FolderService_ManageMyGift_0(ctx context.Context, marshaler runtime.Marshaler, client FolderServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq ManageMyGiftRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	val, ok := pathParams["share_token"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "share_token")
-	}
-	protoReq.ShareToken, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "share_token", err)
-	}
-	val, ok = pathParams["link_id"]
+	val, ok := pathParams["link_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "link_id")
 	}
@@ -418,28 +437,20 @@ func request_FolderService_CancelSharedGift_0(ctx context.Context, marshaler run
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
 	}
-	msg, err := client.CancelSharedGift(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ManageMyGift(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_FolderService_CancelSharedGift_0(ctx context.Context, marshaler runtime.Marshaler, server FolderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_FolderService_ManageMyGift_0(ctx context.Context, marshaler runtime.Marshaler, server FolderServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq CancelSharedGiftRequest
+		protoReq ManageMyGiftRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	val, ok := pathParams["share_token"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "share_token")
-	}
-	protoReq.ShareToken, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "share_token", err)
-	}
-	val, ok = pathParams["link_id"]
+	val, ok := pathParams["link_id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "link_id")
 	}
@@ -447,7 +458,7 @@ func local_request_FolderService_CancelSharedGift_0(ctx context.Context, marshal
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "link_id", err)
 	}
-	msg, err := server.CancelSharedGift(ctx, &protoReq)
+	msg, err := server.ManageMyGift(ctx, &protoReq)
 	return msg, metadata, err
 }
 
@@ -1071,25 +1082,45 @@ func RegisterFolderServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 		}
 		forward_FolderService_ReserveSharedGift_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_FolderService_CancelSharedGift_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_FolderService_ManageGift_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.FolderService/CancelSharedGift", runtime.WithHTTPPathPattern("/v1/share/{share_token}/links/{link_id}/reservation/cancel"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.FolderService/ManageGift", runtime.WithHTTPPathPattern("/v1/gifts/manage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_FolderService_CancelSharedGift_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_FolderService_ManageGift_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_FolderService_CancelSharedGift_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_FolderService_ManageGift_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_FolderService_ManageMyGift_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/tribbae.v1.FolderService/ManageMyGift", runtime.WithHTTPPathPattern("/v1/links/{link_id}/gift"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_FolderService_ManageMyGift_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_ManageMyGift_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodDelete, pattern_FolderService_ResetGiftReservations_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -1524,22 +1555,39 @@ func RegisterFolderServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 		}
 		forward_FolderService_ReserveSharedGift_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_FolderService_CancelSharedGift_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_FolderService_ManageGift_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.FolderService/CancelSharedGift", runtime.WithHTTPPathPattern("/v1/share/{share_token}/links/{link_id}/reservation/cancel"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.FolderService/ManageGift", runtime.WithHTTPPathPattern("/v1/gifts/manage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_FolderService_CancelSharedGift_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_FolderService_ManageGift_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_FolderService_CancelSharedGift_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_FolderService_ManageGift_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodPost, pattern_FolderService_ManageMyGift_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/tribbae.v1.FolderService/ManageMyGift", runtime.WithHTTPPathPattern("/v1/links/{link_id}/gift"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_FolderService_ManageMyGift_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_FolderService_ManageMyGift_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodDelete, pattern_FolderService_ResetGiftReservations_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -1758,7 +1806,8 @@ var (
 	pattern_FolderService_RevokeShareToken_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "share"}, ""))
 	pattern_FolderService_GetSharedFolder_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"v1", "share", "share_token"}, ""))
 	pattern_FolderService_ReserveSharedGift_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "share", "share_token", "links", "link_id", "reservation"}, ""))
-	pattern_FolderService_CancelSharedGift_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 2, 6}, []string{"v1", "share", "share_token", "links", "link_id", "reservation", "cancel"}, ""))
+	pattern_FolderService_ManageGift_0             = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "gifts", "manage"}, ""))
+	pattern_FolderService_ManageMyGift_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "links", "link_id", "gift"}, ""))
 	pattern_FolderService_ResetGiftReservations_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "reservations"}, ""))
 	pattern_FolderService_AddCollaborator_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "folders", "folder_id", "collaborators"}, ""))
 	pattern_FolderService_RemoveCollaborator_0     = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "folders", "folder_id", "collaborators", "user_id"}, ""))
@@ -1783,7 +1832,8 @@ var (
 	forward_FolderService_RevokeShareToken_0       = runtime.ForwardResponseMessage
 	forward_FolderService_GetSharedFolder_0        = runtime.ForwardResponseMessage
 	forward_FolderService_ReserveSharedGift_0      = runtime.ForwardResponseMessage
-	forward_FolderService_CancelSharedGift_0       = runtime.ForwardResponseMessage
+	forward_FolderService_ManageGift_0             = runtime.ForwardResponseMessage
+	forward_FolderService_ManageMyGift_0           = runtime.ForwardResponseMessage
 	forward_FolderService_ResetGiftReservations_0  = runtime.ForwardResponseMessage
 	forward_FolderService_AddCollaborator_0        = runtime.ForwardResponseMessage
 	forward_FolderService_RemoveCollaborator_0     = runtime.ForwardResponseMessage

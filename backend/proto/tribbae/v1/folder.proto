@@ -156,25 +156,50 @@ message GetSharedFolderResponse {
   repeated Link links = 2;
 }
 
-// --- Liste de cadeaux : réservations anonymes depuis le lien de partage ---
+// --- Liste de cadeaux (« Offrir une idée ») : personne ne voit qui offre quoi ---
 
 message ReserveSharedGiftRequest {
   string share_token = 1;
   string link_id = 2;
+  // Sans compte : prénom (emails seulement) et email où confirmer
+  string name = 3;
+  string email = 4;
 }
 
 message ReserveSharedGiftResponse {
-  // Secret gardé par le navigateur qui a réservé : lui seul peut annuler
-  string cancel_token = 1;
+  // "pending" (sans compte : confirmer par email) ou "reserved"
+  string status = 1;
 }
 
-message CancelSharedGiftRequest {
-  string share_token = 1;
-  string link_id = 2;
-  string cancel_token = 3;
+// Un cadeau réservé, vu par son offreur
+message GiftReservation {
+  string link_id = 1;
+  string title = 2;
+  string image_url = 3;
+  string price = 4;
+  string folder_name = 5;
+  string share_token = 6;
+  int64 key_date = 7;
+  // pending | reserved | bought ; vide une fois libéré
+  string status = 8;
 }
 
-message CancelSharedGiftResponse {}
+message ManageGiftRequest {
+  // Jeton du lien reçu par email
+  string token = 1;
+  // confirm | bought | unbought | release | view
+  string action = 2;
+}
+
+message ManageMyGiftRequest {
+  string link_id = 1;
+  // reserve | bought | unbought | release | view
+  string action = 2;
+}
+
+message GiftReservationResponse {
+  GiftReservation gift = 1;
+}
 
 message ResetGiftReservationsRequest {
   string folder_id = 1;
@@ -351,9 +376,15 @@ service FolderService {
       body: "*"
     };
   }
-  rpc CancelSharedGift(CancelSharedGiftRequest) returns (CancelSharedGiftResponse) {
+  rpc ManageGift(ManageGiftRequest) returns (GiftReservationResponse) {
     option (google.api.http) = {
-      post: "/v1/share/{share_token}/links/{link_id}/reservation/cancel"
+      post: "/v1/gifts/manage"
+      body: "*"
+    };
+  }
+  rpc ManageMyGift(ManageMyGiftRequest) returns (GiftReservationResponse) {
+    option (google.api.http) = {
+      post: "/v1/links/{link_id}/gift"
       body: "*"
     };
   }

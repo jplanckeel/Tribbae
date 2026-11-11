@@ -619,6 +619,76 @@
         ]
       }
     },
+    "/v1/gifts/manage": {
+      "post": {
+        "operationId": "FolderService_ManageGift",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GiftReservationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ManageGiftRequest"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
+    "/v1/links/{linkId}/gift": {
+      "post": {
+        "operationId": "FolderService_ManageMyGift",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GiftReservationResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/FolderServiceManageMyGiftBody"
+            }
+          }
+        ],
+        "tags": [
+          "FolderService"
+        ]
+      }
+    },
     "/v1/share/{shareToken}": {
       "get": {
         "operationId": "FolderService_GetSharedFolder",
@@ -692,50 +762,6 @@
           "FolderService"
         ]
       }
-    },
-    "/v1/share/{shareToken}/links/{linkId}/reservation/cancel": {
-      "post": {
-        "operationId": "FolderService_CancelSharedGift",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1CancelSharedGiftResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "shareToken",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "linkId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/FolderServiceCancelSharedGiftBody"
-            }
-          }
-        ],
-        "tags": [
-          "FolderService"
-        ]
-      }
     }
   },
   "definitions": {
@@ -750,22 +776,32 @@
         }
       }
     },
-    "FolderServiceCancelSharedGiftBody": {
-      "type": "object",
-      "properties": {
-        "cancelToken": {
-          "type": "string"
-        }
-      }
-    },
     "FolderServiceGenerateShareTokenBody": {
       "type": "object"
     },
     "FolderServiceLikeFolderBody": {
       "type": "object"
     },
+    "FolderServiceManageMyGiftBody": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "title": "reserve | bought | unbought | release | view"
+        }
+      }
+    },
     "FolderServiceReserveSharedGiftBody": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "Sans compte : prénom (emails seulement) et email où confirmer"
+        },
+        "email": {
+          "type": "string"
+        }
+      }
     },
     "FolderServiceUpdateFolderBody": {
       "type": "object",
@@ -888,9 +924,6 @@
           "$ref": "#/definitions/v1Folder"
         }
       }
-    },
-    "v1CancelSharedGiftResponse": {
-      "type": "object"
     },
     "v1CircleInvitation": {
       "type": "object",
@@ -1210,6 +1243,46 @@
         }
       }
     },
+    "v1GiftReservation": {
+      "type": "object",
+      "properties": {
+        "linkId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "folderName": {
+          "type": "string"
+        },
+        "shareToken": {
+          "type": "string"
+        },
+        "keyDate": {
+          "type": "string",
+          "format": "int64"
+        },
+        "status": {
+          "type": "string",
+          "title": "pending | reserved | bought ; vide une fois libéré"
+        }
+      },
+      "title": "Un cadeau réservé, vu par son offreur"
+    },
+    "v1GiftReservationResponse": {
+      "type": "object",
+      "properties": {
+        "gift": {
+          "$ref": "#/definitions/v1GiftReservation"
+        }
+      }
+    },
     "v1InviteToCircleRequest": {
       "type": "object",
       "properties": {
@@ -1344,9 +1417,9 @@
           "type": "boolean",
           "title": "Retirée par la modération : seul son auteur la voit, sans pouvoir la republier"
         },
-        "reserved": {
-          "type": "boolean",
-          "title": "Cadeau réservé par un visiteur du lien de partage (dossier en liste de\ncadeaux) ; personne ne sait par qui"
+        "giftStatus": {
+          "type": "string",
+          "description": "Liste de cadeaux : \"\" (libre), reserved, bought, ou mine / mine_bought\npour le lecteur qui l'offre. Personne ne voit qui offre quoi."
         }
       }
     },
@@ -1415,6 +1488,19 @@
         }
       }
     },
+    "v1ManageGiftRequest": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "title": "Jeton du lien reçu par email"
+        },
+        "action": {
+          "type": "string",
+          "title": "confirm | bought | unbought | release | view"
+        }
+      }
+    },
     "v1RemoveCollaboratorResponse": {
       "type": "object",
       "properties": {
@@ -1426,9 +1512,9 @@
     "v1ReserveSharedGiftResponse": {
       "type": "object",
       "properties": {
-        "cancelToken": {
+        "status": {
           "type": "string",
-          "title": "Secret gardé par le navigateur qui a réservé : lui seul peut annuler"
+          "title": "\"pending\" (sans compte : confirmer par email) ou \"reserved\""
         }
       }
     },

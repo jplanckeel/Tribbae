@@ -51,6 +51,9 @@ const (
 	tmplTribeNewOwner  = "tribe_new_owner"
 	tmplCollabAdded    = "collaborator_added"
 	tmplReport         = "report_received"
+	tmplGiftConfirm    = "gift_confirm"
+	tmplGiftTaken      = "gift_taken"
+	tmplGiftReleased   = "gift_released"
 )
 
 var (
@@ -59,7 +62,7 @@ var (
 )
 
 func init() {
-	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify, tmplCircleInvite, tmplTribeRemoved, tmplTribeNewOwner, tmplCollabAdded, tmplReport} {
+	for _, name := range []string{tmplWelcome, tmplPasswordReset, tmplPasswordChange, tmplTribeInvite, tmplAccountDeleted, tmplEmailVerify, tmplCircleInvite, tmplTribeRemoved, tmplTribeNewOwner, tmplCollabAdded, tmplReport, tmplGiftConfirm, tmplGiftTaken, tmplGiftReleased} {
 		htmlTemplates[name] = htmltemplate.Must(htmltemplate.New("").Funcs(funcs).
 			ParseFS(templateFS, "templates/layout.html", "templates/"+name+".html"))
 	}
@@ -506,4 +509,26 @@ func accountDeletedEmail(siteURL, supportEmail, name string, deletedAt time.Time
 		SupportURL:   "mailto:" + supportEmail + "?subject=" + url.PathEscape("Suppression de mon compte Tribbae"),
 	}
 	return render(tmplAccountDeleted, d.base, d)
+}
+
+// --- Liste de cadeaux ---
+
+type giftData struct {
+	base
+	Name, Gift, List, URL, Validity string
+}
+
+func giftConfirmEmail(siteURL string, g GiftConfirm) (content, error) {
+	d := giftData{base: newBase(siteURL, "Vous offrez « "+oneLine(g.Gift)+" »"), Name: oneLine(g.Name), Gift: oneLine(g.Gift), List: oneLine(g.List), URL: g.URL, Validity: frenchDuration(g.Validity)}
+	return render(tmplGiftConfirm, d.base, d)
+}
+
+func giftTakenEmail(siteURL string, g GiftTaken) (content, error) {
+	d := giftData{base: newBase(siteURL, "Une surprise se prépare pour « "+oneLine(g.List)+" »"), Name: oneLine(g.Name), List: oneLine(g.List), URL: g.URL}
+	return render(tmplGiftTaken, d.base, d)
+}
+
+func giftReleasedEmail(siteURL string, g GiftReleased) (content, error) {
+	d := giftData{base: newBase(siteURL, "Un cadeau s'est libéré : « "+oneLine(g.Gift)+" »"), Name: oneLine(g.Name), Gift: oneLine(g.Gift), List: oneLine(g.List), URL: g.URL}
+	return render(tmplGiftReleased, d.base, d)
 }

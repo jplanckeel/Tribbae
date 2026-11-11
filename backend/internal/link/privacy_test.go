@@ -248,21 +248,24 @@ func TestReservedGiftShowsInTheFolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	gift, _ := svc.Create(ctx, "alice", &Link{Title: "Lego", Category: "LINK_CATEGORY_CADEAU", FolderID: fid.Hex()})
-	if _, err := db.Collection("gift_reservations").InsertOne(ctx, bson.M{"link_id": gift.ID.Hex(), "folder_id": fid.Hex(), "owner_id": "alice"}); err != nil {
+	if _, err := db.Collection("gift_reservations").InsertOne(ctx, bson.M{"link_id": gift.ID.Hex(), "folder_id": fid.Hex(), "owner_id": "alice", "status": "reserved", "user_id": "bob"}); err != nil {
 		t.Fatal(err)
 	}
-	if !svc.LoadStats(ctx, []*Link{gift}, "alice").Reserved[gift.ID.Hex()] {
-		t.Error("reserved gift not marked")
+	if got := svc.LoadStats(ctx, []*Link{gift}, "alice").Gifts[gift.ID.Hex()]; got != "reserved" {
+		t.Errorf("creator sees %q, want reserved (never who)", got)
+	}
+	if got := svc.LoadStats(ctx, []*Link{gift}, "bob").Gifts[gift.ID.Hex()]; got != "mine" {
+		t.Errorf("giver sees %q, want mine", got)
 	}
 	moved := *gift
 	moved.FolderID = ""
-	if svc.LoadStats(ctx, []*Link{&moved}, "alice").Reserved[gift.ID.Hex()] {
+	if svc.LoadStats(ctx, []*Link{&moved}, "alice").Gifts[gift.ID.Hex()] != "" {
 		t.Error("a gift moved out of the list is no longer reserved")
 	}
 	if _, err := db.Collection("folders").UpdateByID(ctx, fid, bson.M{"$set": bson.M{"gift_reservations": false}}); err != nil {
 		t.Fatal(err)
 	}
-	if svc.LoadStats(ctx, []*Link{gift}, "alice").Reserved[gift.ID.Hex()] {
+	if svc.LoadStats(ctx, []*Link{gift}, "alice").Gifts[gift.ID.Hex()] != "" {
 		t.Error("reservations are hidden once the folder is no longer a gift list")
 	}
 }

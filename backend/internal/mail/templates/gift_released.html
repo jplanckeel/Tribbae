@@ -1,0 +1,11 @@
+{{define "preheader"}}« {{.Gift}} » est de nouveau libre sur la liste « {{.List}} ».{{end}}
+
+{{define "card"}}
+{{template "icon" (dict "Bg" "#FCE3D0" "Src" (print .Assets "/logo.png") "Size" 36)}}
+{{template "overline" (dict "Color" "#A04812" "Text" (print "Liste « " .List " »"))}}
+{{template "h1" "Un cadeau s'est libéré"}}
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">{{if .Name}}Bonjour {{.Name}}, « {{.Gift}} »{{else}}« {{.Gift}} »{{end}} n'est plus réservé : il est de nouveau libre sur la liste.</p>
+{{template "button" (dict "URL" .URL "Label" "Voir la liste")}}
+{{end}}
+
+{{define "footer"}}Vous recevez cet email car vous offrez un cadeau de cette liste sur Tribbae.{{end}}

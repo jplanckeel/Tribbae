@@ -155,6 +155,8 @@ func toStatus(op string, err error) error {
 		return status.Error(codes.NotFound, err.Error())
 	case errors.Is(err, ErrGiftTaken), errors.Is(err, ErrNotAGiftList):
 		return status.Error(codes.FailedPrecondition, err.Error())
+	case errors.Is(err, ErrGiftQuota):
+		return status.Error(codes.ResourceExhausted, err.Error())
 	default:
 		log.Printf("folder: %s: %v", op, err)
 		return status.Errorf(codes.Internal, "failed to %s", op)
@@ -276,9 +278,10 @@ func (h *Handler) GetSharedFolder(ctx context.Context, req *pb.GetSharedFolderRe
 		return nil, toStatus("get shared folder", err)
 	}
 	pbLinks := make([]*pb.Link, 0, len(rawLinks))
-	reserved := map[string]bool{}
+	gifts := map[string]string{}
 	if f.GiftReservations {
-		reserved = h.svc.ReservedGifts(ctx, f.ID.Hex())
+		viewerID, _ := interceptor.UserIDFromContext(ctx)
+		gifts = h.svc.GiftStatuses(ctx, f.ID.Hex(), viewerID)
 	}
 	for _, m := range rawLinks {
 		l := &pb.Link{
@@ -292,7 +295,7 @@ func (h *Handler) GetSharedFolder(ctx context.Context, req *pb.GetSharedFolderRe
 			AgeRange:    m.AgeRange,
 			Location:    m.Location,
 			Price:       m.Price,
-			Reserved:    reserved[m.ID.Hex()],
+			GiftStatus:  gifts[m.ID.Hex()],
 		}
 		if !m.CreatedAt.IsZero() {
 			l.CreatedAt = timestamppb.New(m.CreatedAt)
@@ -483,19 +486,43 @@ func (h *Handler) AcceptCircleInvitation(ctx context.Context, req *pb.AcceptCirc
 
 // --- Liste de cadeaux ---
 
+func giftToProto(v *GiftView) *pb.GiftReservation {
+	return &pb.GiftReservation{
+		LinkId: v.LinkID, Title: v.Title, ImageUrl: v.ImageURL, Price: v.Price,
+		FolderName: v.FolderName, ShareToken: v.ShareToken, KeyDate: v.KeyDate, Status: v.Status,
+	}
+}
+
+// ReserveSharedGift : depuis le lien de partage, avec ou sans compte.
 func (h *Handler) ReserveSharedGift(ctx context.Context, req *pb.ReserveSharedGiftRequest) (*pb.ReserveSharedGiftResponse, error) {
-	token, err := h.svc.ReserveGift(ctx, req.ShareToken, req.LinkId)
+	userID, _ := interceptor.UserIDFromContext(ctx)
+	st, err := h.svc.ReserveSharedGift(ctx, req.ShareToken, req.LinkId, userID, req.Name, req.Email)
 	if err != nil {
 		return nil, toStatus("reserve gift", err)
 	}
-	return &pb.ReserveSharedGiftResponse{CancelToken: token}, nil
+	return &pb.ReserveSharedGiftResponse{Status: st}, nil
 }
 
-func (h *Handler) CancelSharedGift(ctx context.Context, req *pb.CancelSharedGiftRequest) (*pb.CancelSharedGiftResponse, error) {
-	if err := h.svc.CancelGift(ctx, req.ShareToken, req.LinkId, req.CancelToken); err != nil {
-		return nil, toStatus("cancel gift", err)
+// ManageGift : l'offreur sans compte, avec le jeton reçu par email.
+func (h *Handler) ManageGift(ctx context.Context, req *pb.ManageGiftRequest) (*pb.GiftReservationResponse, error) {
+	v, err := h.svc.ManageGiftByToken(ctx, req.Token, req.Action)
+	if err != nil {
+		return nil, toStatus("manage gift", err)
 	}
-	return &pb.CancelSharedGiftResponse{}, nil
+	return &pb.GiftReservationResponse{Gift: giftToProto(v)}, nil
+}
+
+// ManageMyGift : l'offreur avec un compte, depuis l'app.
+func (h *Handler) ManageMyGift(ctx context.Context, req *pb.ManageMyGiftRequest) (*pb.GiftReservationResponse, error) {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "unauthenticated")
+	}
+	v, err := h.svc.ManageMyGift(ctx, req.LinkId, userID, req.Action)
+	if err != nil {
+		return nil, toStatus("manage gift", err)
+	}
+	return &pb.GiftReservationResponse{Gift: giftToProto(v)}, nil
 }
 
 func (h *Handler) ResetGiftReservations(ctx context.Context, req *pb.ResetGiftReservationsRequest) (*pb.ResetGiftReservationsResponse, error) {

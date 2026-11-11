@@ -62,6 +62,10 @@ type Service struct {
 	notify       CircleNotifier
 	markVerified func(ctx context.Context, userID string) error
 
+	// Liste de cadeaux (gifts.go)
+	giftNotify  GiftNotifier
+	giftCanView func(ctx context.Context, linkID, userID string) bool
+
 	// Emails d'ajout comme collaborateur déjà envoyés (limite d'envoi)
 	collabMu     sync.Mutex
 	collabEmails map[string][]collabEmail

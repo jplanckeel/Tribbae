@@ -3,16 +3,28 @@ package folder
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
+	tmail "github.com/tribbae/backend/internal/mail"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// Liste de cadeaux : réserver depuis le lien, anonymement ; seul le navigateur
-// qui a réservé annule ; la tribu remet à zéro.
+type giftMails struct {
+	confirm  []tmail.GiftConfirm
+	taken    []tmail.GiftTaken
+	released []tmail.GiftReleased
+}
+
+func (g *giftMails) GiftConfirm(m tmail.GiftConfirm)   { g.confirm = append(g.confirm, m) }
+func (g *giftMails) GiftTaken(m tmail.GiftTaken)       { g.taken = append(g.taken, m) }
+func (g *giftMails) GiftReleased(m tmail.GiftReleased) { g.released = append(g.released, m) }
+
+// « Offrir une idée » : réserver sans compte (prénom + email confirmé) ou avec
+// un compte, acheter, libérer ; personne ne voit qui offre quoi.
 func TestGiftReservations(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -32,94 +44,138 @@ func TestGiftReservations(t *testing.T) {
 	}
 	svc := NewService(db.Collection("folders"), db.Collection("links"), db.Collection("users"), "https://tribbae.example")
 	svc.SetTribePeers(func(_ context.Context, userID string) []string {
-		if userID == "alice" || userID == "dan" {
-			return []string{"alice", "dan"}
+		if userID == "dan" {
+			return []string{"dan", "alice"}
 		}
 		return []string{userID}
 	})
+	mails := &giftMails{}
+	svc.SetGifts(mails, func(_ context.Context, _, userID string) bool { return userID != "eve" })
+	giftMail.Lock()
+	giftMail.last = map[string]time.Time{}
+	giftMail.Unlock()
 
-	fid := bson.NewObjectID()
-	if _, err := db.Collection("folders").InsertOne(ctx, bson.M{"_id": fid, "owner_id": "alice", "name": "Noël de Léo", "visibility": "private"}); err != nil {
+	alice := bson.NewObjectID()
+	bob := bson.NewObjectID()
+	if _, err := db.Collection("users").InsertMany(ctx, []any{
+		bson.M{"_id": alice, "email": "alice@exemple.fr", "display_name": "Alice"},
+		bson.M{"_id": bob, "email": "bob@exemple.fr", "display_name": "Bob"},
+	}); err != nil {
 		t.Fatal(err)
 	}
-	token, _, err := svc.GenerateShareToken(ctx, fid.Hex(), "alice")
+	fid := bson.NewObjectID()
+	if _, err := db.Collection("folders").InsertOne(ctx, bson.M{"_id": fid, "owner_id": alice.Hex(), "name": "Les 7 ans de Léo", "visibility": "private"}); err != nil {
+		t.Fatal(err)
+	}
+	share, _, err := svc.GenerateShareToken(ctx, fid.Hex(), alice.Hex())
 	if err != nil {
 		t.Fatal(err)
 	}
 	insert := func(doc bson.M) string {
 		id := bson.NewObjectID()
-		doc["_id"] = id
-		doc["folder_id"] = fid.Hex()
+		doc["_id"], doc["folder_id"] = id, fid.Hex()
 		if _, err := db.Collection("links").InsertOne(ctx, doc); err != nil {
 			t.Fatal(err)
 		}
 		return id.Hex()
 	}
-	lego := insert(bson.M{"owner_id": "alice", "title": "Lego", "category": giftCategory})
-	book := insert(bson.M{"owner_id": "alice", "title": "Livre", "category": "LINK_CATEGORY_LIVRE"})
-	bobs := insert(bson.M{"owner_id": "bob", "title": "Privé de Bob", "category": giftCategory, "visibility": "private"})
+	kit := insert(bson.M{"owner_id": alice.Hex(), "title": "Kit d'astronomie", "category": giftCategory})
+	lego := insert(bson.M{"owner_id": alice.Hex(), "title": "Lego", "category": giftCategory})
+	book := insert(bson.M{"owner_id": alice.Hex(), "title": "Livre", "category": "LINK_CATEGORY_LIVRE"})
 
-	if _, err := svc.ReserveGift(ctx, token, lego); !errors.Is(err, ErrNotAGiftList) {
+	if _, err := svc.ReserveSharedGift(ctx, share, kit, "", "Marc", "marc@exemple.fr"); !errors.Is(err, ErrNotAGiftList) {
 		t.Fatalf("option off: %v", err)
 	}
 	if _, err := db.Collection("folders").UpdateByID(ctx, fid, bson.M{"$set": bson.M{"gift_reservations": true}}); err != nil {
 		t.Fatal(err)
 	}
-	for name, id := range map[string]string{"not a gift": book, "not shared by the link": bobs, "unknown": bson.NewObjectID().Hex()} {
-		if _, err := svc.ReserveGift(ctx, token, id); !errors.Is(err, ErrNotFound) {
-			t.Errorf("%s: %v", name, err)
+	if _, err := svc.ReserveSharedGift(ctx, share, book, "", "Marc", "marc@exemple.fr"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("not a gift: %v", err)
+	}
+	for _, bad := range [][2]string{{"", "marc@exemple.fr"}, {"Marc", "pas-un-email"}} {
+		if _, err := svc.ReserveSharedGift(ctx, share, kit, "", bad[0], bad[1]); !errors.Is(err, ErrInvalidInput) {
+			t.Errorf("%v: %v", bad, err)
 		}
 	}
-	if _, err := svc.ReserveGift(ctx, "x"+token[1:], lego); !errors.Is(err, ErrNotFound) {
-		t.Errorf("wrong share token: %v", err)
+
+	// Sans compte : en attente jusqu'au lien reçu par email
+	st, err := svc.ReserveSharedGift(ctx, share, kit, "", "Marc", "Marc@Exemple.fr")
+	if err != nil || st != GiftPending || len(mails.confirm) != 1 {
+		t.Fatalf("reserve by email: %q %v %d", st, err, len(mails.confirm))
+	}
+	link := mails.confirm[0].URL
+	if !strings.HasPrefix(link, "https://tribbae.example/offrir#") || mails.confirm[0].Email != "marc@exemple.fr" {
+		t.Fatalf("confirm email: %+v", mails.confirm[0])
+	}
+	token := strings.TrimPrefix(link, "https://tribbae.example/offrir#")
+	if _, err := svc.ReserveSharedGift(ctx, share, kit, bob.Hex(), "", ""); !errors.Is(err, ErrGiftTaken) {
+		t.Errorf("a pending reservation holds the gift: %v", err)
+	}
+	if got := svc.GiftStatuses(ctx, fid.Hex(), alice.Hex())[kit]; got != "reserved" {
+		t.Errorf("creator sees %q", got)
+	}
+	if len(mails.taken) != 0 {
+		t.Error("the creator hears only once it is confirmed")
+	}
+	v, err := svc.ManageGiftByToken(ctx, token, "confirm")
+	if err != nil || v.Status != GiftReserved || v.Title != "Kit d'astronomie" || v.FolderName != "Les 7 ans de Léo" {
+		t.Fatalf("confirm: %+v %v", v, err)
+	}
+	if len(mails.taken) != 1 || mails.taken[0].Email != "alice@exemple.fr" || strings.Contains(mails.taken[0].URL, kit) {
+		t.Errorf("creator notified without detail: %+v", mails.taken)
+	}
+	if v, _ := svc.ManageGiftByToken(ctx, token, "bought"); v.Status != GiftBought {
+		t.Errorf("bought: %+v", v)
+	}
+	if got := svc.GiftStatuses(ctx, fid.Hex(), bob.Hex())[kit]; got != "bought" {
+		t.Errorf("others see %q", got)
+	}
+	if _, err := svc.ManageGiftByToken(ctx, "x"+token[1:], "release"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("wrong token: %v", err)
 	}
 
-	secret, err := svc.ReserveGift(ctx, token, lego)
-	if err != nil || len(secret) != 32 {
-		t.Fatalf("reserve: %q %v", secret, err)
+	// Avec un compte : réservé tout de suite, depuis le lien ou l'app
+	if st, err := svc.ReserveSharedGift(ctx, share, lego, bob.Hex(), "", ""); err != nil || st != GiftReserved {
+		t.Fatalf("reserve as user: %q %v", st, err)
 	}
-	if _, err := svc.ReserveGift(ctx, token, lego); !errors.Is(err, ErrGiftTaken) {
-		t.Errorf("second reservation: %v", err)
+	if got := svc.GiftStatuses(ctx, fid.Hex(), bob.Hex())[lego]; got != "mine" {
+		t.Errorf("giver sees %q", got)
 	}
-	if !svc.ReservedGifts(ctx, fid.Hex())[lego] {
-		t.Error("the gift should show as reserved")
+	if _, err := svc.ManageMyGift(ctx, lego, "eve", "release"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("someone else's reservation: %v", err)
 	}
-	var stored bson.M
-	_ = db.Collection("gift_reservations").FindOne(ctx, bson.M{"link_id": lego}).Decode(&stored)
-	if stored["token_hash"] == secret {
-		t.Error("the cancel secret must be stored hashed")
+	if v, err := svc.ManageMyGift(ctx, lego, bob.Hex(), "release"); err != nil || v.Status != "" {
+		t.Fatalf("release: %+v %v", v, err)
 	}
-
-	if err := svc.CancelGift(ctx, token, lego, "nope"); !errors.Is(err, ErrNotFound) {
-		t.Errorf("cancel with a wrong secret: %v", err)
+	if len(mails.released) != 1 || mails.released[0].Email != "marc@exemple.fr" || mails.released[0].Gift != "Lego" {
+		t.Errorf("other givers told the gift is free: %+v", mails.released)
 	}
-	if err := svc.CancelGift(ctx, token, lego, secret); err != nil {
-		t.Fatal(err)
+	if _, err := svc.ManageMyGift(ctx, lego, "eve", "reserve"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("reserving an idea one cannot see: %v", err)
 	}
-	if svc.ReservedGifts(ctx, fid.Hex())[lego] {
-		t.Error("cancelled gift still reserved")
+	if v, err := svc.ManageMyGift(ctx, lego, bob.Hex(), "reserve"); err != nil || v.Status != GiftReserved {
+		t.Fatalf("reserve from the app: %+v %v", v, err)
 	}
 
-	if _, err := svc.ReserveGift(ctx, token, lego); err != nil {
-		t.Fatal(err)
+	// Quota : 5 réservations par email et par liste en 24 h
+	for i := 0; i < 4; i++ {
+		id := insert(bson.M{"owner_id": alice.Hex(), "title": "Cadeau", "category": giftCategory})
+		if _, err := svc.ReserveSharedGift(ctx, share, id, "", "Marc", "marc@exemple.fr"); err != nil {
+			t.Fatal(err)
+		}
 	}
+	extra := insert(bson.M{"owner_id": alice.Hex(), "title": "Encore", "category": giftCategory})
+	if _, err := svc.ReserveSharedGift(ctx, share, extra, "", "Marc", "marc@exemple.fr"); !errors.Is(err, ErrGiftQuota) {
+		t.Errorf("quota: %v", err)
+	}
+
 	if err := svc.ResetGifts(ctx, fid.Hex(), "eve"); !errors.Is(err, ErrNotFound) {
 		t.Errorf("reset by a stranger: %v", err)
 	}
-	if err := svc.ResetGifts(ctx, fid.Hex(), "dan"); err != nil {
-		t.Fatalf("reset by the tribe: %v", err)
-	}
-	if len(svc.ReservedGifts(ctx, fid.Hex())) != 0 {
-		t.Error("reset left reservations")
-	}
-
-	if _, err := svc.ReserveGift(ctx, token, lego); err != nil {
-		t.Fatal(err)
-	}
-	if err := svc.Delete(ctx, fid.Hex(), "alice"); err != nil {
+	if err := svc.ResetGifts(ctx, fid.Hex(), alice.Hex()); err != nil {
 		t.Fatal(err)
 	}
 	if n, _ := db.Collection("gift_reservations").CountDocuments(ctx, bson.M{}); n != 0 {
-		t.Errorf("%d reservations left after deleting the folder", n)
+		t.Errorf("%d reservations left after reset", n)
 	}
 }
