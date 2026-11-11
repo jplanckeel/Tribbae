@@ -230,7 +230,7 @@ function AccountMenu({ initial, name }: { initial: string; name: string }) {
             <Icon name="tribe" size={18} className="text-terracotta" />Ma tribu
           </button>
           <button type="button" role="menuitem" className={item} onClick={() => go("/tribu?ouvrir=parametres")}>
-            <Icon name="settings" size={18} className="text-sec" />Paramètres
+            <Icon name="settings" size={18} className="text-sec" />Réglages
           </button>
           <button type="button" role="menuitem" className={item} onClick={() => go("/tribu?ouvrir=applications")}>
             <Icon name="sparkles" size={18} className="text-prune" />Applications connectées

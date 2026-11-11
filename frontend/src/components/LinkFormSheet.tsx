@@ -444,7 +444,7 @@ export default function LinkFormSheet({ onClose, initial, editing, authorName, o
             {!!form.eventDate && (
               <label className="flex items-center gap-3 self-end rounded-medium bg-soleil px-3.5 py-3">
                 <Icon name="bell" size={20} />
-                <span className="flex-1 text-sm font-semibold">Me le rappeler la veille</span>
+                <span className="flex flex-1 flex-col"><span className="text-sm font-semibold">Me le rappeler la veille</span><span className="text-xs">Notification sur l'app Android de votre compte</span></span>
                 <Toggle label="Rappel la veille" checked={!!form.reminderEnabled} onChange={(v) => set("reminderEnabled", v)} />
               </label>
             )}

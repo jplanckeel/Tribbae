@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import androidx.core.content.ContextCompat
 import androidx.compose.runtime.LaunchedEffect
@@ -68,6 +69,8 @@ class MainActivity : ComponentActivity() {
         val storage = AppGraph.storage(applicationContext)
         ui.Appearance.pref = storage.loadAppearance()
         ui.Appearance.save = storage::saveAppearance
+        data.ReminderPrefs.enabled = storage.loadRemindersEnabled()
+        data.ReminderPrefs.save = storage::saveRemindersEnabled
         val repository = AppGraph.repository(applicationContext)
         // Une seule fois : à la recréation (rotation…), le partage est déjà ouvert
         if (savedInstanceState == null) incoming.value = parseIncoming(intent)
@@ -75,11 +78,13 @@ class MainActivity : ComponentActivity() {
 
         // Rappels « la veille » : recalculés à chaque changement de la liste des idées
         // (création, modification, synchronisation, nouvel identifiant après envoi)
+        // et à chaque bascule de l'interrupteur des Réglages (éteint : aucune alarme)
         lifecycleScope.launch {
-            repository.links.collectLatest { links ->
-                delay(300) // une rafale de changements (synchronisation) ne recalcule qu'une fois
-                NotificationHelper.reconcile(appContext, links)
-            }
+            repository.links.combine(androidx.compose.runtime.snapshotFlow { data.ReminderPrefs.enabled }) { links, on -> if (on) links else emptyList() }
+                .collectLatest { links ->
+                    delay(300) // une rafale de changements (synchronisation) ne recalcule qu'une fois
+                    NotificationHelper.reconcile(appContext, links)
+                }
         }
 
         setContent {
@@ -96,6 +101,7 @@ class MainActivity : ComponentActivity() {
                     // la demande d'autorisation au moment où un rappel est activé
                     it.reminderScheduler = { ensureNotificationPermission() }
                     it.reminderCanceller = { }
+                    it.appVersion = BuildConfig.VERSION_NAME
                     it.urlOpener = { url ->
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

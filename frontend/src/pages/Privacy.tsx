@@ -164,8 +164,8 @@ export default function Privacy() {
 
       <Section title="Vos droits">
         <ul className="list-disc space-y-1 pl-5">
-          <li><strong>Accès et portabilité</strong> : « Ma tribu » › Paramètres › « Télécharger mes données » (fichier JSON).</li>
-          <li><strong>Effacement</strong> : « Ma tribu » › Paramètres › « Supprimer mon compte ».</li>
+          <li><strong>Accès et portabilité</strong> : « Ma tribu » › Réglages › « Télécharger mes données » (fichier JSON).</li>
+          <li><strong>Effacement</strong> : « Ma tribu » › Réglages › « Supprimer mon compte ».</li>
           <li><strong>Rectification</strong> : modifiez vos idées, dossiers et le nom de la tribu dans l'application ; pour votre email, votre nom ou votre mot de passe, écrivez-nous.</li>
           <li><strong>Opposition, limitation</strong>, ou toute autre demande : {mail}. Nous répondons sous un mois.</li>
         </ul>

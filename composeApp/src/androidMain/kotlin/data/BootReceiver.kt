@@ -12,6 +12,8 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
-        NotificationHelper.reconcile(context, AndroidStorage(context).loadLinks())
+        val storage = AndroidStorage(context)
+        // Rappels coupés dans les Réglages : aucune alarme
+        NotificationHelper.reconcile(context, if (storage.loadRemindersEnabled()) storage.loadLinks() else emptyList())
     }
 }

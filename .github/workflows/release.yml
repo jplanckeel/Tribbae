@@ -63,18 +63,23 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        # APK pour la page de la release, AAB pour le Play Store (qui refuse l'APK d'une nouvelle app)
+        run: ./gradlew assembleRelease bundleRelease
 
       - name: Verify APK signature
         run: |
           APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
           "$APKSIGNER" verify --verbose --min-sdk-version 24 composeApp/build/outputs/apk/release/composeApp-release.apk
+          # L'AAB est signé avec la clé d'envoi (jarsigner) ; Google Play re-signe ensuite
+          jarsigner -verify -strict composeApp/build/outputs/bundle/release/composeApp-release.aab
           rm -f "$ANDROID_KEYSTORE_PATH"
 
       - name: Rename APK
         run: |
           mv composeApp/build/outputs/apk/release/composeApp-release.apk \
              "tribbae-${TAG#v}.apk"
+          mv composeApp/build/outputs/bundle/release/composeApp-release.aab \
+             "tribbae-${TAG#v}.aab"
           # Table de correspondance R8 : nécessaire pour relire les traces de
           # plantage de cette version (noms de classes et de méthodes raccourcis)
           gzip -c composeApp/build/outputs/mapping/release/mapping.txt > "tribbae-${TAG#v}-mapping.txt.gz"
@@ -87,6 +92,7 @@ jobs:
           tag_name: ${{ env.TAG }}
           files: |
             tribbae-*.apk
+            tribbae-*.aab
             tribbae-*-mapping.txt.gz
           draft: false
           prerelease: false

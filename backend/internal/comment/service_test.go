@@ -2,6 +2,7 @@ package comment
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -624,4 +625,48 @@ func TestProperty_CommentDeletionByAuthor(t *testing.T) {
 	))
 
 	properties.TestingRun(t)
+}
+
+// Règle unique : l'auteur du commentaire, ou l'auteur de l'idée et sa tribu.
+func TestDeleteCommentRule(t *testing.T) {
+	_, db, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc := NewService(db.Collection("comments"), db.Collection("links"), db.Collection("users"))
+	svc.SetTribePeers(func(_ context.Context, userID string) []string {
+		if userID == "dan" || userID == "alice" {
+			return []string{"alice", "dan"}
+		}
+		return []string{userID}
+	})
+	linkID := bson.NewObjectID()
+	if _, err := db.Collection("links").InsertOne(ctx, bson.M{"_id": linkID, "owner_id": "alice", "title": "Idée"}); err != nil {
+		t.Fatal(err)
+	}
+	newComment := func(author string) string {
+		id := bson.NewObjectID()
+		if _, err := db.Collection("comments").InsertOne(ctx, bson.M{"_id": id, "link_id": linkID.Hex(), "user_id": author, "text": "Bonjour"}); err != nil {
+			t.Fatal(err)
+		}
+		return id.Hex()
+	}
+
+	if err := svc.DeleteComment(ctx, newComment("bob"), "eve"); !errors.Is(err, ErrNotAllowed) {
+		t.Errorf("stranger: %v", err)
+	}
+	if err := svc.DeleteComment(ctx, newComment("bob"), "bob"); err != nil {
+		t.Errorf("author: %v", err)
+	}
+	if err := svc.DeleteComment(ctx, newComment("bob"), "alice"); err != nil {
+		t.Errorf("idea author: %v", err)
+	}
+	if err := svc.DeleteComment(ctx, newComment("bob"), "dan"); err != nil {
+		t.Errorf("idea author's tribe: %v", err)
+	}
+	if err := svc.DeleteComment(ctx, "pas-un-id", "bob"); !errors.Is(err, ErrInvalidID) {
+		t.Errorf("bad id: %v", err)
+	}
+	if err := svc.DeleteComment(ctx, bson.NewObjectID().Hex(), "bob"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("missing comment: %v", err)
+	}
 }

@@ -260,7 +260,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         {at && canEdit && (
           <label className="flex items-center gap-3 rounded-2xl bg-soleil px-3.5 py-3">
             <Icon name="bell" size={20} />
-            <span className="flex-1 text-sm font-semibold">Me le rappeler la veille</span>
+            <span className="flex flex-1 flex-col"><span className="text-sm font-semibold">Me le rappeler la veille</span><span className="text-xs">Notification sur l'app Android de votre compte</span></span>
             <Toggle label="Rappel la veille" checked={!!link.reminderEnabled} onChange={toggleReminder} />
           </label>
         )}
