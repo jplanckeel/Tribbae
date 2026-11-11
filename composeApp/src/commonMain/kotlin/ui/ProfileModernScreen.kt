@@ -331,8 +331,7 @@ private fun TribeContent(
             dataMessage = dataMessage,
             modifier = modifier,
         )
-    } else
-    Column(modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = ui.components.bottomNavClearance())) {
+    } else Column(modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = ui.components.bottomNavClearance())) {
         PageHeader(
             "Ma tribu",
             Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 20.dp),
