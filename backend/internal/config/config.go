@@ -47,6 +47,11 @@ type Config struct {
 	// MCPAllowedOrigins : en-têtes Origin acceptés sur /mcp en plus de SITE_URL
 	// (une requête sans Origin, de serveur à serveur, passe toujours)
 	MCPAllowedOrigins []string
+	// AndroidCertFingerprints : empreintes SHA-256 des certificats de l'app
+	// Android (clé de signature Play, clé d'importation), publiées dans
+	// /.well-known/assetlinks.json pour qu'Android ouvre les liens du site dans
+	// l'app. Vide : le fichier répond 404.
+	AndroidCertFingerprints []string
 }
 
 // insecureJWTSecret est la valeur d'exemple de .env.example : elle n'est
@@ -80,6 +85,7 @@ func Load() *Config {
 	cfg.OAuthRedirectURIs = splitList(getEnv("OAUTH_REDIRECT_URIS", "https://claude.ai/api/mcp/auth_callback,https://claude.com/api/mcp/auth_callback"))
 	cfg.MCPDailyQuota = getEnvInt("MCP_DAILY_CREATE_QUOTA", 30)
 	cfg.MCPAllowedOrigins = splitList(getEnv("MCP_ALLOWED_ORIGINS", "https://claude.ai,https://claude.com"))
+	cfg.AndroidCertFingerprints = splitList(os.Getenv("ANDROID_CERT_FINGERPRINTS"))
 	return cfg
 }
 
