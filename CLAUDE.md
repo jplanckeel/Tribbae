@@ -43,7 +43,7 @@ Frontend (from `frontend/`): `npm run build` (runs `tsc -b` then `vite build` â€
 
 QA: the `qa` agent (`.claude/agents/qa.md`) runs every suite, starts the app locally (throwaway `tribbae_qa` database, no real email, never production) and checks the main flows plus the project's edge cases (tribe/circle rights, public vs private, unverified email, offline sync, dark mode, web/Android parity, GDPR), then reports bugs without changing app code. Use it to check a PR or before a release.
 
-CI (`.github/workflows/test.yml`): `go build` + `go vet` + `go test -race` (with a MongoDB service) + `govulncheck` for backend, `npm ci && npm run lint && npm test && npm run build` for frontend, `./gradlew assembleDebug` then `./gradlew check` (unit tests, including web parity, and Android lint, whose errors fail the build) for Android. `java.time` works on minSdk 24 thanks to core library desugaring (`desugar_jdk_libs`). `release.yml` triggers on `v*` tags (APK + Docker images).
+CI (`.github/workflows/test.yml`): `go build` + `go vet` + `go test -race` (with a MongoDB service) + `govulncheck` for backend, `npm ci && npm run lint && npm test && npm run build` for frontend, `./gradlew assembleDebug` then `./gradlew check` (unit tests, including web parity, and Android lint, whose errors fail the build) for Android. `release.yml` triggers on `v*` tags (APK + Docker images).
 
 ## Git workflow
 
