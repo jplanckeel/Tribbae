@@ -22,9 +22,6 @@ class SessionManager(context: Context) {
     private val _emailVerified = MutableStateFlow(prefs.getBoolean("email_verified", false))
     val emailVerified: StateFlow<Boolean> = _emailVerified.asStateFlow()
     
-    init {
-        println("DEBUG SessionManager.init: displayName=${getDisplayName()}, userId=${getUserId()}, hasToken=${hasToken()}")
-    }
 
     fun saveSession(userId: String, token: String, displayName: String, isAdmin: Boolean = false, emailVerified: Boolean = false) {
         prefs.edit().apply {
@@ -37,14 +34,10 @@ class SessionManager(context: Context) {
         }
         _emailVerified.value = emailVerified
         
-        // Vérifier que c'est bien sauvegardé
-        val savedDisplayName = prefs.getString("display_name", null)
-        println("DEBUG SessionManager.saveSession: Vérifié dans prefs - displayName='$savedDisplayName'")
         
         _isLoggedIn.value = true
         _userId.value = userId
         _displayName.value = displayName
-        println("DEBUG SessionManager.saveSession: StateFlow mis à jour - _displayName.value='${_displayName.value}'")
     }
 
     /** Adresse confirmée (lien ouvert ici ou ailleurs, invitation acceptée…). */
