@@ -44,7 +44,6 @@ class AuthRepository(private val baseUrl: String = Backend.url) {
     suspend fun login(email: String, password: String): AuthResponse =
         withContext(Dispatchers.IO) {
             try {
-                println("DEBUG: Tentative de connexion à $baseUrl/v1/auth/login")
                 val conn = URL("$baseUrl/v1/auth/login").openConnection() as HttpURLConnection
                 conn.requestMethod = "POST"
                 conn.setRequestProperty("Content-Type", "application/json")
@@ -53,15 +52,12 @@ class AuthRepository(private val baseUrl: String = Backend.url) {
                 conn.readTimeout = 10_000
 
                 val body = json.encodeToString(LoginRequest.serializer(), LoginRequest(email, password))
-                println("DEBUG: Body envoyé: $body")
                 OutputStreamWriter(conn.outputStream).use { it.write(body) }
 
                 val responseCode = conn.responseCode
-                println("DEBUG: Code de réponse HTTP: $responseCode")
                 
                 if (responseCode == 200) {
                     val response = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
-                    println("DEBUG: Réponse reçue: $response")
                     val authResponse = json.decodeFromString<AuthResponse>(response)
                     authResponse
                 } else {
@@ -71,11 +67,9 @@ class AuthRepository(private val baseUrl: String = Backend.url) {
                     } else {
                         "HTTP $responseCode"
                     }
-                    println("DEBUG: Erreur HTTP $responseCode: $error")
                     throw Exception("Login failed (HTTP $responseCode): $error")
                 }
             } catch (e: Exception) {
-                println("DEBUG: Exception lors du login: ${e.message}")
                 e.printStackTrace()
                 throw Exception("Login error: ${e.message}", e)
             }
