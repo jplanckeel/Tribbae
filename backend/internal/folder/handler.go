@@ -17,6 +17,13 @@ import (
 type Handler struct {
 	pb.UnimplementedFolderServiceServer
 	svc *Service
+	// blocked : comptes bloqués par l'utilisateur, dont on cache les dossiers publics
+	blocked func(ctx context.Context, userID string) map[string]bool
+}
+
+// SetBlocked branche le blocage entre comptes (modération).
+func (h *Handler) SetBlocked(fn func(ctx context.Context, userID string) map[string]bool) {
+	h.blocked = fn
 }
 
 func NewHandler(svc *Service) *Handler {
@@ -318,8 +325,27 @@ func (h *Handler) ListCommunityFolders(ctx context.Context, req *pb.ListCommunit
 	if err != nil {
 		return nil, toStatus("list community folders", err)
 	}
-	pbFolders := h.many(ctx, folders)
+	pbFolders := h.many(ctx, h.withoutBlocked(ctx, folders))
 	return &pb.ListCommunityFoldersResponse{Folders: pbFolders, NextPageToken: nextToken}, nil
+}
+
+// withoutBlocked retire les dossiers des comptes bloqués par l'utilisateur.
+func (h *Handler) withoutBlocked(ctx context.Context, folders []*Folder) []*Folder {
+	userID, err := interceptor.UserIDFromContext(ctx)
+	if err != nil || h.blocked == nil {
+		return folders
+	}
+	blocked := h.blocked(ctx, userID)
+	if len(blocked) == 0 {
+		return folders
+	}
+	kept := folders[:0:0]
+	for _, f := range folders {
+		if !blocked[f.OwnerID] {
+			kept = append(kept, f)
+		}
+	}
+	return kept
 }
 
 func (h *Handler) LikeFolder(ctx context.Context, req *pb.LikeFolderRequest) (*pb.LikeFolderResponse, error) {
@@ -351,7 +377,7 @@ func (h *Handler) ListTopFolders(ctx context.Context, req *pb.ListTopFoldersRequ
 	if err != nil {
 		return nil, toStatus("list top folders", err)
 	}
-	pbFolders := h.many(ctx, folders)
+	pbFolders := h.many(ctx, h.withoutBlocked(ctx, folders))
 	return &pb.ListTopFoldersResponse{Folders: pbFolders}, nil
 }
 

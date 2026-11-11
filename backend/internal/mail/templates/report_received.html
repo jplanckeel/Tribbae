@@ -1,0 +1,11 @@
+{{define "preheader"}}Un contenu a été signalé sur Tribbae.{{end}}
+
+{{define "card"}}
+{{template "icon" (dict "Bg" "#F8DCD3" "Src" (print .Assets "/logo.png") "Size" 36)}}
+{{template "overline" (dict "Color" "#9A3420" "Text" "Modération")}}
+{{template "h1" (print "Nouveau signalement : " .Kind)}}
+<p style="margin:0;padding-top:20px;font-size:17px;line-height:26px;font-weight:500;color:#6B5047;">Motif : <strong style="color:#3A211B;">{{.Reason}}</strong>. Le détail est dans l'administration.</p>
+{{template "button" (dict "URL" .AdminURL "Label" "Voir les signalements")}}
+{{end}}
+
+{{define "footer"}}Vous recevez cet email car vous administrez Tribbae.{{end}}

@@ -16,6 +16,9 @@ var ErrNotFound = errors.New("link not found")
 // ErrForbidden est retourné quand l'utilisateur ne peut pas modifier la ressource.
 var ErrForbidden = errors.New("not authorized")
 
+// ErrHidden : idée retirée par la modération, qu'on ne peut plus republier
+var ErrHidden = errors.New("idea removed by moderation")
+
 const (
 	maxTitleLen       = 300
 	maxDescriptionLen = 5000

@@ -59,6 +59,7 @@ const (
 	TagTribeRemoved   = "tribe-member-removed"
 	TagTribeNewOwner  = "tribe-new-owner"
 	TagCollabAdded    = "collaborator-added"
+	TagReport         = "report-received"
 
 	sendTimeout = 30 * time.Second
 )
@@ -124,6 +125,21 @@ func (m *Mailer) PasswordChanged(email, name string, changedAt time.Time, device
 func (m *Mailer) AccountDeleted(email, name string) {
 	c, err := accountDeletedEmail(m.siteURL, m.supportEmail, name, m.now())
 	m.send(email, name, TagAccountDeleted, c, err)
+}
+
+// Reports : destinataire des signalements (adresse de l'administration).
+func (m *Mailer) Reports(to string) *ReportMailer { return &ReportMailer{m: m, to: to} }
+
+// ReportMailer prévient l'administration d'un signalement ; ni le contenu ni
+// les comptes ne sont dans l'email, qui renvoie vers l'administration.
+type ReportMailer struct {
+	m  *Mailer
+	to string
+}
+
+func (r *ReportMailer) ReportReceived(kind, reason string) {
+	c, err := reportEmail(r.m.siteURL, kind, reason)
+	r.m.send(r.to, "", TagReport, c, err)
 }
 
 // TribeInvitation : invitation à rejoindre une tribu. La fréquence des envois

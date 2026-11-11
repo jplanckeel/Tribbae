@@ -17,6 +17,31 @@ import (
 type Handler struct {
 	pb.UnimplementedLinkServiceServer
 	svc *Service
+	// blocked : comptes bloqués par l'utilisateur, dont on cache les idées
+	blocked func(ctx context.Context, userID string) map[string]bool
+}
+
+// SetBlocked branche le blocage entre comptes (modération).
+func (h *Handler) SetBlocked(fn func(ctx context.Context, userID string) map[string]bool) {
+	h.blocked = fn
+}
+
+// withoutBlocked retire les idées des comptes que l'utilisateur a bloqués.
+func (h *Handler) withoutBlocked(ctx context.Context, userID string, links []*Link) []*Link {
+	if h.blocked == nil || userID == "" {
+		return links
+	}
+	blocked := h.blocked(ctx, userID)
+	if len(blocked) == 0 {
+		return links
+	}
+	out := links[:0:0]
+	for _, l := range links {
+		if !blocked[l.OwnerID] {
+			out = append(out, l)
+		}
+	}
+	return out
 }
 
 func NewHandler(svc *Service) *Handler {
@@ -30,6 +55,8 @@ func toStatus(op string, err error) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, ErrNotFound):
 		return status.Error(codes.NotFound, "link not found")
+	case errors.Is(err, ErrHidden):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, ErrForbidden):
 		return status.Error(codes.PermissionDenied, "not authorized")
 	case errors.Is(err, auth.ErrEmailNotVerified):
@@ -69,7 +96,8 @@ func (h *Handler) toProto(l *Link, st *Stats) *pb.Link {
 		OwnerIsAdmin:     owner.IsAdmin,
 		Visibility:       l.Visibility,
 		CreatedVia:       l.CreatedVia,
-		PublicViaFolder:  l.FolderID != "" && st.PublicFolders[l.FolderID] == l.OwnerID,
+		PublicViaFolder:  l.FolderID != "" && st.PublicFolders[l.FolderID] == l.OwnerID && !l.Hidden,
+		Hidden:           l.Hidden,
 	}
 }
 
@@ -245,7 +273,7 @@ func (h *Handler) ListCommunityLinks(ctx context.Context, req *pb.ListCommunityL
 	if err != nil {
 		return nil, toStatus("list community links", err)
 	}
-	return &pb.ListCommunityLinksResponse{Links: h.many(ctx, links, userID)}, nil
+	return &pb.ListCommunityLinksResponse{Links: h.many(ctx, h.withoutBlocked(ctx, userID, links), userID)}, nil
 }
 
 func (h *Handler) ListNewLinks(ctx context.Context, req *pb.ListNewLinksRequest) (*pb.ListNewLinksResponse, error) {
@@ -255,5 +283,5 @@ func (h *Handler) ListNewLinks(ctx context.Context, req *pb.ListNewLinksRequest)
 	if err != nil {
 		return nil, toStatus("list new links", err)
 	}
-	return &pb.ListNewLinksResponse{Links: h.many(ctx, links, userID)}, nil
+	return &pb.ListNewLinksResponse{Links: h.many(ctx, h.withoutBlocked(ctx, userID, links), userID)}, nil
 }

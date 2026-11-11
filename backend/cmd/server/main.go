@@ -30,6 +30,7 @@ import (
 	"github.com/tribbae/backend/internal/link"
 	"github.com/tribbae/backend/internal/mail"
 	"github.com/tribbae/backend/internal/mcpserver"
+	"github.com/tribbae/backend/internal/moderation"
 	"github.com/tribbae/backend/internal/oauth"
 	"github.com/tribbae/backend/internal/photo"
 	"github.com/tribbae/backend/internal/preview"
@@ -120,7 +121,15 @@ func main() {
 	childH := child.NewHandler(childSvc)
 	followH := follow.NewHandler(followSvc)
 	commentH := comment.NewHandler(commentSvc, linkSvc.CanView)
-	adminH := admin.NewHandler(authSvc, admin.NewStatsService(database.Col("links"), database.Col("users")))
+	// Modération : signalements (email à l'administration), blocage entre comptes
+	modSvc := moderation.NewService(database.DB())
+	modSvc.SetNotifier(mailer.Reports(auth.AdminEmail))
+	modSvc.SetAccess(linkSvc.CanView, tribeSvc.Peers)
+	linkH.SetBlocked(modSvc.BlockedSet)
+	commentH.SetBlocked(modSvc.BlockedSet)
+	folderH.SetBlocked(modSvc.BlockedSet)
+	moderationH := moderation.NewHandler(modSvc)
+	adminH := admin.NewHandler(authSvc, admin.NewStatsService(database.Col("links"), database.Col("users")), modSvc)
 	tribeH := tribe.NewHandler(tribeSvc)
 
 	// Extrait le userID du header Authorization pour les routes HTTP hors gateway
@@ -184,6 +193,7 @@ func main() {
 	pb.RegisterAdminServiceServer(grpcServer, adminH)
 	pb.RegisterTribeServiceServer(grpcServer, tribeH)
 	pb.RegisterConnectedAppServiceServer(grpcServer, appsH)
+	pb.RegisterModerationServiceServer(grpcServer, moderationH)
 	reflection.Register(grpcServer)
 
 	grpcAddr := ":" + cfg.GRPCPort
@@ -240,6 +250,9 @@ func main() {
 	}
 	if err := pb.RegisterConnectedAppServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
 		log.Fatalf("register connected apps gateway: %v", err)
+	}
+	if err := pb.RegisterModerationServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
+		log.Fatalf("register moderation gateway: %v", err)
 	}
 
 	// Limites de débit par IP sur les routes sensibles (force brute, coût IA, requêtes sortantes)

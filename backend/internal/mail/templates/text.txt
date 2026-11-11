@@ -141,3 +141,13 @@ Dernier email de notre part : votre adresse ne figure plus dans nos listes.
 {{define "footer"}}-- 
 Tribbae · {{.SiteURL}}
 {{end}}
+
+{{define "report_received"}}Nouveau signalement : {{.Kind}}
+
+Motif : {{.Reason}}. Le détail est dans l'administration.
+
+Voir les signalements : {{.AdminURL}}
+
+Vous recevez cet email car vous administrez Tribbae.
+
+{{template "footer" .}}{{end}}

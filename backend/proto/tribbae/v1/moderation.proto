@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package tribbae.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
+
+// Signalement d'une idée, d'un commentaire ou d'un compte.
+message ReportContentRequest {
+  // "idea" | "comment" | "account"
+  string target_type = 1;
+  string target_id = 2;
+  // "spam" | "inappropriate" | "harassment" | "other"
+  string reason = 3;
+  // Précisions facultatives (500 caractères au plus)
+  string details = 4;
+}
+
+message ReportContentResponse {}
+
+message BlockUserRequest {
+  string user_id = 1;
+}
+
+message BlockUserResponse {}
+
+message UnblockUserRequest {
+  string user_id = 1;
+}
+
+message UnblockUserResponse {}
+
+message ListBlockedUsersRequest {}
+
+message BlockedUser {
+  string user_id = 1;
+  string display_name = 2;
+  int64 blocked_at = 3;
+}
+
+message ListBlockedUsersResponse {
+  repeated BlockedUser users = 1;
+}
+
+// Modération par les utilisateurs : signaler un contenu, bloquer un compte
+// (ses idées et commentaires disparaissent pour celui qui l'a bloqué).
+service ModerationService {
+  rpc ReportContent(ReportContentRequest) returns (ReportContentResponse) {
+    option (google.api.http) = {
+      post: "/v1/reports"
+      body: "*"
+    };
+  }
+  rpc BlockUser(BlockUserRequest) returns (BlockUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/blocks"
+      body: "*"
+    };
+  }
+  rpc UnblockUser(UnblockUserRequest) returns (UnblockUserResponse) {
+    option (google.api.http) = {
+      delete: "/v1/blocks/{user_id}"
+    };
+  }
+  rpc ListBlockedUsers(ListBlockedUsersRequest) returns (ListBlockedUsersResponse) {
+    option (google.api.http) = {
+      get: "/v1/blocks"
+    };
+  }
+}

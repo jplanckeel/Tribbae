@@ -24,6 +24,13 @@ type Handler struct {
 	pb.UnimplementedCommentServiceServer
 	svc     *Service
 	canView LinkVisibility
+	// blocked : comptes bloqués par l'utilisateur, dont on cache les commentaires
+	blocked func(ctx context.Context, userID string) map[string]bool
+}
+
+// SetBlocked branche le blocage entre comptes (modération).
+func (h *Handler) SetBlocked(fn func(ctx context.Context, userID string) map[string]bool) {
+	h.blocked = fn
 }
 
 // NewHandler crée le handler ; canView restreint les commentaires aux liens
@@ -115,10 +122,16 @@ func (h *Handler) GetComments(ctx context.Context, req *pb.GetCommentsRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to get comments")
 	}
 
-	// Convert to proto
+	// Convert to proto, sans les commentaires des comptes bloqués
+	blocked := map[string]bool{}
+	if userID, err := interceptor.UserIDFromContext(ctx); err == nil && h.blocked != nil {
+		blocked = h.blocked(ctx, userID)
+	}
 	protoComments := make([]*pb.Comment, 0, len(comments))
 	for _, comment := range comments {
-		protoComments = append(protoComments, h.toProto(comment))
+		if !blocked[comment.UserID] {
+			protoComments = append(protoComments, h.toProto(comment))
+		}
 	}
 
 	return &pb.GetCommentsResponse{Comments: protoComments}, nil
@@ -167,7 +180,13 @@ func (h *Handler) GetCommentCount(ctx context.Context, req *pb.GetCommentCountRe
 	}
 
 	// Get comment count
-	count, err := h.svc.GetCommentCount(ctx, req.LinkId)
+	var exclude []string
+	if userID, err := interceptor.UserIDFromContext(ctx); err == nil && h.blocked != nil {
+		for id := range h.blocked(ctx, userID) {
+			exclude = append(exclude, id)
+		}
+	}
+	count, err := h.svc.GetCommentCount(ctx, req.LinkId, exclude)
 	if err != nil {
 		log.Printf("ERROR: Failed to get comment count: %v", err)
 		return nil, status.Errorf(codes.Internal, "failed to get comment count")

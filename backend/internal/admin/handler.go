@@ -7,6 +7,8 @@ import (
 
 	pb "github.com/tribbae/backend/gen/tribbae/v1"
 	"github.com/tribbae/backend/internal/auth"
+	"github.com/tribbae/backend/internal/interceptor"
+	"github.com/tribbae/backend/internal/moderation"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -16,10 +18,31 @@ type Handler struct {
 	pb.UnimplementedAdminServiceServer
 	authSvc  *auth.Service
 	statsSvc *StatsService
+	modSvc   *moderation.Service
 }
 
-func NewHandler(authSvc *auth.Service, statsSvc *StatsService) *Handler {
-	return &Handler{authSvc: authSvc, statsSvc: statsSvc}
+func NewHandler(authSvc *auth.Service, statsSvc *StatsService, modSvc *moderation.Service) *Handler {
+	return &Handler{authSvc: authSvc, statsSvc: statsSvc, modSvc: modSvc}
+}
+
+func (h *Handler) ListReports(ctx context.Context, req *pb.ListReportsRequest) (*pb.ListReportsResponse, error) {
+	list, err := h.modSvc.ListReports(ctx, req.Status == "closed")
+	if err != nil {
+		return nil, moderation.StatusFor("list reports", err)
+	}
+	out := make([]*pb.Report, 0, len(list))
+	for _, r := range list {
+		out = append(out, moderation.ToPB(r))
+	}
+	return &pb.ListReportsResponse{Reports: out}, nil
+}
+
+func (h *Handler) ResolveReport(ctx context.Context, req *pb.ResolveReportRequest) (*pb.ResolveReportResponse, error) {
+	adminID, _ := interceptor.UserIDFromContext(ctx)
+	if err := h.modSvc.Resolve(ctx, req.ReportId, req.Action, adminID); err != nil {
+		return nil, moderation.StatusFor("resolve report", err)
+	}
+	return &pb.ResolveReportResponse{}, nil
 }
 
 func (h *Handler) ListUsers(ctx context.Context, req *pb.ListUsersRequest) (*pb.ListUsersResponse, error) {

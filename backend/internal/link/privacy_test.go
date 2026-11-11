@@ -181,6 +181,37 @@ func TestTribeSharesIdeasButNotPublication(t *testing.T) {
 	}
 }
 
+// Une idée retirée par la modération ne se republie pas et sort des dossiers publics.
+func TestHiddenIdeaStaysUnpublished(t *testing.T) {
+	_, db, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc := NewService(db.Collection("links"), db.Collection("folders"))
+
+	public := insertFolder(t, ctx, svc, "alice", "public")
+	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Retirée", Category: "LINK_CATEGORY_IDEE", FolderID: public})
+	if !svc.CanView(ctx, idea.ID.Hex(), "") {
+		t.Fatal("before removal, the owner's idea in a public folder is visible")
+	}
+	if _, err := db.Collection("links").UpdateByID(ctx, idea.ID, bson.M{"$set": bson.M{"hidden": true}}); err != nil {
+		t.Fatal(err)
+	}
+	if svc.CanView(ctx, idea.ID.Hex(), "") {
+		t.Error("a removed idea must not be exposed by its public folder")
+	}
+	if visitor, _ := svc.List(ctx, "", public); len(visitor) != 0 {
+		t.Errorf("visitor still sees %d ideas", len(visitor))
+	}
+	if !svc.CanView(ctx, idea.ID.Hex(), "alice") {
+		t.Error("the owner keeps their removed idea")
+	}
+	again := *idea
+	again.Visibility = "public"
+	if _, err := svc.Update(ctx, idea.ID.Hex(), "alice", &again); !errors.Is(err, ErrHidden) {
+		t.Errorf("republishing a removed idea: %v", err)
+	}
+}
+
 // Supprimer une idée efface aussi ses commentaires.
 func TestDeletingAnIdeaDeletesItsComments(t *testing.T) {
 	_, db, cleanup := setupTestDB(t)
