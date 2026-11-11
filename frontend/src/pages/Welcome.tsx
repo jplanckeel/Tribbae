@@ -191,9 +191,10 @@ export function Auth() {
 
         {register && (
           <p className="text-center text-[13px] text-sec">
-            Vos idées restent privées tant que vous ne les partagez pas. Pour savoir ce que nous conservons et comment
-            supprimer votre compte, lisez la{" "}
-            <RouterLink to="/confidentialite" className="font-semibold text-terracotta">politique de confidentialité</RouterLink>.
+            En créant votre compte, vous acceptez les{" "}
+            <RouterLink to="/cgu" className="font-semibold text-link">conditions d'utilisation</RouterLink>. Vos idées restent
+            privées tant que vous ne les partagez pas ; ce que nous conservons est expliqué dans la{" "}
+            <RouterLink to="/confidentialite" className="font-semibold text-link">politique de confidentialité</RouterLink>.
           </p>
         )}
 

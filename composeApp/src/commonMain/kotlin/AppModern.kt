@@ -266,6 +266,8 @@ private fun ModernMainApp(
                         }
                     }
                 ) {
+                // Seul l'onglet affiché, sans écran par-dessus, réagit au retour arrière
+                CompositionLocalProvider(ui.LocalTabActive provides (t == current && stack.isEmpty())) {
                 when (t) {
                     NavDestination.HOME, NavDestination.ADD -> NewHomeScreen(
                         links = links,
@@ -324,6 +326,7 @@ private fun ModernMainApp(
                         onOpenAi = { push(Screen.Ai(childId = it)) },
                         onOpenFolder = { push(Screen.FolderDetail(it)) },
                     )
+                }
                 }
                 }
                 }

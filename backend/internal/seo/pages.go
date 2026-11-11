@@ -100,6 +100,10 @@ func (h *Handler) page(ctx context.Context, path string, query url.Values) (*Pag
 		return h.help(), nil
 	case path == "/confidentialite":
 		return privacy(), nil
+	case path == "/cgu":
+		return terms(), nil
+	case path == "/mentions-legales":
+		return legalNotice(), nil
 	case path == "/a-propos":
 		return h.aboutPage(), nil
 	}
@@ -365,6 +369,28 @@ func safeURL(raw string) string {
 }
 
 func absoluteImage(raw string) string { return safeURL(raw) }
+
+func terms() *Page {
+	return &Page{
+		Status: http.StatusOK, Title: "Conditions d'utilisation · " + siteName,
+		Description: "Les règles d'utilisation de Tribbae : compte, contenus publiés, ce qui est interdit, signalement et modération.",
+		Path:        "/cgu",
+		Breadcrumb:  []Crumb{{"Accueil", "/"}, {"Conditions d'utilisation", "/cgu"}},
+		H1:          "Conditions d'utilisation",
+		Intro:       "Vos idées sont privées par défaut et restent les vôtres. Ce que vous publiez est visible de tous ; les contenus interdits peuvent être signalés et retirés.",
+	}
+}
+
+func legalNotice() *Page {
+	return &Page{
+		Status: http.StatusOK, Title: "Mentions légales · " + siteName,
+		Description: "Éditeur, directeur de la publication et hébergeur de Tribbae.",
+		Path:        "/mentions-legales",
+		Breadcrumb:  []Crumb{{"Accueil", "/"}, {"Mentions légales", "/mentions-legales"}},
+		H1:          "Mentions légales",
+		Intro:       "Qui édite et héberge Tribbae, et comment nous contacter.",
+	}
+}
 
 func privacy() *Page {
 	return &Page{

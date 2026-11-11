@@ -4,13 +4,15 @@ import Icon from "../components/Icon";
 import Seo from "../components/Seo";
 import { Page } from "../components/Shell";
 import { Toggle } from "../components/ui";
+import { LEGAL } from "../lib/legal";
 
 // À compléter avant publication : identité de l'éditeur (nom ou raison sociale,
 // adresse) et hébergeur du serveur (nom, pays). Obligatoires (RGPD art. 13,
 // loi pour la confiance dans l'économie numérique).
-const EDITOR = "[à compléter : nom et adresse de l'éditeur de Tribbae]";
-const HOST = "[à compléter : hébergeur du serveur et pays]";
-const CONTACT = "contact@tribbae.fr";
+// Identité de l'éditeur et de l'hébergeur : une seule source, lib/legal.ts
+const EDITOR = `${LEGAL.editorName}, ${LEGAL.editorAddress}`;
+const HOST = `${LEGAL.hostName}, ${LEGAL.hostCountry}`;
+const CONTACT = LEGAL.contact;
 const UPDATED = "20 octobre 2026";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -162,8 +164,8 @@ export default function Privacy() {
 
       <Section title="Vos droits">
         <ul className="list-disc space-y-1 pl-5">
-          <li><strong>Accès et portabilité</strong> : « Ma tribu » › Paramètres › « Télécharger mes données » (fichier JSON).</li>
-          <li><strong>Effacement</strong> : « Ma tribu » › Paramètres › « Supprimer mon compte ».</li>
+          <li><strong>Accès et portabilité</strong> : « Ma tribu » › Réglages › « Télécharger mes données » (fichier JSON).</li>
+          <li><strong>Effacement</strong> : « Ma tribu » › Réglages › « Supprimer mon compte ».</li>
           <li><strong>Rectification</strong> : modifiez vos idées, dossiers et le nom de la tribu dans l'application ; pour votre email, votre nom ou votre mot de passe, écrivez-nous.</li>
           <li><strong>Opposition, limitation</strong>, ou toute autre demande : {mail}. Nous répondons sous un mois.</li>
         </ul>

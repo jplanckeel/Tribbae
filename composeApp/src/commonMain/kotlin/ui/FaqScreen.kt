@@ -7,364 +7,105 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import data.Faq
+import data.FaqSection
+import ui.campfire.CircleIconButton
+import ui.campfire.display
 
-private data class FaqItem(
-    val question: String,
-    val answer: String
-)
+/** Icônes des sections, mêmes noms que la page /aide du site. */
+private fun sectionIcon(name: String): ImageVector = when (name) {
+    "tipi" -> Icons.Outlined.Cottage
+    "idee" -> Icons.Outlined.Lightbulb
+    "tribe" -> Icons.Outlined.Group
+    "sparkles" -> Icons.Outlined.AutoAwesome
+    "lock" -> Icons.Outlined.Lock
+    else -> Icons.Outlined.HelpOutline
+}
 
-private data class FaqSection(
-    val title: String,
-    val icon: ImageVector,
-    val color: Color,
-    val items: List<FaqItem>
-)
-
-private val faqSections = listOf(
-    FaqSection(
-        title = "Démarrage",
-        icon = Icons.Filled.RocketLaunch,
-        color = Color(0xFF2F7393),
-        items = listOf(
-            FaqItem(
-                "Comment créer un compte ?",
-                "Rendez-vous dans l'onglet Profil, puis appuyez sur \"Se connecter\". Choisissez \"Créer un compte\", renseignez votre email et un mot de passe d'au moins 8 caractères."
-            ),
-            FaqItem(
-                "Puis-je utiliser l'app sans compte ?",
-                "Oui, vous pouvez ajouter et gérer vos idées localement sans compte. La synchronisation entre appareils et les fonctionnalités sociales (explorer, likes, commentaires) nécessitent un compte."
-            ),
-            FaqItem(
-                "Comment synchroniser mes données ?",
-                "Une fois connecté, vos données se synchronisent automatiquement. Vous pouvez aussi forcer la synchronisation en tirant vers le bas sur l'écran principal."
-            )
-        )
-    ),
-    FaqSection(
-        title = "Idées & Listes",
-        icon = Icons.Filled.Lightbulb,
-        color = Color(0xFF9A6510),
-        items = listOf(
-            FaqItem(
-                "Comment ajouter une idée ?",
-                "Appuyez sur le bouton \"+\" dans la barre de navigation en bas. Remplissez le titre (obligatoire), l'URL, la description et choisissez une catégorie."
-            ),
-            FaqItem(
-                "Quelles sont les catégories disponibles ?",
-                "Tribbae propose 5 catégories : 💡 Idée, 🎁 Cadeau, 🏃 Activité, 📅 Événement et 🍳 Recette. Chaque catégorie a sa propre couleur pour une identification rapide."
-            ),
-            FaqItem(
-                "Comment organiser mes idées en dossiers ?",
-                "Dans l'onglet \"Mes idées\", appuyez sur \"Nouveau dossier\". Donnez-lui un nom, une icône et une couleur. Vous pouvez ensuite assigner vos idées à ce dossier lors de leur création ou modification."
-            ),
-            FaqItem(
-                "Comment rendre une idée publique ?",
-                "Lors de la création ou modification d'une idée, changez la visibilité de \"Privé\" à \"Public\". Les idées publiques apparaissent dans l'Explorer pour les autres utilisateurs."
-            ),
-            FaqItem(
-                "Comment utiliser les rappels ?",
-                "Pour les idées de type Événement, vous pouvez activer un rappel en cochant l'option lors de la création. Définissez une date d'événement et l'app vous enverra une notification."
-            )
-        )
-    ),
-    FaqSection(
-        title = "Explorer & Communauté",
-        icon = Icons.Filled.Explore,
-        color = Color(0xFF4C7A3C),
-        items = listOf(
-            FaqItem(
-                "Qu'est-ce que l'Explorer ?",
-                "L'Explorer affiche les idées publiques partagées par tous les utilisateurs de Tribbae. C'est l'endroit idéal pour trouver de l'inspiration pour vos activités, recettes et cadeaux."
-            ),
-            FaqItem(
-                "Comment sauvegarder une idée de la communauté ?",
-                "Dans le détail d'une idée publique, appuyez sur \"Sauvegarder\". Vous pouvez choisir de l'ajouter directement à vos idées ou dans un dossier spécifique."
-            ),
-            FaqItem(
-                "Comment liker une idée ?",
-                "Dans le détail d'une idée, appuyez sur le bouton cœur ❤️ en bas de l'écran. Vous devez être connecté pour liker."
-            ),
-            FaqItem(
-                "Comment suivre un utilisateur ?",
-                "Dans le détail d'une idée publique, appuyez sur le bouton \"Suivre\" à côté du nom de l'auteur."
-            )
-        )
-    ),
-    FaqSection(
-        title = "IA & Suggestions",
-        icon = Icons.Filled.AutoAwesome,
-        color = Color(0xFF5E4558),
-        items = listOf(
-            FaqItem(
-                "Comment fonctionne la génération d'idées par IA ?",
-                "Depuis l'écran d'ajout, appuyez sur \"Générer avec l'IA\". Décrivez ce que vous cherchez (ex: \"activités pour enfants de 5 ans en plein air\") et l'IA vous propose des idées personnalisées."
-            ),
-            FaqItem(
-                "La génération IA est-elle gratuite ?",
-                "Oui, la génération d'idées par IA est incluse dans l'application. Vous devez être connecté pour l'utiliser."
-            )
-        )
-    ),
-    FaqSection(
-        title = "Compte & Confidentialité",
-        icon = Icons.Filled.Security,
-        color = Color(0xFFB2412A),
-        items = listOf(
-            FaqItem(
-                "Comment changer mon mot de passe ?",
-                "La modification du mot de passe n'est pas encore disponible directement dans l'app. Contactez le support à contact@tribbae.fr pour obtenir de l'aide."
-            ),
-            FaqItem(
-                "Mes données sont-elles sécurisées ?",
-                "Oui. Vos données sont chiffrées en transit (HTTPS) et stockées de manière sécurisée. Vos idées privées ne sont jamais visibles par les autres utilisateurs."
-            ),
-            FaqItem(
-                "Comment supprimer mon compte ?",
-                "Pour supprimer votre compte et toutes vos données, contactez-nous à contact@tribbae.fr. La suppression est définitive et irréversible."
-            )
-        )
-    )
-)
-
+/** « Aide & FAQ » : la FAQ du site (faq.json), copiée dans l'app à la compilation. */
 @Composable
 fun FaqScreen(onBack: () -> Unit) {
-    // Garde en mémoire quelle question est ouverte (null = aucune)
-    var expandedKey by remember { mutableStateOf<String?>(null) }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFFBF3E7))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 32.dp)
-        ) {
-            // Header
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(Color(0xFFF28C38), Color(0xFFC8492C))
-                        )
-                    )
-                    .padding(top = 48.dp, bottom = 28.dp, start = 20.dp, end = 20.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Bouton retour
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(Color.White.copy(alpha = 0.2f), CircleShape)
-                            .clickable(onClick = onBack),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Filled.ArrowBack, "Retour", tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(16.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Filled.Help, null, tint = Color.White, modifier = Modifier.size(26.dp))
-                        }
-                        Column {
-                            Text(
-                                "Aide & FAQ",
-                                fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White
-                            )
-                            Text(
-                                "Trouvez des réponses à vos questions",
-                                fontSize = 13.sp, color = Color.White.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Sections FAQ
-            faqSections.forEach { section ->
-                FaqSectionBlock(
-                    section = section,
-                    expandedKey = expandedKey,
-                    onToggle = { key -> expandedKey = if (expandedKey == key) null else key }
-                )
-                Spacer(Modifier.height(8.dp))
-            }
-
-            // Contact support
-            Spacer(Modifier.height(8.dp))
-            ContactSupportCard()
-            Spacer(Modifier.height(16.dp))
-        }
+    val context = LocalContext.current
+    val sections = remember {
+        runCatching { context.assets.open("faq.json").bufferedReader().use { it.readText() } }
+            .map(Faq::parse).getOrDefault(emptyList<FaqSection>())
     }
-}
+    var open by remember { mutableStateOf<String?>(null) }
+    val uri = LocalUriHandler.current
 
-@Composable
-private fun FaqSectionBlock(
-    section: FaqSection,
-    expandedKey: String?,
-    onToggle: (String) -> Unit
-) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-        // Titre de section
-        Row(
-            modifier = Modifier.padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .background(section.color.copy(alpha = 0.15f), RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(section.icon, null, tint = section.color, modifier = Modifier.size(16.dp))
-            }
-            Text(
-                section.title,
-                fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                color = TextSec, letterSpacing = 0.5.sp
-            )
-        }
-
-        // Items
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = Color.White,
-            shadowElevation = 1.dp
-        ) {
-            Column {
-                section.items.forEachIndexed { index, item ->
-                    val key = "${section.title}_$index"
-                    val isExpanded = expandedKey == key
-                    val isLast = index == section.items.lastIndex
-
-                    FaqItemRow(
-                        item = item,
-                        isExpanded = isExpanded,
-                        accentColor = section.color,
-                        onClick = { onToggle(key) }
-                    )
-
-                    if (!isLast) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = Sable2
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FaqItemRow(
-    item: FaqItem,
-    isExpanded: Boolean,
-    accentColor: Color,
-    onClick: () -> Unit
-) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(16.dp)
+        Modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).statusBarsPadding()
+            .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 32.dp + ui.components.bottomNavClearance()),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                item.question,
-                fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                color = Ecorce,
-                modifier = Modifier.weight(1f).padding(end = 8.dp)
-            )
-            Icon(
-                if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                null,
-                tint = if (isExpanded) accentColor else TextMuted,
-                modifier = Modifier.size(20.dp)
-            )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            CircleIconButton(Icons.Outlined.ChevronLeft, "Retour", onBack, background = Sable2)
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Aide & FAQ", style = display(32.sp))
+            Text("Les réponses aux questions qu'on nous pose le plus.", fontSize = 14.sp, color = TextSec)
         }
 
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = expandVertically(),
-            exit = shrinkVertically()
-        ) {
-            Text(
-                item.answer,
-                fontSize = 13.sp, color = TextSec,
-                lineHeight = 20.sp,
-                modifier = Modifier.padding(top = 10.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ContactSupportCard() {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFC8492C).copy(alpha = 0.08f)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(Color(0xFFC8492C).copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.Email, null, tint = Color(0xFFC8492C), modifier = Modifier.size(22.dp))
+        sections.forEach { section ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
+                    Icon(sectionIcon(section.icon), null, tint = TextSec, modifier = Modifier.size(18.dp))
+                    Text(section.title.uppercase(), fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, color = TextSec)
+                }
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(CardColor)) {
+                    section.questions.forEachIndexed { i, (q, a) ->
+                        val key = "${section.title}/$i"
+                        val expanded = open == key
+                        Column(
+                            Modifier.fillMaxWidth()
+                                .clickable(role = Role.Button) { open = if (expanded) null else key }
+                                .semantics { stateDescription = if (expanded) "Réponse affichée" else "Réponse masquée" }
+                                .padding(horizontal = 16.dp, vertical = 14.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(q, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ecorce, modifier = Modifier.weight(1f).padding(end = 8.dp))
+                                Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                            }
+                            AnimatedVisibility(expanded, enter = expandVertically(), exit = shrinkVertically()) {
+                                Text(a, fontSize = 14.sp, lineHeight = 21.sp, color = Ecorce2, modifier = Modifier.padding(top = 8.dp))
+                            }
+                        }
+                        if (i < section.questions.lastIndex) HorizontalDivider(color = Sable2)
+                    }
+                }
             }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "Vous n'avez pas trouvé votre réponse ?",
-                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Ecorce
-                )
-                Text(
-                    "Contactez-nous : contact@tribbae.fr",
-                    fontSize = 12.sp, color = TextSec
-                )
+        }
+
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(CardColor)
+                .clickable(role = Role.Button) { uri.openUri("mailto:contact@tribbae.fr") }.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Icon(Icons.Outlined.MailOutline, null, tint = TerracottaDark, modifier = Modifier.size(22.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Vous n'avez pas trouvé votre réponse ?", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
+                Text("Écrivez-nous : contact@tribbae.fr", fontSize = 13.sp, color = TextSec)
             }
         }
     }
 }
-

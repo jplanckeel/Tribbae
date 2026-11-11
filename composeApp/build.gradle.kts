@@ -63,7 +63,17 @@ val appVersionCode = appVersion.split(".").map { it.toInt() }.let { (major, mino
     major * 10000 + minor * 100 + patch
 }
 
+// FAQ : une seule source, celle du site (frontend/public/faq.json), copiée dans
+// les assets de l'app à chaque build (voir data/Faq.kt)
+val faqAssets = layout.buildDirectory.dir("generated/faq")
+val syncFaq = tasks.register<Sync>("syncFaq") {
+    from(rootProject.file("frontend/public/faq.json"))
+    into(faqAssets)
+}
+tasks.named("preBuild") { dependsOn(syncFaq) }
+
 android {
+    sourceSets["main"].assets.srcDir(faqAssets.get().asFile)
     // Paquet du code Kotlin (R, BuildConfig) ; l'identifiant sur le Play Store est applicationId
     namespace = "com.linkkeeper.app"
     // 37 : exigé par androidx.appfunctions (targetSdk reste à 36)
@@ -72,7 +82,8 @@ android {
     defaultConfig {
         // Identifiant définitif sur le Play Store (ne peut plus changer après le premier envoi)
         applicationId = "fr.tribbae.app"
-        minSdk = 24
+        // Android 8 minimum : java.time, canaux de notification et icônes adaptatives natifs
+        minSdk = 26
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersion
@@ -98,7 +109,7 @@ android {
                 storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("ANDROID_KEY_ALIAS")
                 keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
-                // v2/v3, exigées par les Android récents (v1 inutile : minSdk 24)
+                // v2/v3, exigées par les Android récents (v1 inutile : minSdk 26)
                 enableV2Signing = true
                 enableV3Signing = true
             }

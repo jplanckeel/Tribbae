@@ -230,7 +230,7 @@ function AccountMenu({ initial, name }: { initial: string; name: string }) {
             <Icon name="tribe" size={18} className="text-terracotta" />Ma tribu
           </button>
           <button type="button" role="menuitem" className={item} onClick={() => go("/tribu?ouvrir=parametres")}>
-            <Icon name="settings" size={18} className="text-sec" />Paramètres
+            <Icon name="settings" size={18} className="text-sec" />Réglages
           </button>
           <button type="button" role="menuitem" className={item} onClick={() => go("/tribu?ouvrir=applications")}>
             <Icon name="sparkles" size={18} className="text-prune" />Applications connectées
@@ -261,7 +261,9 @@ function Footer() {
       Tribbae — les idées de la tribu, au même endroit ·{" "}
       <NavLink to="/a-propos" className="font-semibold text-terracotta hover:text-terracotta-dark">À propos</NavLink> ·{" "}
       <NavLink to="/aide" className="font-semibold text-terracotta hover:text-terracotta-dark">Aide</NavLink> ·{" "}
-      <NavLink to="/confidentialite" className="font-semibold text-terracotta hover:text-terracotta-dark">Confidentialité</NavLink>
+      <NavLink to="/confidentialite" className="font-semibold text-terracotta hover:text-terracotta-dark">Confidentialité</NavLink> ·{" "}
+      <NavLink to="/cgu" className="font-semibold text-terracotta hover:text-terracotta-dark">CGU</NavLink> ·{" "}
+      <NavLink to="/mentions-legales" className="font-semibold text-terracotta hover:text-terracotta-dark">Mentions légales</NavLink>
     </footer>
   );
 }

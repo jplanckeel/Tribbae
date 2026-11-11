@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Logout
@@ -288,6 +289,49 @@ private fun TribeContent(
     val shown = if (seats.size > TribePage.RING_SLOTS) seats.take(TribePage.RING_SLOTS - 1) else seats
     val extra = seats.size - shown.size
 
+    // Adresse du compte : demandée à l'ouverture des Réglages
+    var accountEmail by remember { mutableStateOf<String?>(null) }
+    var showPassword by remember { mutableStateOf(false) }
+    LaunchedEffect(showSettings) { if (showSettings && accountEmail == null) accountEmail = viewModel.account()?.email?.ifBlank { null } }
+
+    if (showSettings) {
+        androidx.activity.compose.BackHandler(enabled = LocalTabActive.current) { showSettings = false }
+        val me = tribe?.members?.find { it.userId == userId }
+        SettingsScreen(
+            SettingsState(
+                name = name,
+                email = accountEmail,
+                owner = tribe?.members.isNullOrEmpty() || me?.isOwner == true,
+                isAdmin = sessionManager.isAdmin(),
+                tribeName = tribeName,
+                membersLabel = listOfNotNull("${accounts.size}", invitations.size.takeIf { it > 0 }?.let { "$it en attente" }).joinToString(" · "),
+                childrenLabel = children.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.name },
+                followingCount = following?.size,
+                version = viewModel.appVersion,
+            ),
+            SettingsActions(
+                onBack = { showSettings = false },
+                onRename = { showRename = true },
+                onMembers = { showMembers = true },
+                onChildren = { showSettings = false; tab = 0 },
+                onFollowing = { showFollowing = true },
+                onShopping = onOpenShopping,
+                onApps = { showApps = true },
+                onPassword = { if (accountEmail != null) showPassword = true else dataMessage = "Adresse du compte introuvable, réessayez dans un instant." },
+                onPrivacy = { uriHandler.openUri(PRIVACY_URL) },
+                onExport = { exportLauncher.launch("tribbae-mes-donnees-${java.time.LocalDate.now()}.json") },
+                onDelete = { showDelete = true },
+                onFaq = onFaq,
+                onAbout = { uriHandler.openUri(ABOUT_URL) },
+                onTerms = { uriHandler.openUri(TERMS_URL) },
+                onLegalNotice = { uriHandler.openUri(LEGAL_NOTICE_URL) },
+                onAdmin = onOpenAdmin,
+                onLogout = { showLogout = true },
+            ),
+            dataMessage = dataMessage,
+            modifier = modifier,
+        )
+    } else
     Column(modifier.fillMaxSize().background(Sable).verticalScroll(rememberScrollState()).padding(bottom = ui.components.bottomNavClearance())) {
         PageHeader(
             "Ma tribu",
@@ -295,7 +339,7 @@ private fun TribeContent(
             subtitle = "$foyerCount au foyer · ${circle.size} dans le cercle" +
                 (if (invitations.isNotEmpty()) " · ${invitations.size} invitation${if (invitations.size > 1) "s" else ""} en attente" else "") +
                 (if (sessionManager.isAdmin()) " · administrateur" else ""),
-            action = { CircleIconButton(Icons.Outlined.Settings, "Paramètres", { showSettings = true }, background = CardColor) },
+            action = { CircleIconButton(Icons.Outlined.Settings, "Réglages", { showSettings = true }, background = CardColor) },
         )
 
         // ── La tribu installée autour du feu ──
@@ -566,26 +610,6 @@ private fun TribeContent(
                 )
             }
 
-            // ── Réglages ──
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Réglages", style = display(20.sp, FontWeight.Bold))
-                Column(Modifier.fillMaxWidth().clip(CardShape).background(CardColor)) {
-                    AppearanceRow()
-                    ListRow(Icons.Outlined.FavoriteBorder, "Tribus suivies", following?.size?.toString()) { showFollowing = true }
-                    ListRow(Icons.Outlined.ShoppingCart, "Liste de courses", onClick = onOpenShopping)
-                    ListRow(Icons.Outlined.Lock, "Confidentialité & mes données") { uriHandler.openUri(PRIVACY_URL) }
-                    ListRow(Icons.Outlined.HelpOutline, "Aide & FAQ", onClick = onFaq)
-                    ListRow(Icons.Outlined.Info, "À propos de Tribbae", last = !sessionManager.isAdmin()) { uriHandler.openUri(ABOUT_URL) }
-                    if (sessionManager.isAdmin()) ListRow(Icons.Outlined.AdminPanelSettings, "Administration", last = true, onClick = onOpenAdmin)
-                }
-                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Connecté en tant que $name · ", fontSize = 12.sp, color = TextMuted)
-                    Text(
-                        "Se déconnecter", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextSec,
-                        modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button) { showLogout = true }.padding(4.dp)
-                    )
-                }
-            }
         }
     }
 
@@ -700,38 +724,6 @@ private fun TribeContent(
         }
     }
 
-    if (showSettings) {
-        ModalBottomSheet(onDismissRequest = { showSettings = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
-            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text("Paramètres", style = display(24.sp))
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(CardColor).padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    InitialAvatar(name, 0, 48.dp, 16.dp, 20.sp)
-                    Column {
-                        Text(name, fontWeight = FontWeight.Bold, color = Ecorce)
-                        Text("Synchronisé avec tribbae.fr", fontSize = 12.sp, color = TextSec)
-                    }
-                }
-                MenuRow(Icons.Outlined.Edit, "Nom de la tribu : $tribeName") { showSettings = false; showRename = true }
-                MenuRow(Icons.Outlined.AutoAwesome, "Applications connectées", tint = Prune) { showSettings = false; showApps = true }
-                Text("Mes données", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextSec)
-                MenuRow(Icons.Outlined.Download, "Télécharger mes données") {
-                    exportLauncher.launch("tribbae-mes-donnees-${java.time.LocalDate.now()}.json")
-                }
-                MenuRow(Icons.Outlined.Lock, "Politique de confidentialité") { uriHandler.openUri(PRIVACY_URL) }
-                MenuRow(Icons.Outlined.DeleteForever, "Supprimer mon compte", danger = true) { showSettings = false; showDelete = true }
-                dataMessage?.let { Text(it, fontSize = 13.sp, color = TextSec) }
-                Text(
-                    "Pour modifier votre mot de passe, écrivez à contact@tribbae.fr.",
-                    fontSize = 14.sp, color = TextSec
-                )
-                MenuRow(Icons.Outlined.HelpOutline, "Aide & FAQ") { showSettings = false; onFaq() }
-                MenuRow(Icons.Outlined.Logout, "Se déconnecter", danger = true) { showSettings = false; showLogout = true }
-            }
-        }
-    }
 
     if (showApps) ConnectedAppsSheet(viewModel) { showApps = false }
 
@@ -865,6 +857,22 @@ private fun TribeContent(
                 dismissButton = { TextButton(onClick = { confirmStopSharing = false }) { Text("Annuler", color = Ecorce) } }
             )
         }
+    }
+
+    if (showPassword) {
+        val email = accountEmail
+        ConfirmSheet(
+            "Changer de mot de passe ?",
+            if (email != null) "Nous envoyons à $email un lien pour choisir un nouveau mot de passe." else "Adresse du compte introuvable, réessayez dans un instant.",
+            "Envoyer le lien",
+            onConfirm = {
+                showPassword = false
+                if (email != null) scope.launch {
+                    dataMessage = if (viewModel.sendPasswordLink(email)) "Lien envoyé à $email." else "Le lien n'a pas pu partir. Réessayez dans un instant."
+                }
+            },
+            onDismiss = { showPassword = false },
+        )
     }
 
     if (showLogout) {
@@ -1334,6 +1342,8 @@ private fun KidSheet(
 
 /** Politique de confidentialité, publiée sur le site. */
 private const val PRIVACY_URL = "${data.Backend.PRODUCTION}/confidentialite"
+internal const val TERMS_URL = "${data.Backend.PRODUCTION}/cgu"
+internal const val LEGAL_NOTICE_URL = "${data.Backend.PRODUCTION}/mentions-legales"
 
 /** Page À propos (pourquoi Tribbae, principes), publiée sur le site. */
 private const val ABOUT_URL = "${data.Backend.PRODUCTION}/a-propos"
@@ -1391,7 +1401,7 @@ private fun DeleteAccountDialog(viewModel: LinkViewModel, onDismiss: () -> Unit)
 
 /** « Apparence » : jour, soir (mode sombre « veillée ») ou comme l'appareil. Retenue sur cet appareil. */
 @Composable
-private fun AppearanceRow() {
+internal fun AppearanceRow() {
     Column {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -1420,22 +1430,6 @@ private fun AppearanceRow() {
     }
 }
 
-@Composable
-private fun ListRow(icon: ImageVector, label: String, value: String? = null, last: Boolean = false, onClick: () -> Unit) {
-    Column {
-        Row(
-            Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(icon, null, tint = Ecorce, modifier = Modifier.size(20.dp))
-            Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ecorce, modifier = Modifier.weight(1f))
-            if (value != null) Text(value, fontSize = 13.sp, color = TextSec)
-            Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(18.dp))
-        }
-        if (!last) HorizontalDivider(color = Sable2)
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1588,6 +1582,11 @@ private fun SimpleAuthDialog(
 
                 if (!isLoginMode) {
                     val uri = androidx.compose.ui.platform.LocalUriHandler.current
+                    Text(
+                        "En créant votre compte, vous acceptez les conditions d'utilisation.",
+                        fontSize = 12.sp, color = TerracottaDark, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { uri.openUri(TERMS_URL) }.padding(4.dp)
+                    )
                     Text(
                         "Vos idées restent privées tant que vous ne les partagez pas. Ce que nous conservons et comment supprimer votre compte : politique de confidentialité.",
                         fontSize = 12.sp, color = TextSec,

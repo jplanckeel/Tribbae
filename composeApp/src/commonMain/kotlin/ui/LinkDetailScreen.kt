@@ -304,9 +304,15 @@ fun LinkDetailScreen(
                         commentsLoading -> CircularProgressIndicator(color = Terracotta, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                         comments.isEmpty() -> Text("Pas encore de commentaire. Une astuce, un retour d'expérience ?", fontSize = 14.sp, color = TextSec)
                         else -> comments.forEachIndexed { i, c ->
-                            CommentBubble(c, i, canDelete = c.userId == myId || (!readOnly)) {
+                            // Même règle que le serveur et le web : l'auteur du commentaire, ou celui de l'idée et sa tribu
+                            val managesIdea = link.ownerId.isBlank() || link.ownerId == myId || viewModel?.isTribePeer(link.ownerId) == true
+                            CommentBubble(c, i, canDelete = c.userId == myId || managesIdea) {
                                 scope.launch {
-                                    commentRepository?.deleteComment(c.id)?.onSuccess { comments = comments.filterNot { it.id == c.id } }
+                                    commentRepository?.deleteComment(c.id)
+                                        ?.onSuccess { comments = comments.filterNot { it.id == c.id } }
+                                        ?.onFailure {
+                                            android.widget.Toast.makeText(context, "Le commentaire n'a pas pu être supprimé.", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
                                 }
                             }
                         }

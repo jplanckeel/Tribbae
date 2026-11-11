@@ -5,6 +5,8 @@ import Explorer from "./pages/Explorer";
 import About from "./pages/About";
 import Faq from "./pages/Faq";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import LegalNotice from "./pages/LegalNotice";
 import FolderDetail from "./pages/FolderDetail";
 import Home from "./pages/Home";
 import CircleInvitation from "./pages/CircleInvitation";
@@ -53,9 +55,12 @@ const router = createBrowserRouter([
       { path: "/aide", element: <Faq /> },
       { path: "/a-propos", element: <About /> },
       { path: "/confidentialite", element: <Privacy /> },
+      { path: "/cgu", element: <Terms /> },
+      { path: "/mentions-legales", element: <LegalNotice /> },
       { path: "/mes-idees", element: auth(<MyIdeas />) },
       { path: "/courses", element: auth(<Shopping />) },
       { path: "/tribu", element: auth(<Tribe />) },
+      { path: "/reglages", element: <Navigate to="/tribu?ouvrir=parametres" replace /> },
       { path: "/admin", element: auth(<Admin />) },
       { path: "/partager", element: auth(<ShareTarget />) },
       // Anciennes URLs (favoris, liens partagés, référencement)
