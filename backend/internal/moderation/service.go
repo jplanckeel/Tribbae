@@ -19,6 +19,10 @@ var (
 	ErrNotFound     = errors.New("not found")
 	// ErrTooMany : trop de signalements envoyés sur 24 h
 	ErrTooMany = errors.New("too many reports")
+	// ErrOwnContent : on ne signale pas son propre contenu ni celui de sa tribu
+	ErrOwnContent = errors.New("cannot report your own content")
+	// ErrProtected : un compte administrateur ne peut pas être suspendu
+	ErrProtected = errors.New("admin accounts cannot be suspended")
 )
 
 const (
@@ -67,8 +71,12 @@ type Notifier interface {
 }
 
 type Service struct {
-	reports, blocks, links, comments, users *mongo.Collection
-	notify                                  Notifier
+	reports, blocks, links, comments, users, folders *mongo.Collection
+	notify                                           Notifier
+	// canView : l'idée est visible de ce compte (mêmes règles que l'app)
+	canView func(ctx context.Context, linkID, userID string) bool
+	// peers : le compte et sa tribu
+	peers func(ctx context.Context, userID string) []string
 }
 
 func NewService(db *mongo.Database) *Service {
@@ -78,7 +86,14 @@ func NewService(db *mongo.Database) *Service {
 		links:    db.Collection("links"),
 		comments: db.Collection("comments"),
 		users:    db.Collection("users"),
+		folders:  db.Collection("folders"),
 	}
+}
+
+// SetAccess branche les règles de visibilité : on ne signale que ce qu'on peut
+// voir, et jamais le contenu de sa propre tribu.
+func (s *Service) SetAccess(canView func(ctx context.Context, linkID, userID string) bool, peers func(ctx context.Context, userID string) []string) {
+	s.canView, s.peers = canView, peers
 }
 
 func (s *Service) SetNotifier(n Notifier) { s.notify = n }
@@ -139,8 +154,19 @@ func (s *Service) Report(ctx context.Context, reporterID, kind, targetID, reason
 	if err != nil {
 		return err
 	}
-	if owner == reporterID {
-		return ErrInvalidInput
+	if s.ownedByTribe(ctx, reporterID, owner) {
+		return ErrOwnContent
+	}
+	// Un contenu qu'on ne voit pas est inconnu : même réponse que s'il n'existait
+	// pas, et son titre n'est jamais recopié dans un signalement
+	if kind == TargetIdea {
+		linkID = targetID
+	}
+	if linkID != "" && s.canView != nil && !s.canView(ctx, linkID, reporterID) {
+		return ErrNotFound
+	}
+	if kind == TargetIdea {
+		linkID = ""
 	}
 	n, err := s.reports.CountDocuments(ctx, bson.M{"reporter_id": reporterID, "created_at": bson.M{"$gte": time.Now().Add(-24 * time.Hour)}})
 	if err != nil {
@@ -352,16 +378,55 @@ func (s *Service) remove(ctx context.Context, r Report) error {
 	return err
 }
 
-// Suspend ferme le compte (connexion et sessions refusées) et masque ses idées publiques.
+// Suspend ferme le compte (connexion et sessions refusées) et retire tout ce
+// qu'il montrait aux autres : idées publiques (masquées), dossiers publics
+// (redevenus privés, donc leurs idées aussi) et commentaires (masqués).
+// Un compte administrateur ne peut pas être suspendu.
 func (s *Service) Suspend(ctx context.Context, userID string) error {
 	oid, err := bson.ObjectIDFromHex(userID)
 	if err != nil {
 		return ErrNotFound
 	}
-	if _, err := s.users.UpdateOne(ctx, bson.M{"_id": oid}, bson.M{"$set": bson.M{"suspended_at": time.Now()}}); err != nil {
+	var u struct {
+		IsAdmin bool `bson:"is_admin"`
+	}
+	if err := s.users.FindOne(ctx, bson.M{"_id": oid}, options.FindOne().SetProjection(bson.M{"is_admin": 1})).Decode(&u); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return ErrNotFound
+		}
 		return err
 	}
-	_, err = s.links.UpdateMany(ctx, bson.M{"owner_id": userID, "visibility": "public"},
-		bson.M{"$set": bson.M{"visibility": "private", "hidden": true, "updated_at": time.Now()}})
+	if u.IsAdmin {
+		return ErrProtected
+	}
+	now := time.Now()
+	if _, err := s.users.UpdateOne(ctx, bson.M{"_id": oid}, bson.M{"$set": bson.M{"suspended_at": now}}); err != nil {
+		return err
+	}
+	if _, err := s.links.UpdateMany(ctx, bson.M{"owner_id": userID, "visibility": "public"},
+		bson.M{"$set": bson.M{"visibility": "private", "hidden": true, "updated_at": now}}); err != nil {
+		return err
+	}
+	if _, err := s.folders.UpdateMany(ctx, bson.M{"owner_id": userID, "visibility": "public"},
+		bson.M{"$set": bson.M{"visibility": "private", "updated_at": now}}); err != nil {
+		return err
+	}
+	_, err = s.comments.UpdateMany(ctx, bson.M{"user_id": userID}, bson.M{"$set": bson.M{"hidden": true}})
 	return err
+}
+
+// ownedByTribe : owner est le compte userID ou un membre de sa tribu.
+func (s *Service) ownedByTribe(ctx context.Context, userID, owner string) bool {
+	if owner == userID {
+		return true
+	}
+	if s.peers == nil {
+		return false
+	}
+	for _, p := range s.peers(ctx, userID) {
+		if p == owner {
+			return true
+		}
+	}
+	return false
 }

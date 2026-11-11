@@ -651,6 +651,10 @@
         "publicViaFolder": {
           "type": "boolean",
           "title": "Visible de tous parce que son auteur l'a rangée dans son dossier public"
+        },
+        "hidden": {
+          "type": "boolean",
+          "title": "Retirée par la modération : seul son auteur la voit, sans pouvoir la republier"
         }
       }
     },

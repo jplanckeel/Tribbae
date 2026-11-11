@@ -122,6 +122,7 @@ func main() {
 	// Modération : signalements (email à l'administration), blocage entre comptes
 	modSvc := moderation.NewService(database.DB())
 	modSvc.SetNotifier(mailer.Reports(auth.AdminEmail))
+	modSvc.SetAccess(linkSvc.CanView, tribeSvc.Peers)
 	linkH.SetBlocked(modSvc.BlockedSet)
 	commentH.SetBlocked(modSvc.BlockedSet)
 	folderH.SetBlocked(modSvc.BlockedSet)

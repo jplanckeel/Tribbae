@@ -207,7 +207,7 @@ func TestHiddenIdeaStaysUnpublished(t *testing.T) {
 	}
 	again := *idea
 	again.Visibility = "public"
-	if _, err := svc.Update(ctx, idea.ID.Hex(), "alice", &again); !errors.Is(err, ErrForbidden) {
+	if _, err := svc.Update(ctx, idea.ID.Hex(), "alice", &again); !errors.Is(err, ErrHidden) {
 		t.Errorf("republishing a removed idea: %v", err)
 	}
 }

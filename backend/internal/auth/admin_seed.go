@@ -39,6 +39,13 @@ func EnsureAdminAccount(ctx context.Context, col *mongo.Collection, password str
 			log.Printf("WARNING: account %s exists but is not admin; it will not be promoted automatically", AdminEmail)
 			return nil
 		}
+		// Le compte administrateur n'est jamais suspendu (filet de sécurité si
+		// une suspension a été posée directement en base)
+		if existing.SuspendedAt != nil {
+			if _, err := col.UpdateOne(ctx, bson.M{"_id": existing.ID}, bson.M{"$unset": bson.M{"suspended_at": ""}}); err != nil {
+				return err
+			}
+		}
 		// Adresse de l'équipe : confirmée d'office (le compte publie la sélection)
 		if existing.EmailVerifiedAt == nil {
 			if _, err := col.UpdateOne(ctx, bson.M{"_id": existing.ID}, bson.M{"$set": bson.M{"email_verified_at": time.Now()}}); err != nil {

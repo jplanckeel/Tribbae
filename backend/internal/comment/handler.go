@@ -180,7 +180,13 @@ func (h *Handler) GetCommentCount(ctx context.Context, req *pb.GetCommentCountRe
 	}
 
 	// Get comment count
-	count, err := h.svc.GetCommentCount(ctx, req.LinkId)
+	var exclude []string
+	if userID, err := interceptor.UserIDFromContext(ctx); err == nil && h.blocked != nil {
+		for id := range h.blocked(ctx, userID) {
+			exclude = append(exclude, id)
+		}
+	}
+	count, err := h.svc.GetCommentCount(ctx, req.LinkId, exclude)
 	if err != nil {
 		log.Printf("ERROR: Failed to get comment count: %v", err)
 		return nil, status.Errorf(codes.Internal, "failed to get comment count")

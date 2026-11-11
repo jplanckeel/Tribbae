@@ -48,6 +48,8 @@ message Link {
   string created_via = 25;
   // Visible de tous parce que son auteur l'a rangée dans son dossier public
   bool public_via_folder = 26;
+  // Retirée par la modération : seul son auteur la voit, sans pouvoir la republier
+  bool hidden = 27;
 }
 
 message CreateLinkRequest {

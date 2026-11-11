@@ -93,7 +93,8 @@ func (s *Service) GetComments(ctx context.Context, linkID string) ([]CommentWith
 	// Sort by created_at descending (newest first)
 	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
 
-	cursor, err := s.col.Find(ctx, bson.M{"link_id": linkID}, opts)
+	// hidden : commentaires d'un compte suspendu
+	cursor, err := s.col.Find(ctx, bson.M{"link_id": linkID, "hidden": bson.M{"$ne": true}}, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -156,9 +157,14 @@ func (s *Service) DeleteComment(ctx context.Context, commentID, userID string) e
 	return errors.New("not authorized to delete this comment")
 }
 
-// GetCommentCount returns the number of comments for a link
-func (s *Service) GetCommentCount(ctx context.Context, linkID string) (int32, error) {
-	count, err := s.col.CountDocuments(ctx, bson.M{"link_id": linkID})
+// GetCommentCount compte les commentaires affichés d'une idée : sans ceux des
+// comptes suspendus, ni ceux des comptes exclus (bloqués par le lecteur).
+func (s *Service) GetCommentCount(ctx context.Context, linkID string, exclude []string) (int32, error) {
+	filter := bson.M{"link_id": linkID, "hidden": bson.M{"$ne": true}}
+	if len(exclude) > 0 {
+		filter["user_id"] = bson.M{"$nin": exclude}
+	}
+	count, err := s.col.CountDocuments(ctx, filter)
 	if err != nil {
 		return 0, err
 	}

@@ -467,7 +467,7 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 	intoPublicFolder := l.FolderID != existing.FolderID && l.FolderID != "" && s.folderIsPublic(ctx, l.FolderID)
 	// Retirée par la modération : elle ne peut plus être republiée
 	if existing.Hidden && (publishes || intoPublicFolder) {
-		return nil, ErrForbidden
+		return nil, ErrHidden
 	}
 	if publishes || intoPublicFolder {
 		if err := s.requireVerified(ctx, userID); err != nil {

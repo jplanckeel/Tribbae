@@ -118,8 +118,10 @@ type Link struct {
 	CreatedVia string `protobuf:"bytes,25,opt,name=created_via,json=createdVia,proto3" json:"created_via,omitempty"`
 	// Visible de tous parce que son auteur l'a rangée dans son dossier public
 	PublicViaFolder bool `protobuf:"varint,26,opt,name=public_via_folder,json=publicViaFolder,proto3" json:"public_via_folder,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Retirée par la modération : seul son auteur la voit, sans pouvoir la republier
+	Hidden        bool `protobuf:"varint,27,opt,name=hidden,proto3" json:"hidden,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Link) Reset() {
@@ -330,6 +332,13 @@ func (x *Link) GetCreatedVia() string {
 func (x *Link) GetPublicViaFolder() bool {
 	if x != nil {
 		return x.PublicViaFolder
+	}
+	return false
+}
+
+func (x *Link) GetHidden() bool {
+	if x != nil {
+		return x.Hidden
 	}
 	return false
 }
@@ -1547,7 +1556,7 @@ var File_tribbae_v1_link_proto protoreflect.FileDescriptor
 const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\n" +
 	"\x15tribbae/v1/link.proto\x12\n" +
-	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe4\x06\n" +
+	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xfc\x06\n" +
 	"\x04Link\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1b\n" +
@@ -1582,7 +1591,8 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"visibility\x12\x1f\n" +
 	"\vcreated_via\x18\x19 \x01(\tR\n" +
 	"createdVia\x12*\n" +
-	"\x11public_via_folder\x18\x1a \x01(\bR\x0fpublicViaFolder\"\xf0\x03\n" +
+	"\x11public_via_folder\x18\x1a \x01(\bR\x0fpublicViaFolder\x12\x16\n" +
+	"\x06hidden\x18\x1b \x01(\bR\x06hidden\"\xf0\x03\n" +
 	"\x11CreateLinkRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +

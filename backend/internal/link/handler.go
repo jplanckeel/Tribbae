@@ -55,6 +55,8 @@ func toStatus(op string, err error) error {
 		return status.Error(codes.InvalidArgument, err.Error())
 	case errors.Is(err, ErrNotFound):
 		return status.Error(codes.NotFound, "link not found")
+	case errors.Is(err, ErrHidden):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, ErrForbidden):
 		return status.Error(codes.PermissionDenied, "not authorized")
 	case errors.Is(err, auth.ErrEmailNotVerified):
@@ -94,7 +96,8 @@ func (h *Handler) toProto(l *Link, st *Stats) *pb.Link {
 		OwnerIsAdmin:     owner.IsAdmin,
 		Visibility:       l.Visibility,
 		CreatedVia:       l.CreatedVia,
-		PublicViaFolder:  l.FolderID != "" && st.PublicFolders[l.FolderID] == l.OwnerID,
+		PublicViaFolder:  l.FolderID != "" && st.PublicFolders[l.FolderID] == l.OwnerID && !l.Hidden,
+		Hidden:           l.Hidden,
 	}
 }
 

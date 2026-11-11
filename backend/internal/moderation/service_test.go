@@ -60,7 +60,7 @@ func TestReportIsValidatedDeduplicatedAndNotified(t *testing.T) {
 	if err := svc.Report(ctx, bob, "folder", idea, "spam", ""); !errors.Is(err, ErrInvalidInput) {
 		t.Errorf("unknown target type: %v", err)
 	}
-	if err := svc.Report(ctx, alice, TargetIdea, idea, "spam", ""); !errors.Is(err, ErrInvalidInput) {
+	if err := svc.Report(ctx, alice, TargetIdea, idea, "spam", ""); !errors.Is(err, ErrOwnContent) {
 		t.Errorf("reporting oneself: %v", err)
 	}
 	if err := svc.Report(ctx, bob, TargetIdea, bson.NewObjectID().Hex(), "spam", ""); !errors.Is(err, ErrNotFound) {
@@ -211,5 +211,84 @@ func TestResolveActions(t *testing.T) {
 	}
 	if closed, _ := svc.ListReports(ctx, true); len(closed) != 5 {
 		t.Errorf("%d closed reports, want 5", len(closed))
+	}
+}
+
+// On ne signale que ce qu'on peut voir, et jamais sa propre tribu.
+func TestReportRespectsVisibilityAndTribe(t *testing.T) {
+	svc, db, n := setup(t)
+	ctx := context.Background()
+	alice := insert(t, db, "users", bson.M{"display_name": "Alice"})
+	bob := insert(t, db, "users", bson.M{"display_name": "Bob"})
+	dan := insert(t, db, "users", bson.M{"display_name": "Dan"})
+	private := insert(t, db, "links", bson.M{"owner_id": alice, "title": "Secret anniversaire", "visibility": "private"})
+	public := insert(t, db, "links", bson.M{"owner_id": alice, "title": "Sortie", "visibility": "public"})
+	onPrivate := insert(t, db, "comments", bson.M{"link_id": private, "user_id": dan, "text": "Chut"})
+	svc.SetAccess(func(_ context.Context, linkID, _ string) bool { return linkID == public },
+		func(_ context.Context, userID string) []string {
+			if userID == dan || userID == alice {
+				return []string{alice, dan}
+			}
+			return []string{userID}
+		})
+
+	if err := svc.Report(ctx, bob, TargetIdea, private, "spam", ""); !errors.Is(err, ErrNotFound) {
+		t.Errorf("private idea of another account: %v, want not found", err)
+	}
+	if err := svc.Report(ctx, bob, TargetComment, onPrivate, "spam", ""); !errors.Is(err, ErrNotFound) {
+		t.Errorf("comment on a private idea: %v, want not found", err)
+	}
+	if err := svc.Report(ctx, dan, TargetIdea, public, "spam", ""); !errors.Is(err, ErrOwnContent) {
+		t.Errorf("tribe member: %v", err)
+	}
+	if err := svc.Report(ctx, dan, TargetAccount, alice, "spam", ""); !errors.Is(err, ErrOwnContent) {
+		t.Errorf("tribe member account: %v", err)
+	}
+	if c, _ := db.Collection("reports").CountDocuments(ctx, bson.M{"target_summary": "Secret anniversaire"}); c != 0 {
+		t.Error("a private title was copied into a report")
+	}
+	if err := svc.Report(ctx, bob, TargetIdea, public, "spam", ""); err != nil {
+		t.Fatal(err)
+	}
+	if n.calls != 1 {
+		t.Errorf("%d notifications", n.calls)
+	}
+}
+
+// Suspendre retire tout ce que le compte montrait ; un admin ne se suspend pas.
+func TestSuspendRemovesEverythingPublicButNeverAnAdmin(t *testing.T) {
+	svc, db, _ := setup(t)
+	ctx := context.Background()
+	admin := insert(t, db, "users", bson.M{"display_name": "Tribbae", "is_admin": true})
+	alice := insert(t, db, "users", bson.M{"display_name": "Alice"})
+	folder := insert(t, db, "folders", bson.M{"owner_id": alice, "name": "Sorties", "visibility": "public"})
+	idea := insert(t, db, "links", bson.M{"owner_id": alice, "title": "Parc", "visibility": "public"})
+	comment := insert(t, db, "comments", bson.M{"link_id": idea, "user_id": alice, "text": "Top"})
+
+	if err := svc.Suspend(ctx, admin); !errors.Is(err, ErrProtected) {
+		t.Errorf("suspending an admin: %v", err)
+	}
+	if c, _ := db.Collection("users").CountDocuments(ctx, bson.M{"suspended_at": bson.M{"$exists": true}}); c != 0 {
+		t.Fatal("the admin account was suspended")
+	}
+	if err := svc.Suspend(ctx, alice); err != nil {
+		t.Fatal(err)
+	}
+	get := func(col, id string) bson.M {
+		oid, _ := bson.ObjectIDFromHex(id)
+		var m bson.M
+		if err := db.Collection(col).FindOne(ctx, bson.M{"_id": oid}).Decode(&m); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	if f := get("folders", folder); f["visibility"] != "private" {
+		t.Errorf("folder still %v", f["visibility"])
+	}
+	if l := get("links", idea); l["visibility"] != "private" || l["hidden"] != true {
+		t.Errorf("idea %v hidden=%v", l["visibility"], l["hidden"])
+	}
+	if c := get("comments", comment); c["hidden"] != true {
+		t.Error("comment not hidden")
 	}
 }

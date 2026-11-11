@@ -26,6 +26,10 @@ func toStatus(op string, err error) error {
 		return status.Error(codes.NotFound, "not found")
 	case errors.Is(err, ErrTooMany):
 		return status.Error(codes.ResourceExhausted, "too many reports, try again tomorrow")
+	case errors.Is(err, ErrOwnContent):
+		return status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, ErrProtected):
+		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		log.Printf("moderation: %s: %v", op, err)
 		return status.Errorf(codes.Internal, "failed to %s", op)
