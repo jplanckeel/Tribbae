@@ -504,6 +504,10 @@ fun IdeaVisual(link: Link, height: Dp, modifier: Modifier = Modifier, iconSize: 
         } else {
             Icon(cat.icon, null, tint = cat.tint.copy(alpha = 0.55f), modifier = Modifier.size(iconSize))
         }
+        // Liste de cadeaux : réservé ou offert, jamais par qui
+        if (link.giftStatus.isNotEmpty()) {
+            ui.GiftTag(link.giftStatus, Modifier.align(Alignment.BottomStart).padding(8.dp))
+        }
     }
 }
 

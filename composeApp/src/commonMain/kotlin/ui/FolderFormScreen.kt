@@ -1,5 +1,7 @@
 package ui
 
+import androidx.compose.material.icons.outlined.CardGiftcard
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -60,6 +62,17 @@ private fun inDays(n: Int): Long = Calendar.getInstance().apply {
 fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Folder? = null) {
     var draft by remember { mutableStateOf(existing ?: Folder(id = "", name = "", icon = FolderIcon.CAMPING, color = FolderColor.ORANGE, visibility = "PRIVATE")) }
     var tab by remember { mutableStateOf(if (existing != null) 0 else 1) }
+    var confirmReset by remember { mutableStateOf(false) }
+    val resetScope = rememberCoroutineScope()
+    if (confirmReset && existing != null) {
+        ConfirmSheet(
+            "Remettre les réservations à zéro ?",
+            "Les cadeaux redeviennent libres pour tous vos proches.",
+            "Tout remettre à zéro",
+            onConfirm = { confirmReset = false; resetScope.launch { viewModel.resetGifts(existing.id) } },
+            onDismiss = { confirmReset = false },
+        )
+    }
     var error by remember { mutableStateOf<String?>(null) }
     var showDate by remember { mutableStateOf(false) }
     var confirmPublish by remember { mutableStateOf(false) }
@@ -398,6 +411,32 @@ fun FolderFormScreen(viewModel: LinkViewModel, onBack: () -> Unit, existing: Fol
                             onCheckedChange = { draft = draft.copy(pinned = it) },
                             colors = SwitchDefaults.colors(checkedTrackColor = ink, checkedThumbColor = Color.White, uncheckedTrackColor = Color(0xFFD9C2AE), uncheckedThumbColor = Color.White, uncheckedBorderColor = Color.Transparent)
                         )
+                    }
+                    // « Offrir une idée » : les proches réservent les idées Cadeau, sans que personne sache qui offre quoi
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CardColor)) {
+                        Row(
+                            Modifier.fillMaxWidth().clickable(role = Role.Switch) { draft = draft.copy(giftReservations = !draft.giftReservations) }.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Outlined.CardGiftcard, null, tint = CategoryPalettes["CADEAU"]?.icon ?: Terracotta, modifier = Modifier.size(20.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("C'est une liste de cadeaux", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+                                Text("Avec le lien du dossier, vos proches disent « Je l'offre » sur une idée Cadeau. Personne ne voit qui offre quoi.", fontSize = 12.sp, color = TextSec)
+                            }
+                            Switch(
+                                checked = draft.giftReservations,
+                                onCheckedChange = { draft = draft.copy(giftReservations = it) },
+                                colors = SwitchDefaults.colors(checkedTrackColor = ink, checkedThumbColor = Color.White, uncheckedTrackColor = Color(0xFFD9C2AE), uncheckedThumbColor = Color.White, uncheckedBorderColor = Color.Transparent)
+                            )
+                        }
+                        if (existing?.giftReservations == true) {
+                            HorizontalDivider(color = Sable2)
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("Les réservations restent jusqu'à ce que vous les effaciez.", fontSize = 12.sp, color = TextSec, modifier = Modifier.weight(1f))
+                                TextButton(onClick = { confirmReset = true }) { Text("Tout remettre à zéro", color = TerracottaDark, fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
+                            }
+                        }
                     }
                 }
             }
