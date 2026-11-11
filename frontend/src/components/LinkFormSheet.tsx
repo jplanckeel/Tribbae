@@ -193,6 +193,7 @@ export default function LinkFormSheet({ onClose, initial, editing, removed, auth
     if (myPublicFolder && movedIn) {
       // Le serveur refuse de déplacer l'idée d'un autre vers un dossier public
       if (authorName !== undefined) return setError("Seul son auteur peut ranger cette idée dans un dossier public.");
+      if (removed) return setError("Cette idée a été retirée par la modération : elle ne peut plus être publiée.");
       if (form.visibility !== "public" && !(await confirm(PUBLISH_IDEA_IN_FOLDER))) return;
     }
     setSaving(true);

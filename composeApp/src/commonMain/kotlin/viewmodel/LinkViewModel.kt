@@ -1145,6 +1145,13 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         } catch (e: Exception) {
             val m = e.message.orEmpty()
             if (m.contains("API error (404)") || m.contains("not found", ignoreCase = true)) return
+            // Idée retirée par la modération : le serveur ne l'acceptera jamais.
+            // On abandonne ce changement (la version du serveur revient à la
+            // prochaine synchro) au lieu de bloquer toute la file.
+            if (m.contains("idea removed by moderation")) {
+                _actionErrors.tryEmit("Cette idée a été retirée par la modération : elle ne peut plus être publiée.")
+                return
+            }
             requeue?.let { repository.updatePending(it) }
             // Publication refusée tant que l'adresse n'est pas confirmée : elle
             // attend dans la file, sans bloquer le reste de la synchronisation
