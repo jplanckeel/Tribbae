@@ -92,6 +92,10 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	insert(t, db, "link_likes", bson.M{"link_id": bobIdea.Hex(), "user_id": alice})
 	insert(t, db, "link_likes", bson.M{"link_id": aliceIdea, "user_id": bob})
 	insert(t, db, "comments", bson.M{"link_id": aliceIdea, "user_id": bob, "text": "Miam"})
+	// « C'est fait » : souvenirs d'Alice, souvenir de Bob sur l'idée d'Alice, et Alice présente chez Bob
+	insert(t, db, "link_dones", bson.M{"link_id": bobIdea.Hex(), "user_id": alice, "note": "Chez Bob"})
+	insert(t, db, "link_dones", bson.M{"link_id": aliceIdea, "user_id": bob})
+	bobMemory := insert(t, db, "link_dones", bson.M{"link_id": bobIdea.Hex(), "user_id": bob, "with_user_ids": bson.A{alice, bob}})
 	insert(t, db, "comments", bson.M{"link_id": bobIdea.Hex(), "user_id": alice, "text": "Joli"})
 	insert(t, db, "follows", bson.M{"follower_id": alice, "following_id": bob})
 	insert(t, db, "follows", bson.M{"follower_id": bob, "following_id": alice})
@@ -167,6 +171,10 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		{"ses commentaires", "comments", bson.M{"user_id": alice}, 0},
 		{"« j'aime » sur ses idées", "link_likes", bson.M{"link_id": aliceIdea}, 0},
 		{"ses « j'aime »", "link_likes", bson.M{"user_id": alice}, 0},
+		{"ses souvenirs", "link_dones", bson.M{"user_id": alice}, 0},
+		{"souvenirs sur ses idées", "link_dones", bson.M{"link_id": aliceIdea}, 0},
+		{"sa présence dans les souvenirs des autres", "link_dones", bson.M{"with_user_ids": alice}, 0},
+		{"souvenir de Bob, sans Alice", "link_dones", bson.M{"_id": bobMemory, "with_user_ids": bson.A{bob}}, 1},
 		{"abonnements", "follows", bson.M{}, 0},
 		{"enfants d'Alice", "children", bson.M{"ownerId": aliceID}, 0},
 		{"place dans les dossiers des autres", "folders", bson.M{"collaborators.user_id": alice}, 0},

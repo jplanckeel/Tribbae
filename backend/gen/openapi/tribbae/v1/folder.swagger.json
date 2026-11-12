@@ -1420,6 +1420,29 @@
         "giftStatus": {
           "type": "string",
           "description": "Liste de cadeaux : \"\" (libre), reserved, bought, ou mine / mine_bought\npour le lecteur qui l'offre. Personne ne voit qui offre quoi."
+        },
+        "doneCount": {
+          "type": "integer",
+          "format": "int32",
+          "title": "« C'est fait » : visible de la tribu et des membres du dossier seulement\n(vide pour un lecteur extérieur, Explorer et le lien de partage).\nNombre de fois où l'idée a été faite"
+        },
+        "lastDoneAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Dernier jour où elle a été faite (midi UTC de ce jour : la date seule compte)"
+        },
+        "redo": {
+          "type": "boolean",
+          "title": "« À refaire »"
+        },
+        "donePromptDismissed": {
+          "type": "boolean",
+          "title": "« Pas cette fois » a été répondu au rappel d'une sortie passée"
+        },
+        "doneFamilies": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Idée publique : nombre de tribus qui l'ont faite, renvoyé à partir de 5\n(0 en dessous). Anonyme : ni nom ni photo."
         }
       }
     },

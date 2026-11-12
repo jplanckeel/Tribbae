@@ -1,3 +1,4 @@
+import type { DoneInput, DoneSummary, LinkDone } from "./done";
 import { clearSession, getSession, setSession, shouldRenew } from "./session";
 import { withinLimits } from "./preview";
 import type { AdminReport, AdminStats, AdminUser, AiIdea, BlockedUser, Child, CircleInvitation, CircleInvitationInfo, CollaboratorRole, Comment, ConnectedApp, Folder, FolderInput, GiftReservation, Link, LinkInput, LinkPreview, OAuthConsent, StatsPeriod, Tribe, TribeInvitationInfo, UserProfile } from "./types";
@@ -17,6 +18,9 @@ export function frenchMessage(status: number, message: string): string {
   if (/too many reports/i.test(message)) return "Vous avez envoyé beaucoup de signalements aujourd'hui : réessayez demain.";
   if (/gift already reserved/i.test(message)) return "Quelqu'un vient de le réserver.";
   if (/gift reservations are off/i.test(message)) return "Cette liste n'accepte plus de réservations.";
+  if (/too many ideas marked done/i.test(message)) return "Vous avez marqué beaucoup d'idées aujourd'hui : réessayez demain.";
+  if (/gift list ideas are marked/i.test(message)) return "Dans une liste de cadeaux, c'est la réservation qui dit qu'un cadeau est acheté.";
+  if (/doneOn cannot be in the future/i.test(message)) return "La date ne peut pas être dans le futur.";
   if (/too many gift reservations/i.test(message)) return "Vous avez déjà réservé 5 cadeaux sur cette liste aujourd'hui : réessayez demain.";
   if (status === 429 && /ai is busy/i.test(message)) return "L'IA prépare déjà des idées pour une autre tribu. Réessayez dans une trentaine de secondes.";
   if (status === 429) return "Trop de tentatives, réessayez dans une minute.";
@@ -199,6 +203,32 @@ export const links = {
   unlike: (id: string) =>
     request<{ likeCount?: number }>(`/links/${encodeURIComponent(id)}/like`, { method: "DELETE" }),
   liked: () => request<{ links?: Link[] }>("/liked-links").then((r) => r.links ?? []),
+};
+
+/**
+ * Le serveur n'écrit pas les valeurs nulles (0, faux, "") : sans elles, une idée
+ * remise « à faire » garderait son ancien état une fois fusionnée dans le cache.
+ */
+const withDoneState = (l: Link): Link => ({ doneCount: 0, lastDoneAt: "", redo: false, donePromptDismissed: false, ...l });
+
+/** « C'est fait » : marquer une idée comme faite et garder un souvenir (lib/done.ts). */
+export const done = {
+  mark: (linkId: string, data: DoneInput = {}) =>
+    request<{ done: LinkDone; link: Link }>(`/links/${encodeURIComponent(linkId)}/done`, { method: "POST", body: json(data) })
+      .then((r) => ({ done: r.done, link: withDoneState(r.link) })),
+  update: (linkId: string, doneId: string, data: DoneInput) =>
+    request<{ done: LinkDone; link: Link }>(`/links/${encodeURIComponent(linkId)}/done/${encodeURIComponent(doneId)}`, {
+      method: "PATCH", body: json(data),
+    }).then((r) => ({ done: r.done, link: withDoneState(r.link) })),
+  /** « Plus fait », ou « Annuler » du toast */
+  unmark: (linkId: string, doneId: string) =>
+    request<{ link: Link }>(`/links/${encodeURIComponent(linkId)}/done/${encodeURIComponent(doneId)}`, { method: "DELETE" }).then((r) => withDoneState(r.link)),
+  list: (linkId: string) =>
+    request<{ dones?: LinkDone[] }>(`/links/${encodeURIComponent(linkId)}/done`).then((r) => r.dones ?? []),
+  /** « Pas cette fois » : ne plus demander si la sortie passée a été faite */
+  dismissPrompt: (linkId: string) =>
+    request<{ link: Link }>(`/links/${encodeURIComponent(linkId)}/done-prompt/dismiss`, { method: "POST", body: "{}" }).then((r) => withDoneState(r.link)),
+  summary: (year: number) => request<DoneSummary>(`/done/summary${qs({ year })}`),
 };
 
 export const folders = {

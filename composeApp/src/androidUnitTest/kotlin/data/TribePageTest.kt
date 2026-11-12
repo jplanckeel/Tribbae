@@ -1,6 +1,5 @@
 package data
 
-import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -33,18 +32,21 @@ class TribePageTest {
 
     @Test
     fun summarizesTheYear() {
-        fun link(id: String, c: LinkCategory, at: String) = Link(id = id, title = id, url = "", category = c, createdAt = at)
-        val links = listOf(
-            link("1", LinkCategory.EVENEMENT, "2026-07-02T12:00:00Z"),
-            link("2", LinkCategory.ACTIVITE, "2026-07-14T12:00:00Z"),
-            link("3", LinkCategory.RECETTE, "2026-03-01T12:00:00Z"),
-            link("4", LinkCategory.CADEAU, "2025-12-24T12:00:00Z"),
-            link("5", LinkCategory.IDEE, ""),
-        )
-        val y = TribePage.yearInIdeas(links, 2026, ZoneOffset.UTC)
-        assertEquals(TribePage.YearInIdeas(outings = 2, recipes = 1, gifts = 0, total = 3, bestMonth = 6 to 2), y)
+        val y = TribePage.yearInIdeas(DoneSummary(year = 2026, outings = 14, recipes = 24, books = 9, total = 52, bestMonth = 7, bestMonthCount = 12))
+        assertEquals(TribePage.YearInIdeas(outings = 14, recipes = 24, books = 9, total = 52, bestMonth = 6 to 12), y)
+        assertEquals(TribePage.YearLabels("sorties faites", "recettes cuisinées", "livres lus"), TribePage.yearLabels(y))
+        assertEquals("Votre meilleur mois : juillet, 12 idées faites.", TribePage.bestMonthLine(y))
         assertEquals("juillet", TribePage.monthName(6))
-        assertNull(TribePage.yearInIdeas(links, 2024, ZoneOffset.UTC).bestMonth)
+
+        val one = TribePage.yearInIdeas(DoneSummary(year = 2026, outings = 1, recipes = 1, books = 1, total = 3, bestMonth = 3, bestMonthCount = 1))
+        assertEquals(TribePage.YearLabels("sortie faite", "recette cuisinée", "livre lu"), TribePage.yearLabels(one))
+        assertEquals("Votre meilleur mois : mars, 1 idée faite.", TribePage.bestMonthLine(one))
+
+        // Rien de fait, ou le bilan n'est pas encore arrivé
+        val none = TribePage.yearInIdeas(null)
+        assertEquals(TribePage.YearInIdeas(), none)
+        assertNull(TribePage.yearInIdeas(DoneSummary(year = 2024)).bestMonth)
+        assertEquals("Marquez vos premières idées faites : elles rempliront votre année.", TribePage.bestMonthLine(none))
     }
 
     @Test

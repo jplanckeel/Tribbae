@@ -126,6 +126,17 @@ fun SettingsScreen(s: SettingsState, a: SettingsActions, dataMessage: String?, m
                 }
                 CampSwitch(data.ReminderPrefs.enabled, { data.ReminderPrefs.set(it) }, "Rappels")
             }
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(Icons.Outlined.Check, null, tint = TextSec, modifier = Modifier.size(20.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text("Me demander si on y est allés", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Ecorce)
+                    Text("Le lendemain d'une sortie, pour garder le souvenir", fontSize = 13.sp, color = TextSec)
+                }
+                CampSwitch(data.ReminderPrefs.askDone, { data.ReminderPrefs.chooseAskDone(it) }, "Me demander si on y est allés")
+            }
         }
 
         Group("Outils") {

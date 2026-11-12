@@ -122,7 +122,20 @@ type Link struct {
 	Hidden bool `protobuf:"varint,27,opt,name=hidden,proto3" json:"hidden,omitempty"`
 	// Liste de cadeaux : "" (libre), reserved, bought, ou mine / mine_bought
 	// pour le lecteur qui l'offre. Personne ne voit qui offre quoi.
-	GiftStatus    string `protobuf:"bytes,28,opt,name=gift_status,json=giftStatus,proto3" json:"gift_status,omitempty"`
+	GiftStatus string `protobuf:"bytes,28,opt,name=gift_status,json=giftStatus,proto3" json:"gift_status,omitempty"`
+	// « C'est fait » : visible de la tribu et des membres du dossier seulement
+	// (vide pour un lecteur extérieur, Explorer et le lien de partage).
+	// Nombre de fois où l'idée a été faite
+	DoneCount int32 `protobuf:"varint,29,opt,name=done_count,json=doneCount,proto3" json:"done_count,omitempty"`
+	// Dernier jour où elle a été faite (midi UTC de ce jour : la date seule compte)
+	LastDoneAt *timestamppb.Timestamp `protobuf:"bytes,30,opt,name=last_done_at,json=lastDoneAt,proto3" json:"last_done_at,omitempty"`
+	// « À refaire »
+	Redo bool `protobuf:"varint,31,opt,name=redo,proto3" json:"redo,omitempty"`
+	// « Pas cette fois » a été répondu au rappel d'une sortie passée
+	DonePromptDismissed bool `protobuf:"varint,32,opt,name=done_prompt_dismissed,json=donePromptDismissed,proto3" json:"done_prompt_dismissed,omitempty"`
+	// Idée publique : nombre de tribus qui l'ont faite, renvoyé à partir de 5
+	// (0 en dessous). Anonyme : ni nom ni photo.
+	DoneFamilies  int32 `protobuf:"varint,33,opt,name=done_families,json=doneFamilies,proto3" json:"done_families,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -353,6 +366,838 @@ func (x *Link) GetGiftStatus() string {
 	return ""
 }
 
+func (x *Link) GetDoneCount() int32 {
+	if x != nil {
+		return x.DoneCount
+	}
+	return 0
+}
+
+func (x *Link) GetLastDoneAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastDoneAt
+	}
+	return nil
+}
+
+func (x *Link) GetRedo() bool {
+	if x != nil {
+		return x.Redo
+	}
+	return false
+}
+
+func (x *Link) GetDonePromptDismissed() bool {
+	if x != nil {
+		return x.DonePromptDismissed
+	}
+	return false
+}
+
+func (x *Link) GetDoneFamilies() int32 {
+	if x != nil {
+		return x.DoneFamilies
+	}
+	return 0
+}
+
+// Un souvenir : une fois où l'idée a été faite
+type LinkDone struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Id     string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	LinkId string                 `protobuf:"bytes,2,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
+	// Qui l'a marquée
+	UserId string `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// Jour, sans heure : AAAA-MM-JJ
+	DoneOn string `protobuf:"bytes,4,opt,name=done_on,json=doneOn,proto3" json:"done_on,omitempty"`
+	// Qui était là : comptes et enfants de la tribu
+	WithUserIds  []string `protobuf:"bytes,5,rep,name=with_user_ids,json=withUserIds,proto3" json:"with_user_ids,omitempty"`
+	WithChildIds []string `protobuf:"bytes,6,rep,name=with_child_ids,json=withChildIds,proto3" json:"with_child_ids,omitempty"`
+	// 0 = pas de note
+	Rating        int32                  `protobuf:"varint,7,opt,name=rating,proto3" json:"rating,omitempty"`
+	Note          string                 `protobuf:"bytes,8,opt,name=note,proto3" json:"note,omitempty"`
+	PhotoUrl      string                 `protobuf:"bytes,9,opt,name=photo_url,json=photoUrl,proto3" json:"photo_url,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LinkDone) Reset() {
+	*x = LinkDone{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LinkDone) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LinkDone) ProtoMessage() {}
+
+func (x *LinkDone) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LinkDone.ProtoReflect.Descriptor instead.
+func (*LinkDone) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *LinkDone) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *LinkDone) GetLinkId() string {
+	if x != nil {
+		return x.LinkId
+	}
+	return ""
+}
+
+func (x *LinkDone) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *LinkDone) GetDoneOn() string {
+	if x != nil {
+		return x.DoneOn
+	}
+	return ""
+}
+
+func (x *LinkDone) GetWithUserIds() []string {
+	if x != nil {
+		return x.WithUserIds
+	}
+	return nil
+}
+
+func (x *LinkDone) GetWithChildIds() []string {
+	if x != nil {
+		return x.WithChildIds
+	}
+	return nil
+}
+
+func (x *LinkDone) GetRating() int32 {
+	if x != nil {
+		return x.Rating
+	}
+	return 0
+}
+
+func (x *LinkDone) GetNote() string {
+	if x != nil {
+		return x.Note
+	}
+	return ""
+}
+
+func (x *LinkDone) GetPhotoUrl() string {
+	if x != nil {
+		return x.PhotoUrl
+	}
+	return ""
+}
+
+func (x *LinkDone) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+type MarkLinkDoneRequest struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	LinkId string                 `protobuf:"bytes,1,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
+	// AAAA-MM-JJ ; aujourd'hui si vide, jamais dans le futur
+	DoneOn       string   `protobuf:"bytes,2,opt,name=done_on,json=doneOn,proto3" json:"done_on,omitempty"`
+	WithUserIds  []string `protobuf:"bytes,3,rep,name=with_user_ids,json=withUserIds,proto3" json:"with_user_ids,omitempty"`
+	WithChildIds []string `protobuf:"bytes,4,rep,name=with_child_ids,json=withChildIds,proto3" json:"with_child_ids,omitempty"`
+	Rating       int32    `protobuf:"varint,5,opt,name=rating,proto3" json:"rating,omitempty"`
+	Note         string   `protobuf:"bytes,6,opt,name=note,proto3" json:"note,omitempty"`
+	// Photo déjà envoyée par POST /v1/photos
+	PhotoUrl string `protobuf:"bytes,7,opt,name=photo_url,json=photoUrl,proto3" json:"photo_url,omitempty"`
+	// « À refaire », porté par l'idée ; absent = inchangé
+	Redo          *bool `protobuf:"varint,8,opt,name=redo,proto3,oneof" json:"redo,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MarkLinkDoneRequest) Reset() {
+	*x = MarkLinkDoneRequest{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MarkLinkDoneRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MarkLinkDoneRequest) ProtoMessage() {}
+
+func (x *MarkLinkDoneRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MarkLinkDoneRequest.ProtoReflect.Descriptor instead.
+func (*MarkLinkDoneRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *MarkLinkDoneRequest) GetLinkId() string {
+	if x != nil {
+		return x.LinkId
+	}
+	return ""
+}
+
+func (x *MarkLinkDoneRequest) GetDoneOn() string {
+	if x != nil {
+		return x.DoneOn
+	}
+	return ""
+}
+
+func (x *MarkLinkDoneRequest) GetWithUserIds() []string {
+	if x != nil {
+		return x.WithUserIds
+	}
+	return nil
+}
+
+func (x *MarkLinkDoneRequest) GetWithChildIds() []string {
+	if x != nil {
+		return x.WithChildIds
+	}
+	return nil
+}
+
+func (x *MarkLinkDoneRequest) GetRating() int32 {
+	if x != nil {
+		return x.Rating
+	}
+	return 0
+}
+
+func (x *MarkLinkDoneRequest) GetNote() string {
+	if x != nil {
+		return x.Note
+	}
+	return ""
+}
+
+func (x *MarkLinkDoneRequest) GetPhotoUrl() string {
+	if x != nil {
+		return x.PhotoUrl
+	}
+	return ""
+}
+
+func (x *MarkLinkDoneRequest) GetRedo() bool {
+	if x != nil && x.Redo != nil {
+		return *x.Redo
+	}
+	return false
+}
+
+type LinkDoneResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Done          *LinkDone              `protobuf:"bytes,1,opt,name=done,proto3" json:"done,omitempty"`
+	Link          *Link                  `protobuf:"bytes,2,opt,name=link,proto3" json:"link,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LinkDoneResponse) Reset() {
+	*x = LinkDoneResponse{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LinkDoneResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LinkDoneResponse) ProtoMessage() {}
+
+func (x *LinkDoneResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LinkDoneResponse.ProtoReflect.Descriptor instead.
+func (*LinkDoneResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *LinkDoneResponse) GetDone() *LinkDone {
+	if x != nil {
+		return x.Done
+	}
+	return nil
+}
+
+func (x *LinkDoneResponse) GetLink() *Link {
+	if x != nil {
+		return x.Link
+	}
+	return nil
+}
+
+type UpdateLinkDoneRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LinkId        string                 `protobuf:"bytes,1,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
+	DoneId        string                 `protobuf:"bytes,2,opt,name=done_id,json=doneId,proto3" json:"done_id,omitempty"`
+	DoneOn        string                 `protobuf:"bytes,3,opt,name=done_on,json=doneOn,proto3" json:"done_on,omitempty"`
+	WithUserIds   []string               `protobuf:"bytes,4,rep,name=with_user_ids,json=withUserIds,proto3" json:"with_user_ids,omitempty"`
+	WithChildIds  []string               `protobuf:"bytes,5,rep,name=with_child_ids,json=withChildIds,proto3" json:"with_child_ids,omitempty"`
+	Rating        int32                  `protobuf:"varint,6,opt,name=rating,proto3" json:"rating,omitempty"`
+	Note          string                 `protobuf:"bytes,7,opt,name=note,proto3" json:"note,omitempty"`
+	PhotoUrl      string                 `protobuf:"bytes,8,opt,name=photo_url,json=photoUrl,proto3" json:"photo_url,omitempty"`
+	Redo          *bool                  `protobuf:"varint,9,opt,name=redo,proto3,oneof" json:"redo,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateLinkDoneRequest) Reset() {
+	*x = UpdateLinkDoneRequest{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateLinkDoneRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateLinkDoneRequest) ProtoMessage() {}
+
+func (x *UpdateLinkDoneRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateLinkDoneRequest.ProtoReflect.Descriptor instead.
+func (*UpdateLinkDoneRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *UpdateLinkDoneRequest) GetLinkId() string {
+	if x != nil {
+		return x.LinkId
+	}
+	return ""
+}
+
+func (x *UpdateLinkDoneRequest) GetDoneId() string {
+	if x != nil {
+		return x.DoneId
+	}
+	return ""
+}
+
+func (x *UpdateLinkDoneRequest) GetDoneOn() string {
+	if x != nil {
+		return x.DoneOn
+	}
+	return ""
+}
+
+func (x *UpdateLinkDoneRequest) GetWithUserIds() []string {
+	if x != nil {
+		return x.WithUserIds
+	}
+	return nil
+}
+
+func (x *UpdateLinkDoneRequest) GetWithChildIds() []string {
+	if x != nil {
+		return x.WithChildIds
+	}
+	return nil
+}
+
+func (x *UpdateLinkDoneRequest) GetRating() int32 {
+	if x != nil {
+		return x.Rating
+	}
+	return 0
+}
+
+func (x *UpdateLinkDoneRequest) GetNote() string {
+	if x != nil {
+		return x.Note
+	}
+	return ""
+}
+
+func (x *UpdateLinkDoneRequest) GetPhotoUrl() string {
+	if x != nil {
+		return x.PhotoUrl
+	}
+	return ""
+}
+
+func (x *UpdateLinkDoneRequest) GetRedo() bool {
+	if x != nil && x.Redo != nil {
+		return *x.Redo
+	}
+	return false
+}
+
+type UnmarkLinkDoneRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LinkId        string                 `protobuf:"bytes,1,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
+	DoneId        string                 `protobuf:"bytes,2,opt,name=done_id,json=doneId,proto3" json:"done_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnmarkLinkDoneRequest) Reset() {
+	*x = UnmarkLinkDoneRequest{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnmarkLinkDoneRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnmarkLinkDoneRequest) ProtoMessage() {}
+
+func (x *UnmarkLinkDoneRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnmarkLinkDoneRequest.ProtoReflect.Descriptor instead.
+func (*UnmarkLinkDoneRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *UnmarkLinkDoneRequest) GetLinkId() string {
+	if x != nil {
+		return x.LinkId
+	}
+	return ""
+}
+
+func (x *UnmarkLinkDoneRequest) GetDoneId() string {
+	if x != nil {
+		return x.DoneId
+	}
+	return ""
+}
+
+type UnmarkLinkDoneResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Link          *Link                  `protobuf:"bytes,1,opt,name=link,proto3" json:"link,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnmarkLinkDoneResponse) Reset() {
+	*x = UnmarkLinkDoneResponse{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnmarkLinkDoneResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnmarkLinkDoneResponse) ProtoMessage() {}
+
+func (x *UnmarkLinkDoneResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnmarkLinkDoneResponse.ProtoReflect.Descriptor instead.
+func (*UnmarkLinkDoneResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UnmarkLinkDoneResponse) GetLink() *Link {
+	if x != nil {
+		return x.Link
+	}
+	return nil
+}
+
+type ListLinkDonesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LinkId        string                 `protobuf:"bytes,1,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListLinkDonesRequest) Reset() {
+	*x = ListLinkDonesRequest{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListLinkDonesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListLinkDonesRequest) ProtoMessage() {}
+
+func (x *ListLinkDonesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListLinkDonesRequest.ProtoReflect.Descriptor instead.
+func (*ListLinkDonesRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListLinkDonesRequest) GetLinkId() string {
+	if x != nil {
+		return x.LinkId
+	}
+	return ""
+}
+
+type ListLinkDonesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Du plus récent au plus ancien
+	Dones         []*LinkDone `protobuf:"bytes,1,rep,name=dones,proto3" json:"dones,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListLinkDonesResponse) Reset() {
+	*x = ListLinkDonesResponse{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListLinkDonesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListLinkDonesResponse) ProtoMessage() {}
+
+func (x *ListLinkDonesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListLinkDonesResponse.ProtoReflect.Descriptor instead.
+func (*ListLinkDonesResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ListLinkDonesResponse) GetDones() []*LinkDone {
+	if x != nil {
+		return x.Dones
+	}
+	return nil
+}
+
+type DismissDonePromptRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LinkId        string                 `protobuf:"bytes,1,opt,name=link_id,json=linkId,proto3" json:"link_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DismissDonePromptRequest) Reset() {
+	*x = DismissDonePromptRequest{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DismissDonePromptRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DismissDonePromptRequest) ProtoMessage() {}
+
+func (x *DismissDonePromptRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DismissDonePromptRequest.ProtoReflect.Descriptor instead.
+func (*DismissDonePromptRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *DismissDonePromptRequest) GetLinkId() string {
+	if x != nil {
+		return x.LinkId
+	}
+	return ""
+}
+
+type DismissDonePromptResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Link          *Link                  `protobuf:"bytes,1,opt,name=link,proto3" json:"link,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DismissDonePromptResponse) Reset() {
+	*x = DismissDonePromptResponse{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DismissDonePromptResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DismissDonePromptResponse) ProtoMessage() {}
+
+func (x *DismissDonePromptResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DismissDonePromptResponse.ProtoReflect.Descriptor instead.
+func (*DismissDonePromptResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *DismissDonePromptResponse) GetLink() *Link {
+	if x != nil {
+		return x.Link
+	}
+	return nil
+}
+
+type GetDoneSummaryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Year          int32                  `protobuf:"varint,1,opt,name=year,proto3" json:"year,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDoneSummaryRequest) Reset() {
+	*x = GetDoneSummaryRequest{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDoneSummaryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDoneSummaryRequest) ProtoMessage() {}
+
+func (x *GetDoneSummaryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDoneSummaryRequest.ProtoReflect.Descriptor instead.
+func (*GetDoneSummaryRequest) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *GetDoneSummaryRequest) GetYear() int32 {
+	if x != nil {
+		return x.Year
+	}
+	return 0
+}
+
+// « Notre année en idées » : chaque fois compte (une recette refaite trois
+// fois compte trois)
+type GetDoneSummaryResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Year  int32                  `protobuf:"varint,1,opt,name=year,proto3" json:"year,omitempty"`
+	// Sorties et activités
+	Outings int32 `protobuf:"varint,2,opt,name=outings,proto3" json:"outings,omitempty"`
+	Recipes int32 `protobuf:"varint,3,opt,name=recipes,proto3" json:"recipes,omitempty"`
+	Books   int32 `protobuf:"varint,4,opt,name=books,proto3" json:"books,omitempty"`
+	Total   int32 `protobuf:"varint,5,opt,name=total,proto3" json:"total,omitempty"`
+	// 1 à 12 ; 0 si rien n'a été fait
+	BestMonth      int32 `protobuf:"varint,6,opt,name=best_month,json=bestMonth,proto3" json:"best_month,omitempty"`
+	BestMonthCount int32 `protobuf:"varint,7,opt,name=best_month_count,json=bestMonthCount,proto3" json:"best_month_count,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *GetDoneSummaryResponse) Reset() {
+	*x = GetDoneSummaryResponse{}
+	mi := &file_tribbae_v1_link_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDoneSummaryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDoneSummaryResponse) ProtoMessage() {}
+
+func (x *GetDoneSummaryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_tribbae_v1_link_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDoneSummaryResponse.ProtoReflect.Descriptor instead.
+func (*GetDoneSummaryResponse) Descriptor() ([]byte, []int) {
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetDoneSummaryResponse) GetYear() int32 {
+	if x != nil {
+		return x.Year
+	}
+	return 0
+}
+
+func (x *GetDoneSummaryResponse) GetOutings() int32 {
+	if x != nil {
+		return x.Outings
+	}
+	return 0
+}
+
+func (x *GetDoneSummaryResponse) GetRecipes() int32 {
+	if x != nil {
+		return x.Recipes
+	}
+	return 0
+}
+
+func (x *GetDoneSummaryResponse) GetBooks() int32 {
+	if x != nil {
+		return x.Books
+	}
+	return 0
+}
+
+func (x *GetDoneSummaryResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *GetDoneSummaryResponse) GetBestMonth() int32 {
+	if x != nil {
+		return x.BestMonth
+	}
+	return 0
+}
+
+func (x *GetDoneSummaryResponse) GetBestMonthCount() int32 {
+	if x != nil {
+		return x.BestMonthCount
+	}
+	return 0
+}
+
 type CreateLinkRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	FolderId        string                 `protobuf:"bytes,1,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
@@ -377,7 +1222,7 @@ type CreateLinkRequest struct {
 
 func (x *CreateLinkRequest) Reset() {
 	*x = CreateLinkRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[1]
+	mi := &file_tribbae_v1_link_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -389,7 +1234,7 @@ func (x *CreateLinkRequest) String() string {
 func (*CreateLinkRequest) ProtoMessage() {}
 
 func (x *CreateLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[1]
+	mi := &file_tribbae_v1_link_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -402,7 +1247,7 @@ func (x *CreateLinkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateLinkRequest.ProtoReflect.Descriptor instead.
 func (*CreateLinkRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{1}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *CreateLinkRequest) GetFolderId() string {
@@ -526,7 +1371,7 @@ type CreateLinkResponse struct {
 
 func (x *CreateLinkResponse) Reset() {
 	*x = CreateLinkResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[2]
+	mi := &file_tribbae_v1_link_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -538,7 +1383,7 @@ func (x *CreateLinkResponse) String() string {
 func (*CreateLinkResponse) ProtoMessage() {}
 
 func (x *CreateLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[2]
+	mi := &file_tribbae_v1_link_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -551,7 +1396,7 @@ func (x *CreateLinkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateLinkResponse.ProtoReflect.Descriptor instead.
 func (*CreateLinkResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{2}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CreateLinkResponse) GetLink() *Link {
@@ -570,7 +1415,7 @@ type GetLinkRequest struct {
 
 func (x *GetLinkRequest) Reset() {
 	*x = GetLinkRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[3]
+	mi := &file_tribbae_v1_link_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -582,7 +1427,7 @@ func (x *GetLinkRequest) String() string {
 func (*GetLinkRequest) ProtoMessage() {}
 
 func (x *GetLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[3]
+	mi := &file_tribbae_v1_link_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -595,7 +1440,7 @@ func (x *GetLinkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLinkRequest.ProtoReflect.Descriptor instead.
 func (*GetLinkRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{3}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetLinkRequest) GetLinkId() string {
@@ -614,7 +1459,7 @@ type GetLinkResponse struct {
 
 func (x *GetLinkResponse) Reset() {
 	*x = GetLinkResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[4]
+	mi := &file_tribbae_v1_link_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -626,7 +1471,7 @@ func (x *GetLinkResponse) String() string {
 func (*GetLinkResponse) ProtoMessage() {}
 
 func (x *GetLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[4]
+	mi := &file_tribbae_v1_link_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -639,7 +1484,7 @@ func (x *GetLinkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLinkResponse.ProtoReflect.Descriptor instead.
 func (*GetLinkResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{4}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *GetLinkResponse) GetLink() *Link {
@@ -650,15 +1495,17 @@ func (x *GetLinkResponse) GetLink() *Link {
 }
 
 type ListLinksRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	FolderId      string                 `protobuf:"bytes,1,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	FolderId string                 `protobuf:"bytes,1,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
+	// all (défaut) | todo | done
+	Status        string `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListLinksRequest) Reset() {
 	*x = ListLinksRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[5]
+	mi := &file_tribbae_v1_link_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -670,7 +1517,7 @@ func (x *ListLinksRequest) String() string {
 func (*ListLinksRequest) ProtoMessage() {}
 
 func (x *ListLinksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[5]
+	mi := &file_tribbae_v1_link_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -683,12 +1530,19 @@ func (x *ListLinksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLinksRequest.ProtoReflect.Descriptor instead.
 func (*ListLinksRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{5}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ListLinksRequest) GetFolderId() string {
 	if x != nil {
 		return x.FolderId
+	}
+	return ""
+}
+
+func (x *ListLinksRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
 	}
 	return ""
 }
@@ -702,7 +1556,7 @@ type ListLinksResponse struct {
 
 func (x *ListLinksResponse) Reset() {
 	*x = ListLinksResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[6]
+	mi := &file_tribbae_v1_link_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -714,7 +1568,7 @@ func (x *ListLinksResponse) String() string {
 func (*ListLinksResponse) ProtoMessage() {}
 
 func (x *ListLinksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[6]
+	mi := &file_tribbae_v1_link_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -727,7 +1581,7 @@ func (x *ListLinksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLinksResponse.ProtoReflect.Descriptor instead.
 func (*ListLinksResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{6}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListLinksResponse) GetLinks() []*Link {
@@ -762,7 +1616,7 @@ type UpdateLinkRequest struct {
 
 func (x *UpdateLinkRequest) Reset() {
 	*x = UpdateLinkRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[7]
+	mi := &file_tribbae_v1_link_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -774,7 +1628,7 @@ func (x *UpdateLinkRequest) String() string {
 func (*UpdateLinkRequest) ProtoMessage() {}
 
 func (x *UpdateLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[7]
+	mi := &file_tribbae_v1_link_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -787,7 +1641,7 @@ func (x *UpdateLinkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateLinkRequest.ProtoReflect.Descriptor instead.
 func (*UpdateLinkRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{7}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *UpdateLinkRequest) GetLinkId() string {
@@ -918,7 +1772,7 @@ type UpdateLinkResponse struct {
 
 func (x *UpdateLinkResponse) Reset() {
 	*x = UpdateLinkResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[8]
+	mi := &file_tribbae_v1_link_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -930,7 +1784,7 @@ func (x *UpdateLinkResponse) String() string {
 func (*UpdateLinkResponse) ProtoMessage() {}
 
 func (x *UpdateLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[8]
+	mi := &file_tribbae_v1_link_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -943,7 +1797,7 @@ func (x *UpdateLinkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateLinkResponse.ProtoReflect.Descriptor instead.
 func (*UpdateLinkResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{8}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *UpdateLinkResponse) GetLink() *Link {
@@ -962,7 +1816,7 @@ type DeleteLinkRequest struct {
 
 func (x *DeleteLinkRequest) Reset() {
 	*x = DeleteLinkRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[9]
+	mi := &file_tribbae_v1_link_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -974,7 +1828,7 @@ func (x *DeleteLinkRequest) String() string {
 func (*DeleteLinkRequest) ProtoMessage() {}
 
 func (x *DeleteLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[9]
+	mi := &file_tribbae_v1_link_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -987,7 +1841,7 @@ func (x *DeleteLinkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteLinkRequest.ProtoReflect.Descriptor instead.
 func (*DeleteLinkRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{9}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *DeleteLinkRequest) GetLinkId() string {
@@ -1005,7 +1859,7 @@ type DeleteLinkResponse struct {
 
 func (x *DeleteLinkResponse) Reset() {
 	*x = DeleteLinkResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[10]
+	mi := &file_tribbae_v1_link_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1017,7 +1871,7 @@ func (x *DeleteLinkResponse) String() string {
 func (*DeleteLinkResponse) ProtoMessage() {}
 
 func (x *DeleteLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[10]
+	mi := &file_tribbae_v1_link_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1030,7 +1884,7 @@ func (x *DeleteLinkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteLinkResponse.ProtoReflect.Descriptor instead.
 func (*DeleteLinkResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{10}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{22}
 }
 
 type LikeLinkRequest struct {
@@ -1042,7 +1896,7 @@ type LikeLinkRequest struct {
 
 func (x *LikeLinkRequest) Reset() {
 	*x = LikeLinkRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[11]
+	mi := &file_tribbae_v1_link_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1054,7 +1908,7 @@ func (x *LikeLinkRequest) String() string {
 func (*LikeLinkRequest) ProtoMessage() {}
 
 func (x *LikeLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[11]
+	mi := &file_tribbae_v1_link_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1067,7 +1921,7 @@ func (x *LikeLinkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikeLinkRequest.ProtoReflect.Descriptor instead.
 func (*LikeLinkRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{11}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *LikeLinkRequest) GetLinkId() string {
@@ -1086,7 +1940,7 @@ type LikeLinkResponse struct {
 
 func (x *LikeLinkResponse) Reset() {
 	*x = LikeLinkResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[12]
+	mi := &file_tribbae_v1_link_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1098,7 +1952,7 @@ func (x *LikeLinkResponse) String() string {
 func (*LikeLinkResponse) ProtoMessage() {}
 
 func (x *LikeLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[12]
+	mi := &file_tribbae_v1_link_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1111,7 +1965,7 @@ func (x *LikeLinkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikeLinkResponse.ProtoReflect.Descriptor instead.
 func (*LikeLinkResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{12}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *LikeLinkResponse) GetLikeCount() int32 {
@@ -1130,7 +1984,7 @@ type UnlikeLinkRequest struct {
 
 func (x *UnlikeLinkRequest) Reset() {
 	*x = UnlikeLinkRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[13]
+	mi := &file_tribbae_v1_link_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1142,7 +1996,7 @@ func (x *UnlikeLinkRequest) String() string {
 func (*UnlikeLinkRequest) ProtoMessage() {}
 
 func (x *UnlikeLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[13]
+	mi := &file_tribbae_v1_link_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1155,7 +2009,7 @@ func (x *UnlikeLinkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlikeLinkRequest.ProtoReflect.Descriptor instead.
 func (*UnlikeLinkRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{13}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *UnlikeLinkRequest) GetLinkId() string {
@@ -1174,7 +2028,7 @@ type UnlikeLinkResponse struct {
 
 func (x *UnlikeLinkResponse) Reset() {
 	*x = UnlikeLinkResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[14]
+	mi := &file_tribbae_v1_link_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1186,7 +2040,7 @@ func (x *UnlikeLinkResponse) String() string {
 func (*UnlikeLinkResponse) ProtoMessage() {}
 
 func (x *UnlikeLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[14]
+	mi := &file_tribbae_v1_link_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1199,7 +2053,7 @@ func (x *UnlikeLinkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnlikeLinkResponse.ProtoReflect.Descriptor instead.
 func (*UnlikeLinkResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{14}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *UnlikeLinkResponse) GetLikeCount() int32 {
@@ -1217,7 +2071,7 @@ type ListLikedLinksRequest struct {
 
 func (x *ListLikedLinksRequest) Reset() {
 	*x = ListLikedLinksRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[15]
+	mi := &file_tribbae_v1_link_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1229,7 +2083,7 @@ func (x *ListLikedLinksRequest) String() string {
 func (*ListLikedLinksRequest) ProtoMessage() {}
 
 func (x *ListLikedLinksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[15]
+	mi := &file_tribbae_v1_link_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1242,7 +2096,7 @@ func (x *ListLikedLinksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLikedLinksRequest.ProtoReflect.Descriptor instead.
 func (*ListLikedLinksRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{15}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{27}
 }
 
 type ListLikedLinksResponse struct {
@@ -1254,7 +2108,7 @@ type ListLikedLinksResponse struct {
 
 func (x *ListLikedLinksResponse) Reset() {
 	*x = ListLikedLinksResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[16]
+	mi := &file_tribbae_v1_link_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1266,7 +2120,7 @@ func (x *ListLikedLinksResponse) String() string {
 func (*ListLikedLinksResponse) ProtoMessage() {}
 
 func (x *ListLikedLinksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[16]
+	mi := &file_tribbae_v1_link_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1279,7 +2133,7 @@ func (x *ListLikedLinksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListLikedLinksResponse.ProtoReflect.Descriptor instead.
 func (*ListLikedLinksResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{16}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ListLikedLinksResponse) GetLinks() []*Link {
@@ -1298,7 +2152,7 @@ type ToggleFavoriteLinkRequest struct {
 
 func (x *ToggleFavoriteLinkRequest) Reset() {
 	*x = ToggleFavoriteLinkRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[17]
+	mi := &file_tribbae_v1_link_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1310,7 +2164,7 @@ func (x *ToggleFavoriteLinkRequest) String() string {
 func (*ToggleFavoriteLinkRequest) ProtoMessage() {}
 
 func (x *ToggleFavoriteLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[17]
+	mi := &file_tribbae_v1_link_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1323,7 +2177,7 @@ func (x *ToggleFavoriteLinkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToggleFavoriteLinkRequest.ProtoReflect.Descriptor instead.
 func (*ToggleFavoriteLinkRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{17}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *ToggleFavoriteLinkRequest) GetLinkId() string {
@@ -1342,7 +2196,7 @@ type ToggleFavoriteLinkResponse struct {
 
 func (x *ToggleFavoriteLinkResponse) Reset() {
 	*x = ToggleFavoriteLinkResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[18]
+	mi := &file_tribbae_v1_link_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1354,7 +2208,7 @@ func (x *ToggleFavoriteLinkResponse) String() string {
 func (*ToggleFavoriteLinkResponse) ProtoMessage() {}
 
 func (x *ToggleFavoriteLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[18]
+	mi := &file_tribbae_v1_link_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1367,7 +2221,7 @@ func (x *ToggleFavoriteLinkResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToggleFavoriteLinkResponse.ProtoReflect.Descriptor instead.
 func (*ToggleFavoriteLinkResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{18}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ToggleFavoriteLinkResponse) GetFavorite() bool {
@@ -1387,7 +2241,7 @@ type ListCommunityLinksRequest struct {
 
 func (x *ListCommunityLinksRequest) Reset() {
 	*x = ListCommunityLinksRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[19]
+	mi := &file_tribbae_v1_link_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1399,7 +2253,7 @@ func (x *ListCommunityLinksRequest) String() string {
 func (*ListCommunityLinksRequest) ProtoMessage() {}
 
 func (x *ListCommunityLinksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[19]
+	mi := &file_tribbae_v1_link_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1412,7 +2266,7 @@ func (x *ListCommunityLinksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCommunityLinksRequest.ProtoReflect.Descriptor instead.
 func (*ListCommunityLinksRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{19}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ListCommunityLinksRequest) GetCategory() string {
@@ -1438,7 +2292,7 @@ type ListCommunityLinksResponse struct {
 
 func (x *ListCommunityLinksResponse) Reset() {
 	*x = ListCommunityLinksResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[20]
+	mi := &file_tribbae_v1_link_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1450,7 +2304,7 @@ func (x *ListCommunityLinksResponse) String() string {
 func (*ListCommunityLinksResponse) ProtoMessage() {}
 
 func (x *ListCommunityLinksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[20]
+	mi := &file_tribbae_v1_link_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1463,7 +2317,7 @@ func (x *ListCommunityLinksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCommunityLinksResponse.ProtoReflect.Descriptor instead.
 func (*ListCommunityLinksResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{20}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *ListCommunityLinksResponse) GetLinks() []*Link {
@@ -1482,7 +2336,7 @@ type ListNewLinksRequest struct {
 
 func (x *ListNewLinksRequest) Reset() {
 	*x = ListNewLinksRequest{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[21]
+	mi := &file_tribbae_v1_link_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1494,7 +2348,7 @@ func (x *ListNewLinksRequest) String() string {
 func (*ListNewLinksRequest) ProtoMessage() {}
 
 func (x *ListNewLinksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[21]
+	mi := &file_tribbae_v1_link_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1507,7 +2361,7 @@ func (x *ListNewLinksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListNewLinksRequest.ProtoReflect.Descriptor instead.
 func (*ListNewLinksRequest) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{21}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ListNewLinksRequest) GetLimit() int32 {
@@ -1526,7 +2380,7 @@ type ListNewLinksResponse struct {
 
 func (x *ListNewLinksResponse) Reset() {
 	*x = ListNewLinksResponse{}
-	mi := &file_tribbae_v1_link_proto_msgTypes[22]
+	mi := &file_tribbae_v1_link_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1538,7 +2392,7 @@ func (x *ListNewLinksResponse) String() string {
 func (*ListNewLinksResponse) ProtoMessage() {}
 
 func (x *ListNewLinksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_tribbae_v1_link_proto_msgTypes[22]
+	mi := &file_tribbae_v1_link_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1551,7 +2405,7 @@ func (x *ListNewLinksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListNewLinksResponse.ProtoReflect.Descriptor instead.
 func (*ListNewLinksResponse) Descriptor() ([]byte, []int) {
-	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{22}
+	return file_tribbae_v1_link_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *ListNewLinksResponse) GetLinks() []*Link {
@@ -1566,7 +2420,7 @@ var File_tribbae_v1_link_proto protoreflect.FileDescriptor
 const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\n" +
 	"\x15tribbae/v1/link.proto\x12\n" +
-	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9d\a\n" +
+	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe7\b\n" +
 	"\x04Link\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1b\n" +
@@ -1604,7 +2458,75 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\x11public_via_folder\x18\x1a \x01(\bR\x0fpublicViaFolder\x12\x16\n" +
 	"\x06hidden\x18\x1b \x01(\bR\x06hidden\x12\x1f\n" +
 	"\vgift_status\x18\x1c \x01(\tR\n" +
-	"giftStatus\"\xf0\x03\n" +
+	"giftStatus\x12\x1d\n" +
+	"\n" +
+	"done_count\x18\x1d \x01(\x05R\tdoneCount\x12<\n" +
+	"\flast_done_at\x18\x1e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"lastDoneAt\x12\x12\n" +
+	"\x04redo\x18\x1f \x01(\bR\x04redo\x122\n" +
+	"\x15done_prompt_dismissed\x18  \x01(\bR\x13donePromptDismissed\x12#\n" +
+	"\rdone_families\x18! \x01(\x05R\fdoneFamilies\"\xb3\x02\n" +
+	"\bLinkDone\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\alink_id\x18\x02 \x01(\tR\x06linkId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\x12\x17\n" +
+	"\adone_on\x18\x04 \x01(\tR\x06doneOn\x12\"\n" +
+	"\rwith_user_ids\x18\x05 \x03(\tR\vwithUserIds\x12$\n" +
+	"\x0ewith_child_ids\x18\x06 \x03(\tR\fwithChildIds\x12\x16\n" +
+	"\x06rating\x18\a \x01(\x05R\x06rating\x12\x12\n" +
+	"\x04note\x18\b \x01(\tR\x04note\x12\x1b\n" +
+	"\tphoto_url\x18\t \x01(\tR\bphotoUrl\x129\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xfc\x01\n" +
+	"\x13MarkLinkDoneRequest\x12\x17\n" +
+	"\alink_id\x18\x01 \x01(\tR\x06linkId\x12\x17\n" +
+	"\adone_on\x18\x02 \x01(\tR\x06doneOn\x12\"\n" +
+	"\rwith_user_ids\x18\x03 \x03(\tR\vwithUserIds\x12$\n" +
+	"\x0ewith_child_ids\x18\x04 \x03(\tR\fwithChildIds\x12\x16\n" +
+	"\x06rating\x18\x05 \x01(\x05R\x06rating\x12\x12\n" +
+	"\x04note\x18\x06 \x01(\tR\x04note\x12\x1b\n" +
+	"\tphoto_url\x18\a \x01(\tR\bphotoUrl\x12\x17\n" +
+	"\x04redo\x18\b \x01(\bH\x00R\x04redo\x88\x01\x01B\a\n" +
+	"\x05_redo\"b\n" +
+	"\x10LinkDoneResponse\x12(\n" +
+	"\x04done\x18\x01 \x01(\v2\x14.tribbae.v1.LinkDoneR\x04done\x12$\n" +
+	"\x04link\x18\x02 \x01(\v2\x10.tribbae.v1.LinkR\x04link\"\x97\x02\n" +
+	"\x15UpdateLinkDoneRequest\x12\x17\n" +
+	"\alink_id\x18\x01 \x01(\tR\x06linkId\x12\x17\n" +
+	"\adone_id\x18\x02 \x01(\tR\x06doneId\x12\x17\n" +
+	"\adone_on\x18\x03 \x01(\tR\x06doneOn\x12\"\n" +
+	"\rwith_user_ids\x18\x04 \x03(\tR\vwithUserIds\x12$\n" +
+	"\x0ewith_child_ids\x18\x05 \x03(\tR\fwithChildIds\x12\x16\n" +
+	"\x06rating\x18\x06 \x01(\x05R\x06rating\x12\x12\n" +
+	"\x04note\x18\a \x01(\tR\x04note\x12\x1b\n" +
+	"\tphoto_url\x18\b \x01(\tR\bphotoUrl\x12\x17\n" +
+	"\x04redo\x18\t \x01(\bH\x00R\x04redo\x88\x01\x01B\a\n" +
+	"\x05_redo\"I\n" +
+	"\x15UnmarkLinkDoneRequest\x12\x17\n" +
+	"\alink_id\x18\x01 \x01(\tR\x06linkId\x12\x17\n" +
+	"\adone_id\x18\x02 \x01(\tR\x06doneId\">\n" +
+	"\x16UnmarkLinkDoneResponse\x12$\n" +
+	"\x04link\x18\x01 \x01(\v2\x10.tribbae.v1.LinkR\x04link\"/\n" +
+	"\x14ListLinkDonesRequest\x12\x17\n" +
+	"\alink_id\x18\x01 \x01(\tR\x06linkId\"C\n" +
+	"\x15ListLinkDonesResponse\x12*\n" +
+	"\x05dones\x18\x01 \x03(\v2\x14.tribbae.v1.LinkDoneR\x05dones\"3\n" +
+	"\x18DismissDonePromptRequest\x12\x17\n" +
+	"\alink_id\x18\x01 \x01(\tR\x06linkId\"A\n" +
+	"\x19DismissDonePromptResponse\x12$\n" +
+	"\x04link\x18\x01 \x01(\v2\x10.tribbae.v1.LinkR\x04link\"+\n" +
+	"\x15GetDoneSummaryRequest\x12\x12\n" +
+	"\x04year\x18\x01 \x01(\x05R\x04year\"\xd5\x01\n" +
+	"\x16GetDoneSummaryResponse\x12\x12\n" +
+	"\x04year\x18\x01 \x01(\x05R\x04year\x12\x18\n" +
+	"\aoutings\x18\x02 \x01(\x05R\aoutings\x12\x18\n" +
+	"\arecipes\x18\x03 \x01(\x05R\arecipes\x12\x14\n" +
+	"\x05books\x18\x04 \x01(\x05R\x05books\x12\x14\n" +
+	"\x05total\x18\x05 \x01(\x05R\x05total\x12\x1d\n" +
+	"\n" +
+	"best_month\x18\x06 \x01(\x05R\tbestMonth\x12(\n" +
+	"\x10best_month_count\x18\a \x01(\x05R\x0ebestMonthCount\"\xf0\x03\n" +
 	"\x11CreateLinkRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +
@@ -1631,9 +2553,10 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\x0eGetLinkRequest\x12\x17\n" +
 	"\alink_id\x18\x01 \x01(\tR\x06linkId\"7\n" +
 	"\x0fGetLinkResponse\x12$\n" +
-	"\x04link\x18\x01 \x01(\v2\x10.tribbae.v1.LinkR\x04link\"/\n" +
+	"\x04link\x18\x01 \x01(\v2\x10.tribbae.v1.LinkR\x04link\"G\n" +
 	"\x10ListLinksRequest\x12\x1b\n" +
-	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\";\n" +
+	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\";\n" +
 	"\x11ListLinksResponse\x12&\n" +
 	"\x05links\x18\x01 \x03(\v2\x10.tribbae.v1.LinkR\x05links\"\x89\x04\n" +
 	"\x11UpdateLinkRequest\x12\x17\n" +
@@ -1697,7 +2620,7 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\x17LINK_CATEGORY_EVENEMENT\x10\x04\x12\x19\n" +
 	"\x15LINK_CATEGORY_RECETTE\x10\x05\x12\x17\n" +
 	"\x13LINK_CATEGORY_LIVRE\x10\x06\x12\x1c\n" +
-	"\x18LINK_CATEGORY_DECORATION\x10\a2\xd2\t\n" +
+	"\x18LINK_CATEGORY_DECORATION\x10\a2\xd1\x0f\n" +
 	"\vLinkService\x12a\n" +
 	"\n" +
 	"CreateLink\x12\x1d.tribbae.v1.CreateLinkRequest\x1a\x1e.tribbae.v1.CreateLinkResponse\"\x14\x82\xd3\xe4\x93\x02\x0e:\x01*\"\t/v1/links\x12_\n" +
@@ -1711,7 +2634,13 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\n" +
 	"UnlikeLink\x12\x1d.tribbae.v1.UnlikeLinkRequest\x1a\x1e.tribbae.v1.UnlikeLinkResponse\" \x82\xd3\xe4\x93\x02\x1a*\x18/v1/links/{link_id}/like\x12p\n" +
 	"\x0eListLikedLinks\x12!.tribbae.v1.ListLikedLinksRequest\x1a\".tribbae.v1.ListLikedLinksResponse\"\x17\x82\xd3\xe4\x93\x02\x11\x12\x0f/v1/liked-links\x12\x8c\x01\n" +
-	"\x12ToggleFavoriteLink\x12%.tribbae.v1.ToggleFavoriteLinkRequest\x1a&.tribbae.v1.ToggleFavoriteLinkResponse\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/v1/links/{link_id}/favorite\x12\x80\x01\n" +
+	"\x12ToggleFavoriteLink\x12%.tribbae.v1.ToggleFavoriteLinkRequest\x1a&.tribbae.v1.ToggleFavoriteLinkResponse\"'\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/v1/links/{link_id}/favorite\x12r\n" +
+	"\fMarkLinkDone\x12\x1f.tribbae.v1.MarkLinkDoneRequest\x1a\x1c.tribbae.v1.LinkDoneResponse\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/links/{link_id}/done\x12\x80\x01\n" +
+	"\x0eUpdateLinkDone\x12!.tribbae.v1.UpdateLinkDoneRequest\x1a\x1c.tribbae.v1.LinkDoneResponse\"-\x82\xd3\xe4\x93\x02':\x01*2\"/v1/links/{link_id}/done/{done_id}\x12\x83\x01\n" +
+	"\x0eUnmarkLinkDone\x12!.tribbae.v1.UnmarkLinkDoneRequest\x1a\".tribbae.v1.UnmarkLinkDoneResponse\"*\x82\xd3\xe4\x93\x02$*\"/v1/links/{link_id}/done/{done_id}\x12v\n" +
+	"\rListLinkDones\x12 .tribbae.v1.ListLinkDonesRequest\x1a!.tribbae.v1.ListLinkDonesResponse\" \x82\xd3\xe4\x93\x02\x1a\x12\x18/v1/links/{link_id}/done\x12\x94\x01\n" +
+	"\x11DismissDonePrompt\x12$.tribbae.v1.DismissDonePromptRequest\x1a%.tribbae.v1.DismissDonePromptResponse\"2\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/links/{link_id}/done-prompt/dismiss\x12q\n" +
+	"\x0eGetDoneSummary\x12!.tribbae.v1.GetDoneSummaryRequest\x1a\".tribbae.v1.GetDoneSummaryResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/v1/done/summary\x12\x80\x01\n" +
 	"\x12ListCommunityLinks\x12%.tribbae.v1.ListCommunityLinksRequest\x1a&.tribbae.v1.ListCommunityLinksResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/v1/community/links\x12l\n" +
 	"\fListNewLinks\x12\x1f.tribbae.v1.ListNewLinksRequest\x1a .tribbae.v1.ListNewLinksResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/community/newB5Z3github.com/tribbae/backend/gen/tribbae/v1;tribbaev1b\x06proto3"
 
@@ -1728,74 +2657,105 @@ func file_tribbae_v1_link_proto_rawDescGZIP() []byte {
 }
 
 var file_tribbae_v1_link_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_tribbae_v1_link_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_tribbae_v1_link_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_tribbae_v1_link_proto_goTypes = []any{
 	(LinkCategory)(0),                  // 0: tribbae.v1.LinkCategory
 	(*Link)(nil),                       // 1: tribbae.v1.Link
-	(*CreateLinkRequest)(nil),          // 2: tribbae.v1.CreateLinkRequest
-	(*CreateLinkResponse)(nil),         // 3: tribbae.v1.CreateLinkResponse
-	(*GetLinkRequest)(nil),             // 4: tribbae.v1.GetLinkRequest
-	(*GetLinkResponse)(nil),            // 5: tribbae.v1.GetLinkResponse
-	(*ListLinksRequest)(nil),           // 6: tribbae.v1.ListLinksRequest
-	(*ListLinksResponse)(nil),          // 7: tribbae.v1.ListLinksResponse
-	(*UpdateLinkRequest)(nil),          // 8: tribbae.v1.UpdateLinkRequest
-	(*UpdateLinkResponse)(nil),         // 9: tribbae.v1.UpdateLinkResponse
-	(*DeleteLinkRequest)(nil),          // 10: tribbae.v1.DeleteLinkRequest
-	(*DeleteLinkResponse)(nil),         // 11: tribbae.v1.DeleteLinkResponse
-	(*LikeLinkRequest)(nil),            // 12: tribbae.v1.LikeLinkRequest
-	(*LikeLinkResponse)(nil),           // 13: tribbae.v1.LikeLinkResponse
-	(*UnlikeLinkRequest)(nil),          // 14: tribbae.v1.UnlikeLinkRequest
-	(*UnlikeLinkResponse)(nil),         // 15: tribbae.v1.UnlikeLinkResponse
-	(*ListLikedLinksRequest)(nil),      // 16: tribbae.v1.ListLikedLinksRequest
-	(*ListLikedLinksResponse)(nil),     // 17: tribbae.v1.ListLikedLinksResponse
-	(*ToggleFavoriteLinkRequest)(nil),  // 18: tribbae.v1.ToggleFavoriteLinkRequest
-	(*ToggleFavoriteLinkResponse)(nil), // 19: tribbae.v1.ToggleFavoriteLinkResponse
-	(*ListCommunityLinksRequest)(nil),  // 20: tribbae.v1.ListCommunityLinksRequest
-	(*ListCommunityLinksResponse)(nil), // 21: tribbae.v1.ListCommunityLinksResponse
-	(*ListNewLinksRequest)(nil),        // 22: tribbae.v1.ListNewLinksRequest
-	(*ListNewLinksResponse)(nil),       // 23: tribbae.v1.ListNewLinksResponse
-	(*timestamppb.Timestamp)(nil),      // 24: google.protobuf.Timestamp
+	(*LinkDone)(nil),                   // 2: tribbae.v1.LinkDone
+	(*MarkLinkDoneRequest)(nil),        // 3: tribbae.v1.MarkLinkDoneRequest
+	(*LinkDoneResponse)(nil),           // 4: tribbae.v1.LinkDoneResponse
+	(*UpdateLinkDoneRequest)(nil),      // 5: tribbae.v1.UpdateLinkDoneRequest
+	(*UnmarkLinkDoneRequest)(nil),      // 6: tribbae.v1.UnmarkLinkDoneRequest
+	(*UnmarkLinkDoneResponse)(nil),     // 7: tribbae.v1.UnmarkLinkDoneResponse
+	(*ListLinkDonesRequest)(nil),       // 8: tribbae.v1.ListLinkDonesRequest
+	(*ListLinkDonesResponse)(nil),      // 9: tribbae.v1.ListLinkDonesResponse
+	(*DismissDonePromptRequest)(nil),   // 10: tribbae.v1.DismissDonePromptRequest
+	(*DismissDonePromptResponse)(nil),  // 11: tribbae.v1.DismissDonePromptResponse
+	(*GetDoneSummaryRequest)(nil),      // 12: tribbae.v1.GetDoneSummaryRequest
+	(*GetDoneSummaryResponse)(nil),     // 13: tribbae.v1.GetDoneSummaryResponse
+	(*CreateLinkRequest)(nil),          // 14: tribbae.v1.CreateLinkRequest
+	(*CreateLinkResponse)(nil),         // 15: tribbae.v1.CreateLinkResponse
+	(*GetLinkRequest)(nil),             // 16: tribbae.v1.GetLinkRequest
+	(*GetLinkResponse)(nil),            // 17: tribbae.v1.GetLinkResponse
+	(*ListLinksRequest)(nil),           // 18: tribbae.v1.ListLinksRequest
+	(*ListLinksResponse)(nil),          // 19: tribbae.v1.ListLinksResponse
+	(*UpdateLinkRequest)(nil),          // 20: tribbae.v1.UpdateLinkRequest
+	(*UpdateLinkResponse)(nil),         // 21: tribbae.v1.UpdateLinkResponse
+	(*DeleteLinkRequest)(nil),          // 22: tribbae.v1.DeleteLinkRequest
+	(*DeleteLinkResponse)(nil),         // 23: tribbae.v1.DeleteLinkResponse
+	(*LikeLinkRequest)(nil),            // 24: tribbae.v1.LikeLinkRequest
+	(*LikeLinkResponse)(nil),           // 25: tribbae.v1.LikeLinkResponse
+	(*UnlikeLinkRequest)(nil),          // 26: tribbae.v1.UnlikeLinkRequest
+	(*UnlikeLinkResponse)(nil),         // 27: tribbae.v1.UnlikeLinkResponse
+	(*ListLikedLinksRequest)(nil),      // 28: tribbae.v1.ListLikedLinksRequest
+	(*ListLikedLinksResponse)(nil),     // 29: tribbae.v1.ListLikedLinksResponse
+	(*ToggleFavoriteLinkRequest)(nil),  // 30: tribbae.v1.ToggleFavoriteLinkRequest
+	(*ToggleFavoriteLinkResponse)(nil), // 31: tribbae.v1.ToggleFavoriteLinkResponse
+	(*ListCommunityLinksRequest)(nil),  // 32: tribbae.v1.ListCommunityLinksRequest
+	(*ListCommunityLinksResponse)(nil), // 33: tribbae.v1.ListCommunityLinksResponse
+	(*ListNewLinksRequest)(nil),        // 34: tribbae.v1.ListNewLinksRequest
+	(*ListNewLinksResponse)(nil),       // 35: tribbae.v1.ListNewLinksResponse
+	(*timestamppb.Timestamp)(nil),      // 36: google.protobuf.Timestamp
 }
 var file_tribbae_v1_link_proto_depIdxs = []int32{
 	0,  // 0: tribbae.v1.Link.category:type_name -> tribbae.v1.LinkCategory
-	24, // 1: tribbae.v1.Link.created_at:type_name -> google.protobuf.Timestamp
-	24, // 2: tribbae.v1.Link.updated_at:type_name -> google.protobuf.Timestamp
-	0,  // 3: tribbae.v1.CreateLinkRequest.category:type_name -> tribbae.v1.LinkCategory
-	1,  // 4: tribbae.v1.CreateLinkResponse.link:type_name -> tribbae.v1.Link
-	1,  // 5: tribbae.v1.GetLinkResponse.link:type_name -> tribbae.v1.Link
-	1,  // 6: tribbae.v1.ListLinksResponse.links:type_name -> tribbae.v1.Link
-	0,  // 7: tribbae.v1.UpdateLinkRequest.category:type_name -> tribbae.v1.LinkCategory
-	1,  // 8: tribbae.v1.UpdateLinkResponse.link:type_name -> tribbae.v1.Link
-	1,  // 9: tribbae.v1.ListLikedLinksResponse.links:type_name -> tribbae.v1.Link
-	1,  // 10: tribbae.v1.ListCommunityLinksResponse.links:type_name -> tribbae.v1.Link
-	1,  // 11: tribbae.v1.ListNewLinksResponse.links:type_name -> tribbae.v1.Link
-	2,  // 12: tribbae.v1.LinkService.CreateLink:input_type -> tribbae.v1.CreateLinkRequest
-	4,  // 13: tribbae.v1.LinkService.GetLink:input_type -> tribbae.v1.GetLinkRequest
-	6,  // 14: tribbae.v1.LinkService.ListLinks:input_type -> tribbae.v1.ListLinksRequest
-	8,  // 15: tribbae.v1.LinkService.UpdateLink:input_type -> tribbae.v1.UpdateLinkRequest
-	10, // 16: tribbae.v1.LinkService.DeleteLink:input_type -> tribbae.v1.DeleteLinkRequest
-	12, // 17: tribbae.v1.LinkService.LikeLink:input_type -> tribbae.v1.LikeLinkRequest
-	14, // 18: tribbae.v1.LinkService.UnlikeLink:input_type -> tribbae.v1.UnlikeLinkRequest
-	16, // 19: tribbae.v1.LinkService.ListLikedLinks:input_type -> tribbae.v1.ListLikedLinksRequest
-	18, // 20: tribbae.v1.LinkService.ToggleFavoriteLink:input_type -> tribbae.v1.ToggleFavoriteLinkRequest
-	20, // 21: tribbae.v1.LinkService.ListCommunityLinks:input_type -> tribbae.v1.ListCommunityLinksRequest
-	22, // 22: tribbae.v1.LinkService.ListNewLinks:input_type -> tribbae.v1.ListNewLinksRequest
-	3,  // 23: tribbae.v1.LinkService.CreateLink:output_type -> tribbae.v1.CreateLinkResponse
-	5,  // 24: tribbae.v1.LinkService.GetLink:output_type -> tribbae.v1.GetLinkResponse
-	7,  // 25: tribbae.v1.LinkService.ListLinks:output_type -> tribbae.v1.ListLinksResponse
-	9,  // 26: tribbae.v1.LinkService.UpdateLink:output_type -> tribbae.v1.UpdateLinkResponse
-	11, // 27: tribbae.v1.LinkService.DeleteLink:output_type -> tribbae.v1.DeleteLinkResponse
-	13, // 28: tribbae.v1.LinkService.LikeLink:output_type -> tribbae.v1.LikeLinkResponse
-	15, // 29: tribbae.v1.LinkService.UnlikeLink:output_type -> tribbae.v1.UnlikeLinkResponse
-	17, // 30: tribbae.v1.LinkService.ListLikedLinks:output_type -> tribbae.v1.ListLikedLinksResponse
-	19, // 31: tribbae.v1.LinkService.ToggleFavoriteLink:output_type -> tribbae.v1.ToggleFavoriteLinkResponse
-	21, // 32: tribbae.v1.LinkService.ListCommunityLinks:output_type -> tribbae.v1.ListCommunityLinksResponse
-	23, // 33: tribbae.v1.LinkService.ListNewLinks:output_type -> tribbae.v1.ListNewLinksResponse
-	23, // [23:34] is the sub-list for method output_type
-	12, // [12:23] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	36, // 1: tribbae.v1.Link.created_at:type_name -> google.protobuf.Timestamp
+	36, // 2: tribbae.v1.Link.updated_at:type_name -> google.protobuf.Timestamp
+	36, // 3: tribbae.v1.Link.last_done_at:type_name -> google.protobuf.Timestamp
+	36, // 4: tribbae.v1.LinkDone.created_at:type_name -> google.protobuf.Timestamp
+	2,  // 5: tribbae.v1.LinkDoneResponse.done:type_name -> tribbae.v1.LinkDone
+	1,  // 6: tribbae.v1.LinkDoneResponse.link:type_name -> tribbae.v1.Link
+	1,  // 7: tribbae.v1.UnmarkLinkDoneResponse.link:type_name -> tribbae.v1.Link
+	2,  // 8: tribbae.v1.ListLinkDonesResponse.dones:type_name -> tribbae.v1.LinkDone
+	1,  // 9: tribbae.v1.DismissDonePromptResponse.link:type_name -> tribbae.v1.Link
+	0,  // 10: tribbae.v1.CreateLinkRequest.category:type_name -> tribbae.v1.LinkCategory
+	1,  // 11: tribbae.v1.CreateLinkResponse.link:type_name -> tribbae.v1.Link
+	1,  // 12: tribbae.v1.GetLinkResponse.link:type_name -> tribbae.v1.Link
+	1,  // 13: tribbae.v1.ListLinksResponse.links:type_name -> tribbae.v1.Link
+	0,  // 14: tribbae.v1.UpdateLinkRequest.category:type_name -> tribbae.v1.LinkCategory
+	1,  // 15: tribbae.v1.UpdateLinkResponse.link:type_name -> tribbae.v1.Link
+	1,  // 16: tribbae.v1.ListLikedLinksResponse.links:type_name -> tribbae.v1.Link
+	1,  // 17: tribbae.v1.ListCommunityLinksResponse.links:type_name -> tribbae.v1.Link
+	1,  // 18: tribbae.v1.ListNewLinksResponse.links:type_name -> tribbae.v1.Link
+	14, // 19: tribbae.v1.LinkService.CreateLink:input_type -> tribbae.v1.CreateLinkRequest
+	16, // 20: tribbae.v1.LinkService.GetLink:input_type -> tribbae.v1.GetLinkRequest
+	18, // 21: tribbae.v1.LinkService.ListLinks:input_type -> tribbae.v1.ListLinksRequest
+	20, // 22: tribbae.v1.LinkService.UpdateLink:input_type -> tribbae.v1.UpdateLinkRequest
+	22, // 23: tribbae.v1.LinkService.DeleteLink:input_type -> tribbae.v1.DeleteLinkRequest
+	24, // 24: tribbae.v1.LinkService.LikeLink:input_type -> tribbae.v1.LikeLinkRequest
+	26, // 25: tribbae.v1.LinkService.UnlikeLink:input_type -> tribbae.v1.UnlikeLinkRequest
+	28, // 26: tribbae.v1.LinkService.ListLikedLinks:input_type -> tribbae.v1.ListLikedLinksRequest
+	30, // 27: tribbae.v1.LinkService.ToggleFavoriteLink:input_type -> tribbae.v1.ToggleFavoriteLinkRequest
+	3,  // 28: tribbae.v1.LinkService.MarkLinkDone:input_type -> tribbae.v1.MarkLinkDoneRequest
+	5,  // 29: tribbae.v1.LinkService.UpdateLinkDone:input_type -> tribbae.v1.UpdateLinkDoneRequest
+	6,  // 30: tribbae.v1.LinkService.UnmarkLinkDone:input_type -> tribbae.v1.UnmarkLinkDoneRequest
+	8,  // 31: tribbae.v1.LinkService.ListLinkDones:input_type -> tribbae.v1.ListLinkDonesRequest
+	10, // 32: tribbae.v1.LinkService.DismissDonePrompt:input_type -> tribbae.v1.DismissDonePromptRequest
+	12, // 33: tribbae.v1.LinkService.GetDoneSummary:input_type -> tribbae.v1.GetDoneSummaryRequest
+	32, // 34: tribbae.v1.LinkService.ListCommunityLinks:input_type -> tribbae.v1.ListCommunityLinksRequest
+	34, // 35: tribbae.v1.LinkService.ListNewLinks:input_type -> tribbae.v1.ListNewLinksRequest
+	15, // 36: tribbae.v1.LinkService.CreateLink:output_type -> tribbae.v1.CreateLinkResponse
+	17, // 37: tribbae.v1.LinkService.GetLink:output_type -> tribbae.v1.GetLinkResponse
+	19, // 38: tribbae.v1.LinkService.ListLinks:output_type -> tribbae.v1.ListLinksResponse
+	21, // 39: tribbae.v1.LinkService.UpdateLink:output_type -> tribbae.v1.UpdateLinkResponse
+	23, // 40: tribbae.v1.LinkService.DeleteLink:output_type -> tribbae.v1.DeleteLinkResponse
+	25, // 41: tribbae.v1.LinkService.LikeLink:output_type -> tribbae.v1.LikeLinkResponse
+	27, // 42: tribbae.v1.LinkService.UnlikeLink:output_type -> tribbae.v1.UnlikeLinkResponse
+	29, // 43: tribbae.v1.LinkService.ListLikedLinks:output_type -> tribbae.v1.ListLikedLinksResponse
+	31, // 44: tribbae.v1.LinkService.ToggleFavoriteLink:output_type -> tribbae.v1.ToggleFavoriteLinkResponse
+	4,  // 45: tribbae.v1.LinkService.MarkLinkDone:output_type -> tribbae.v1.LinkDoneResponse
+	4,  // 46: tribbae.v1.LinkService.UpdateLinkDone:output_type -> tribbae.v1.LinkDoneResponse
+	7,  // 47: tribbae.v1.LinkService.UnmarkLinkDone:output_type -> tribbae.v1.UnmarkLinkDoneResponse
+	9,  // 48: tribbae.v1.LinkService.ListLinkDones:output_type -> tribbae.v1.ListLinkDonesResponse
+	11, // 49: tribbae.v1.LinkService.DismissDonePrompt:output_type -> tribbae.v1.DismissDonePromptResponse
+	13, // 50: tribbae.v1.LinkService.GetDoneSummary:output_type -> tribbae.v1.GetDoneSummaryResponse
+	33, // 51: tribbae.v1.LinkService.ListCommunityLinks:output_type -> tribbae.v1.ListCommunityLinksResponse
+	35, // 52: tribbae.v1.LinkService.ListNewLinks:output_type -> tribbae.v1.ListNewLinksResponse
+	36, // [36:53] is the sub-list for method output_type
+	19, // [19:36] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_tribbae_v1_link_proto_init() }
@@ -1803,13 +2763,15 @@ func file_tribbae_v1_link_proto_init() {
 	if File_tribbae_v1_link_proto != nil {
 		return
 	}
+	file_tribbae_v1_link_proto_msgTypes[2].OneofWrappers = []any{}
+	file_tribbae_v1_link_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tribbae_v1_link_proto_rawDesc), len(file_tribbae_v1_link_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   23,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

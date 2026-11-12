@@ -18,4 +18,13 @@ object ReminderPrefs {
         enabled = value
         save(value)
     }
+
+    /** « Me demander si on y est allés » : la question du lendemain d'une sortie (data.DonePrompts). */
+    var askDone by mutableStateOf(true)
+    var saveAskDone: (Boolean) -> Unit = {}
+
+    fun chooseAskDone(value: Boolean) {
+        askDone = value
+        saveAskDone(value)
+    }
 }

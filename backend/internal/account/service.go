@@ -87,6 +87,8 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 		{"children", "children", bson.M{"ownerId": oid}},
 		{"comments", "comments", bson.M{"user_id": userID}},
 		{"ideaLikes", "link_likes", bson.M{"user_id": userID}},
+		// « C'est fait » : les souvenirs qu'il a gardés
+		{"doneMemories", "link_dones", bson.M{"user_id": userID}},
 		{"following", "follows", bson.M{"follower_id": userID}},
 		{"followers", "follows", bson.M{"following_id": userID}},
 		{"tribe", "tribes", bson.M{"members.user_id": userID}},
@@ -214,7 +216,7 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		return err
 	}
 	if len(linkIDs) > 0 {
-		for _, c := range []string{"comments", "link_likes", "gift_reservations"} {
+		for _, c := range []string{"comments", "link_likes", "gift_reservations", "link_dones"} {
 			if _, err := s.col(c).DeleteMany(ctx, bson.M{"link_id": bson.M{"$in": linkIDs}}); err != nil {
 				return fmt.Errorf("%s on ideas: %w", c, err)
 			}
@@ -237,6 +239,12 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		return fmt.Errorf("collaborations: %w", err)
 	}
 
+	// Sa présence dans les souvenirs des autres (« qui était là »)
+	if _, err := s.col("link_dones").UpdateMany(ctx, bson.M{"with_user_ids": userID},
+		bson.M{"$pull": bson.M{"with_user_ids": userID}}); err != nil {
+		return fmt.Errorf("done memories: %w", err)
+	}
+
 	// 6. Ses photos, puis tout le reste de ce qui lui appartient
 	if err := photo.DeleteOwnedBy(ctx, s.db, userID); err != nil {
 		return fmt.Errorf("photos: %w", err)
@@ -248,6 +256,8 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		{"links", bson.M{"owner_id": userID}},
 		{"folders", bson.M{"owner_id": userID}},
 		{"comments", bson.M{"user_id": userID}},
+		// « C'est fait » : les souvenirs qu'il a gardés
+		{"link_dones", bson.M{"user_id": userID}},
 		{"follows", bson.M{"$or": bson.A{bson.M{"follower_id": userID}, bson.M{"following_id": userID}}}},
 		{"children", bson.M{"ownerId": oid}},
 		{"tribe_invitations", bson.M{"$or": bson.A{bson.M{"invited_by": userID}, bson.M{"email": strings.ToLower(user.Email)}}}},

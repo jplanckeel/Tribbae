@@ -182,7 +182,8 @@ func (s *Service) cleanup(ctx context.Context, before time.Time) (int, error) {
 	}
 }
 
-// used renvoie les jetons encore cités par une idée (image) ou un dossier (bannière).
+// used renvoie les jetons encore cités par une idée (image), un dossier
+// (bannière) ou un souvenir (« C'est fait »).
 func (s *Service) used(ctx context.Context, tokens []string) (map[string]bool, error) {
 	out := map[string]bool{}
 	if len(tokens) == 0 {
@@ -190,7 +191,7 @@ func (s *Service) used(ctx context.Context, tokens []string) (map[string]bool, e
 	}
 	re := regexp.MustCompile(Path + `(` + strings.Join(tokens, "|") + `)`)
 	pattern := bson.Regex{Pattern: re.String()}
-	for _, c := range []struct{ col, field string }{{"links", "image_url"}, {"folders", "banner_url"}} {
+	for _, c := range []struct{ col, field string }{{"links", "image_url"}, {"folders", "banner_url"}, {"link_dones", "photo_url"}} {
 		cur, err := s.db.Collection(c.col).Find(ctx, bson.M{c.field: pattern}, options.Find().SetProjection(bson.M{c.field: 1}))
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", c.col, err)

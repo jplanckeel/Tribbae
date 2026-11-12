@@ -95,7 +95,13 @@ data class ApiLink(
     val createdVia: String = "",
     val publicViaFolder: Boolean = false,
     val hidden: Boolean = false,
-    val giftStatus: String = ""
+    val giftStatus: String = "",
+    // « C'est fait » (data/Done.kt)
+    val doneCount: Int = 0,
+    val lastDoneAt: String = "",
+    val redo: Boolean = false,
+    val donePromptDismissed: Boolean = false,
+    val doneFamilies: Int = 0,
 ) {
     /** Idée en lecture (communauté, dossier public, lien de partage). */
     fun toLink(): Link = Link(
@@ -124,7 +130,12 @@ data class ApiLink(
         createdVia = createdVia,
         publicViaFolder = publicViaFolder,
         hidden = hidden,
-        giftStatus = giftStatus
+        giftStatus = giftStatus,
+        doneCount = doneCount,
+        lastDoneAt = lastDoneAt,
+        redo = redo,
+        donePromptDismissed = donePromptDismissed,
+        doneFamilies = doneFamilies,
     )
 }
 

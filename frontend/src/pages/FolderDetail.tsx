@@ -11,7 +11,9 @@ import Sheet from "../components/Sheet";
 import { Avatar, Button, EmptyState, ErrorNote, MenuItem, PageSpinner } from "../components/ui";
 import * as api from "../lib/api";
 import { CATEGORIES, folderColor } from "../lib/categories";
-import { countdown, folderInput, keyDateOf, sortFolderLinks, useFolderChildren } from "../lib/folderStyle";
+import { DonePrompt, ProgressRing, useDone } from "../components/Done";
+import { awaitingConfirmation, DONE_FILTERS, doneCounts, folderProgress, matchesDoneFilter, type DoneFilter } from "../lib/done";
+import { countdown, folderInput, keyDateOf, SORTS, sortFolderLinks, useFolderChildren } from "../lib/folderStyle";
 import { useMyData } from "../lib/data";
 import { plural } from "../lib/format";
 import { byRecent, canEditFolder } from "../lib/links";
@@ -68,7 +70,12 @@ function FolderView({ folder, links, virtual, onFolder }: {
   const session = useSession();
   const navigate = useNavigate();
   const { openAdd, openAi, editFolder, newLink } = useComposer();
-  const { upsertFolder, removeFolder, links: mine, peers } = useMyData();
+  const { upsertFolder, removeFolder, links: mine, peers, isTribePeer } = useMyData();
+  const done = useDone();
+  const [now] = useState(() => Date.now());
+  const [filter, setFilter] = useState<DoneFilter>("all");
+  // Tri de la visite ; celui du dossier se règle dans « Personnaliser »
+  const [sort, setSort] = useState(folder.sort || "recent");
   const { toast, confirm } = useFeedback();
   const [shareOpen, setShareOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -90,8 +97,17 @@ function FolderView({ folder, links, virtual, onFolder }: {
     const extra = mine.filter((l) => l.folderId === folder.id && !ids.has(l.id));
     const fresh = new Map(mine.map((l) => [l.id, l]));
     const merged = [...extra, ...links.map((l) => fresh.get(l.id) ?? l)].filter((l) => !fresh.has(l.id) || fresh.get(l.id)!.folderId === folder.id);
-    return sortFolderLinks(merged, folder.sort, CATEGORIES.map((c) => c.key));
-  }, [links, mine, folder.id, folder.sort, virtual]);
+    return merged;
+  }, [links, mine, folder.id, virtual]);
+  const sorted = useMemo(() => sortFolderLinks(shown, sort, CATEGORIES.map((c) => c.key), now), [shown, sort, now]);
+
+  // « C'est fait » : la tribu du dossier et ses membres voient l'avancement
+  const member = !!session && (virtual || isTribePeer(folder.ownerId) || (folder.collaborators ?? []).some((c) => c.userId === session.userId));
+  const progress = member ? folderProgress(shown, !!folder.giftReservations) : null;
+  const counts = doneCounts(shown);
+  const visible = member ? sorted.filter((l) => matchesDoneFilter(l, filter)) : sorted;
+  // Première sortie datée passée, pas encore confirmée
+  const asking = member ? sorted.find((l) => awaitingConfirmation(l, now) && done.canMark(l)) : undefined;
 
   const setFolder = (f: Folder) => {
     onFolder?.(f);
@@ -264,20 +280,48 @@ function FolderView({ folder, links, virtual, onFolder }: {
             )}
           </div>
         )}
-        {shown.length ? (
+        {asking && <DonePrompt link={asking} />}
+        {progress && <ProgressRing progress={progress} />}
+        {member && shown.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <div role="radiogroup" aria-label="Filtrer les idées" className="flex gap-2">
+              {DONE_FILTERS.map((f) => {
+                const on = filter === f.key;
+                return (
+                  <button key={f.key} type="button" role="radio" aria-checked={on} onClick={() => setFilter(f.key)}
+                    className={`flex h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors ${on ? "bg-ecorce text-sable" : "bg-card text-ecorce shadow-[inset_0_0_0_1.5px_var(--color-line-2)]"}`}>
+                    {f.label}<span className="text-xs opacity-70">{counts[f.key]}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <label className="ml-auto flex h-9 items-center text-[13px] font-semibold text-sec">
+              <span className="sr-only">Trier les idées</span>
+              <select value={sort} onChange={(e) => setSort(e.target.value)} className="h-9 cursor-pointer rounded-full bg-transparent px-2 font-semibold outline-offset-2">
+                {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+              </select>
+            </label>
+          </div>
+        )}
+        {visible.length ? (
           folder.viewMode === "list" ? (
             <div className="grid gap-2.5 md:grid-cols-2">
-              {shown.map((l) => <RowCard key={l.id} link={l} highlight={mark(l.id)} />)}
+              {visible.map((l) => <RowCard key={l.id} link={l} highlight={mark(l.id)} done={member} />)}
             </div>
           ) : folder.viewMode === "mosaic" ? (
             <div className="grid auto-rows-[132px] grid-flow-dense grid-cols-2 gap-3 md:auto-rows-[160px] md:grid-cols-3 lg:grid-cols-4">
-              {shown.map((l, i) => <MosaicTile key={l.id} link={l} large={i % 3 === 0} highlight={mark(l.id)} />)}
+              {visible.map((l, i) => <MosaicTile key={l.id} link={l} large={i % 3 === 0} highlight={mark(l.id)} done={member} />)}
             </div>
           ) : (
             <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
-              {shown.map((l, i) => <GridCard key={l.id} link={l} index={i} highlight={mark(l.id)} onRequireAuth={() => navigate(`/bienvenue?next=/dossiers/${folder.id}`)} />)}
+              {visible.map((l, i) => <GridCard key={l.id} link={l} index={i} highlight={mark(l.id)} done={member} onRequireAuth={() => navigate(`/bienvenue?next=/dossiers/${folder.id}`)} />)}
             </div>
           )
+        ) : shown.length ? (
+          <div className="flex flex-col gap-1.5 rounded-[22px] px-5 py-7 text-center shadow-[inset_0_0_0_2px_var(--color-dash)]">
+            <span className="font-display text-[17px] font-bold">{filter === "todo" ? "Tout est fait !" : "Rien de fait pour l'instant"}</span>
+            <span className="text-sm text-sec">{filter === "todo" ? "Il est temps de trouver de nouvelles idées." : "Touchez la coche d'une idée quand c'est fait."}</span>
+          </div>
         ) : (
           <EmptyState icon="tipi" title="Ce dossier attend ses premières idées" text={canEdit ? "Ajoutez un lien, une recette, une sortie… ou laissez l'IA le remplir." : undefined} />
         )}

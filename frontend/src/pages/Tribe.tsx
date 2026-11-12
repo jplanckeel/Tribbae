@@ -15,7 +15,7 @@ import { childColors, countdown } from "../lib/folderStyle";
 import { formatAge, formatLongDate, initial, plural } from "../lib/format";
 import { scopeLabels } from "../lib/oauth";
 import { clearSession, useSession } from "../lib/session";
-import { birthdayLabel, circleOf, ideasForChild, monthName, RING_SLOTS, ringPosition, yearInIdeas, type CircleMember } from "../lib/tribe";
+import { bestMonthLine, birthdayLabel, circleOf, ideasForChild, RING_SLOTS, ringPosition, yearInIdeas, yearLabels, type CircleMember } from "../lib/tribe";
 import type { Child, CircleInvitation, CollaboratorRole, ConnectedApp, Folder, Tribe as TribeData, TribeInvitation, TribeMember } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
@@ -99,7 +99,10 @@ export default function Tribe() {
   );
   const likesReceived = mine.reduce((n, l) => n + (l.likeCount ?? 0), 0) + myFolders.reduce((n, f) => n + (f.likeCount ?? 0), 0);
   const year = new Date(now).getFullYear();
-  const yearStats = useMemo(() => yearInIdeas(links, year), [links, year]);
+  // Le serveur compte : une idée refaite compte plusieurs fois
+  const summary = useAsync(() => api.done.summary(year), [session.userId, year]);
+  const yearStats = yearInIdeas(summary.data);
+  const yearWords = yearLabels(yearStats);
   const accountName = (m: TribeMember) =>
     m.userId === session.userId ? m.displayName || session.displayName || "Moi" : m.displayName || m.email || "Membre";
 
@@ -411,14 +414,12 @@ export default function Tribe() {
               <path d="M24 22l11 19H13z" fill="#5E4558" stroke="var(--color-ecorce)" strokeWidth="2.4" strokeLinejoin="round" />
             </svg>
             <div className="relative grid grid-cols-3 gap-2">
-              <YearTile n={yearStats.outings} label={yearStats.outings > 1 ? "sorties gardées" : "sortie gardée"} color="text-sortie-ink" />
-              <YearTile n={yearStats.recipes} label={yearStats.recipes > 1 ? "recettes gardées" : "recette gardée"} color="text-recette-ink" />
-              <YearTile n={yearStats.gifts} label={yearStats.gifts > 1 ? "idées cadeaux" : "idée cadeau"} color="text-cadeau-ink" />
+              <YearTile n={yearStats.outings} label={yearWords.outings} color="text-sortie-ink" />
+              <YearTile n={yearStats.recipes} label={yearWords.recipes} color="text-recette-ink" />
+              <YearTile n={yearStats.books} label={yearWords.books} color="text-livre-ink" />
             </div>
             <p className="relative mt-3 mr-14 mb-[18px] text-sm font-semibold">
-              {yearStats.bestMonth
-                ? `Votre meilleur mois : ${monthName(yearStats.bestMonth.month)}, ${plural(yearStats.bestMonth.count, "idée gardée", "idées gardées")}.`
-                : "Gardez vos premières idées : elles rempliront votre année."}
+              {bestMonthLine(yearStats)}
             </p>
           </div>
           <p className="text-[13px] text-sec">

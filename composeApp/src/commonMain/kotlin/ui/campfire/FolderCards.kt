@@ -98,6 +98,8 @@ fun FolderCard(
     modifier: Modifier = Modifier,
     ownerLabel: String? = null,
     children: List<Child> = emptyList(),
+    /** « C'est fait » : avancement du dossier (fine barre verte et « 4/8 »), s'il en a un */
+    progress: data.Done.Progress? = null,
 ) {
     val ink = folderSolid(folder.color)
     val cd = FolderStyle.countdown(folder)
@@ -134,6 +136,7 @@ fun FolderCard(
                         Text(folderMeta(folder, count, ownerLabel), fontSize = 12.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         if (ownerLabel == null) ChildAvatars(folder, children, 16.dp)
                     }
+                    if (progress != null && ownerLabel == null) ui.DoneFolderBar(progress, Modifier.padding(top = 6.dp))
                 }
             }
         }

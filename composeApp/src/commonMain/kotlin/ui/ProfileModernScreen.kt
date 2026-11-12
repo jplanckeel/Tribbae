@@ -272,7 +272,12 @@ private fun TribeContent(
         TribePage.circleOf(folders) { id -> id == userId || accounts.any { it.userId == id } || viewModel.isTribePeer(id) }
     }
     val year = remember(now) { java.util.Calendar.getInstance().apply { timeInMillis = now }.get(java.util.Calendar.YEAR) }
-    val yearStats = remember(links, year) { TribePage.yearInIdeas(links, year) }
+    // Le serveur compte : une idée refaite compte plusieurs fois
+    val doneSummary by viewModel.doneSummary.collectAsState()
+    val doneTotal = links.sumOf { it.doneCount }
+    LaunchedEffect(userId, year, doneTotal) { viewModel.refreshDoneSummary(year) }
+    val yearStats = remember(doneSummary, year) { TribePage.yearInIdeas(doneSummary?.takeIf { it.year == year }) }
+    val yearWords = TribePage.yearLabels(yearStats)
     val foyerCount = accounts.size + children.size
 
     // Autour du feu : les comptes, puis les enfants
@@ -593,13 +598,12 @@ private fun TribeContent(
                     TipiMark(34.dp, stroke = 2.4f, modifier = Modifier.align(Alignment.BottomEnd).padding(end = 18.dp, bottom = 22.dp))
                     Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 18.dp)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            YearTile(yearStats.outings, if (yearStats.outings > 1) "sorties gardées" else "sortie gardée", SortieInk, Modifier.weight(1f))
-                            YearTile(yearStats.recipes, if (yearStats.recipes > 1) "recettes gardées" else "recette gardée", RecetteInk, Modifier.weight(1f))
-                            YearTile(yearStats.gifts, if (yearStats.gifts > 1) "idées cadeaux" else "idée cadeau", CadeauInk, Modifier.weight(1f))
+                            YearTile(yearStats.outings, yearWords.outings, SortieInk, Modifier.weight(1f))
+                            YearTile(yearStats.recipes, yearWords.recipes, RecetteInk, Modifier.weight(1f))
+                            YearTile(yearStats.books, yearWords.books, CategoryPalettes["LIVRE"]?.ink ?: Prune, Modifier.weight(1f))
                         }
                         Text(
-                            yearStats.bestMonth?.let { (m, n) -> "Votre meilleur mois : ${TribePage.monthName(m)}, $n idée${if (n > 1) "s" else ""} gardée${if (n > 1) "s" else ""}." }
-                                ?: "Gardez vos premières idées : elles rempliront votre année.",
+                            TribePage.bestMonthLine(yearStats),
                             fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Ecorce,
                             modifier = Modifier.padding(top = 12.dp, end = 56.dp, bottom = 18.dp)
                         )

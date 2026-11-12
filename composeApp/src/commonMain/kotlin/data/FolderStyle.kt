@@ -18,7 +18,7 @@ object FolderStyle {
     )
     val KEY_DATE_TYPES = listOf("anniv" to "Anniversaire", "vacances" to "Vacances", "event" to "Événement")
     val VIEW_MODES = listOf("grid" to "Grille", "list" to "Liste", "mosaic" to "Mosaïque")
-    val SORTS = listOf("recent" to "Plus récentes", "date" to "Par date", "category" to "Par catégorie")
+    val SORTS = listOf("recent" to "Plus récentes", "date" to "Par date", "category" to "Par catégorie", "todo" to "À faire d'abord")
 
     private fun fold(s: String) = Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
 
@@ -112,9 +112,10 @@ object FolderStyle {
     fun countdown(f: Folder, now: Long = System.currentTimeMillis()) = countdown(f.keyDate, f.keyDateType, now)
 
     /** Idées du dossier dans l'ordre choisi (« Par date » : sorties à venir d'abord). */
-    fun sortLinks(links: List<Link>, sort: String, categoryOrder: List<LinkCategory>): List<Link> {
+    fun sortLinks(links: List<Link>, sort: String, categoryOrder: List<LinkCategory>, now: Long = System.currentTimeMillis()): List<Link> {
         val recent = compareByDescending<Link> { it.createdAt.ifEmpty { it.updatedAt } }
         return when (sort) {
+            "todo" -> Done.sortTodoFirst(links, now)
             "date" -> links.sortedWith(compareBy<Link> { it.eventDate?.takeIf { d -> d > 0 } == null }.thenBy { it.eventDate ?: 0 }.then(recent))
             "category" -> links.sortedWith(compareBy<Link> { categoryOrder.indexOf(it.category) }.then(recent))
             else -> links.sortedWith(recent)

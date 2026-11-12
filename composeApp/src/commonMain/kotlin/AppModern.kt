@@ -61,6 +61,8 @@ data class SharedContent(
     val circleToken: String? = null,
     val resetToken: String? = null,
     val verifyToken: String? = null,
+    /** Idée dont la notification « Vous y êtes allés ? » a été touchée */
+    val doneLinkId: String? = null,
     val id: Long = System.nanoTime(),
 )
 
@@ -95,7 +97,8 @@ fun AppModern(vm: LinkViewModel = viewModel(), incoming: SharedContent? = null) 
     val myFolders by vm.folders.collectAsState()
     val tribe by vm.tribe.collectAsState()
     val audiences = remember(myFolders, tribe, currentUserId) { ui.campfire.Audiences(myFolders, vm::isTribePeer) }
-    CompositionLocalProvider(ui.campfire.LocalCurrentUserId provides currentUserId, ui.campfire.LocalAudiences provides audiences) {
+    val done = ui.rememberDoneController(vm)
+    CompositionLocalProvider(ui.campfire.LocalCurrentUserId provides currentUserId, ui.campfire.LocalAudiences provides audiences, ui.LocalDone provides done) {
         ModernMainApp(vm, incoming, sessionManager, authRepository, followRepository, commentRepository)
     }
 }
@@ -158,6 +161,7 @@ private fun ModernMainApp(
     var resetToken by remember { mutableStateOf<String?>(null) }
     // Lien de confirmation de l'adresse email
     var verifyToken by remember { mutableStateOf<String?>(null) }
+    val doneActions = ui.LocalDone.current
     // Partage reçu (au lancement ou app déjà ouverte) : on ouvre l'écran correspondant
     LaunchedEffect(incoming?.id) {
         val s = incoming ?: return@LaunchedEffect
@@ -167,6 +171,14 @@ private fun ModernMainApp(
         if (s.circleToken != null) { circleToken = s.circleToken; circleHidden = false }
         if (s.resetToken != null) resetToken = s.resetToken
         if (s.verifyToken != null) verifyToken = s.verifyToken
+        // « Oui, on y était » : la fiche de la sortie, sur la feuille souvenir au jour de l'événement
+        s.doneLinkId?.let { id ->
+            vm.repository.links.value.find { it.id == id }?.let { l ->
+                val now = System.currentTimeMillis()
+                stack.add(Screen.Detail(l, origin = null))
+                if (!data.Done.isDone(l)) doneActions?.remember(l, data.Done.dayOf(data.Done.eventMs(l) ?: now), data.Done.promptDay(l, now))
+            }
+        }
     }
     var showAdd by remember { mutableStateOf(false) }
     var exploreQuery by remember { mutableStateOf("") }
@@ -582,6 +594,7 @@ private fun ModernMainApp(
             )
         }
 
+        doneActions?.let { ui.DoneHost(it, vm, Modifier.padding(start = 20.dp, end = 20.dp, bottom = 116.dp)) }
         ui.campfire.ErrorToast(vm.actionErrors, Modifier.align(Alignment.BottomCenter).padding(start = 20.dp, end = 20.dp, bottom = 116.dp))
     }
 }

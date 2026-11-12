@@ -57,6 +57,10 @@
   --color-sortie-bg: #f8dcd3;
   --color-sortie-ink: #9a3420;
   --color-sortie-ic: #b2412a;
+  /* « C'est fait » : vert sur blanc 6,4:1 ; done-solid porte une coche blanche */
+  --color-done: #3e6630;
+  --color-done-bg: #e3edd9;
+  --color-done-solid: #3e6630;
   --color-recette-bg: #e2edd9;
   --color-recette-ink: #3e6630;
   --color-recette-ic: #4c7a3c;
@@ -183,6 +187,7 @@
   --color-cadeau-bg: #3d2617; --color-cadeau-ink: #f5a66e; --color-cadeau-ic: #f5a66e;
   --color-activite-bg: #17303a; --color-activite-ink: #8ccbe3; --color-activite-ic: #8ccbe3;
   --color-sortie-bg: #3b201b; --color-sortie-ink: #f09a84; --color-sortie-ic: #f09a84;
+  --color-done: #a7d08f; --color-done-bg: #1f301b; --color-done-solid: #4c7a3c;
   --color-recette-bg: #1f301b; --color-recette-ink: #a7d08f; --color-recette-ic: #a7d08f;
   --color-livre-bg: #32232f; --color-livre-ink: #d6b4cf; --color-livre-ic: #d6b4cf;
   --color-deco-bg: #3b1f29; --color-deco-ink: #ee9db8; --color-deco-ic: #ee9db8;
@@ -489,3 +494,23 @@
 @keyframes gift-lid { 0% { transform: translateY(0); } 40% { transform: translateY(-14px) rotate(-8deg); } 100% { transform: translateY(-6px) rotate(-4deg); } }
 .gift-bow { animation: gift-bow .9s cubic-bezier(.34, 1.56, .64, 1) both; transform-origin: 50% 60%; transform-box: fill-box; }
 @keyframes gift-bow { 0% { transform: scale(.2) rotate(-25deg); opacity: 0; } 55% { transform: scale(1.15) rotate(6deg); opacity: 1; } 100% { transform: none; } }
+
+/* ── « C'est fait » (maquette « C'est fait · prototype ») ─────────────────── */
+/* Tampon posé en biais sur le visuel, et pastille de la célébration */
+.done-stamp { animation: done-stamp .7s cubic-bezier(.34, 1.56, .64, 1) both; }
+@keyframes done-stamp { 0% { transform: scale(2.2) rotate(-18deg); opacity: 0; } 55% { transform: scale(.92) rotate(4deg); opacity: 1; } 100% { transform: scale(1) rotate(-6deg); } }
+/* La coche se dessine */
+.done-draw path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: done-draw .45s cubic-bezier(.2, .8, .2, 1) .25s forwards; }
+@keyframes done-draw { to { stroke-dashoffset: 0; } }
+.done-spark { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; border-radius: 3px; animation: done-spark 1s cubic-bezier(.2, .8, .2, 1) .2s both; }
+@keyframes done-spark { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(200deg); } }
+.done-pop { animation: done-pop .5s cubic-bezier(.34, 1.56, .64, 1) both; }
+@keyframes done-pop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+.done-ring { transition: stroke-dashoffset .7s cubic-bezier(.2, .8, .2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .done-stamp { animation: none; transform: rotate(-6deg); }
+  .done-draw path { animation: none; stroke-dashoffset: 0; }
+  .done-spark { display: none; }
+  .done-pop { animation: none; }
+  .done-ring { transition: none; }
+}

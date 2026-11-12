@@ -26,6 +26,8 @@ import Seo from "../components/Seo";
 import ReportSheet from "../components/ReportSheet";
 import type { ReportTarget } from "../lib/moderation";
 import GiftPanel from "../components/GiftPanel";
+import { DonePill, DoneStamp, MemoryCard, useDone, useDoneChange } from "../components/Done";
+import { doneStamp, doneWords, familiesLabel, isDone } from "../lib/done";
 import VisibilityBadge from "../components/VisibilityBadge";
 
 export default function LinkDetail() {
@@ -88,6 +90,12 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   const img = safeImage(link.imageUrl);
   const imgBroken = !!img && brokenSrc === img;
   const comments = useAsync(() => api.comments.list(link.id), [link.id]);
+  // « C'est fait » : marquée depuis la fiche, une vignette ou le toast « Annuler »
+  const done = useDone();
+  useDoneChange(link.id, onChange);
+  const canMark = done.canMark(link);
+  const made = done.canSee(link) && isDone(link);
+  const families = familiesLabel(link.doneFamilies);
 
   const requireAuth = () => navigate(`/bienvenue?next=/links/${link.id}`);
 
@@ -240,6 +248,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             )}
           </div>
         </div>
+        {made && <DoneStamp label={doneStamp(link)} className="absolute right-5 bottom-11" />}
       </div>
 
       {/* Contenu */}
@@ -274,6 +283,14 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         )}
 
         <h1 className="self-start font-display text-[28px] leading-[1.1] font-extrabold tracking-[-0.6px] md:text-[36px]" style={morph.titleStyle}>{link.title}</h1>
+
+        {made && <DonePill link={link} />}
+        {families && (
+          <span className="flex items-center gap-1.5 self-start rounded-full bg-done-bg px-3 py-1.5 text-[13px] font-bold text-done">
+            <Icon name="check" size={14} />{families}
+          </span>
+        )}
+        {made && <MemoryCard link={link} />}
 
         {!ourIdea && link.ownerId && session && <FollowAuthor userId={link.ownerId} name={link.ownerDisplayName} />}
 
@@ -411,6 +428,26 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
                 </a>
               )}
             </>
+          ) : canMark ? (
+            <>
+              {/* À faire : le bouton principal dit que c'est fait ; faite : « On l'a refait » */}
+              {made ? (
+                <Button block variant="ghost" icon="refresh" className="!h-[54px]" onClick={() => done.remember(link)}>{doneWords(link.category).again}</Button>
+              ) : (
+                <Button block icon="check" className="!h-[54px]" onClick={() => done.remember(link)}>{doneWords(link.category).verb}</Button>
+              )}
+              {href && (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  aria-label="Voir le site"
+                  className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-medium border-[1.5px] border-line-2 bg-card transition-colors hover:bg-sable-2"
+                >
+                  <Icon name="external" size={20} />
+                </a>
+              )}
+            </>
           ) : href ? (
             <a
               href={href}
@@ -430,9 +467,12 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
       {session && (
         <Sheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Idée">
           <div className="flex flex-col gap-2">
+            {canMark && !made && <MenuItem icon="check" label="Marquer comme fait" onClick={() => { setMenuOpen(false); done.quick(link); }} />}
+            {canMark && made && <MenuItem icon="refresh" label={doneWords(link.category).again} onClick={() => { setMenuOpen(false); done.remember(link); }} />}
             {canEdit && <MenuItem icon="pencil" label="Modifier" onClick={() => { setMenuOpen(false); editLink(link, onChange); }} />}
             {!canEdit && <MenuItem icon="bookmark" label="Enregistrer dans mes idées" onClick={() => { setMenuOpen(false); saveCopy(); }} />}
             <MenuItem icon="share" label="Envoyer l'idée" onClick={() => { setMenuOpen(false); share(); }} />
+            {canMark && made && <MenuItem icon="trash" label="Plus fait (retirer)" danger onClick={() => { setMenuOpen(false); void done.unmark(link); }} />}
             {ourIdea && <MenuItem icon="trash" label="Supprimer" danger onClick={remove} />}
             {!ourIdea && link.ownerId && (
               <>
