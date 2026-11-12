@@ -79,6 +79,8 @@ message CreateFolderRequest {
   string view_mode = 13;
   string sort = 14;
   bool pinned = 15;
+  // Liste de cadeaux : les proches réservent ses idées Cadeau depuis le lien de partage
+  bool gift_reservations = 16;
 }
 
 message CreateFolderResponse {

@@ -464,24 +464,26 @@ func (x *Folder) GetGiftReservations() bool {
 }
 
 type CreateFolderRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Icon          string                 `protobuf:"bytes,2,opt,name=icon,proto3" json:"icon,omitempty"`
-	Color         string                 `protobuf:"bytes,3,opt,name=color,proto3" json:"color,omitempty"`
-	Visibility    Visibility             `protobuf:"varint,4,opt,name=visibility,proto3,enum=tribbae.v1.Visibility" json:"visibility,omitempty"`
-	BannerUrl     string                 `protobuf:"bytes,5,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
-	Tags          []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`
-	Description   string                 `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`
-	Cover         string                 `protobuf:"bytes,8,opt,name=cover,proto3" json:"cover,omitempty"`
-	Illustration  string                 `protobuf:"bytes,9,opt,name=illustration,proto3" json:"illustration,omitempty"`
-	KeyDate       int64                  `protobuf:"varint,10,opt,name=key_date,json=keyDate,proto3" json:"key_date,omitempty"`
-	KeyDateType   string                 `protobuf:"bytes,11,opt,name=key_date_type,json=keyDateType,proto3" json:"key_date_type,omitempty"`
-	ChildIds      []string               `protobuf:"bytes,12,rep,name=child_ids,json=childIds,proto3" json:"child_ids,omitempty"`
-	ViewMode      string                 `protobuf:"bytes,13,opt,name=view_mode,json=viewMode,proto3" json:"view_mode,omitempty"`
-	Sort          string                 `protobuf:"bytes,14,opt,name=sort,proto3" json:"sort,omitempty"`
-	Pinned        bool                   `protobuf:"varint,15,opt,name=pinned,proto3" json:"pinned,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Name         string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Icon         string                 `protobuf:"bytes,2,opt,name=icon,proto3" json:"icon,omitempty"`
+	Color        string                 `protobuf:"bytes,3,opt,name=color,proto3" json:"color,omitempty"`
+	Visibility   Visibility             `protobuf:"varint,4,opt,name=visibility,proto3,enum=tribbae.v1.Visibility" json:"visibility,omitempty"`
+	BannerUrl    string                 `protobuf:"bytes,5,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
+	Tags         []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`
+	Description  string                 `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`
+	Cover        string                 `protobuf:"bytes,8,opt,name=cover,proto3" json:"cover,omitempty"`
+	Illustration string                 `protobuf:"bytes,9,opt,name=illustration,proto3" json:"illustration,omitempty"`
+	KeyDate      int64                  `protobuf:"varint,10,opt,name=key_date,json=keyDate,proto3" json:"key_date,omitempty"`
+	KeyDateType  string                 `protobuf:"bytes,11,opt,name=key_date_type,json=keyDateType,proto3" json:"key_date_type,omitempty"`
+	ChildIds     []string               `protobuf:"bytes,12,rep,name=child_ids,json=childIds,proto3" json:"child_ids,omitempty"`
+	ViewMode     string                 `protobuf:"bytes,13,opt,name=view_mode,json=viewMode,proto3" json:"view_mode,omitempty"`
+	Sort         string                 `protobuf:"bytes,14,opt,name=sort,proto3" json:"sort,omitempty"`
+	Pinned       bool                   `protobuf:"varint,15,opt,name=pinned,proto3" json:"pinned,omitempty"`
+	// Liste de cadeaux : les proches réservent ses idées Cadeau depuis le lien de partage
+	GiftReservations bool `protobuf:"varint,16,opt,name=gift_reservations,json=giftReservations,proto3" json:"gift_reservations,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CreateFolderRequest) Reset() {
@@ -615,6 +617,13 @@ func (x *CreateFolderRequest) GetSort() string {
 func (x *CreateFolderRequest) GetPinned() bool {
 	if x != nil {
 		return x.Pinned
+	}
+	return false
+}
+
+func (x *CreateFolderRequest) GetGiftReservations() bool {
+	if x != nil {
+		return x.GiftReservations
 	}
 	return false
 }
@@ -3047,7 +3056,7 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\tview_mode\x18\x19 \x01(\tR\bviewMode\x12\x12\n" +
 	"\x04sort\x18\x1a \x01(\tR\x04sort\x12\x16\n" +
 	"\x06pinned\x18\x1b \x01(\bR\x06pinned\x12+\n" +
-	"\x11gift_reservations\x18\x1c \x01(\bR\x10giftReservations\"\xbf\x03\n" +
+	"\x11gift_reservations\x18\x1c \x01(\bR\x10giftReservations\"\xec\x03\n" +
 	"\x13CreateFolderRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04icon\x18\x02 \x01(\tR\x04icon\x12\x14\n" +
@@ -3067,7 +3076,8 @@ const file_tribbae_v1_folder_proto_rawDesc = "" +
 	"\tchild_ids\x18\f \x03(\tR\bchildIds\x12\x1b\n" +
 	"\tview_mode\x18\r \x01(\tR\bviewMode\x12\x12\n" +
 	"\x04sort\x18\x0e \x01(\tR\x04sort\x12\x16\n" +
-	"\x06pinned\x18\x0f \x01(\bR\x06pinned\"B\n" +
+	"\x06pinned\x18\x0f \x01(\bR\x06pinned\x12+\n" +
+	"\x11gift_reservations\x18\x10 \x01(\bR\x10giftReservations\"B\n" +
 	"\x14CreateFolderResponse\x12*\n" +
 	"\x06folder\x18\x01 \x01(\v2\x12.tribbae.v1.FolderR\x06folder\"/\n" +
 	"\x10GetFolderRequest\x12\x1b\n" +
