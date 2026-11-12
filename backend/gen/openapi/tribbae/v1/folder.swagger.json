@@ -1045,6 +1045,10 @@
         },
         "pinned": {
           "type": "boolean"
+        },
+        "giftReservations": {
+          "type": "boolean",
+          "title": "Liste de cadeaux : les proches réservent ses idées Cadeau depuis le lien de partage"
         }
       }
     },

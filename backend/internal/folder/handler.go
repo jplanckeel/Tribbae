@@ -182,7 +182,7 @@ func (h *Handler) CreateFolder(ctx context.Context, req *pb.CreateFolderRequest)
 	f, err := h.svc.Create(ctx, ownerID, req.Name, req.Icon, req.Color, visibilityStr(req.Visibility), req.BannerUrl, req.Tags, Style{
 		Description: req.Description, Cover: req.Cover, Illustration: req.Illustration,
 		KeyDate: req.KeyDate, KeyDateType: req.KeyDateType, ChildIDs: req.ChildIds,
-		ViewMode: req.ViewMode, Sort: req.Sort, Pinned: req.Pinned,
+		ViewMode: req.ViewMode, Sort: req.Sort, Pinned: req.Pinned, GiftReservations: req.GiftReservations,
 	})
 	if err != nil {
 		return nil, toStatus("create folder", err)

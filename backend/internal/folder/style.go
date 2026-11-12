@@ -127,6 +127,7 @@ func (st Style) setDoc() bson.M {
 		"description": st.Description, "cover": st.Cover, "illustration": st.Illustration,
 		"key_date": st.KeyDate, "key_date_type": st.KeyDateType, "child_ids": st.ChildIDs,
 		"view_mode": st.ViewMode, "sort": st.Sort, "pinned": st.Pinned,
+		"gift_reservations": st.GiftReservations,
 	}
 }
 
