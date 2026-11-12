@@ -571,22 +571,19 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
      * « Finalement, pas encore acheté » (unbought), « Libérer » (release).
      * Renvoie le nouveau statut vu par moi, ou null en cas d'erreur (déjà affichée).
      */
-    suspend fun giftAction(linkId: String, action: String): String? {
-        val client = authenticatedClient ?: return null
+    suspend fun giftAction(linkId: String, action: String): String? =
+        giftCall(linkId, action).getOrElse { _actionErrors.tryEmit(data.Gifts.errorMessage(it.message.orEmpty())); null }
+
+    private suspend fun giftCall(linkId: String, action: String): Result<String> {
+        val client = authenticatedClient ?: return Result.failure(Exception("Not authenticated"))
         return try {
             val status = data.Gifts.mineFrom(client.giftAction(linkId, action))
             repository.links.value.find { it.id == linkId }?.let { repository.updateLink(it.copy(giftStatus = status)) }
             _communityLinks.value = _communityLinks.value.map { if (it.id == linkId) it.copy(giftStatus = status) else it }
             updateFilteredLinks()
-            status
+            Result.success(status)
         } catch (e: Exception) {
-            val m = e.message.orEmpty()
-            _actionErrors.tryEmit(when {
-                "gift already reserved" in m -> "Quelqu'un vient de le réserver."
-                "gift reservations are off" in m -> "Cette liste n'accepte plus de réservations."
-                else -> "Le cadeau n'a pas pu être mis à jour. Vérifiez votre connexion."
-            })
-            null
+            Result.failure(e)
         }
     }
 
@@ -670,6 +667,26 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
         return doneCall { it.uploadPhoto(withContext(Dispatchers.IO) { file.readBytes() }) }
     }
+
+    /** Cadeaux réservés sans compte depuis cet appareil, en attente du lien reçu par e-mail. */
+    val pendingGifts: StateFlow<Map<String, Long>> get() = repository.pendingGifts
+
+    /**
+     * « Je l'offre » depuis un lien de partage : réservé tout de suite avec un
+     * compte, sinon en attente de l'e-mail envoyé à [email]. Renvoie le message
+     * d'erreur à afficher, ou null si c'est fait.
+     */
+    suspend fun reserveSharedGift(shareToken: String, linkId: String, name: String = "", email: String = ""): String? = try {
+        val status = apiClient.reserveSharedGift(shareToken, linkId, bearer(), name, email)
+        if (status == "pending") repository.rememberPendingGift(linkId)
+        null
+    } catch (e: Exception) {
+        data.Gifts.errorMessage(e.message.orEmpty())
+    }
+
+    /** Action de l'offreur sur un lien de partage ; renvoie le message d'erreur à afficher dans la fiche, ou null. */
+    suspend fun sharedGiftAction(linkId: String, action: String): String? =
+        giftCall(linkId, action).exceptionOrNull()?.let { data.Gifts.errorMessage(it.message.orEmpty()) }
 
     /** Remet à zéro toutes les réservations d'une liste de cadeaux. */
     suspend fun resetGifts(folderId: String): Boolean {
@@ -935,7 +952,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     /** Dossier ouvert depuis un lien de partage (https://…/share/<jeton>). */
     suspend fun loadSharedFolder(token: String): Pair<Folder, List<Link>>? = runCatching {
-        val r = apiClient.getSharedFolder(token)
+        val r = apiClient.getSharedFolder(token, bearer())
         val folder = r.folder.copy(linkCount = r.links.size).toFolder()
         folder to r.links.map { it.toLink().copy(folderId = folder.id) }
     }.getOrNull()

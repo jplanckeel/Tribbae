@@ -42,6 +42,26 @@ class GiftsTest {
     }
 
     @Test
+    fun pendingOnThisDeviceShowsToConfirm() {
+        assertEquals("pending", Gifts.sharedStatus("reserved", true))
+        assertEquals("bought", Gifts.sharedStatus("bought", true))
+        assertEquals("reserved", Gifts.sharedStatus("reserved", false))
+        assertEquals("", Gifts.sharedStatus(null, false))
+        assertEquals(mapOf("b" to 200L), Gifts.stillPending(mapOf("a" to 100L, "b" to 200L), now = 150L))
+    }
+
+    @Test
+    fun refusalsAreExplained() {
+        assertEquals("Quelqu'un vient de le réserver.", Gifts.errorMessage("API error (409): gift already reserved"))
+        assertEquals("Cette liste n'accepte plus de réservations.", Gifts.errorMessage("API error (400): gift reservations are off for this folder"))
+        assertEquals(
+            "Vous avez déjà réservé 5 cadeaux sur cette liste aujourd'hui : réessayez demain.",
+            Gifts.errorMessage("API error (429): too many gift reservations today"),
+        )
+        assertEquals("Trop de tentatives, réessayez dans une minute.", Gifts.errorMessage("API error (429): too many attempts"))
+    }
+
+    @Test
     fun creatorOnlySeesHowMany() {
         assertEquals("Aucune idée n'a encore trouvé preneur.", Gifts.surpriseLabel(listOf("", "")))
         assertEquals("1 idée sur 3 a trouvé preneur.", Gifts.surpriseLabel(listOf("reserved", "", "")))

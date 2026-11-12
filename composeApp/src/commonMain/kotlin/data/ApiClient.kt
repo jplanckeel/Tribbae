@@ -224,9 +224,45 @@ class ApiClient(private val baseUrl: String = Backend.url) {
         return json.decodeFromString(body)
     }
 
-    suspend fun getSharedFolder(token: String): SharedFolderResponse {
-        val body = get("/v1/share/$token")
+    private suspend fun post(path: String, body: String, token: String? = null): String = withContext(Dispatchers.IO) {
+        val conn = URL("$baseUrl$path").openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        if (!token.isNullOrBlank()) conn.setRequestProperty("Authorization", "Bearer $token")
+        conn.connectTimeout = 10_000
+        conn.readTimeout = 10_000
+        conn.doOutput = true
+        try {
+            conn.outputStream.use { it.write(body.toByteArray()) }
+            BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
+        } catch (e: Exception) {
+            val error = conn.errorStream?.let { s -> BufferedReader(InputStreamReader(s)).use { it.readText() } }
+            if (error != null) throw Exception("API error (${conn.responseCode}): $error")
+            throw e
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    /** Jeton de session facultatif : il dit quels cadeaux de la liste sont les miens. */
+    suspend fun getSharedFolder(token: String, bearer: String? = null): SharedFolderResponse {
+        val body = get("/v1/share/$token", bearer)
         return json.decodeFromString(body)
+    }
+
+    /**
+     * « Je l'offre » depuis un lien de partage. Avec une session, c'est réservé
+     * ("reserved") ; sans, il faut prénom et e-mail et la réservation attend le
+     * lien de confirmation ("pending").
+     */
+    suspend fun reserveSharedGift(shareToken: String, linkId: String, bearer: String?, name: String = "", email: String = ""): String {
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("name", kotlinx.serialization.json.JsonPrimitive(name))
+            put("email", kotlinx.serialization.json.JsonPrimitive(email))
+        }
+        val body = post("/v1/share/$shareToken/links/$linkId/reservation", payload.toString(), bearer)
+        val status = (json.parseToJsonElement(body) as? kotlinx.serialization.json.JsonObject)?.get("status") as? kotlinx.serialization.json.JsonPrimitive
+        return status?.content.orEmpty()
     }
 
     /** Jeton facultatif : il renseigne likedByMe. */

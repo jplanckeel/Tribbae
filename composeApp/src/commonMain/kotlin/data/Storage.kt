@@ -27,6 +27,10 @@ interface Storage {
     fun savePending(pending: PendingChanges) {}
     fun loadPending(): PendingChanges = PendingChanges()
 
+    /** Cadeaux réservés sans compte depuis cet appareil, en attente de l'e-mail (id → échéance en ms). */
+    fun saveGiftPending(pending: Map<String, Long>) {}
+    fun loadGiftPending(): Map<String, Long> = emptyMap()
+
     /** Liste de courses (voir ShoppingSelection). */
     fun saveShopping(selection: ShoppingSelection) {}
     fun loadShopping(): ShoppingSelection = ShoppingSelection()

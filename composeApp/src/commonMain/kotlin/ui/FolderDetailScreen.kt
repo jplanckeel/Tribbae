@@ -192,11 +192,14 @@ fun PublicFolderScreen(
     var liked by remember { mutableStateOf(folder?.likedByMe ?: false) }
     var likeCount by remember { mutableStateOf(folder?.likeCount ?: 0) }
     val loggedIn = viewModel.currentUserId() != null
+    // Liste de cadeaux : rechargée après chaque réservation
+    var version by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(folder?.id, shareToken) {
+    LaunchedEffect(folder?.id, shareToken, version) {
         if (shareToken != null) {
             val r = viewModel.loadSharedFolder(shareToken)
-            if (r == null) failed = true else { current = r.first; items = r.second }
+            // Un rechargement raté garde la liste affichée
+            if (r != null) { current = r.first; items = r.second } else if (items == null) failed = true
         } else if (folder != null) {
             val r = viewModel.loadPublicFolderLinks(folder.id)
             if (r == null) failed = true else items = r
@@ -218,6 +221,9 @@ fun PublicFolderScreen(
 
     val list = items.orEmpty()
     val owner = f.ownerDisplayName.takeIf { it.isNotBlank() }
+    // Liste de cadeaux ouverte par son lien : ses idées Cadeau se réservent, les autres restent des idées
+    val gifts = if (shareToken != null && f.giftReservations) list.filter { it.category == LinkCategory.CADEAU } else emptyList()
+    val others = if (gifts.isEmpty()) list else list.filter { it.category != LinkCategory.CADEAU }
     CollectionScaffold(
         title = f.name,
         subtitle = if (items == null && !failed) "Chargement…"
@@ -229,6 +235,7 @@ fun PublicFolderScreen(
         folder = f,
         extra = {
             if (f.aiGenerated) Tag("IA", Prune, Sable, Icons.Outlined.AutoAwesome)
+            if (gifts.isNotEmpty()) Tag("Liste de cadeaux", Prune, Soleil, Icons.Outlined.CardGiftcard)
             if (shareToken != null) Tag("Partagé avec vous", CardColor, Ecorce, Icons.Outlined.Link)
             else VisibilityBadge(data.Audience.PUBLIC)
         },
@@ -245,7 +252,13 @@ fun PublicFolderScreen(
                 )
             }
         },
-        links = remember(list, f.sort) { FolderStyle.sortLinks(list, f.sort, CategoryOrder.map { it.category }) },
+        beforeIdeas = if (shareToken != null && gifts.isNotEmpty()) {
+            {
+                SharedGiftList(shareToken, f, gifts, viewModel) { version++ }
+                if (others.isNotEmpty()) Text("Les autres idées", style = display(20.sp, FontWeight.Bold), modifier = Modifier.padding(top = 8.dp))
+            }
+        } else null,
+        links = remember(others, f.sort) { FolderStyle.sortLinks(others, f.sort, CategoryOrder.map { it.category }) },
         emptyTitle = when {
             failed -> "Impossible de charger ce dossier"
             items == null -> "Chargement…"

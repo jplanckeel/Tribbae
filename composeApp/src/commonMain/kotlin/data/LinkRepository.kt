@@ -123,6 +123,16 @@ class LinkRepository(private val storage: Storage? = null) {
         }
     }
 
+    private val _pendingGifts = MutableStateFlow(Gifts.stillPending(storage?.loadGiftPending().orEmpty(), System.currentTimeMillis()))
+
+    /** Cadeaux réservés sans compte depuis cet appareil, en attente du lien reçu par e-mail. */
+    val pendingGifts: StateFlow<Map<String, Long>> = _pendingGifts.asStateFlow()
+
+    fun rememberPendingGift(linkId: String, now: Long = System.currentTimeMillis()) {
+        _pendingGifts.value = Gifts.stillPending(_pendingGifts.value, now) + (linkId to now + Gifts.PENDING_MS)
+        storage?.saveGiftPending(_pendingGifts.value)
+    }
+
     fun addLink(link: Link) {
         _links.value = _links.value + link
         storage?.saveLinks(_links.value)

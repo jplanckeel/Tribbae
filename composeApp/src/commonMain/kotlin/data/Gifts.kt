@@ -64,6 +64,27 @@ object Gifts {
         return "$taken ${if (taken > 1) "idées" else "idée"} sur $total ${if (taken > 1) "ont" else "a"} trouvé preneur."
     }
 
+    /** Une réservation sans compte attend 2 h le lien reçu par e-mail. */
+    const val PENDING_MS = 2 * 60 * 60 * 1000L
+
+    /** Réservations faites sans compte depuis cet appareil et encore en attente. */
+    fun stillPending(all: Map<String, Long>, now: Long): Map<String, Long> = all.filterValues { it > now }
+
+    /** Statut affiché sur le lien de partage : celui du serveur, ou « À confirmer » pour cet appareil. */
+    fun sharedStatus(serverStatus: String?, pendingHere: Boolean): String =
+        if (pendingHere && (serverStatus == "reserved" || serverStatus.isNullOrEmpty())) "pending" else serverStatus.orEmpty()
+
+    /** Message d'un refus du serveur (mêmes textes que frenchMessage dans lib/api.ts). */
+    fun errorMessage(raw: String): String = when {
+        "gift already reserved" in raw -> "Quelqu'un vient de le réserver."
+        "gift reservations are off" in raw -> "Cette liste n'accepte plus de réservations."
+        "too many gift reservations" in raw -> "Vous avez déjà réservé 5 cadeaux sur cette liste aujourd'hui : réessayez demain."
+        "(429)" in raw -> "Trop de tentatives, réessayez dans une minute."
+        "(400)" in raw -> "Vérifiez votre prénom et votre adresse e-mail."
+        "(404)" in raw -> "Introuvable — l'élément a peut-être été supprimé."
+        else -> "Le cadeau n'a pas pu être mis à jour. Vérifiez votre connexion."
+    }
+
     /** Statut renvoyé par le serveur après une action de l'offreur (compte). */
     fun mineFrom(serverStatus: String): String = when (serverStatus) {
         "bought" -> "mine_bought"
