@@ -43,6 +43,8 @@ data class ApiFolder(
     val illustration: String = "",
     val viewMode: String = "",
     val sort: String = "",
+    /** Liste de cadeaux : ses idées Cadeau se réservent depuis le lien de partage */
+    val giftReservations: Boolean = false,
 ) {
     /** Dossier affichable (dossier d'un autre membre : communauté ou lien de partage). */
     fun toFolder(): Folder = Folder(
@@ -64,6 +66,7 @@ data class ApiFolder(
         illustration = illustration,
         viewMode = viewMode,
         sort = sort,
+        giftReservations = giftReservations,
     )
 }
 

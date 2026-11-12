@@ -67,4 +67,13 @@ class GiftsTest {
         assertEquals("1 idée sur 3 a trouvé preneur.", Gifts.surpriseLabel(listOf("reserved", "", "")))
         assertEquals("2 idées sur 5 ont trouvé preneur.", Gifts.surpriseLabel(listOf("reserved", "bought", "", "", "")))
     }
+
+    @Test
+    fun sharedFolderKeepsTheGiftListSetting() {
+        // Réponse de GET /v1/share/{jeton} : sans ce champ, la liste ne s'affichait pas sur Android
+        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+        val body = """{"folder":{"id":"f","name":"Noël de Léo","icon":"STAR","color":"RED","giftReservations":true},"links":[]}"""
+        assertTrue(json.decodeFromString<SharedFolderResponse>(body).folder.toFolder().giftReservations)
+        assertFalse(json.decodeFromString<SharedFolderResponse>("""{"folder":{"id":"f","name":"Anniv"}}""").folder.toFolder().giftReservations)
+    }
 }
