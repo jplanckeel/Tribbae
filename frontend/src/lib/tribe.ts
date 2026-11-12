@@ -1,4 +1,5 @@
 import { matchesAge } from "./age";
+import type { DoneSummary } from "./done";
 import { ageInMonths } from "./format";
 import type { Child, Folder, Link } from "./types";
 
@@ -49,30 +50,37 @@ export function circleOf(folders: Folder[], isPeer: (userId: string) => boolean)
 export interface YearInIdeas {
   outings: number;
   recipes: number;
-  gifts: number;
+  books: number;
   total: number;
-  /** Mois (0-11) où la tribu a gardé le plus d'idées, s'il y en a. */
+  /** Mois (0-11) où la tribu a fait le plus d'idées, s'il y en a. */
   bestMonth?: { month: number; count: number };
 }
 
-/** « Notre année en idées » : ce que la tribu a gardé pendant l'année civile. */
-export function yearInIdeas(links: Link[], year: number): YearInIdeas {
-  const out: YearInIdeas = { outings: 0, recipes: 0, gifts: 0, total: 0 };
-  const months = new Array<number>(12).fill(0);
-  for (const l of links) {
-    const t = l.createdAt ? Date.parse(l.createdAt) : NaN;
-    if (Number.isNaN(t)) continue;
-    const d = new Date(t);
-    if (d.getFullYear() !== year) continue;
-    out.total++;
-    months[d.getMonth()]++;
-    if (l.category === "LINK_CATEGORY_EVENEMENT" || l.category === "LINK_CATEGORY_ACTIVITE") out.outings++;
-    else if (l.category === "LINK_CATEGORY_RECETTE") out.recipes++;
-    else if (l.category === "LINK_CATEGORY_CADEAU") out.gifts++;
-  }
-  const max = Math.max(...months);
-  if (max > 0) out.bestMonth = { month: months.indexOf(max), count: max };
+/**
+ * « Notre année en idées » : ce que la tribu a fait pendant l'année civile.
+ * Le serveur compte (GET /v1/done/summary), car une idée refaite compte
+ * plusieurs fois ; sans réponse, tout est à zéro.
+ */
+export function yearInIdeas(s: DoneSummary | undefined): YearInIdeas {
+  const out: YearInIdeas = { outings: s?.outings ?? 0, recipes: s?.recipes ?? 0, books: s?.books ?? 0, total: s?.total ?? 0 };
+  if (s?.bestMonth && s.bestMonthCount) out.bestMonth = { month: s.bestMonth - 1, count: s.bestMonthCount };
   return out;
+}
+
+/** Libellés des trois compteurs : « sorties faites », « recettes cuisinées », « livres lus ». */
+export function yearLabels(y: YearInIdeas): { outings: string; recipes: string; books: string } {
+  return {
+    outings: y.outings > 1 ? "sorties faites" : "sortie faite",
+    recipes: y.recipes > 1 ? "recettes cuisinées" : "recette cuisinée",
+    books: y.books > 1 ? "livres lus" : "livre lu",
+  };
+}
+
+/** « Votre meilleur mois : juillet, 12 idées faites. » */
+export function bestMonthLine(y: YearInIdeas): string {
+  if (!y.bestMonth) return "Marquez vos premières idées faites : elles rempliront votre année.";
+  const n = y.bestMonth.count;
+  return `Votre meilleur mois : ${monthName(y.bestMonth.month)}, ${n} ${n > 1 ? "idées faites" : "idée faite"}.`;
 }
 
 const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];

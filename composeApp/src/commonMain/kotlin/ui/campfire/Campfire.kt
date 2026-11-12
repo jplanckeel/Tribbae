@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -638,12 +639,19 @@ fun IdeaVisibility(link: Link, modifier: Modifier = Modifier) {
 
 /** Carte de la mosaïque de l'Explorer (2 colonnes décalées). */
 @Composable
-fun MosaicCard(link: Link, index: Int, onClick: () -> Unit, liked: Boolean, onLike: (() -> Unit)?) {
+fun MosaicCard(
+    link: Link, index: Int, onClick: () -> Unit, liked: Boolean, onLike: (() -> Unit)?,
+    /** Dossier de la tribu : coche « C'est fait », état de l'idée et menu à l'appui long (jamais dans Explorer). */
+    done: Boolean = false,
+) {
     val cat = categoryUi(link.category)
-    Column(Modifier.fillMaxWidth().card(RoundedCornerShape(20.dp)).clickable(onClick = onClick)) {
+    val state = ui.doneMeta(link, done)
+    val dimmed = ui.doneDimmed(link, done)
+    Column(Modifier.fillMaxWidth().alpha(if (dimmed) 0.6f else 1f).card(RoundedCornerShape(20.dp)).doneClickable(link, done, onClick)) {
         Box {
             IdeaVisual(link, Mosaic[index % Mosaic.size], iconSize = 40.dp)
             IdeaVisibility(link, Modifier.align(Alignment.BottomStart).padding(8.dp))
+            if (done) ui.DoneTick(link, Modifier.align(Alignment.BottomEnd))
             if (onLike != null) {
                 Box(
                     Modifier
@@ -661,10 +669,15 @@ fun MosaicCard(link: Link, index: Int, onClick: () -> Unit, liked: Boolean, onLi
             }
         }
         Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(link.title, style = display(15.sp, FontWeight.Bold), maxLines = 3, overflow = TextOverflow.Ellipsis)
-            Text(metaLine(link).ifEmpty { cat.label }, fontSize = 12.sp, color = TextSec)
+            Text(
+                link.title, style = display(15.sp, FontWeight.Bold), maxLines = 3, overflow = TextOverflow.Ellipsis,
+                textDecoration = if (dimmed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+            )
+            if (state != null) Text(state.first, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = state.second)
+            else Text(metaLine(link).ifEmpty { cat.label }, fontSize = 12.sp, color = TextSec)
             val author = authorLine(link)
             if (author.isNotEmpty()) Text(author, fontSize = 12.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            ui.DoneFamiliesChip(link.doneFamilies, small = true)
             if (link.likeCount > 0) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Icon(Icons.Outlined.FavoriteBorder, null, tint = TextSec, modifier = Modifier.size(13.dp))
@@ -675,22 +688,51 @@ fun MosaicCard(link: Link, index: Int, onClick: () -> Unit, liked: Boolean, onLi
     }
 }
 
+/** Toucher : ouvrir l'idée. Appui long, dans un dossier de la tribu : le menu « C'est fait ». */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun Modifier.doneClickable(link: Link, done: Boolean, onClick: () -> Unit): Modifier {
+    val actions = ui.LocalDone.current
+    if (!done || actions == null || !actions.canMark(link)) return clickable(onClick = onClick)
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    return combinedClickable(
+        onClick = onClick,
+        onLongClickLabel = "Marquer comme fait, ou retirer",
+        onLongClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); actions.menu = link },
+    )
+}
+
 /** Ligne compacte (listes). */
 @Composable
-fun RowCard(link: Link, onClick: () -> Unit, trailing: (@Composable () -> Unit)? = null) {
+fun RowCard(link: Link, onClick: () -> Unit, done: Boolean = false, trailing: (@Composable () -> Unit)? = null) {
     val cat = categoryUi(link.category)
+    val state = ui.doneMeta(link, done)
+    val dimmed = ui.doneDimmed(link, done)
+    val made = done && link.doneCount > 0
     Row(
-        Modifier.fillMaxWidth().card(RoundedCornerShape(18.dp), 4.dp).clickable(onClick = onClick).padding(10.dp),
+        Modifier.fillMaxWidth().alpha(if (dimmed) 0.6f else 1f).card(RoundedCornerShape(18.dp), 4.dp).doneClickable(link, done, onClick).padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        IdeaVisual(link, 56.dp, Modifier.width(56.dp).clip(RoundedCornerShape(14.dp)), iconSize = 24.dp)
+        Box {
+            IdeaVisual(link, 56.dp, Modifier.width(56.dp).clip(RoundedCornerShape(14.dp)), iconSize = 24.dp)
+            // Vue liste : la coche d'une idée faite se pose sur la miniature
+            if (made) ui.DoneTick(link, Modifier.align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp), small = true)
+        }
         Column(Modifier.weight(1f)) {
-            Text(link.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(listOf(cat.label, metaLine(link), authorLine(link)).filter { it.isNotEmpty() }.joinToString(" · "), fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                link.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                textDecoration = if (dimmed) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+            )
+            if (state != null) Text(state.first, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = state.second, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            else Text(listOf(cat.label, metaLine(link), authorLine(link)).filter { it.isNotEmpty() }.joinToString(" · "), fontSize = 13.sp, color = TextSec, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         IdeaVisibility(link)
-        trailing?.invoke() ?: Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+        when {
+            trailing != null -> trailing()
+            done && !made -> ui.DoneTick(link)
+            else -> Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+        }
     }
 }
 

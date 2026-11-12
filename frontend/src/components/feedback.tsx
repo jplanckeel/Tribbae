@@ -10,6 +10,13 @@ interface Toast {
   id: number;
   text: string;
   tone: "ok" | "error";
+  action?: ToastAction;
+}
+
+/** Bouton d'un toast (« Annuler ») : le toast reste alors affiché plus longtemps. */
+interface ToastAction {
+  label: string;
+  onClick: () => void;
 }
 
 interface ConfirmOptions {
@@ -20,7 +27,7 @@ interface ConfirmOptions {
 }
 
 interface FeedbackApi {
-  toast: (text: string, tone?: Toast["tone"]) => void;
+  toast: (text: string, tone?: Toast["tone"], opts?: { action?: ToastAction; duration?: number }) => void;
   confirm: (opts: ConfirmOptions) => Promise<boolean>;
 }
 
@@ -32,11 +39,12 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   const resolver = useRef<(v: boolean) => void>(undefined);
   const nextId = useRef(0);
 
-  const toast = useCallback((text: string, tone: Toast["tone"] = "ok") => {
+  const toast = useCallback<FeedbackApi["toast"]>((text, tone = "ok", opts) => {
     const id = ++nextId.current;
-    setToasts((t) => [...t, { id, text, tone }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
+    setToasts((t) => [...t, { id, text, tone, action: opts?.action }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), opts?.duration ?? 3200);
   }, []);
+  const dismiss = (id: number) => setToasts((t) => t.filter((x) => x.id !== id));
 
   const confirm = useCallback((opts: ConfirmOptions) => {
     setPending(opts);
@@ -59,10 +67,19 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
             <div
               key={t.id}
               role={t.tone === "error" ? "alert" : "status"}
-              className={`flex animate-pop items-center gap-2 rounded-medium px-4 py-3 text-sm font-semibold shadow-nav ${t.tone === "error" ? "bg-sortie-ink text-white" : "bg-ecorce text-sable"}`}
+              className={`flex animate-pop items-center gap-2 rounded-medium py-3 text-sm font-semibold shadow-nav ${t.action ? "pointer-events-auto pr-2.5 pl-4" : "px-4"} ${t.tone === "error" ? "bg-sortie-ink text-white" : "bg-ecorce text-sable"}`}
             >
               <Icon name={t.tone === "error" ? "close" : "check"} size={18} />
               {t.text}
+              {t.action && (
+                <button
+                  type="button"
+                  onClick={() => { dismiss(t.id); t.action?.onClick(); }}
+                  className="ml-1 h-8 rounded-[10px] bg-white/15 px-3 text-[13px] font-bold text-[#FFC857]"
+                >
+                  {t.action.label}
+                </button>
+              )}
             </div>
           ))}
         </div>,

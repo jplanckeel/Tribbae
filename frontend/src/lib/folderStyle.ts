@@ -3,6 +3,7 @@ import { AVATAR_COLORS } from "./categories";
 import { useMyData } from "./data";
 import type { Child, Folder, FolderInput, Link } from "./types";
 import { eventDateMs, safeImage } from "./format";
+import { sortTodoFirst } from "./done";
 import { byRecent } from "./links";
 
 // Personnalisation des dossiers (maquettes « Bannières illustrées » et « Personnaliser
@@ -12,7 +13,7 @@ import { byRecent } from "./links";
 export type CoverKey = "illu" | "uni" | "tipis" | "pois" | "rayures" | "photo";
 export type KeyDateType = "anniv" | "vacances" | "event";
 export type ViewMode = "grid" | "list" | "mosaic";
-export type SortKey = "recent" | "date" | "category";
+export type SortKey = "recent" | "date" | "category" | "todo";
 
 export const COVERS: { key: CoverKey; label: string }[] = [
   { key: "illu", label: "Dessin" },
@@ -51,6 +52,7 @@ export const SORTS: { key: SortKey; label: string }[] = [
   { key: "recent", label: "Plus récentes" },
   { key: "date", label: "Par date" },
   { key: "category", label: "Par catégorie" },
+  { key: "todo", label: "À faire d'abord" },
 ];
 
 const fold = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -139,8 +141,9 @@ export function countdown(keyDate: number | undefined, type: string | undefined,
 }
 
 /** Idées du dossier dans l'ordre choisi (« Par date » : sorties à venir d'abord). */
-export function sortFolderLinks(links: Link[], sort: string | undefined, categoryOrder: string[]): Link[] {
+export function sortFolderLinks(links: Link[], sort: string | undefined, categoryOrder: string[], now = Date.now()): Link[] {
   const recent = byRecent;
+  if (sort === "todo") return sortTodoFirst(links, now);
   const list = [...links];
   if (sort === "date") {
     return list.sort((a, b) => {

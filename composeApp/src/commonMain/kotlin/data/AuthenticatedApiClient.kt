@@ -137,8 +137,23 @@ data class ApiAuthLink(
     val createdVia: String = "",
     val publicViaFolder: Boolean = false,
     val hidden: Boolean = false,
-    val giftStatus: String = ""
+    val giftStatus: String = "",
+    // « C'est fait » (data/Done.kt)
+    val doneCount: Int = 0,
+    val lastDoneAt: String = "",
+    val redo: Boolean = false,
+    val donePromptDismissed: Boolean = false,
+    val doneFamilies: Int = 0,
 )
+
+@Serializable
+data class DoneResult(val done: LinkDone = LinkDone(), val link: ApiLink = ApiLink())
+
+@Serializable
+data class DoneLinkResult(val link: ApiLink = ApiLink())
+
+@Serializable
+data class DoneList(val dones: List<LinkDone> = emptyList())
 
 /** Application connectée (Claude) à laquelle le compte a donné accès. */
 @Serializable
@@ -452,6 +467,30 @@ class AuthenticatedApiClient(
             val gift = json.parseToJsonElement(body).let { it as? kotlinx.serialization.json.JsonObject }?.get("gift") as? kotlinx.serialization.json.JsonObject
             (gift?.get("status") as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
         }
+
+    // « C'est fait » : marquer une idée comme faite et garder un souvenir (data/Done.kt)
+    private fun doneResult(body: String): DoneResult = json.decodeFromString(body)
+
+    suspend fun markDone(linkId: String, input: DoneInput): DoneResult =
+        request("/v1/links/$linkId/done", "POST", json.encodeToString(DoneInput.serializer(), input), ::doneResult)
+
+    suspend fun updateDone(linkId: String, doneId: String, input: DoneInput): DoneResult =
+        request("/v1/links/$linkId/done/$doneId", "PATCH", json.encodeToString(DoneInput.serializer(), input), ::doneResult)
+
+    /** « Plus fait », ou « Annuler » du toast ; renvoie l'idée à jour. */
+    suspend fun unmarkDone(linkId: String, doneId: String): ApiLink =
+        request("/v1/links/$linkId/done/$doneId", "DELETE", null) { body -> json.decodeFromString<DoneLinkResult>(body).link }
+
+    /** Souvenirs d'une idée, du plus récent au plus ancien. */
+    suspend fun listDones(linkId: String): List<LinkDone> =
+        request("/v1/links/$linkId/done", "GET") { body -> json.decodeFromString<DoneList>(body).dones }
+
+    /** « Pas cette fois » : ne plus demander si la sortie passée a été faite. */
+    suspend fun dismissDonePrompt(linkId: String): ApiLink =
+        request("/v1/links/$linkId/done-prompt/dismiss", "POST", "{}") { body -> json.decodeFromString<DoneLinkResult>(body).link }
+
+    suspend fun doneSummary(year: Int): DoneSummary =
+        request("/v1/done/summary?year=$year", "GET") { body -> json.decodeFromString(body) }
 
     /** Remet à zéro les réservations d'une liste de cadeaux (sa tribu). */
     suspend fun resetGifts(folderId: String) {

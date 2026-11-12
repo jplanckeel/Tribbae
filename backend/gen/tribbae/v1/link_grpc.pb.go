@@ -28,6 +28,12 @@ const (
 	LinkService_UnlikeLink_FullMethodName         = "/tribbae.v1.LinkService/UnlikeLink"
 	LinkService_ListLikedLinks_FullMethodName     = "/tribbae.v1.LinkService/ListLikedLinks"
 	LinkService_ToggleFavoriteLink_FullMethodName = "/tribbae.v1.LinkService/ToggleFavoriteLink"
+	LinkService_MarkLinkDone_FullMethodName       = "/tribbae.v1.LinkService/MarkLinkDone"
+	LinkService_UpdateLinkDone_FullMethodName     = "/tribbae.v1.LinkService/UpdateLinkDone"
+	LinkService_UnmarkLinkDone_FullMethodName     = "/tribbae.v1.LinkService/UnmarkLinkDone"
+	LinkService_ListLinkDones_FullMethodName      = "/tribbae.v1.LinkService/ListLinkDones"
+	LinkService_DismissDonePrompt_FullMethodName  = "/tribbae.v1.LinkService/DismissDonePrompt"
+	LinkService_GetDoneSummary_FullMethodName     = "/tribbae.v1.LinkService/GetDoneSummary"
 	LinkService_ListCommunityLinks_FullMethodName = "/tribbae.v1.LinkService/ListCommunityLinks"
 	LinkService_ListNewLinks_FullMethodName       = "/tribbae.v1.LinkService/ListNewLinks"
 )
@@ -47,6 +53,14 @@ type LinkServiceClient interface {
 	ListLikedLinks(ctx context.Context, in *ListLikedLinksRequest, opts ...grpc.CallOption) (*ListLikedLinksResponse, error)
 	// Remplacé par le J'aime, gardé pour les anciennes versions des clients
 	ToggleFavoriteLink(ctx context.Context, in *ToggleFavoriteLinkRequest, opts ...grpc.CallOption) (*ToggleFavoriteLinkResponse, error)
+	// « C'est fait » : l'idée a été faite, avec un souvenir facultatif
+	MarkLinkDone(ctx context.Context, in *MarkLinkDoneRequest, opts ...grpc.CallOption) (*LinkDoneResponse, error)
+	UpdateLinkDone(ctx context.Context, in *UpdateLinkDoneRequest, opts ...grpc.CallOption) (*LinkDoneResponse, error)
+	UnmarkLinkDone(ctx context.Context, in *UnmarkLinkDoneRequest, opts ...grpc.CallOption) (*UnmarkLinkDoneResponse, error)
+	ListLinkDones(ctx context.Context, in *ListLinkDonesRequest, opts ...grpc.CallOption) (*ListLinkDonesResponse, error)
+	// « Pas cette fois » : ne plus demander si la sortie passée a été faite
+	DismissDonePrompt(ctx context.Context, in *DismissDonePromptRequest, opts ...grpc.CallOption) (*DismissDonePromptResponse, error)
+	GetDoneSummary(ctx context.Context, in *GetDoneSummaryRequest, opts ...grpc.CallOption) (*GetDoneSummaryResponse, error)
 	ListCommunityLinks(ctx context.Context, in *ListCommunityLinksRequest, opts ...grpc.CallOption) (*ListCommunityLinksResponse, error)
 	ListNewLinks(ctx context.Context, in *ListNewLinksRequest, opts ...grpc.CallOption) (*ListNewLinksResponse, error)
 }
@@ -149,6 +163,66 @@ func (c *linkServiceClient) ToggleFavoriteLink(ctx context.Context, in *ToggleFa
 	return out, nil
 }
 
+func (c *linkServiceClient) MarkLinkDone(ctx context.Context, in *MarkLinkDoneRequest, opts ...grpc.CallOption) (*LinkDoneResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LinkDoneResponse)
+	err := c.cc.Invoke(ctx, LinkService_MarkLinkDone_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linkServiceClient) UpdateLinkDone(ctx context.Context, in *UpdateLinkDoneRequest, opts ...grpc.CallOption) (*LinkDoneResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LinkDoneResponse)
+	err := c.cc.Invoke(ctx, LinkService_UpdateLinkDone_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linkServiceClient) UnmarkLinkDone(ctx context.Context, in *UnmarkLinkDoneRequest, opts ...grpc.CallOption) (*UnmarkLinkDoneResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnmarkLinkDoneResponse)
+	err := c.cc.Invoke(ctx, LinkService_UnmarkLinkDone_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linkServiceClient) ListLinkDones(ctx context.Context, in *ListLinkDonesRequest, opts ...grpc.CallOption) (*ListLinkDonesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListLinkDonesResponse)
+	err := c.cc.Invoke(ctx, LinkService_ListLinkDones_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linkServiceClient) DismissDonePrompt(ctx context.Context, in *DismissDonePromptRequest, opts ...grpc.CallOption) (*DismissDonePromptResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DismissDonePromptResponse)
+	err := c.cc.Invoke(ctx, LinkService_DismissDonePrompt_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *linkServiceClient) GetDoneSummary(ctx context.Context, in *GetDoneSummaryRequest, opts ...grpc.CallOption) (*GetDoneSummaryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDoneSummaryResponse)
+	err := c.cc.Invoke(ctx, LinkService_GetDoneSummary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *linkServiceClient) ListCommunityLinks(ctx context.Context, in *ListCommunityLinksRequest, opts ...grpc.CallOption) (*ListCommunityLinksResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListCommunityLinksResponse)
@@ -184,6 +258,14 @@ type LinkServiceServer interface {
 	ListLikedLinks(context.Context, *ListLikedLinksRequest) (*ListLikedLinksResponse, error)
 	// Remplacé par le J'aime, gardé pour les anciennes versions des clients
 	ToggleFavoriteLink(context.Context, *ToggleFavoriteLinkRequest) (*ToggleFavoriteLinkResponse, error)
+	// « C'est fait » : l'idée a été faite, avec un souvenir facultatif
+	MarkLinkDone(context.Context, *MarkLinkDoneRequest) (*LinkDoneResponse, error)
+	UpdateLinkDone(context.Context, *UpdateLinkDoneRequest) (*LinkDoneResponse, error)
+	UnmarkLinkDone(context.Context, *UnmarkLinkDoneRequest) (*UnmarkLinkDoneResponse, error)
+	ListLinkDones(context.Context, *ListLinkDonesRequest) (*ListLinkDonesResponse, error)
+	// « Pas cette fois » : ne plus demander si la sortie passée a été faite
+	DismissDonePrompt(context.Context, *DismissDonePromptRequest) (*DismissDonePromptResponse, error)
+	GetDoneSummary(context.Context, *GetDoneSummaryRequest) (*GetDoneSummaryResponse, error)
 	ListCommunityLinks(context.Context, *ListCommunityLinksRequest) (*ListCommunityLinksResponse, error)
 	ListNewLinks(context.Context, *ListNewLinksRequest) (*ListNewLinksResponse, error)
 }
@@ -221,6 +303,24 @@ func (UnimplementedLinkServiceServer) ListLikedLinks(context.Context, *ListLiked
 }
 func (UnimplementedLinkServiceServer) ToggleFavoriteLink(context.Context, *ToggleFavoriteLinkRequest) (*ToggleFavoriteLinkResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ToggleFavoriteLink not implemented")
+}
+func (UnimplementedLinkServiceServer) MarkLinkDone(context.Context, *MarkLinkDoneRequest) (*LinkDoneResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MarkLinkDone not implemented")
+}
+func (UnimplementedLinkServiceServer) UpdateLinkDone(context.Context, *UpdateLinkDoneRequest) (*LinkDoneResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateLinkDone not implemented")
+}
+func (UnimplementedLinkServiceServer) UnmarkLinkDone(context.Context, *UnmarkLinkDoneRequest) (*UnmarkLinkDoneResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UnmarkLinkDone not implemented")
+}
+func (UnimplementedLinkServiceServer) ListLinkDones(context.Context, *ListLinkDonesRequest) (*ListLinkDonesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListLinkDones not implemented")
+}
+func (UnimplementedLinkServiceServer) DismissDonePrompt(context.Context, *DismissDonePromptRequest) (*DismissDonePromptResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DismissDonePrompt not implemented")
+}
+func (UnimplementedLinkServiceServer) GetDoneSummary(context.Context, *GetDoneSummaryRequest) (*GetDoneSummaryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDoneSummary not implemented")
 }
 func (UnimplementedLinkServiceServer) ListCommunityLinks(context.Context, *ListCommunityLinksRequest) (*ListCommunityLinksResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListCommunityLinks not implemented")
@@ -410,6 +510,114 @@ func _LinkService_ToggleFavoriteLink_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LinkService_MarkLinkDone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkLinkDoneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).MarkLinkDone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_MarkLinkDone_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).MarkLinkDone(ctx, req.(*MarkLinkDoneRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinkService_UpdateLinkDone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateLinkDoneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).UpdateLinkDone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_UpdateLinkDone_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).UpdateLinkDone(ctx, req.(*UpdateLinkDoneRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinkService_UnmarkLinkDone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnmarkLinkDoneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).UnmarkLinkDone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_UnmarkLinkDone_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).UnmarkLinkDone(ctx, req.(*UnmarkLinkDoneRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinkService_ListLinkDones_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListLinkDonesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).ListLinkDones(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_ListLinkDones_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).ListLinkDones(ctx, req.(*ListLinkDonesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinkService_DismissDonePrompt_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DismissDonePromptRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).DismissDonePrompt(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_DismissDonePrompt_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).DismissDonePrompt(ctx, req.(*DismissDonePromptRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LinkService_GetDoneSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDoneSummaryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LinkServiceServer).GetDoneSummary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LinkService_GetDoneSummary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LinkServiceServer).GetDoneSummary(ctx, req.(*GetDoneSummaryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _LinkService_ListCommunityLinks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListCommunityLinksRequest)
 	if err := dec(in); err != nil {
@@ -488,6 +696,30 @@ var LinkService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ToggleFavoriteLink",
 			Handler:    _LinkService_ToggleFavoriteLink_Handler,
+		},
+		{
+			MethodName: "MarkLinkDone",
+			Handler:    _LinkService_MarkLinkDone_Handler,
+		},
+		{
+			MethodName: "UpdateLinkDone",
+			Handler:    _LinkService_UpdateLinkDone_Handler,
+		},
+		{
+			MethodName: "UnmarkLinkDone",
+			Handler:    _LinkService_UnmarkLinkDone_Handler,
+		},
+		{
+			MethodName: "ListLinkDones",
+			Handler:    _LinkService_ListLinkDones_Handler,
+		},
+		{
+			MethodName: "DismissDonePrompt",
+			Handler:    _LinkService_DismissDonePrompt_Handler,
+		},
+		{
+			MethodName: "GetDoneSummary",
+			Handler:    _LinkService_GetDoneSummary_Handler,
 		},
 		{
 			MethodName: "ListCommunityLinks",

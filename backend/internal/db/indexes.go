@@ -333,6 +333,24 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── link_dones (« C'est fait ») ───────────────────────
+		{
+			// Souvenirs d'une idée, du plus récent au plus ancien ; état du lot (LoadStats)
+			Collection: "link_dones",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "link_id", Value: 1}, {Key: "done_on", Value: -1}},
+				Options: options.Index().SetName("idx_link_dones_link_done_on"),
+			},
+		},
+		{
+			// Bilan de l'année de la tribu, quota journalier, export et suppression du compte
+			Collection: "link_dones",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "user_id", Value: 1}, {Key: "done_on", Value: -1}},
+				Options: options.Index().SetName("idx_link_dones_user_done_on"),
+			},
+		},
+
 		// ── gift_reservations (liste de cadeaux) ──────────────
 		{
 			Collection: "gift_reservations",

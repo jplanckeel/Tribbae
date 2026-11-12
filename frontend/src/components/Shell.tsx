@@ -3,6 +3,7 @@ import { Navigate, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate 
 import { clearSession, useSession } from "../lib/session";
 import { tabLink, trackLocation } from "../lib/transitions";
 import { ComposerProvider, useComposer } from "./Composer";
+import { DoneProvider } from "./Done";
 import Icon, { type IconName } from "./Icon";
 import Logo from "./Logo";
 import VerifyEmailBanner from "./VerifyEmailBanner";
@@ -292,6 +293,7 @@ function ScreenTransitions({ children }: { children: ReactNode }) {
 export function AppLayout() {
   return (
     <ComposerProvider>
+     <DoneProvider>
       {/* Colonne pleine hauteur : le pied de page reste en bas sur les pages courtes */}
       <div className="flex min-h-dvh flex-col">
         <a
@@ -314,6 +316,7 @@ export function AppLayout() {
       </div>
       <BottomNav />
       <ScrollRestoration />
+     </DoneProvider>
     </ComposerProvider>
   );
 }

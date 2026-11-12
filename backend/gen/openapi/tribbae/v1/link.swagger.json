@@ -87,6 +87,37 @@
         ]
       }
     },
+    "/v1/done/summary": {
+      "get": {
+        "operationId": "LinkService_GetDoneSummary",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetDoneSummaryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      }
+    },
     "/v1/liked-links": {
       "get": {
         "summary": "Idées aimées par le compte, la plus récemment aimée d'abord",
@@ -130,6 +161,13 @@
         "parameters": [
           {
             "name": "folderId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "description": "all (défaut) | todo | done",
             "in": "query",
             "required": false,
             "type": "string"
@@ -264,6 +302,190 @@
         ]
       }
     },
+    "/v1/links/{linkId}/done": {
+      "get": {
+        "operationId": "LinkService_ListLinkDones",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListLinkDonesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      },
+      "post": {
+        "summary": "« C'est fait » : l'idée a été faite, avec un souvenir facultatif",
+        "operationId": "LinkService_MarkLinkDone",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LinkDoneResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LinkServiceMarkLinkDoneBody"
+            }
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      }
+    },
+    "/v1/links/{linkId}/done-prompt/dismiss": {
+      "post": {
+        "summary": "« Pas cette fois » : ne plus demander si la sortie passée a été faite",
+        "operationId": "LinkService_DismissDonePrompt",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DismissDonePromptResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LinkServiceDismissDonePromptBody"
+            }
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      }
+    },
+    "/v1/links/{linkId}/done/{doneId}": {
+      "delete": {
+        "operationId": "LinkService_UnmarkLinkDone",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1UnmarkLinkDoneResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "doneId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      },
+      "patch": {
+        "operationId": "LinkService_UpdateLinkDone",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1LinkDoneResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "doneId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LinkServiceUpdateLinkDoneBody"
+            }
+          }
+        ],
+        "tags": [
+          "LinkService"
+        ]
+      }
+    },
     "/v1/links/{linkId}/favorite": {
       "post": {
         "summary": "Remplacé par le J'aime, gardé pour les anciennes versions des clients",
@@ -371,8 +593,47 @@
     }
   },
   "definitions": {
+    "LinkServiceDismissDonePromptBody": {
+      "type": "object"
+    },
     "LinkServiceLikeLinkBody": {
       "type": "object"
+    },
+    "LinkServiceMarkLinkDoneBody": {
+      "type": "object",
+      "properties": {
+        "doneOn": {
+          "type": "string",
+          "title": "AAAA-MM-JJ ; aujourd'hui si vide, jamais dans le futur"
+        },
+        "withUserIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "withChildIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rating": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "note": {
+          "type": "string"
+        },
+        "photoUrl": {
+          "type": "string",
+          "title": "Photo déjà envoyée par POST /v1/photos"
+        },
+        "redo": {
+          "type": "boolean",
+          "title": "« À refaire », porté par l'idée ; absent = inchangé"
+        }
+      }
     },
     "LinkServiceToggleFavoriteLinkBody": {
       "type": "object"
@@ -436,6 +697,39 @@
         "visibility": {
           "type": "string",
           "title": "\"private\" | \"public\""
+        }
+      }
+    },
+    "LinkServiceUpdateLinkDoneBody": {
+      "type": "object",
+      "properties": {
+        "doneOn": {
+          "type": "string"
+        },
+        "withUserIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "withChildIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rating": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "note": {
+          "type": "string"
+        },
+        "photoUrl": {
+          "type": "string"
+        },
+        "redo": {
+          "type": "boolean"
         }
       }
     },
@@ -539,6 +833,50 @@
     },
     "v1DeleteLinkResponse": {
       "type": "object"
+    },
+    "v1DismissDonePromptResponse": {
+      "type": "object",
+      "properties": {
+        "link": {
+          "$ref": "#/definitions/v1Link"
+        }
+      }
+    },
+    "v1GetDoneSummaryResponse": {
+      "type": "object",
+      "properties": {
+        "year": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "outings": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Sorties et activités"
+        },
+        "recipes": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "books": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "bestMonth": {
+          "type": "integer",
+          "format": "int32",
+          "title": "1 à 12 ; 0 si rien n'a été fait"
+        },
+        "bestMonthCount": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "« Notre année en idées » : chaque fois compte (une recette refaite trois\nfois compte trois)"
     },
     "v1GetLinkResponse": {
       "type": "object",
@@ -659,6 +997,29 @@
         "giftStatus": {
           "type": "string",
           "description": "Liste de cadeaux : \"\" (libre), reserved, bought, ou mine / mine_bought\npour le lecteur qui l'offre. Personne ne voit qui offre quoi."
+        },
+        "doneCount": {
+          "type": "integer",
+          "format": "int32",
+          "title": "« C'est fait » : visible de la tribu et des membres du dossier seulement\n(vide pour un lecteur extérieur, Explorer et le lien de partage).\nNombre de fois où l'idée a été faite"
+        },
+        "lastDoneAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Dernier jour où elle a été faite (midi UTC de ce jour : la date seule compte)"
+        },
+        "redo": {
+          "type": "boolean",
+          "title": "« À refaire »"
+        },
+        "donePromptDismissed": {
+          "type": "boolean",
+          "title": "« Pas cette fois » a été répondu au rappel d'une sortie passée"
+        },
+        "doneFamilies": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Idée publique : nombre de tribus qui l'ont faite, renvoyé à partir de 5\n(0 en dessous). Anonyme : ni nom ni photo."
         }
       }
     },
@@ -675,6 +1036,65 @@
         "LINK_CATEGORY_DECORATION"
       ],
       "default": "LINK_CATEGORY_UNSPECIFIED"
+    },
+    "v1LinkDone": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "linkId": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string",
+          "title": "Qui l'a marquée"
+        },
+        "doneOn": {
+          "type": "string",
+          "title": "Jour, sans heure : AAAA-MM-JJ"
+        },
+        "withUserIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Qui était là : comptes et enfants de la tribu"
+        },
+        "withChildIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rating": {
+          "type": "integer",
+          "format": "int32",
+          "title": "0 = pas de note"
+        },
+        "note": {
+          "type": "string"
+        },
+        "photoUrl": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "Un souvenir : une fois où l'idée a été faite"
+    },
+    "v1LinkDoneResponse": {
+      "type": "object",
+      "properties": {
+        "done": {
+          "$ref": "#/definitions/v1LinkDone"
+        },
+        "link": {
+          "$ref": "#/definitions/v1Link"
+        }
+      }
     },
     "v1ListCommunityLinksResponse": {
       "type": "object",
@@ -697,6 +1117,19 @@
             "type": "object",
             "$ref": "#/definitions/v1Link"
           }
+        }
+      }
+    },
+    "v1ListLinkDonesResponse": {
+      "type": "object",
+      "properties": {
+        "dones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1LinkDone"
+          },
+          "title": "Du plus récent au plus ancien"
         }
       }
     },
@@ -738,6 +1171,14 @@
         "likeCount": {
           "type": "integer",
           "format": "int32"
+        }
+      }
+    },
+    "v1UnmarkLinkDoneResponse": {
+      "type": "object",
+      "properties": {
+        "link": {
+          "$ref": "#/definitions/v1Link"
         }
       }
     },

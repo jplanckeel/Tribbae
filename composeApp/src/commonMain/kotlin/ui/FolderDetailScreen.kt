@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -45,9 +46,19 @@ fun FolderDetailScreen(
     onAi: () -> Unit = {},
     highlightLinkId: String? = null,
 ) {
-    val items = remember(links, folder.id, folder.sort) {
-        FolderStyle.sortLinks(links.filter { it.folderId == folder.id }, folder.sort, CategoryOrder.map { it.category })
-    }
+    // Tri de la visite ; celui du dossier se règle dans « Personnaliser »
+    var sort by remember(folder.id, folder.sort) { mutableStateOf(folder.sort.ifBlank { "recent" }) }
+    val inFolder = remember(links, folder.id) { links.filter { it.folderId == folder.id } }
+    val items = remember(inFolder, sort) { FolderStyle.sortLinks(inFolder, sort, CategoryOrder.map { it.category }) }
+    // « C'est fait » : avancement, filtres et question sur la première sortie passée
+    val done = LocalDone.current
+    val now = remember { System.currentTimeMillis() }
+    var filter by remember(folder.id) { mutableStateOf(data.Done.Filter.ALL) }
+    var showSort by remember { mutableStateOf(false) }
+    val progress = remember(inFolder, folder.giftReservations) { data.Done.folderProgress(inFolder, folder.giftReservations) }
+    val counts = remember(inFolder) { data.Done.counts(inFolder) }
+    val shown = remember(items, filter) { items.filter { data.Done.matches(it, filter) } }
+    val asking = done?.let { d -> items.firstOrNull { data.Done.awaitingConfirmation(it, now) && d.canMark(it) } }
     val children = viewModel?.children?.collectAsState()?.value.orEmpty()
     var showMenu by remember { mutableStateOf(false) }
     var showShare by remember { mutableStateOf(false) }
@@ -82,12 +93,56 @@ fun FolderDetailScreen(
             CampButton("Compléter avec l'IA", onAi, kind = ButtonKind.Ai, icon = Icons.Outlined.AutoAwesome, height = 40.dp)
             CampButton("Personnaliser", onEdit, kind = ButtonKind.Ghost, icon = Icons.Outlined.Edit, height = 40.dp)
         },
-        links = items,
+        beforeIdeas = if (done != null && items.isNotEmpty()) {
+            {
+                asking?.let { DonePromptBanner(it) }
+                progress?.let { DoneProgressRing(it) }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    data.Done.Filter.entries.forEach { f ->
+                        val on = filter == f
+                        Row(
+                            Modifier.height(36.dp).clip(CircleShape).background(if (on) Ecorce else CardColor)
+                                .then(if (on) Modifier else Modifier.border(1.5.dp, Line, CircleShape))
+                                .clickable(role = androidx.compose.ui.semantics.Role.RadioButton) { filter = f }.padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(f.label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (on) Sable else Ecorce)
+                            Text("${counts[f] ?: 0}", fontSize = 12.sp, color = (if (on) Sable else Ecorce).copy(alpha = 0.7f))
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Icon(
+                        Icons.Outlined.SwapVert, "Trier les idées : ${FolderStyle.SORTS.firstOrNull { it.first == sort }?.second.orEmpty()}", tint = TextSec,
+                        modifier = Modifier.size(44.dp).clip(CircleShape).clickable(role = androidx.compose.ui.semantics.Role.Button) { showSort = true }.padding(11.dp),
+                    )
+                }
+                if (shown.isEmpty()) {
+                    EmptyBlock(
+                        Icons.Outlined.Check,
+                        if (filter == data.Done.Filter.TODO) "Tout est fait !" else "Rien de fait pour l'instant",
+                        if (filter == data.Done.Filter.TODO) "Il est temps de trouver de nouvelles idées." else "Touchez la coche d'une idée quand c'est fait.",
+                    )
+                }
+            }
+        } else null,
+        doneUi = done != null,
+        links = if (done != null) shown else items,
         emptyTitle = "Ce dossier attend ses premières idées",
         emptyText = "Ajoutez un lien, une recette, une sortie… ou laissez l'IA le remplir.",
         onLinkClick = onLinkClick,
         onFavorite = onSaveLink
     )
+
+    if (showSort) {
+        ModalBottomSheet(onDismissRequest = { showSort = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Trier les idées", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
+                FolderStyle.SORTS.forEach { (k, label) ->
+                    MenuRow(if (k == sort) Icons.Outlined.Check else Icons.Outlined.SwapVert, label, tint = if (k == sort) DoneInk else null) { sort = k; showSort = false }
+                }
+            }
+        }
+    }
 
     if (showMenu) {
         ModalBottomSheet(onDismissRequest = { showMenu = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
@@ -249,6 +304,10 @@ private fun CollectionScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     extra: @Composable () -> Unit = {},
     buttons: @Composable () -> Unit,
+    /** Contenu placé avant les idées (« C'est fait » : question, anneau, filtres) */
+    beforeIdeas: (@Composable () -> Unit)? = null,
+    /** Dossier de la tribu : coche « C'est fait » sur les vignettes */
+    doneUi: Boolean = false,
     links: List<Link>,
     emptyTitle: String,
     emptyText: String?,
@@ -302,7 +361,9 @@ private fun CollectionScaffold(
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { extra() }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { buttons() }
-                Ideas(links, folder.viewMode, emptyTitle, emptyText, onLinkClick, onFavorite, highlight, solid)
+                beforeIdeas?.invoke()
+                // Ce qui précède dit déjà qu'un filtre ne donne rien : pas de « dossier vide » en dessous
+                if (beforeIdeas == null || links.isNotEmpty()) Ideas(links, folder.viewMode, emptyTitle, emptyText, onLinkClick, onFavorite, highlight, solid, doneUi)
             }
             return@Column
         }
@@ -346,6 +407,7 @@ private fun Ideas(
     onFavorite: ((Link) -> Unit)?,
     highlight: String? = null,
     highlightColor: Color = Terracotta,
+    done: Boolean = false,
 ) {
     // Idée d'où l'on vient (dossier ouvert depuis sa fiche) : surlignée pour garder le fil
     fun Modifier.mark(l: Link, radius: Int = 22): Modifier =
@@ -356,16 +418,16 @@ private fun Ideas(
     }
     when (viewMode) {
         "list" -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            links.forEach { l -> Box(Modifier.mark(l, 18)) { RowCard(l, onClick = { onLinkClick(l.id) }) } }
+            links.forEach { l -> Box(Modifier.mark(l, 18)) { RowCard(l, onClick = { onLinkClick(l.id) }, done = done) } }
         }
         "mosaic" -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // Par trois : une grande tuile et deux petites empilées, en alternant les côtés
             links.chunked(3).forEachIndexed { row, group ->
                 Row(Modifier.fillMaxWidth().height(276.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    val big: @Composable RowScope.() -> Unit = { MosaicTile(group[0], true, { onLinkClick(group[0].id) }, Modifier.weight(1f).fillMaxHeight().mark(group[0], 20)) }
+                    val big: @Composable RowScope.() -> Unit = { MosaicTile(group[0], true, { onLinkClick(group[0].id) }, Modifier.weight(1f).fillMaxHeight().mark(group[0], 20), done) }
                     val small: @Composable RowScope.() -> Unit = {
                         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            group.drop(1).forEach { l -> MosaicTile(l, false, { onLinkClick(l.id) }, Modifier.fillMaxWidth().weight(1f).mark(l, 20)) }
+                            group.drop(1).forEach { l -> MosaicTile(l, false, { onLinkClick(l.id) }, Modifier.fillMaxWidth().weight(1f).mark(l, 20), done) }
                             if (group.size < 3) Spacer(Modifier.weight((3 - group.size).toFloat()))
                         }
                     }
@@ -375,7 +437,7 @@ private fun Ideas(
         }
         else -> TwoColumnMosaic(links) { l, i ->
             Box(Modifier.mark(l, 20)) {
-                MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.likedByMe, onLike = onFavorite?.let { fav -> { fav(l) } })
+                MosaicCard(l, i, { onLinkClick(l.id) }, liked = l.likedByMe, onLike = onFavorite?.let { fav -> { fav(l) } }, done = done)
             }
         }
     }
@@ -383,9 +445,9 @@ private fun Ideas(
 
 /** Tuile de la vue « Mosaïque » : visuel plein, catégorie, titre en surimpression. */
 @Composable
-private fun MosaicTile(link: Link, large: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun MosaicTile(link: Link, large: Boolean, onClick: () -> Unit, modifier: Modifier, done: Boolean = false) {
     val cat = categoryUi(link.category)
-    Box(modifier.card(RoundedCornerShape(20.dp)).clickable(onClick = onClick)) {
+    Box(modifier.alpha(if (doneDimmed(link, done)) 0.6f else 1f).card(RoundedCornerShape(20.dp)).doneClickable(link, done, onClick)) {
         IdeaVisual(link, 400.dp, Modifier.fillMaxSize(), iconSize = if (large) 56.dp else 36.dp)
         Text(
             cat.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = cat.tint,
@@ -396,7 +458,11 @@ private fun MosaicTile(link: Link, large: Boolean, onClick: () -> Unit, modifier
                 .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, Color(0xC72A1612))))
                 .padding(start = 12.dp, end = 12.dp, top = 28.dp, bottom = 10.dp)
         ) {
-            Text(link.title, style = display(if (large) 17.sp else 14.sp, FontWeight.Bold, Color.White), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                link.title, style = display(if (large) 17.sp else 14.sp, FontWeight.Bold, Color.White), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                modifier = if (done) Modifier.padding(end = 40.dp) else Modifier,
+            )
         }
+        if (done) DoneTick(link, Modifier.align(Alignment.BottomEnd))
     }
 }

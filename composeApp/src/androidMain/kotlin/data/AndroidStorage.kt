@@ -34,6 +34,13 @@ class AndroidStorage(context: Context) : Storage {
         settings.edit().putBoolean("reminders", value).apply()
     }
 
+    /** « Me demander si on y est allés » (Réglages). */
+    fun loadAskDoneEnabled(): Boolean = settings.getBoolean("ask_done", true)
+
+    fun saveAskDoneEnabled(value: Boolean) {
+        settings.edit().putBoolean("ask_done", value).apply()
+    }
+
     override fun saveLinks(links: List<Link>) {
         prefs.edit().putString("links", json.encodeToString(links)).apply()
     }

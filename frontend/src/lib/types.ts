@@ -44,6 +44,16 @@ export interface Link {
   giftStatus?: import("./gifts").GiftStatus;
   /** Retirée par la modération : seul son auteur (et sa tribu) la voit, sans pouvoir la republier. */
   hidden?: boolean;
+  /** « C'est fait » (lib/done.ts) : nombre de fois faite. Vide hors de la tribu et du dossier. */
+  doneCount?: number;
+  /** Dernier jour où elle a été faite (seule la date compte : voir doneDay). */
+  lastDoneAt?: string;
+  /** « À refaire » */
+  redo?: boolean;
+  /** « Pas cette fois » a été répondu au rappel d'une sortie passée. */
+  donePromptDismissed?: boolean;
+  /** Idée publique : nombre de tribus qui l'ont faite (0 en dessous de 5). */
+  doneFamilies?: number;
 }
 
 /** Champs modifiables d'une idée (création / édition). */

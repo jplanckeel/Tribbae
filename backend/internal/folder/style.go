@@ -45,7 +45,7 @@ var (
 	illustrations = []string{"", "anniv", "cadeaux", "noel", "jouets", "montagne", "plage", "gouter", "pluie", "automne"}
 	keyDateTypes  = []string{"", "anniv", "vacances", "event"}
 	viewModes     = []string{"", "grid", "list", "mosaic"}
-	sorts         = []string{"", "recent", "date", "category"}
+	sorts         = []string{"", "recent", "date", "category", "todo"}
 )
 
 func (p StylePatch) apply(st Style) Style {

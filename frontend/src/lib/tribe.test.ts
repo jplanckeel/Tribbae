@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { birthdayLabel, circleOf, ideasForChild, monthName, ringPosition, yearInIdeas } from "./tribe";
+import { bestMonthLine, birthdayLabel, circleOf, ideasForChild, monthName, ringPosition, yearInIdeas, yearLabels } from "./tribe";
 import type { Child, Collaborator, Folder, Link } from "./types";
 
 // Mêmes règles qu'Android (composeApp/.../data/TribePageTest.kt).
@@ -28,18 +28,22 @@ it("regroupe le cercle par personne, sans le foyer", () => {
   expect(circle[0].folders.map((f) => f.id)).toEqual(["a", "b"]);
 });
 
-it("résume l'année en idées", () => {
-  const link = (id: string, category: string, createdAt: string) => ({ id, category, createdAt }) as Link;
-  const links = [
-    link("1", "LINK_CATEGORY_EVENEMENT", "2026-07-02T12:00:00Z"),
-    link("2", "LINK_CATEGORY_ACTIVITE", "2026-07-14T12:00:00Z"),
-    link("3", "LINK_CATEGORY_RECETTE", "2026-03-01T12:00:00Z"),
-    link("4", "LINK_CATEGORY_CADEAU", "2025-12-24T12:00:00Z"),
-    link("5", "LINK_CATEGORY_IDEE", ""),
-  ];
-  expect(yearInIdeas(links, 2026)).toEqual({ outings: 2, recipes: 1, gifts: 0, total: 3, bestMonth: { month: 6, count: 2 } });
+it("résume l'année en idées faites", () => {
+  const y = yearInIdeas({ year: 2026, outings: 14, recipes: 24, books: 9, total: 52, bestMonth: 7, bestMonthCount: 12 });
+  expect(y).toEqual({ outings: 14, recipes: 24, books: 9, total: 52, bestMonth: { month: 6, count: 12 } });
+  expect(yearLabels(y)).toEqual({ outings: "sorties faites", recipes: "recettes cuisinées", books: "livres lus" });
+  expect(bestMonthLine(y)).toBe("Votre meilleur mois : juillet, 12 idées faites.");
   expect(monthName(6)).toBe("juillet");
-  expect(yearInIdeas(links, 2024).bestMonth).toBeUndefined();
+
+  const one = yearInIdeas({ year: 2026, outings: 1, recipes: 1, books: 1, total: 3, bestMonth: 3, bestMonthCount: 1 });
+  expect(yearLabels(one)).toEqual({ outings: "sortie faite", recipes: "recette cuisinée", books: "livre lu" });
+  expect(bestMonthLine(one)).toBe("Votre meilleur mois : mars, 1 idée faite.");
+
+  // Rien de fait, ou le bilan n'est pas encore arrivé
+  const none = yearInIdeas(undefined);
+  expect(none).toEqual({ outings: 0, recipes: 0, books: 0, total: 0 });
+  expect(yearInIdeas({ year: 2024 }).bestMonth).toBeUndefined();
+  expect(bestMonthLine(none)).toBe("Marquez vos premières idées faites : elles rempliront votre année.");
 });
 
 describe("idées pour un enfant", () => {

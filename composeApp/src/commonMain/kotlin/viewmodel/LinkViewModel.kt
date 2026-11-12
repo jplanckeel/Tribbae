@@ -590,6 +590,87 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         }
     }
 
+    // ── « C'est fait » (data/Done.kt) ────────────────────────────────────
+    // En ligne seulement, comme le J'aime : hors ligne, une erreur s'affiche.
+
+    /** L'état « fait » d'une idée, reçu du serveur, remplace celui de l'appareil. */
+    private fun applyDone(api: data.ApiLink): Link? {
+        val current = repository.links.value.find { it.id == api.id } ?: return null
+        val next = current.copy(
+            doneCount = api.doneCount, lastDoneAt = api.lastDoneAt, redo = api.redo,
+            donePromptDismissed = api.donePromptDismissed, doneFamilies = api.doneFamilies,
+        )
+        repository.updateLink(next)
+        updateFilteredLinks()
+        return next
+    }
+
+    private suspend fun <T> doneCall(call: suspend (data.AuthenticatedApiClient) -> T): T? {
+        val client = authenticatedClient
+        if (client == null) {
+            _actionErrors.tryEmit("Connectez-vous pour marquer une idée comme faite.")
+            return null
+        }
+        return try {
+            call(client)
+        } catch (e: Exception) {
+            _actionErrors.tryEmit(data.Done.errorMessage(e.message.orEmpty()))
+            null
+        }
+    }
+
+    /** Marque l'idée comme faite ; renvoie le souvenir créé et l'idée à jour, ou null (erreur déjà affichée). */
+    suspend fun markDone(linkId: String, input: data.DoneInput = data.DoneInput()): Pair<data.LinkDone, Link>? {
+        val r = doneCall { it.markDone(linkId, input) } ?: return null
+        return applyDone(r.link)?.let { r.done to it }
+    }
+
+    suspend fun updateDone(linkId: String, doneId: String, input: data.DoneInput): Link? =
+        doneCall { it.updateDone(linkId, doneId, input) }?.let { applyDone(it.link) }
+
+    /** « Plus fait » ou « Annuler » : retire un souvenir. */
+    suspend fun unmarkDone(linkId: String, doneId: String): Link? =
+        doneCall { it.unmarkDone(linkId, doneId) }?.let(::applyDone)
+
+    /** Retire le dernier souvenir de l'idée. */
+    suspend fun unmarkLastDone(linkId: String): Link? {
+        val last = doneCall { it.listDones(linkId) }?.firstOrNull() ?: return null
+        return unmarkDone(linkId, last.id)
+    }
+
+    /** Souvenirs d'une idée ; null si on n'a pas pu les lire (pas d'erreur affichée). */
+    suspend fun loadDones(linkId: String): List<data.LinkDone>? =
+        authenticatedClient?.let { c -> runCatching { c.listDones(linkId) }.getOrNull() }
+
+    /** « Pas cette fois » : on ne redemande plus si la sortie passée a été faite. */
+    suspend fun dismissDonePrompt(linkId: String): Link? =
+        doneCall { it.dismissDonePrompt(linkId) }?.let(::applyDone)
+
+    /** Même réponse depuis la notification, sans message : la demande reste alors affichée dans le dossier. */
+    fun dismissDonePromptQuietly(linkId: String) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch { runCatching { client.dismissDonePrompt(linkId) }.getOrNull()?.let(::applyDone) }
+    }
+
+    private val _doneSummary = MutableStateFlow<data.DoneSummary?>(null)
+    /** « Notre année en idées » : compté par le serveur (une idée refaite compte plusieurs fois). */
+    val doneSummary: StateFlow<data.DoneSummary?> = _doneSummary.asStateFlow()
+
+    fun refreshDoneSummary(year: Int) {
+        val client = authenticatedClient ?: return
+        viewModelScope.launch { runCatching { client.doneSummary(year) }.getOrNull()?.let { _doneSummary.value = it } }
+    }
+
+    /** Photo d'un souvenir : envoyée tout de suite, renvoie son adresse (null si l'envoi échoue). */
+    suspend fun uploadDonePhoto(localUri: String): String? {
+        val file = runCatching { java.io.File(java.net.URI(localUri)) }.getOrNull()?.takeIf { it.isFile }
+        if (file == null) {
+            _actionErrors.tryEmit("Cette photo n'a pas pu être lue.")
+            return null
+        }
+        return doneCall { it.uploadPhoto(withContext(Dispatchers.IO) { file.readBytes() }) }
+    }
+
     /** Remet à zéro toutes les réservations d'une liste de cadeaux. */
     suspend fun resetGifts(folderId: String): Boolean {
         val client = authenticatedClient ?: return false
@@ -1037,7 +1118,12 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             createdVia = apiLink.createdVia,
             publicViaFolder = apiLink.publicViaFolder,
             hidden = apiLink.hidden,
-            giftStatus = apiLink.giftStatus
+            giftStatus = apiLink.giftStatus,
+            doneCount = apiLink.doneCount,
+            lastDoneAt = apiLink.lastDoneAt,
+            redo = apiLink.redo,
+            donePromptDismissed = apiLink.donePromptDismissed,
+            doneFamilies = apiLink.doneFamilies,
         )
     }
 

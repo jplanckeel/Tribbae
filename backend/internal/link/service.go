@@ -40,6 +40,10 @@ type Link struct {
 	// jamais modifiée ensuite (Update ne touche pas ces champs).
 	CreatedVia    string `bson:"created_via,omitempty"     json:"created_via,omitempty"`
 	OAuthClientID string `bson:"oauth_client_id,omitempty" json:"oauth_client_id,omitempty"`
+	// « C'est fait » (done.go) : « À refaire », et « Pas cette fois » répondu au
+	// rappel d'une sortie passée. Update ne touche pas ces champs.
+	Redo                bool `bson:"redo,omitempty"                  json:"redo,omitempty"`
+	DonePromptDismissed bool `bson:"done_prompt_dismissed,omitempty" json:"done_prompt_dismissed,omitempty"`
 }
 
 // CreatedViaMCP marque les idées ajoutées par le serveur MCP.
@@ -273,7 +277,7 @@ func (s *Service) DeleteCreatedByClient(ctx context.Context, ownerID, clientID s
 		ids = append(ids, d.ID)
 		hexIDs = append(hexIDs, d.ID.Hex())
 	}
-	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments"), s.col.Database().Collection("gift_reservations")} {
+	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments"), s.col.Database().Collection("gift_reservations"), s.dones()} {
 		if _, err := c.DeleteMany(ctx, bson.M{"link_id": bson.M{"$in": hexIDs}}); err != nil {
 			return 0, err
 		}
@@ -513,8 +517,8 @@ func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 		return ErrForbidden
 	}
 
-	// Ses « j'aime » et ses commentaires partent avec elle (pas d'orphelins en base)
-	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments"), s.col.Database().Collection("gift_reservations")} {
+	// Ses « j'aime », ses commentaires et ses souvenirs partent avec elle (pas d'orphelins en base)
+	for _, c := range []*mongo.Collection{s.linkLikeCol, s.col.Database().Collection("comments"), s.col.Database().Collection("gift_reservations"), s.dones()} {
 		if _, err := c.DeleteMany(ctx, bson.M{"link_id": linkID}); err != nil {
 			return err
 		}
@@ -772,6 +776,11 @@ type Stats struct {
 	// Liste de cadeaux : statut de chaque cadeau vu par le lecteur
 	// (reserved, bought, mine, mine_bought) ; personne ne voit qui offre quoi
 	Gifts map[string]string
+	// « C'est fait » : état des idées dont le lecteur est membre (DoneVisible),
+	// et nombre de tribus qui ont fait une idée publique (à partir de 5)
+	Done         map[string]DoneInfo
+	DoneVisible  map[string]bool
+	DoneFamilies map[string]int32
 }
 
 // LoadStats charge likes, "aimé par moi" et auteurs pour une liste de liens.
@@ -782,6 +791,9 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 		Owners:        map[string]OwnerInfo{},
 		PublicFolders: map[string]string{},
 		Gifts:         map[string]string{},
+		Done:          map[string]DoneInfo{},
+		DoneVisible:   map[string]bool{},
+		DoneFamilies:  map[string]int32{},
 	}
 	if len(links) == 0 {
 		return st
@@ -866,6 +878,7 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 		}
 	}
 	s.loadGifts(ctx, links, ids, userID, st)
+	s.loadDones(ctx, links, ids, userID, st)
 	return st
 }
 

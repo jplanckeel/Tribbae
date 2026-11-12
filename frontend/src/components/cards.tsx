@@ -13,6 +13,8 @@ import { AUDIENCE_LABEL, folderAudience } from "../lib/visibility";
 import { FolderCover, FolderGlyph } from "./FolderCover";
 import Icon from "./Icon";
 import { Avatar } from "./ui";
+import { DoneTick } from "./Done";
+import { dimmedCard, dimmedTitle, doneMeta, familiesLabel, folderProgress } from "../lib/done";
 import GiftTag from "./GiftTag";
 import VisibilityBadge, { IdeaVisibility } from "./VisibilityBadge";
 
@@ -150,27 +152,40 @@ export function RailCard({ link }: { link: Link }) {
 const MOSAIC = [150, 110, 100, 120, 140, 96];
 
 /** Carte de la mosaïque (Explorer, J'aime, dossiers). */
-export function GridCard({ link, index = 0, onRequireAuth, onUnliked, highlight }: { link: Link; index?: number; onRequireAuth?: () => void; onUnliked?: () => void; highlight?: string }) {
+export function GridCard({ link, index = 0, onRequireAuth, onUnliked, highlight, done }: {
+  link: Link; index?: number; onRequireAuth?: () => void; onUnliked?: () => void; highlight?: string;
+  /** Dossier de la tribu : coche « C'est fait » et état de l'idée (jamais dans Explorer). */
+  done?: boolean;
+}) {
   const cat = categoryMeta(link.category);
   const meta = metaLine(link) || cat.label;
   const author = useAuthor(link);
   const morph = useIdeaMorph(link);
+  const [now] = useState(() => Date.now());
+  const state = doneMeta(link, now, !!done);
+  const families = familiesLabel(link.doneFamilies);
   return (
     <RouterLink
       to={`/links/${link.id}`}
       {...morph.linkProps}
       style={highlightStyle(highlight)}
-      className="mb-3 block break-inside-avoid overflow-hidden rounded-[20px] bg-card shadow-card transition-transform hover:-translate-y-0.5"
+      className={`mb-3 block break-inside-avoid overflow-hidden rounded-[20px] bg-card shadow-card transition-transform hover:-translate-y-0.5 ${dimmedCard(link, !!done)}`}
     >
       <div className="relative">
         <IdeaVisual link={link} height={MOSAIC[index % MOSAIC.length]} iconSize={40} style={morph.visualStyle} />
         <LikeButton link={link} onRequireAuth={onRequireAuth} onUnliked={onUnliked} className="absolute top-2 right-2" />
         <IdeaVisibility link={link} className="absolute bottom-2 left-2" />
+        {done && <DoneTick link={link} className="absolute right-0.5 bottom-0.5" />}
       </div>
       <div className="flex flex-col gap-1 px-3 pt-2.5 pb-3">
-        <span className="line-clamp-3 font-display text-[15px] leading-tight font-bold" style={morph.titleStyle}>{link.title}</span>
-        <span className="text-xs text-sec">{meta}</span>
+        <span className={`line-clamp-3 font-display text-[15px] leading-tight font-bold ${dimmedTitle(link, !!done)}`} style={morph.titleStyle}>{link.title}</span>
+        <span className={`text-xs ${state?.className ?? "text-sec"}`}>{state?.text ?? meta}</span>
         {author && <span className="truncate text-xs text-sec">{author}</span>}
+        {families && (
+          <span className="flex items-center gap-1 self-start rounded-full bg-done-bg px-2 py-0.5 text-[11px] font-bold text-done">
+            <Icon name="check" size={11} />{families}
+          </span>
+        )}
         {(link.likeCount ?? 0) > 0 && (
           <span className="flex items-center gap-1 text-xs text-sec">
             <Icon name="heart" size={13} />
@@ -183,7 +198,7 @@ export function GridCard({ link, index = 0, onRequireAuth, onUnliked, highlight 
 }
 
 /** Tuile de la vue « Mosaïque » d'un dossier : visuel plein, titre en surimpression. */
-export function MosaicTile({ link, large, highlight }: { link: Link; large?: boolean; highlight?: string }) {
+export function MosaicTile({ link, large, highlight, done }: { link: Link; large?: boolean; highlight?: string; done?: boolean }) {
   const cat = categoryMeta(link.category);
   const morph = useIdeaMorph(link);
   return (
@@ -191,34 +206,43 @@ export function MosaicTile({ link, large, highlight }: { link: Link; large?: boo
       to={`/links/${link.id}`}
       {...morph.linkProps}
       style={highlightStyle(highlight)}
-      className={`group relative block overflow-hidden rounded-[20px] shadow-card transition-transform hover:-translate-y-0.5 ${large ? "row-span-2" : ""}`}
+      className={`group relative block overflow-hidden rounded-[20px] shadow-card transition-transform hover:-translate-y-0.5 ${large ? "row-span-2" : ""} ${dimmedCard(link, !!done)}`}
     >
       <IdeaVisual link={link} iconSize={large ? 56 : 36} className="h-full" style={morph.visualStyle} />
       <CategoryBadge cat={cat} />
       <IdeaVisibility link={link} className="absolute top-2.5 right-2.5" />
       <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[rgba(42,22,18,0.78)] to-transparent px-3 pt-8 pb-2.5">
-        <span className={`line-clamp-2 font-display leading-tight font-bold text-white ${large ? "text-[17px]" : "text-sm"}`} style={morph.titleStyle}>{link.title}</span>
+        <span className={`line-clamp-2 font-display leading-tight font-bold text-white ${large ? "text-[17px]" : "text-sm"} ${done ? "pr-10" : ""} ${dimmedTitle(link, !!done)}`} style={morph.titleStyle}>{link.title}</span>
       </span>
+      {done && <DoneTick link={link} className="absolute right-0.5 bottom-0.5" />}
     </RouterLink>
   );
 }
 
 /** Ligne compacte (listes, résultats). */
-export function RowCard({ link, trailing, highlight }: { link: Link; trailing?: React.ReactNode; highlight?: string }) {
+export function RowCard({ link, trailing, highlight, done }: { link: Link; trailing?: React.ReactNode; highlight?: string; done?: boolean }) {
   const cat = categoryMeta(link.category);
   const meta = metaLine(link);
   const author = useAuthor(link);
   const morph = useIdeaMorph(link);
+  const [now] = useState(() => Date.now());
+  const state = doneMeta(link, now, !!done);
+  const isDone = (link.doneCount ?? 0) > 0;
   return (
     <RouterLink to={`/links/${link.id}`} {...morph.linkProps}
-      style={highlightStyle(highlight)} className="flex items-center gap-3 rounded-[18px] bg-card p-2.5 pr-3.5 shadow-card">
-      <IdeaVisual link={link} height={56} iconSize={24} className="w-14 shrink-0 rounded-[14px]" style={morph.visualStyle} />
+      style={highlightStyle(highlight)} className={`flex items-center gap-3 rounded-[18px] bg-card p-2.5 pr-3.5 shadow-card ${dimmedCard(link, !!done)}`}>
+      <span className="relative shrink-0">
+        <IdeaVisual link={link} height={56} iconSize={24} className="w-14 rounded-[14px]" style={morph.visualStyle} />
+        {/* Vue liste : la coche d'une idée faite se pose sur la miniature */}
+        {done && isDone && <DoneTick link={link} small className="absolute -right-1 -bottom-1" />}
+      </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[15px] font-bold" style={morph.titleStyle}>{link.title}</span>
-        <span className="truncate text-[13px] text-sec">{[cat.label, meta, author].filter(Boolean).join(" · ")}</span>
+        <span className={`truncate text-[15px] font-bold ${dimmedTitle(link, !!done)}`} style={morph.titleStyle}>{link.title}</span>
+        <span className={`truncate text-[13px] ${state?.className ?? "text-sec"}`}>{state?.text ?? [cat.label, meta, author].filter(Boolean).join(" · ")}</span>
       </span>
       <IdeaVisibility link={link} />
-      {trailing ?? <Icon name="chevronRight" size={18} className="text-muted" />}
+      {done && !isDone ? <DoneTick link={link} className="-my-1.5 -mr-2" /> : null}
+      {trailing ?? (done && !isDone ? null : <Icon name="chevronRight" size={18} className="text-muted" />)}
     </RouterLink>
   );
 }
@@ -289,8 +313,10 @@ export function FolderCard({ folder, count, showOwner }: { folder: Folder; count
   const color = folderColor(folder.color);
   const n = count ?? folder.linkCount ?? 0;
   const cd = useCountdown(folder);
-  const { peers } = useMyData();
+  const { peers, links } = useMyData();
   const audience = folderAudience(folder, peers);
+  // Avancement : seulement pour les dossiers dont on a les idées (les nôtres)
+  const progress = folderProgress(links.filter((l) => l.folderId === folder.id), !!folder.giftReservations);
   const tab = audience === "public" ? "var(--color-vis-public-ink)" : audience === "shared" ? "var(--color-vis-shared-bg)" : color.mid;
   return (
     <RouterLink to={`/dossiers/${folder.id}`} aria-label={`${folder.name}, ${AUDIENCE_LABEL[audience]}`} className="group relative block pt-2.5 transition-transform hover:-translate-y-0.5">
@@ -322,6 +348,14 @@ export function FolderCard({ folder, count, showOwner }: { folder: Folder; count
               {folderMeta(folder, n, showOwner)}
               {!showOwner && <ChildAvatars folder={folder} size={16} />}
             </span>
+            {progress && !showOwner && (
+              <span className="mt-1.5 flex items-center gap-2 text-xs text-sec" aria-label={`${progress.done} sur ${progress.total} faites`}>
+                <span aria-hidden="true" className="h-1.5 flex-1 overflow-hidden rounded-full bg-sable-2">
+                  <span className="block h-full rounded-full bg-done" style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }} />
+                </span>
+                <span aria-hidden="true">{progress.done}/{progress.total}</span>
+              </span>
+            )}
           </span>
         </div>
       </div>

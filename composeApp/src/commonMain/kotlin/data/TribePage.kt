@@ -58,30 +58,35 @@ object TribePage {
     data class YearInIdeas(
         val outings: Int = 0,
         val recipes: Int = 0,
-        val gifts: Int = 0,
+        val books: Int = 0,
         val total: Int = 0,
-        /** Mois (0-11) où la tribu a gardé le plus d'idées, et combien. */
+        /** Mois (0-11) où la tribu a fait le plus d'idées, et combien. */
         val bestMonth: Pair<Int, Int>? = null,
     )
 
-    /** « Notre année en idées » : ce que la tribu a gardé pendant l'année civile. */
-    fun yearInIdeas(links: List<Link>, year: Int, zone: ZoneId = ZoneId.systemDefault()): YearInIdeas {
-        var outings = 0; var recipes = 0; var gifts = 0; var total = 0
-        val months = IntArray(12)
-        for (l in links) {
-            val d = runCatching { Instant.parse(l.createdAt).atZone(zone) }.getOrNull() ?: continue
-            if (d.year != year) continue
-            total++
-            months[d.monthValue - 1]++
-            when (l.category) {
-                LinkCategory.EVENEMENT, LinkCategory.ACTIVITE -> outings++
-                LinkCategory.RECETTE -> recipes++
-                LinkCategory.CADEAU -> gifts++
-                else -> {}
-            }
-        }
-        val max = months.max()
-        return YearInIdeas(outings, recipes, gifts, total, if (max > 0) months.indexOf(max) to max else null)
+    /**
+     * « Notre année en idées » : ce que la tribu a fait pendant l'année civile.
+     * Le serveur compte (GET /v1/done/summary), car une idée refaite compte
+     * plusieurs fois ; sans réponse, tout est à zéro.
+     */
+    fun yearInIdeas(s: DoneSummary?): YearInIdeas = YearInIdeas(
+        s?.outings ?: 0, s?.recipes ?: 0, s?.books ?: 0, s?.total ?: 0,
+        if (s != null && s.bestMonth in 1..12 && s.bestMonthCount > 0) (s.bestMonth - 1) to s.bestMonthCount else null,
+    )
+
+    data class YearLabels(val outings: String, val recipes: String, val books: String)
+
+    /** Libellés des trois compteurs : « sorties faites », « recettes cuisinées », « livres lus ». */
+    fun yearLabels(y: YearInIdeas) = YearLabels(
+        if (y.outings > 1) "sorties faites" else "sortie faite",
+        if (y.recipes > 1) "recettes cuisinées" else "recette cuisinée",
+        if (y.books > 1) "livres lus" else "livre lu",
+    )
+
+    /** « Votre meilleur mois : juillet, 12 idées faites. » */
+    fun bestMonthLine(y: YearInIdeas): String {
+        val (month, n) = y.bestMonth ?: return "Marquez vos premières idées faites : elles rempliront votre année."
+        return "Votre meilleur mois : ${monthName(month)}, $n ${if (n > 1) "idées faites" else "idée faite"}."
     }
 
     private val MONTHS = listOf("janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre")

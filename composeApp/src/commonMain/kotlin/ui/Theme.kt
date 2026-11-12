@@ -89,6 +89,10 @@ val PlumBg: Color get() = pick(0xFFECE1EA, 0xFF32232F)
 val PlumInk: Color get() = pick(0xFF5E4558, 0xFFD6B4CF)
 val CoralBg: Color get() = pick(0xFFF8DCD3, 0xFF3B201B)
 val CoralInk: Color get() = pick(0xFF9A3420, 0xFFF09A84)
+// « C'est fait » : vert sur blanc 6,4:1 le jour, encre claire le soir ; DoneSolid porte une coche blanche
+val DoneInk: Color get() = pick(0xFF3E6630, 0xFFA7D08F)
+val DoneBg: Color get() = pick(0xFFE3EDD9, 0xFF1F301B)
+val DoneSolid: Color get() = pick(0xFF3E6630, 0xFF4C7A3C)
 // Visibilité Communauté : vert sapin, réservé à cet usage
 val VisPublicBg: Color get() = pick(0xFFDDEFE6, 0xFF163026)
 val VisPublicInk: Color get() = pick(0xFF23664A, 0xFF8FD3B0)

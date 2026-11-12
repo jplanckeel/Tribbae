@@ -48,6 +48,11 @@ fun MyIdeasScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     val counts = remember(links) { links.filter { it.folderId != null }.groupingBy { it.folderId!! }.eachCount() }
+    // « C'est fait » : avancement de chaque dossier (null s'il n'en a pas)
+    val progress = remember(links, folders) {
+        val byFolder = links.groupBy { it.folderId }
+        folders.associate { f -> f.id to data.Done.folderProgress(byFolder[f.id].orEmpty(), f.giftReservations) }
+    }
     val folderIds = remember(folders) { folders.map { it.id }.toSet() }
     val loose = remember(links, folderIds) { links.filter { it.folderId == null || it.folderId !in folderIds } }
     // Même règle que la liste de courses
@@ -136,7 +141,7 @@ fun MyIdeasScreen(
                     // Grille 2 colonnes : dossiers, « Non rangées », puis « Nouveau dossier »
                     val tiles: List<@Composable (Modifier) -> Unit> = buildList {
                         others.forEach { f ->
-                            add { m -> FolderCard(f, counts[f.id] ?: f.linkCount, { onFolderClick(f) }, m, children = children) }
+                            add { m -> FolderCard(f, counts[f.id] ?: f.linkCount, { onFolderClick(f) }, m, children = children, progress = progress[f.id]) }
                         }
                         if (loose.isNotEmpty()) add { m -> LooseCard(loose.size, onOpenLoose, m) }
                         add { m -> DashedAddTile("Nouveau dossier", onAddFolderClick, m) }

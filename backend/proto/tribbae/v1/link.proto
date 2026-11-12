@@ -53,6 +53,112 @@ message Link {
   // Liste de cadeaux : "" (libre), reserved, bought, ou mine / mine_bought
   // pour le lecteur qui l'offre. Personne ne voit qui offre quoi.
   string gift_status = 28;
+  // « C'est fait » : visible de la tribu et des membres du dossier seulement
+  // (vide pour un lecteur extérieur, Explorer et le lien de partage).
+  // Nombre de fois où l'idée a été faite
+  int32 done_count = 29;
+  // Dernier jour où elle a été faite (midi UTC de ce jour : la date seule compte)
+  google.protobuf.Timestamp last_done_at = 30;
+  // « À refaire »
+  bool redo = 31;
+  // « Pas cette fois » a été répondu au rappel d'une sortie passée
+  bool done_prompt_dismissed = 32;
+  // Idée publique : nombre de tribus qui l'ont faite, renvoyé à partir de 5
+  // (0 en dessous). Anonyme : ni nom ni photo.
+  int32 done_families = 33;
+}
+
+// Un souvenir : une fois où l'idée a été faite
+message LinkDone {
+  string id = 1;
+  string link_id = 2;
+  // Qui l'a marquée
+  string user_id = 3;
+  // Jour, sans heure : AAAA-MM-JJ
+  string done_on = 4;
+  // Qui était là : comptes et enfants de la tribu
+  repeated string with_user_ids = 5;
+  repeated string with_child_ids = 6;
+  // 0 = pas de note
+  int32 rating = 7;
+  string note = 8;
+  string photo_url = 9;
+  google.protobuf.Timestamp created_at = 10;
+}
+
+message MarkLinkDoneRequest {
+  string link_id = 1;
+  // AAAA-MM-JJ ; aujourd'hui si vide, jamais dans le futur
+  string done_on = 2;
+  repeated string with_user_ids = 3;
+  repeated string with_child_ids = 4;
+  int32 rating = 5;
+  string note = 6;
+  // Photo déjà envoyée par POST /v1/photos
+  string photo_url = 7;
+  // « À refaire », porté par l'idée ; absent = inchangé
+  optional bool redo = 8;
+}
+
+message LinkDoneResponse {
+  LinkDone done = 1;
+  Link link = 2;
+}
+
+message UpdateLinkDoneRequest {
+  string link_id = 1;
+  string done_id = 2;
+  string done_on = 3;
+  repeated string with_user_ids = 4;
+  repeated string with_child_ids = 5;
+  int32 rating = 6;
+  string note = 7;
+  string photo_url = 8;
+  optional bool redo = 9;
+}
+
+message UnmarkLinkDoneRequest {
+  string link_id = 1;
+  string done_id = 2;
+}
+
+message UnmarkLinkDoneResponse {
+  Link link = 1;
+}
+
+message ListLinkDonesRequest {
+  string link_id = 1;
+}
+
+message ListLinkDonesResponse {
+  // Du plus récent au plus ancien
+  repeated LinkDone dones = 1;
+}
+
+message DismissDonePromptRequest {
+  string link_id = 1;
+}
+
+message DismissDonePromptResponse {
+  Link link = 1;
+}
+
+message GetDoneSummaryRequest {
+  int32 year = 1;
+}
+
+// « Notre année en idées » : chaque fois compte (une recette refaite trois
+// fois compte trois)
+message GetDoneSummaryResponse {
+  int32 year = 1;
+  // Sorties et activités
+  int32 outings = 2;
+  int32 recipes = 3;
+  int32 books = 4;
+  int32 total = 5;
+  // 1 à 12 ; 0 si rien n'a été fait
+  int32 best_month = 6;
+  int32 best_month_count = 7;
 }
 
 message CreateLinkRequest {
@@ -88,6 +194,8 @@ message GetLinkResponse {
 
 message ListLinksRequest {
   string folder_id = 1;
+  // all (défaut) | todo | done
+  string status = 2;
 }
 
 message ListLinksResponse {
@@ -221,6 +329,41 @@ service LinkService {
     option (google.api.http) = {
       post: "/v1/links/{link_id}/favorite"
       body: "*"
+    };
+  }
+  // « C'est fait » : l'idée a été faite, avec un souvenir facultatif
+  rpc MarkLinkDone(MarkLinkDoneRequest) returns (LinkDoneResponse) {
+    option (google.api.http) = {
+      post: "/v1/links/{link_id}/done"
+      body: "*"
+    };
+  }
+  rpc UpdateLinkDone(UpdateLinkDoneRequest) returns (LinkDoneResponse) {
+    option (google.api.http) = {
+      patch: "/v1/links/{link_id}/done/{done_id}"
+      body: "*"
+    };
+  }
+  rpc UnmarkLinkDone(UnmarkLinkDoneRequest) returns (UnmarkLinkDoneResponse) {
+    option (google.api.http) = {
+      delete: "/v1/links/{link_id}/done/{done_id}"
+    };
+  }
+  rpc ListLinkDones(ListLinkDonesRequest) returns (ListLinkDonesResponse) {
+    option (google.api.http) = {
+      get: "/v1/links/{link_id}/done"
+    };
+  }
+  // « Pas cette fois » : ne plus demander si la sortie passée a été faite
+  rpc DismissDonePrompt(DismissDonePromptRequest) returns (DismissDonePromptResponse) {
+    option (google.api.http) = {
+      post: "/v1/links/{link_id}/done-prompt/dismiss"
+      body: "*"
+    };
+  }
+  rpc GetDoneSummary(GetDoneSummaryRequest) returns (GetDoneSummaryResponse) {
+    option (google.api.http) = {
+      get: "/v1/done/summary"
     };
   }
   rpc ListCommunityLinks(ListCommunityLinksRequest) returns (ListCommunityLinksResponse) {

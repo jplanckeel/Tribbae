@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { frenchMessage } from "./api";
 
+// Mêmes messages que data/Done.kt (DoneTest.refusalsAreExplained)
+describe("messages de « C'est fait »", () => {
+  it("explique les refus", () => {
+    expect(frenchMessage(429, "too many ideas marked done today")).toBe("Vous avez marqué beaucoup d'idées aujourd'hui : réessayez demain.");
+    expect(frenchMessage(400, "gift list ideas are marked through their reservation")).toBe("Dans une liste de cadeaux, c'est la réservation qui dit qu'un cadeau est acheté.");
+  });
+});
+
 // Mêmes messages que data/Moderation.kt (ModerationTest.reportErrorsAreExplained)
 describe("messages de modération", () => {
   it("le plafond de signalements dit d'attendre demain, pas une minute", () => {

@@ -71,6 +71,8 @@ class MainActivity : ComponentActivity() {
         ui.Appearance.save = storage::saveAppearance
         data.ReminderPrefs.enabled = storage.loadRemindersEnabled()
         data.ReminderPrefs.save = storage::saveRemindersEnabled
+        data.ReminderPrefs.askDone = storage.loadAskDoneEnabled()
+        data.ReminderPrefs.saveAskDone = storage::saveAskDoneEnabled
         val repository = AppGraph.repository(applicationContext)
         // Une seule fois : à la recréation (rotation…), le partage est déjà ouvert
         if (savedInstanceState == null) incoming.value = parseIncoming(intent)
@@ -80,10 +82,10 @@ class MainActivity : ComponentActivity() {
         // (création, modification, synchronisation, nouvel identifiant après envoi)
         // et à chaque bascule de l'interrupteur des Réglages (éteint : aucune alarme)
         lifecycleScope.launch {
-            repository.links.combine(androidx.compose.runtime.snapshotFlow { data.ReminderPrefs.enabled }) { links, on -> if (on) links else emptyList() }
-                .collectLatest { links ->
+            repository.links.combine(androidx.compose.runtime.snapshotFlow { data.ReminderPrefs.enabled to data.ReminderPrefs.askDone }) { links, on -> links to on }
+                .collectLatest { (links, on) ->
                     delay(300) // une rafale de changements (synchronisation) ne recalcule qu'une fois
-                    NotificationHelper.reconcile(appContext, links)
+                    NotificationHelper.reconcile(appContext, links, reminders = on.first, donePrompts = on.second)
                 }
         }
 
@@ -161,10 +163,12 @@ class MainActivity : ComponentActivity() {
         val resetToken = extractResetToken(intent)
         val verifyToken = extractVerifyToken(intent)
         val circleToken = extractCircleToken(intent)
-        if (url == null && title == null && token == null && inviteToken == null && resetToken == null && verifyToken == null && circleToken == null) return null
+        // Notification « Vous y êtes allés ? » : ouvre la fiche sur la feuille souvenir
+        val doneLinkId = intent?.getStringExtra(NotificationHelper.EXTRA_DONE_LINK)?.takeIf { it.isNotBlank() }
+        if (url == null && title == null && token == null && inviteToken == null && resetToken == null && verifyToken == null && circleToken == null && doneLinkId == null) return null
         return SharedContent(
             url = url, title = title, folderToken = token, inviteToken = inviteToken, resetToken = resetToken,
-            verifyToken = verifyToken, circleToken = circleToken,
+            verifyToken = verifyToken, circleToken = circleToken, doneLinkId = doneLinkId,
         )
     }
 

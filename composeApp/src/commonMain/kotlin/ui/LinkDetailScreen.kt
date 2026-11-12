@@ -108,6 +108,10 @@ fun LinkDetailScreen(
     }
 
     val folder = folders.find { it.id == link.folderId }
+    // « C'est fait » : la tribu de l'idée et les membres de son dossier
+    val done = LocalDone.current
+    val canMark = !readOnly && done?.canMark(link) == true
+    val made = done?.canSee(link) == true && data.Done.isDone(link)
     val at = eventMs(link)
     val infos = buildList<Triple<ImageVector, String, String>> {
         if (at != null) add(Triple(Icons.Outlined.CalendarMonth, "Quand", listOf(formatShortDate(at), formatTime(at)).filter { it.isNotEmpty() }.joinToString(" · ")))
@@ -145,6 +149,7 @@ fun LinkDetailScreen(
                         CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = PhotoVeil)
                     }
                 }
+                if (made) DoneStamp(data.Done.stamp(link), Modifier.align(Alignment.BottomEnd).padding(end = 20.dp, bottom = 44.dp))
             }
 
             // ── Contenu ──
@@ -185,6 +190,10 @@ fun LinkDetailScreen(
                 }
 
                 Text(link.title, style = display(28.sp))
+
+                if (made) DonePill(link)
+                DoneFamiliesChip(link.doneFamilies)
+                if (made && viewModel != null) MemoryCard(link, viewModel)
 
                 // Liste de cadeaux : la famille de la liste voit l'état, les autres proches peuvent l'offrir
                 if (viewModel != null && link.category == data.LinkCategory.CADEAU && (folder?.giftReservations == true || link.giftStatus.isNotEmpty())) {
@@ -397,6 +406,13 @@ fun LinkDetailScreen(
                     )
                     if (link.url.isNotBlank()) CircleIconButton(Icons.Outlined.ArrowOutward, "Voir le site", { onOpenUrl?.invoke(link.url) })
                 }
+                // À faire : le bouton principal dit que c'est fait ; faite : « On l'a refait »
+                canMark -> {
+                    val words = data.Done.words(link.category)
+                    if (made) CampButton(words.again, { done.remember(link) }, Modifier.weight(1f), kind = ButtonKind.Ghost, icon = Icons.Outlined.Refresh, height = 54.dp)
+                    else CampButton(words.verb, { done.remember(link) }, Modifier.weight(1f), icon = Icons.Outlined.Check, height = 54.dp)
+                    if (link.url.isNotBlank()) CircleIconButton(Icons.Outlined.ArrowOutward, "Voir le site", { onOpenUrl?.invoke(link.url) })
+                }
                 link.url.isNotBlank() -> CampButton(
                     "Voir le site", { onOpenUrl?.invoke(link.url) }, Modifier.weight(1f), trailingIcon = Icons.Outlined.ArrowOutward, height = 54.dp
                 )
@@ -410,6 +426,8 @@ fun LinkDetailScreen(
         ModalBottomSheet(onDismissRequest = { showMenu = false }, containerColor = SheetColor, dragHandle = { SheetHandle() }) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Idée", style = display(24.sp), modifier = Modifier.padding(bottom = 8.dp))
+                if (canMark && !made) MenuRow(Icons.Outlined.Check, "Marquer comme fait") { showMenu = false; done.quick(link) }
+                if (canMark && made) MenuRow(Icons.Outlined.Refresh, data.Done.words(link.category).again) { showMenu = false; done.remember(link) }
                 if (!readOnly) {
                     MenuRow(Icons.Outlined.Edit, "Modifier") { showMenu = false; onEdit() }
                     // Seul l'auteur décide de publier son idée (pas un autre membre de la tribu)
@@ -432,6 +450,7 @@ fun LinkDetailScreen(
                     MenuRow(Icons.Outlined.BookmarkBorder, "Enregistrer dans mes idées") { showMenu = false; showSave = true }
                 }
                 MenuRow(Icons.Outlined.IosShare, "Envoyer l'idée") { showMenu = false; share() }
+                if (canMark && made) MenuRow(Icons.Outlined.RemoveDone, "Plus fait (retirer)", danger = true) { showMenu = false; done.unmark(link) }
                 if (!readOnly) MenuRow(Icons.Outlined.Delete, "Supprimer", danger = true) { showMenu = false; showDelete = true }
                 if (othersIdea && isLoggedIn) {
                     val author = link.ownerDisplayName.ifBlank { "l'auteur" }

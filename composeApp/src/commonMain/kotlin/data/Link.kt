@@ -36,7 +36,7 @@ data class Folder(
     val keyDateType: String = "",      // anniv | vacances | event
     val childIds: List<String> = emptyList(),
     val viewMode: String = "",         // grid | list | mosaic
-    val sort: String = "",             // recent | date | category
+    val sort: String = "",             // recent | date | category | todo
     val pinned: Boolean = false,
     /** Liste de cadeaux : les proches peuvent dire « Je l'offre » */
     val giftReservations: Boolean = false,
@@ -77,7 +77,17 @@ data class Link(
     /** Retirée par la modération : son auteur la garde, sans pouvoir la republier. */
     val hidden: Boolean = false,
     /** Liste de cadeaux : "" (libre), reserved, bought, mine, mine_bought. Jamais qui offre. */
-    val giftStatus: String = ""
+    val giftStatus: String = "",
+    /** « C'est fait » (data/Done.kt) : nombre de fois faite. Vide hors de la tribu et du dossier. */
+    val doneCount: Int = 0,
+    /** Dernier jour où elle a été faite (seule la date compte : voir Done.doneDay). */
+    val lastDoneAt: String = "",
+    /** « À refaire » */
+    val redo: Boolean = false,
+    /** « Pas cette fois » a été répondu au rappel d'une sortie passée. */
+    val donePromptDismissed: Boolean = false,
+    /** Idée publique : nombre de tribus qui l'ont faite (0 en dessous de 5). */
+    val doneFamilies: Int = 0,
 )
 
 @Serializable

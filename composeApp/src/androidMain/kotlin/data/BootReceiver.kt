@@ -14,6 +14,6 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
         val storage = AndroidStorage(context)
         // Rappels coupés dans les Réglages : aucune alarme
-        NotificationHelper.reconcile(context, if (storage.loadRemindersEnabled()) storage.loadLinks() else emptyList())
+        NotificationHelper.reconcile(context, storage.loadLinks(), reminders = storage.loadRemindersEnabled(), donePrompts = storage.loadAskDoneEnabled())
     }
 }
