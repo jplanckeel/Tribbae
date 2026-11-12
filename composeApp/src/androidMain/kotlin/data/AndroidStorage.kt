@@ -68,6 +68,15 @@ class AndroidStorage(context: Context) : Storage {
         return try { json.decodeFromString(raw) } catch (_: Exception) { emptyMap() }
     }
 
+    override fun saveGiftPending(pending: Map<String, Long>) {
+        prefs.edit().putString("gift_pending", json.encodeToString(pending)).apply()
+    }
+
+    override fun loadGiftPending(): Map<String, Long> {
+        val raw = prefs.getString("gift_pending", null) ?: return emptyMap()
+        return try { json.decodeFromString(raw) } catch (_: Exception) { emptyMap() }
+    }
+
     // Liste de courses : fichier à part, gardé à la déconnexion comme avant
     private val courses: SharedPreferences =
         context.getSharedPreferences("tribbae_courses", Context.MODE_PRIVATE)

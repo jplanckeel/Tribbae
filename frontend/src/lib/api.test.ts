@@ -9,6 +9,15 @@ describe("messages de « C'est fait »", () => {
   });
 });
 
+// Mêmes messages que data/Gifts.kt (GiftsTest.refusalsAreExplained)
+describe("messages des listes de cadeaux", () => {
+  it("explique les refus de réservation", () => {
+    expect(frenchMessage(409, "gift already reserved")).toBe("Quelqu'un vient de le réserver.");
+    expect(frenchMessage(400, "gift reservations are off for this folder")).toBe("Cette liste n'accepte plus de réservations.");
+    expect(frenchMessage(429, "too many gift reservations today")).toBe("Vous avez déjà réservé 5 cadeaux sur cette liste aujourd'hui : réessayez demain.");
+  });
+});
+
 // Mêmes messages que data/Moderation.kt (ModerationTest.reportErrorsAreExplained)
 describe("messages de modération", () => {
   it("le plafond de signalements dit d'attendre demain, pas une minute", () => {
