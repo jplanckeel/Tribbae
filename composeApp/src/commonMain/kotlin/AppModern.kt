@@ -438,14 +438,16 @@ private fun ModernMainApp(
 
             is Screen.Detail -> {
                 val fresh = if (screen.public) screen.link else links.find { it.id == screen.link.id } ?: screen.link
+                // Idée d'un dossier où l'on n'est que lecteur : en lecture, comme une idée de la communauté
+                val readOnly = screen.public || !data.Rights.canEditIdea(fresh, folders.find { it.id == fresh.folderId }, vm.currentUserId(), vm::isTribePeer)
                 LinkDetailScreen(
                     link = fresh,
                     onBack = ::pop,
                     onDelete = { vm.deleteLink(fresh.id); pop() },
                     onEdit = { push(Screen.IdeaForm(existing = fresh)) },
                     onOpenUrl = vm.urlOpener,
-                    readOnly = screen.public,
-                    onSaveToMyList = if (screen.public) { l, folderId ->
+                    readOnly = readOnly,
+                    onSaveToMyList = if (readOnly) { l, folderId ->
                         vm.addLink(
                             title = l.title, url = l.url, description = l.description, category = l.category,
                             folderId = folderId, tags = l.tags, ageRange = l.ageRange, location = l.location,
@@ -459,7 +461,7 @@ private fun ModernMainApp(
                     viewModel = vm,
                     ensureSignedIn = ::ensureSignedIn,
                     onOpenFolder = { f -> push(Screen.FolderDetail(f, fromLinkId = fresh.id)) },
-                    onOpenShopping = if (screen.public) null else { { push(Screen.Shopping(fresh.id)) } },
+                    onOpenShopping = if (readOnly) null else { { push(Screen.Shopping(fresh.id)) } },
                 )
             }
 
@@ -582,7 +584,9 @@ private fun ModernMainApp(
         LaunchedEffect(nav.isRunning, stack.size) { if (!nav.isRunning && stack.lastOrNull() !is Screen.Detail) backProgress = 0f }
 
         if (showAdd) {
-            val folderId = (stack.lastOrNull() as? Screen.FolderDetail)?.folder?.id
+            // Le « + » ne range pas d'office dans un dossier où l'on n'est que lecteur
+            val folderId = (stack.lastOrNull() as? Screen.FolderDetail)?.folder
+                ?.takeIf { data.Rights.canEditFolder(it, vm.currentUserId(), vm::isTribePeer) }?.id
             AddFlowSheet(
                 viewModel = vm,
                 presetFolderId = folderId,

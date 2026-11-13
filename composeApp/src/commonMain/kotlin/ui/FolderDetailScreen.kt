@@ -64,6 +64,8 @@ fun FolderDetailScreen(
     var showShare by remember { mutableStateOf(false) }
     var showDelete by remember { mutableStateOf(false) }
     val visibility = LocalAudiences.current.of(folder).label
+    // Lecteur du cercle : le dossier se consulte, sans ajouter ni personnaliser (comme sur le web)
+    val canEdit = viewModel == null || data.Rights.canEditFolder(folder, viewModel.currentUserId(), viewModel::isTribePeer)
 
     CollectionScaffold(
         title = folder.name,
@@ -76,8 +78,10 @@ fun FolderDetailScreen(
         children = children,
         highlight = highlightLinkId,
         actions = {
-            if (viewModel != null) CircleIconButton(Icons.Outlined.PersonAdd, "Partager le dossier", { showShare = true }, background = PhotoVeil)
-            CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = PhotoVeil)
+            if (canEdit) {
+                if (viewModel != null) CircleIconButton(Icons.Outlined.PersonAdd, "Partager le dossier", { showShare = true }, background = PhotoVeil)
+                CircleIconButton(Icons.Outlined.MoreHoriz, "Plus d'actions", { showMenu = true }, background = PhotoVeil)
+            }
         },
         extra = {
             if (folder.collaborators.isNotEmpty()) {
@@ -89,9 +93,11 @@ fun FolderDetailScreen(
             if (folder.aiGenerated) Tag("IA", Prune, Sable, Icons.Outlined.AutoAwesome)
         },
         buttons = {
-            CampButton("Ajouter une idée", onAddIdea, icon = Icons.Outlined.Add, height = 40.dp)
-            CampButton("Compléter avec l'IA", onAi, kind = ButtonKind.Ai, icon = Icons.Outlined.AutoAwesome, height = 40.dp)
-            CampButton("Personnaliser", onEdit, kind = ButtonKind.Ghost, icon = Icons.Outlined.Edit, height = 40.dp)
+            if (canEdit) {
+                CampButton("Ajouter une idée", onAddIdea, icon = Icons.Outlined.Add, height = 40.dp)
+                CampButton("Compléter avec l'IA", onAi, kind = ButtonKind.Ai, icon = Icons.Outlined.AutoAwesome, height = 40.dp)
+                CampButton("Personnaliser", onEdit, kind = ButtonKind.Ghost, icon = Icons.Outlined.Edit, height = 40.dp)
+            }
         },
         beforeIdeas = if (done != null && items.isNotEmpty()) {
             {
@@ -128,7 +134,7 @@ fun FolderDetailScreen(
         doneUi = done != null,
         links = if (done != null) shown else items,
         emptyTitle = "Ce dossier attend ses premières idées",
-        emptyText = "Ajoutez un lien, une recette, une sortie… ou laissez l'IA le remplir.",
+        emptyText = if (canEdit) "Ajoutez un lien, une recette, une sortie… ou laissez l'IA le remplir." else null,
         onLinkClick = onLinkClick,
         onFavorite = onSaveLink
     )
