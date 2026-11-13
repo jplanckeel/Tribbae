@@ -165,6 +165,8 @@ class MainActivity : ComponentActivity() {
         val circleToken = extractCircleToken(intent)
         // Notification « Vous y êtes allés ? » : ouvre la fiche sur la feuille souvenir
         val doneLinkId = intent?.getStringExtra(NotificationHelper.EXTRA_DONE_LINK)?.takeIf { it.isNotBlank() }
+        // « Oui, on y était » : un bouton d'action ne ferme pas la notification de lui-même
+        doneLinkId?.let { androidx.core.app.NotificationManagerCompat.from(this).cancel(data.DonePrompts.notificationId(it)) }
         if (url == null && title == null && token == null && inviteToken == null && resetToken == null && verifyToken == null && circleToken == null && doneLinkId == null) return null
         return SharedContent(
             url = url, title = title, folderToken = token, inviteToken = inviteToken, resetToken = resetToken,

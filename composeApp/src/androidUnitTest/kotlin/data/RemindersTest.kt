@@ -88,4 +88,18 @@ class RemindersTest {
         assertEquals("C'était samedi. Un toucher pour garder le souvenir.", DonePrompts.body(link, at(2026, 11, 10, 10)))
         assertEquals("C'était le 7 nov.. Un toucher pour garder le souvenir.".replace("..", "."), DonePrompts.body(link, at(2026, 11, 20, 10)))
     }
+
+    @Test
+    fun clearsQuestionsOnceAnswered() {
+        val now = at(2026, 11, 13, 11)
+        val asked = outing(serverId, at(2026, 11, 12, 14))
+        assertEquals(emptySet(), DonePrompts.answered(listOf(asked), now), "pas encore répondu : la question reste")
+        assertEquals(setOf(serverId), DonePrompts.answered(listOf(asked.copy(doneCount = 1)), now), "faite (ici, sur le web ou par la tribu)")
+        assertEquals(setOf(serverId), DonePrompts.answered(listOf(asked.copy(donePromptDismissed = true)), now), "« Pas cette fois »")
+        // Sortie ancienne, à venir, ou autre catégorie : rien à retirer
+        assertEquals(emptySet(), DonePrompts.answered(listOf(outing("vieille", at(2026, 10, 1, 14)).copy(doneCount = 1)), now))
+        assertEquals(emptySet(), DonePrompts.answered(listOf(outing("future", at(2026, 11, 20, 14)).copy(doneCount = 1)), now))
+        assertEquals(emptySet(), DonePrompts.answered(listOf(outing("recette", at(2026, 11, 12, 14), LinkCategory.RECETTE).copy(doneCount = 1)), now))
+        assertEquals("done:abc".hashCode(), DonePrompts.notificationId("abc"))
+    }
 }
