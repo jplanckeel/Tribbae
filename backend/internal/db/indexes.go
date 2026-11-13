@@ -291,6 +291,16 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			},
 		},
 
+		// ── shopping_lists (les courses) ──────────────────────
+		{
+			// Une liste par tribu (ou par compte sans tribu)
+			Collection: "shopping_lists",
+			Model: mongo.IndexModel{
+				Keys:    bson.D{{Key: "key", Value: 1}},
+				Options: options.Index().SetUnique(true).SetName("idx_shopping_lists_key"),
+			},
+		},
+
 		// ── reports (modération) ──────────────────────────────
 		{
 			// Un seul signalement ouvert par compte et par contenu

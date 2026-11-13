@@ -35,6 +35,7 @@ import (
 	"github.com/tribbae/backend/internal/photo"
 	"github.com/tribbae/backend/internal/preview"
 	"github.com/tribbae/backend/internal/seo"
+	"github.com/tribbae/backend/internal/shopping"
 	"github.com/tribbae/backend/internal/tribe"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -133,6 +134,8 @@ func main() {
 	moderationH := moderation.NewHandler(modSvc)
 	adminH := admin.NewHandler(authSvc, admin.NewStatsService(database.Col("links"), database.Col("users")), modSvc)
 	tribeH := tribe.NewHandler(tribeSvc)
+	// Les courses : une liste par tribu
+	shoppingH := shopping.NewHandler(shopping.NewService(database.DB(), tribeSvc.Household, tribeSvc.Peers, linkSvc.CanView))
 
 	// Extrait le userID du header Authorization pour les routes HTTP hors gateway
 	bearerUser := func(r *http.Request) (string, error) {
@@ -196,6 +199,7 @@ func main() {
 	pb.RegisterTribeServiceServer(grpcServer, tribeH)
 	pb.RegisterConnectedAppServiceServer(grpcServer, appsH)
 	pb.RegisterModerationServiceServer(grpcServer, moderationH)
+	pb.RegisterShoppingServiceServer(grpcServer, shoppingH)
 	reflection.Register(grpcServer)
 
 	grpcAddr := ":" + cfg.GRPCPort
@@ -255,6 +259,9 @@ func main() {
 	}
 	if err := pb.RegisterModerationServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
 		log.Fatalf("register moderation gateway: %v", err)
+	}
+	if err := pb.RegisterShoppingServiceHandlerFromEndpoint(ctx, mux, grpcAddr, opts); err != nil {
+		log.Fatalf("register shopping gateway: %v", err)
 	}
 
 	// Limites de débit par IP sur les routes sensibles (force brute, coût IA, requêtes sortantes)

@@ -135,7 +135,10 @@ type Link struct {
 	DonePromptDismissed bool `protobuf:"varint,32,opt,name=done_prompt_dismissed,json=donePromptDismissed,proto3" json:"done_prompt_dismissed,omitempty"`
 	// Idée publique : nombre de tribus qui l'ont faite, renvoyé à partir de 5
 	// (0 en dessous). Anonyme : ni nom ni photo.
-	DoneFamilies  int32 `protobuf:"varint,33,opt,name=done_families,json=doneFamilies,proto3" json:"done_families,omitempty"`
+	DoneFamilies int32 `protobuf:"varint,33,opt,name=done_families,json=doneFamilies,proto3" json:"done_families,omitempty"`
+	// Recette : nombre de personnes prévu par les ingrédients (0 = non précisé,
+	// compté comme 4 par la liste de courses)
+	Servings      int32 `protobuf:"varint,34,opt,name=servings,proto3" json:"servings,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -397,6 +400,13 @@ func (x *Link) GetDonePromptDismissed() bool {
 func (x *Link) GetDoneFamilies() int32 {
 	if x != nil {
 		return x.DoneFamilies
+	}
+	return 0
+}
+
+func (x *Link) GetServings() int32 {
+	if x != nil {
+		return x.Servings
 	}
 	return 0
 }
@@ -1216,6 +1226,7 @@ type CreateLinkRequest struct {
 	Ingredients     []string               `protobuf:"bytes,14,rep,name=ingredients,proto3" json:"ingredients,omitempty"`
 	Favorite        bool                   `protobuf:"varint,15,opt,name=favorite,proto3" json:"favorite,omitempty"`
 	Visibility      string                 `protobuf:"bytes,16,opt,name=visibility,proto3" json:"visibility,omitempty"` // "private" | "public"
+	Servings        int32                  `protobuf:"varint,17,opt,name=servings,proto3" json:"servings,omitempty"`    // recette : nombre de personnes (0 = non précisé)
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1360,6 +1371,13 @@ func (x *CreateLinkRequest) GetVisibility() string {
 		return x.Visibility
 	}
 	return ""
+}
+
+func (x *CreateLinkRequest) GetServings() int32 {
+	if x != nil {
+		return x.Servings
+	}
+	return 0
 }
 
 type CreateLinkResponse struct {
@@ -1610,8 +1628,10 @@ type UpdateLinkRequest struct {
 	Ingredients     []string               `protobuf:"bytes,15,rep,name=ingredients,proto3" json:"ingredients,omitempty"`
 	Favorite        bool                   `protobuf:"varint,16,opt,name=favorite,proto3" json:"favorite,omitempty"`
 	Visibility      string                 `protobuf:"bytes,17,opt,name=visibility,proto3" json:"visibility,omitempty"` // "private" | "public"
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Recette : nombre de personnes ; 0 garde la valeur enregistrée (anciens clients)
+	Servings      int32 `protobuf:"varint,18,opt,name=servings,proto3" json:"servings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateLinkRequest) Reset() {
@@ -1761,6 +1781,13 @@ func (x *UpdateLinkRequest) GetVisibility() string {
 		return x.Visibility
 	}
 	return ""
+}
+
+func (x *UpdateLinkRequest) GetServings() int32 {
+	if x != nil {
+		return x.Servings
+	}
+	return 0
 }
 
 type UpdateLinkResponse struct {
@@ -2420,7 +2447,7 @@ var File_tribbae_v1_link_proto protoreflect.FileDescriptor
 const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\n" +
 	"\x15tribbae/v1/link.proto\x12\n" +
-	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe7\b\n" +
+	"tribbae.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x83\t\n" +
 	"\x04Link\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x1b\n" +
@@ -2465,7 +2492,8 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"lastDoneAt\x12\x12\n" +
 	"\x04redo\x18\x1f \x01(\bR\x04redo\x122\n" +
 	"\x15done_prompt_dismissed\x18  \x01(\bR\x13donePromptDismissed\x12#\n" +
-	"\rdone_families\x18! \x01(\x05R\fdoneFamilies\"\xb3\x02\n" +
+	"\rdone_families\x18! \x01(\x05R\fdoneFamilies\x12\x1a\n" +
+	"\bservings\x18\" \x01(\x05R\bservings\"\xb3\x02\n" +
 	"\bLinkDone\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\alink_id\x18\x02 \x01(\tR\x06linkId\x12\x17\n" +
@@ -2526,7 +2554,7 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\x05total\x18\x05 \x01(\x05R\x05total\x12\x1d\n" +
 	"\n" +
 	"best_month\x18\x06 \x01(\x05R\tbestMonth\x12(\n" +
-	"\x10best_month_count\x18\a \x01(\x05R\x0ebestMonthCount\"\xf0\x03\n" +
+	"\x10best_month_count\x18\a \x01(\x05R\x0ebestMonthCount\"\x8c\x04\n" +
 	"\x11CreateLinkRequest\x12\x1b\n" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x10\n" +
@@ -2547,7 +2575,8 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\bfavorite\x18\x0f \x01(\bR\bfavorite\x12\x1e\n" +
 	"\n" +
 	"visibility\x18\x10 \x01(\tR\n" +
-	"visibility\":\n" +
+	"visibility\x12\x1a\n" +
+	"\bservings\x18\x11 \x01(\x05R\bservings\":\n" +
 	"\x12CreateLinkResponse\x12$\n" +
 	"\x04link\x18\x01 \x01(\v2\x10.tribbae.v1.LinkR\x04link\")\n" +
 	"\x0eGetLinkRequest\x12\x17\n" +
@@ -2558,7 +2587,7 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\tfolder_id\x18\x01 \x01(\tR\bfolderId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\";\n" +
 	"\x11ListLinksResponse\x12&\n" +
-	"\x05links\x18\x01 \x03(\v2\x10.tribbae.v1.LinkR\x05links\"\x89\x04\n" +
+	"\x05links\x18\x01 \x03(\v2\x10.tribbae.v1.LinkR\x05links\"\xa5\x04\n" +
 	"\x11UpdateLinkRequest\x12\x17\n" +
 	"\alink_id\x18\x01 \x01(\tR\x06linkId\x12\x1b\n" +
 	"\tfolder_id\x18\x02 \x01(\tR\bfolderId\x12\x14\n" +
@@ -2580,7 +2609,8 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\bfavorite\x18\x10 \x01(\bR\bfavorite\x12\x1e\n" +
 	"\n" +
 	"visibility\x18\x11 \x01(\tR\n" +
-	"visibility\":\n" +
+	"visibility\x12\x1a\n" +
+	"\bservings\x18\x12 \x01(\x05R\bservings\":\n" +
 	"\x12UpdateLinkResponse\x12$\n" +
 	"\x04link\x18\x01 \x01(\v2\x10.tribbae.v1.LinkR\x04link\",\n" +
 	"\x11DeleteLinkRequest\x12\x17\n" +
