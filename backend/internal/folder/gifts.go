@@ -113,6 +113,30 @@ func (s *Service) giftIn(ctx context.Context, f *Folder, linkID string, extra bs
 
 // clearExpired retire une réservation en attente expirée (l'index TTL passe
 // toutes les minutes environ : on n'attend pas pour libérer le cadeau).
+// boughtByTribe : idées Cadeau déjà marquées « C'est fait » (achetées par la
+// tribu, souvent avant que le dossier devienne une liste de cadeaux). Elles
+// comptent comme offertes : personne ne doit pouvoir les réserver.
+func (s *Service) boughtByTribe(ctx context.Context, linkIDs []string) map[string]bool {
+	out := map[string]bool{}
+	if len(linkIDs) == 0 {
+		return out
+	}
+	cur, err := s.linkCol.Database().Collection("link_dones").Find(ctx, bson.M{"link_id": bson.M{"$in": linkIDs}},
+		options.Find().SetProjection(bson.M{"_id": 0, "link_id": 1}))
+	if err != nil {
+		return out
+	}
+	var rows []struct {
+		LinkID string `bson:"link_id"`
+	}
+	if cur.All(ctx, &rows) == nil {
+		for _, r := range rows {
+			out[r.LinkID] = true
+		}
+	}
+	return out
+}
+
 func (s *Service) clearExpired(ctx context.Context, linkID string) {
 	_, _ = s.gifts().DeleteOne(ctx, bson.M{"link_id": linkID, "status": GiftPending, "expires_at": bson.M{"$lt": time.Now()}})
 }
@@ -147,6 +171,9 @@ func (s *Service) reserveByEmail(ctx context.Context, f *Folder, l *giftLink, na
 	if n >= giftDailyByEmail {
 		return "", ErrGiftQuota
 	}
+	if s.boughtByTribe(ctx, []string{l.ID.Hex()})[l.ID.Hex()] {
+		return "", ErrGiftTaken
+	}
 	token, err := newToken()
 	if err != nil {
 		return "", err
@@ -176,6 +203,9 @@ func (s *Service) reserveByEmail(ctx context.Context, f *Folder, l *giftLink, na
 func (s *Service) reserveAsUser(ctx context.Context, f *Folder, l *giftLink, userID string) error {
 	if !f.GiftReservations {
 		return ErrNotAGiftList
+	}
+	if s.boughtByTribe(ctx, []string{l.ID.Hex()})[l.ID.Hex()] {
+		return ErrGiftTaken
 	}
 	s.clearExpired(ctx, l.ID.Hex())
 	now := time.Now()
@@ -428,9 +458,14 @@ func (s *Service) ResetGifts(ctx context.Context, folderID, userID string) error
 
 // GiftStatuses : statut de chaque cadeau réservé d'un dossier, vu par viewerID
 // ("mine" / "mine_bought" pour ses propres réservations, sinon "reserved" /
-// "bought" ; une réservation en attente compte comme réservée).
-func (s *Service) GiftStatuses(ctx context.Context, folderID, viewerID string) map[string]string {
+// "bought" ; une réservation en attente compte comme réservée). giftIDs : les
+// idées Cadeau affichées ; celles déjà marquées faites par la tribu sont
+// « bought ».
+func (s *Service) GiftStatuses(ctx context.Context, folderID, viewerID string, giftIDs []string) map[string]string {
 	out := map[string]string{}
+	for id := range s.boughtByTribe(ctx, giftIDs) {
+		out[id] = GiftBought
+	}
 	cur, err := s.gifts().Find(ctx, bson.M{"folder_id": folderID}, options.Find().SetProjection(bson.M{"link_id": 1, "status": 1, "user_id": 1, "expires_at": 1}))
 	if err != nil {
 		return out

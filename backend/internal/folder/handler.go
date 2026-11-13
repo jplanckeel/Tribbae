@@ -281,7 +281,13 @@ func (h *Handler) GetSharedFolder(ctx context.Context, req *pb.GetSharedFolderRe
 	gifts := map[string]string{}
 	if f.GiftReservations {
 		viewerID, _ := interceptor.UserIDFromContext(ctx)
-		gifts = h.svc.GiftStatuses(ctx, f.ID.Hex(), viewerID)
+		giftIDs := make([]string, 0, len(rawLinks))
+		for _, m := range rawLinks {
+			if m.Category == giftCategory {
+				giftIDs = append(giftIDs, m.ID.Hex())
+			}
+		}
+		gifts = h.svc.GiftStatuses(ctx, f.ID.Hex(), viewerID, giftIDs)
 	}
 	for _, m := range rawLinks {
 		l := &pb.Link{

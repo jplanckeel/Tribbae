@@ -226,6 +226,25 @@ func TestGiftListIdeasAreNotMarkedDone(t *testing.T) {
 	mustMark(t, svc, book.ID.Hex(), "alice", DoneInput{})
 	loose, _ := svc.Create(ctx, "alice", &Link{Title: "Vélo", Category: giftCategory})
 	mustMark(t, svc, loose.ID.Hex(), "alice", DoneInput{})
+
+	// Un cadeau acheté (« C'est fait ») avant que son dossier devienne une liste
+	// de cadeaux s'affiche offert, pas libre ; hors liste, il n'a pas de statut
+	later := bson.NewObjectID()
+	if _, err := svc.folderCol.InsertOne(ctx, bson.M{"_id": later, "owner_id": "alice", "visibility": "private"}); err != nil {
+		t.Fatal(err)
+	}
+	bought, _ := svc.Create(ctx, "alice", &Link{Title: "Trottinette", Category: giftCategory, FolderID: later.Hex()})
+	mustMark(t, svc, bought.ID.Hex(), "alice", DoneInput{})
+	if _, err := svc.folderCol.UpdateByID(ctx, later, bson.M{"$set": bson.M{"gift_reservations": true}}); err != nil {
+		t.Fatal(err)
+	}
+	st := svc.LoadStats(ctx, []*Link{bought, book, loose}, "bob")
+	if got := st.Gifts[bought.ID.Hex()]; got != "bought" {
+		t.Errorf("gift done before the list: status %q, want bought", got)
+	}
+	if got := st.Gifts[book.ID.Hex()] + st.Gifts[loose.ID.Hex()]; got != "" {
+		t.Errorf("a done book or a gift outside a list got a gift status %q", got)
+	}
 }
 
 func TestDeletingAnIdeaDeletesItsMemories(t *testing.T) {
