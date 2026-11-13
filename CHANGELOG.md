@@ -1,5 +1,86 @@
 # Changelog
 
+## [0.4.0](https://github.com/jplanckeel/Tribbae/compare/v0.3.0...v0.4.0) (2026-11-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* **android:** require android 8 ([#124](https://github.com/jplanckeel/Tribbae/issues/124))
+* replace favorites with likes ([#102](https://github.com/jplanckeel/Tribbae/issues/102))
+
+### Features
+
+* add terms of use and a legal notice ([#120](https://github.com/jplanckeel/Tribbae/issues/120)) ([388bf5c](https://github.com/jplanckeel/Tribbae/commit/388bf5c6c5b947b4555d7951adf2e35dbb2171ae))
+* **android:** offer a gift from a shared gift list link ([#132](https://github.com/jplanckeel/Tribbae/issues/132)) ([c5d355b](https://github.com/jplanckeel/Tribbae/commit/c5d355b4a3b0e1eb527a09d7a1d274e267601624))
+* **android:** show failed actions in a toast ([#96](https://github.com/jplanckeel/Tribbae/issues/96)) ([c5cae48](https://github.com/jplanckeel/Tribbae/commit/c5cae4878744ee8324b5364540de1f85d534c022))
+* ask for confirmation before publishing ([#94](https://github.com/jplanckeel/Tribbae/issues/94)) ([d022fd7](https://github.com/jplanckeel/Tribbae/commit/d022fd785712b19211d44486678da0da51fa92b4))
+* **backend:** let people report and block, and admins act on reports ([#118](https://github.com/jplanckeel/Tribbae/issues/118)) ([8cb64ad](https://github.com/jplanckeel/Tribbae/commit/8cb64add1d362bcaeb823df535b2cc6d522ed9f8))
+* find your own ideas from the explorer search ([#103](https://github.com/jplanckeel/Tribbae/issues/103)) ([e1188a0](https://github.com/jplanckeel/Tribbae/commit/e1188a0fe794ffdfb986322d9b7e6f3994e72abc))
+* **folder:** reuse and revoke share links ([#95](https://github.com/jplanckeel/Tribbae/issues/95)) ([db10824](https://github.com/jplanckeel/Tribbae/commit/db1082414547733c1b7dda21824a82cad002c99b))
+* group every setting on one screen ([#109](https://github.com/jplanckeel/Tribbae/issues/109)) ([d8c1dd4](https://github.com/jplanckeel/Tribbae/commit/d8c1dd4c66b3dc9ae3429821b613c73e974546ac))
+* let relatives offer a gift from a shared gift list ([#130](https://github.com/jplanckeel/Tribbae/issues/130)) ([31e711b](https://github.com/jplanckeel/Tribbae/commit/31e711b33e3c3d758ef2d216e640836a6292cabf))
+* mark an idea as done and keep a memory ([#131](https://github.com/jplanckeel/Tribbae/issues/131)) ([a828b53](https://github.com/jplanckeel/Tribbae/commit/a828b534724b9a7023c3231b5939a1d323c4761e))
+* open an idea's address in google maps ([#107](https://github.com/jplanckeel/Tribbae/issues/107)) ([1e80b0d](https://github.com/jplanckeel/Tribbae/commit/1e80b0d14b4abd3976cb04042955e41fde1f4ee0))
+* replace favorites with likes ([#102](https://github.com/jplanckeel/Tribbae/issues/102)) ([61f8386](https://github.com/jplanckeel/Tribbae/commit/61f83866fee291d81370efe3c773709eeb280d06))
+* report content and block accounts from the apps ([#119](https://github.com/jplanckeel/Tribbae/issues/119)) ([3cde673](https://github.com/jplanckeel/Tribbae/commit/3cde67315f6bd378983b861d3505197eff8f7df9))
+* show who can see ideas and folders ([#92](https://github.com/jplanckeel/Tribbae/issues/92)) ([748b6be](https://github.com/jplanckeel/Tribbae/commit/748b6bea4fa3d607af3347f99699c589bb620b5b))
+
+
+### Bug Fixes
+
+* **android:** apply repeated searches and hide folder filters in explore ([#89](https://github.com/jplanckeel/Tribbae/issues/89)) ([734b5e5](https://github.com/jplanckeel/Tribbae/commit/734b5e55a11da62fb96f0184eaeab47b0a8c94fa))
+* **android:** clear the day-after question once answered ([#136](https://github.com/jplanckeel/Tribbae/issues/136)) ([e26039f](https://github.com/jplanckeel/Tribbae/commit/e26039f2c03e9a06c2d5541a6c502e67b62253d1))
+* **android:** keep the whole draft when opening more details ([#88](https://github.com/jplanckeel/Tribbae/issues/88)) ([bcaae5e](https://github.com/jplanckeel/Tribbae/commit/bcaae5e4144364f90901cefeec44fc113a4527e0))
+* **android:** make the sign-in dialogs readable in dark mode ([#86](https://github.com/jplanckeel/Tribbae/issues/86)) ([813b483](https://github.com/jplanckeel/Tribbae/commit/813b4830cc488fe7163abdce0696a97e248df510))
+* **android:** open tribe ideas the same way from home and explore ([#90](https://github.com/jplanckeel/Tribbae/issues/90)) ([c099172](https://github.com/jplanckeel/Tribbae/commit/c0991725d9ae575cf185088a97582f256aa73de7))
+* **android:** send signed-out likes to the sign-in screen ([#91](https://github.com/jplanckeel/Tribbae/issues/91)) ([1698222](https://github.com/jplanckeel/Tribbae/commit/16982228bcb44d5680ae61f55254e90cc066332a))
+* **android:** show shared folders read-only to viewers ([#138](https://github.com/jplanckeel/Tribbae/issues/138)) ([c20cb56](https://github.com/jplanckeel/Tribbae/commit/c20cb56af207d01ed7f0c75ee59f466863e0c06d))
+* **android:** show the site faq instead of a stale copy ([#116](https://github.com/jplanckeel/Tribbae/issues/116)) ([7e2ac48](https://github.com/jplanckeel/Tribbae/commit/7e2ac48a8177b7377b951d23421f6e4fbdd1c58d))
+* **android:** stop logging passwords, tokens and server replies ([#125](https://github.com/jplanckeel/Tribbae/issues/125)) ([7a5747b](https://github.com/jplanckeel/Tribbae/commit/7a5747b87d09404cd6ce157889d6557151ebd8dd))
+* **android:** use the tribbae icon in reminder notifications ([#100](https://github.com/jplanckeel/Tribbae/issues/100)) ([fbecfab](https://github.com/jplanckeel/Tribbae/commit/fbecfabeac508d95865a5647846f777a4a0da630))
+* **android:** warn before sign-out erases unsent changes ([#87](https://github.com/jplanckeel/Tribbae/issues/87)) ([13b9cd3](https://github.com/jplanckeel/Tribbae/commit/13b9cd3864063db545b1bd5ce95ad1a5fa20f500))
+* **comment:** one deletion rule everywhere and no orphan comments ([#121](https://github.com/jplanckeel/Tribbae/issues/121)) ([2418b7f](https://github.com/jplanckeel/Tribbae/commit/2418b7f69f9081a18ac7e868847308f9067dbe63))
+* **deps:** bump brotli and compress to fix govulncheck ([#97](https://github.com/jplanckeel/Tribbae/issues/97)) ([58fcfaf](https://github.com/jplanckeel/Tribbae/commit/58fcfaf898892fcd191d94f632a3068b583982cc))
+* finish the moderation follow-ups found in qa ([#128](https://github.com/jplanckeel/Tribbae/issues/128)) ([44787b6](https://github.com/jplanckeel/Tribbae/commit/44787b668e4cad3b84ba627bea2ac3a14091ee1b))
+* **folder:** save the gift list setting ([#133](https://github.com/jplanckeel/Tribbae/issues/133)) ([767e311](https://github.com/jplanckeel/Tribbae/commit/767e3119d9dea51cba8e6fb29ace3ae461ce35a9))
+* **folder:** show gifts the tribe already bought as offered ([#140](https://github.com/jplanckeel/Tribbae/issues/140)) ([f448022](https://github.com/jplanckeel/Tribbae/commit/f4480226430b5b7d926c77c338b0d44d6222ceee))
+* **frontend:** keep the gift sheet open after reserving ([#134](https://github.com/jplanckeel/Tribbae/issues/134)) ([b90c1c5](https://github.com/jplanckeel/Tribbae/commit/b90c1c5c0296010c172c2723c2ab14a0ca1fe5cc))
+* **frontend:** say where the eve reminder is delivered ([#123](https://github.com/jplanckeel/Tribbae/issues/123)) ([ed94b13](https://github.com/jplanckeel/Tribbae/commit/ed94b13055c61c787a8bb61309ef2480aa3eb226))
+* keep the chosen day when quickly marking an idea done ([#135](https://github.com/jplanckeel/Tribbae/issues/135)) ([eb9de8a](https://github.com/jplanckeel/Tribbae/commit/eb9de8a57b5076735493f8e1e5f4b3b23adcf882))
+* keep the date when saving a community idea ([#85](https://github.com/jplanckeel/Tribbae/issues/85)) ([d8fe20f](https://github.com/jplanckeel/Tribbae/commit/d8fe20fd1eb536821f7e39397fab0a7d5081027f))
+* make publishing through a public folder consistent ([#99](https://github.com/jplanckeel/Tribbae/issues/99)) ([af81132](https://github.com/jplanckeel/Tribbae/commit/af81132e9933e8e1a9da928f80d2ed55dbde1e1f))
+* never publish an idea through a preselected folder ([#93](https://github.com/jplanckeel/Tribbae/issues/93)) ([266d875](https://github.com/jplanckeel/Tribbae/commit/266d8751db38e9e29941cdb8b7d37f1e9b3a638c))
+* only ask « c'était bien ? » to people who can answer ([#137](https://github.com/jplanckeel/Tribbae/issues/137)) ([f28f2bc](https://github.com/jplanckeel/Tribbae/commit/f28f2bc41a0b4210d9530a80582a490f740a8d90))
+* put saving first on other people's ideas ([#106](https://github.com/jplanckeel/Tribbae/issues/106)) ([404ef61](https://github.com/jplanckeel/Tribbae/commit/404ef6118b766faee6b6e1182ad3247fac0a3e87))
+* say where each home section comes from ([#105](https://github.com/jplanckeel/Tribbae/issues/105)) ([27d6c70](https://github.com/jplanckeel/Tribbae/commit/27d6c70e20f712dce149c1431147115d21ec0c50))
+* show every recipe in the shopping list ([#108](https://github.com/jplanckeel/Tribbae/issues/108)) ([e4050db](https://github.com/jplanckeel/Tribbae/commit/e4050dbfd8b57aa30ee932048abec3f45460d4d4))
+* tell public folders and tribe pages apart ([#104](https://github.com/jplanckeel/Tribbae/issues/104)) ([61a0ca5](https://github.com/jplanckeel/Tribbae/commit/61a0ca58d5a94d7fe31d7b03ee776b33e381f97f))
+* use one word for each sharing action ([#101](https://github.com/jplanckeel/Tribbae/issues/101)) ([eee17b9](https://github.com/jplanckeel/Tribbae/commit/eee17b9e5ec4a968848682b54c44b6e3d18fd277))
+
+
+### Documentation
+
+* split claude.md into per-area reference docs ([#139](https://github.com/jplanckeel/Tribbae/issues/139)) ([08385b3](https://github.com/jplanckeel/Tribbae/commit/08385b32edb03fd9e5bedd93b9c8015d32eeb648))
+
+
+### Dependencies
+
+* bump appfunctions from 1.0.0-alpha13 to 1.0.0-beta01 ([#84](https://github.com/jplanckeel/Tribbae/issues/84)) ([835b557](https://github.com/jplanckeel/Tribbae/commit/835b55778e3fcb20aa32f789a783372cf40758bc))
+* bump appfunctions from 1.0.0-beta01 to 1.0.0-rc01 ([#115](https://github.com/jplanckeel/Tribbae/issues/115)) ([76cacd2](https://github.com/jplanckeel/Tribbae/commit/76cacd2e1f238ee76dcdf60056e8b66cb2f5cf4e))
+* bump softprops/action-gh-release from 3.0.3 to 3.0.4 in the actions-patch group across 1 directory ([#112](https://github.com/jplanckeel/Tribbae/issues/112)) ([c699813](https://github.com/jplanckeel/Tribbae/commit/c69981316955170d56c22b253fb9cd84691c8cb4))
+* bump the actions-minor group across 1 directory with 2 updates ([#114](https://github.com/jplanckeel/Tribbae/issues/114)) ([a8aa899](https://github.com/jplanckeel/Tribbae/commit/a8aa899365fa79041caf92cdb2b473a0cf4bf907))
+* bump the go-minor group in /backend with 3 updates ([#82](https://github.com/jplanckeel/Tribbae/issues/82)) ([56c2b9e](https://github.com/jplanckeel/Tribbae/commit/56c2b9ee5047d41fe6cd3ec3ae92eee2a1ffe0ca))
+* bump the kotlin-minor group across 1 directory with 2 updates ([#127](https://github.com/jplanckeel/Tribbae/issues/127)) ([68a785e](https://github.com/jplanckeel/Tribbae/commit/68a785e907613d59186bd7fc5dcedca6b8d2a0fe))
+* bump the kotlin-minor group with 2 updates ([#83](https://github.com/jplanckeel/Tribbae/issues/83)) ([54a43cd](https://github.com/jplanckeel/Tribbae/commit/54a43cd848c568f247d8b7669789c7fd8dddda3c))
+* bump the kotlin-patch group across 1 directory with 3 updates ([#110](https://github.com/jplanckeel/Tribbae/issues/110)) ([e65b2ec](https://github.com/jplanckeel/Tribbae/commit/e65b2ec4159b34c0ac2c8621529a1b48e8c1caf2))
+
+
+### Build System
+
+* **android:** enable unit tests on release for compose preview ([#129](https://github.com/jplanckeel/Tribbae/issues/129)) ([cd7fd3a](https://github.com/jplanckeel/Tribbae/commit/cd7fd3aaf1d13b5384abc54a8f4399f272a90932))
+* **android:** include android resources in unit tests for compose preview ([#126](https://github.com/jplanckeel/Tribbae/issues/126)) ([111c0ec](https://github.com/jplanckeel/Tribbae/commit/111c0ecdfe5e18d31cd593ce1448e022f8b5bd1f))
+* **android:** require android 8 ([#124](https://github.com/jplanckeel/Tribbae/issues/124)) ([4cfa2be](https://github.com/jplanckeel/Tribbae/commit/4cfa2bed907819122d5577f3b09f13ff016ab6cc))
+
 ## [0.3.0](https://github.com/jplanckeel/Tribbae/compare/v0.2.0...v0.3.0) (2026-10-31)
 
 
