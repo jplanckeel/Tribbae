@@ -111,7 +111,7 @@ func TestGiftReservations(t *testing.T) {
 	if _, err := svc.ReserveSharedGift(ctx, share, kit, bob.Hex(), "", ""); !errors.Is(err, ErrGiftTaken) {
 		t.Errorf("a pending reservation holds the gift: %v", err)
 	}
-	if got := svc.GiftStatuses(ctx, fid.Hex(), alice.Hex())[kit]; got != "reserved" {
+	if got := svc.GiftStatuses(ctx, fid.Hex(), alice.Hex(), nil)[kit]; got != "reserved" {
 		t.Errorf("creator sees %q", got)
 	}
 	if len(mails.taken) != 0 {
@@ -127,7 +127,7 @@ func TestGiftReservations(t *testing.T) {
 	if v, _ := svc.ManageGiftByToken(ctx, token, "bought"); v.Status != GiftBought {
 		t.Errorf("bought: %+v", v)
 	}
-	if got := svc.GiftStatuses(ctx, fid.Hex(), bob.Hex())[kit]; got != "bought" {
+	if got := svc.GiftStatuses(ctx, fid.Hex(), bob.Hex(), nil)[kit]; got != "bought" {
 		t.Errorf("others see %q", got)
 	}
 	if _, err := svc.ManageGiftByToken(ctx, "x"+token[1:], "release"); !errors.Is(err, ErrNotFound) {
@@ -138,7 +138,7 @@ func TestGiftReservations(t *testing.T) {
 	if st, err := svc.ReserveSharedGift(ctx, share, lego, bob.Hex(), "", ""); err != nil || st != GiftReserved {
 		t.Fatalf("reserve as user: %q %v", st, err)
 	}
-	if got := svc.GiftStatuses(ctx, fid.Hex(), bob.Hex())[lego]; got != "mine" {
+	if got := svc.GiftStatuses(ctx, fid.Hex(), bob.Hex(), nil)[lego]; got != "mine" {
 		t.Errorf("giver sees %q", got)
 	}
 	if _, err := svc.ManageMyGift(ctx, lego, "eve", "release"); !errors.Is(err, ErrNotFound) {
@@ -167,6 +167,22 @@ func TestGiftReservations(t *testing.T) {
 	extra := insert(bson.M{"owner_id": alice.Hex(), "title": "Encore", "category": giftCategory})
 	if _, err := svc.ReserveSharedGift(ctx, share, extra, "", "Marc", "marc@exemple.fr"); !errors.Is(err, ErrGiftQuota) {
 		t.Errorf("quota: %v", err)
+	}
+
+	// Cadeau déjà acheté par la tribu (« C'est fait », souvent avant d'en faire
+	// une liste) : offert pour tout le monde, impossible à réserver
+	velo := insert(bson.M{"owner_id": alice.Hex(), "title": "Vélo", "category": giftCategory})
+	if _, err := db.Collection("link_dones").InsertOne(ctx, bson.M{"link_id": velo, "user_id": alice.Hex()}); err != nil {
+		t.Fatal(err)
+	}
+	if got := svc.GiftStatuses(ctx, fid.Hex(), bob.Hex(), []string{velo, lego})[velo]; got != "bought" {
+		t.Errorf("gift done by the tribe shows %q", got)
+	}
+	if _, err := svc.ReserveSharedGift(ctx, share, velo, bob.Hex(), "", ""); !errors.Is(err, ErrGiftTaken) {
+		t.Errorf("reserving a gift the tribe bought, with an account: %v", err)
+	}
+	if _, err := svc.ReserveSharedGift(ctx, share, velo, "", "Léa", "lea@exemple.fr"); !errors.Is(err, ErrGiftTaken) {
+		t.Errorf("reserving a gift the tribe bought, by email: %v", err)
 	}
 
 	if err := svc.ResetGifts(ctx, fid.Hex(), "eve"); !errors.Is(err, ErrNotFound) {

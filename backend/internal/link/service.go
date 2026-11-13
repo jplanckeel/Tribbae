@@ -883,7 +883,8 @@ func (s *Service) LoadStats(ctx context.Context, links []*Link, userID string) *
 }
 
 // loadGifts : statut des cadeaux réservés, tant que l'idée est dans le dossier
-// réservé et que le dossier reste une liste de cadeaux.
+// réservé et que le dossier reste une liste de cadeaux. Une idée Cadeau d'une
+// liste déjà marquée « C'est fait » par la tribu compte comme offerte.
 func (s *Service) loadGifts(ctx context.Context, links []*Link, ids []string, viewerID string, st *Stats) {
 	cur, err := s.col.Database().Collection("gift_reservations").Find(ctx, bson.M{"link_id": bson.M{"$in": ids}},
 		options.Find().SetProjection(bson.M{"link_id": 1, "folder_id": 1, "status": 1, "user_id": 1, "expires_at": 1}))
@@ -897,18 +898,27 @@ func (s *Service) loadGifts(ctx context.Context, links []*Link, ids []string, vi
 		UserID    string     `bson:"user_id"`
 		ExpiresAt *time.Time `bson:"expires_at"`
 	}
-	if cur.All(ctx, &rows) != nil || len(rows) == 0 {
+	if cur.All(ctx, &rows) != nil {
 		return
 	}
 	folderOf := make(map[string]string, len(links))
+	fids := bson.A{}
 	for _, l := range links {
 		folderOf[l.ID.Hex()] = l.FolderID
+		if l.Category != giftCategory {
+			continue
+		}
+		if fid, err := bson.ObjectIDFromHex(l.FolderID); err == nil {
+			fids = append(fids, fid)
+		}
 	}
-	fids := bson.A{}
 	for _, r := range rows {
 		if fid, err := bson.ObjectIDFromHex(r.FolderID); err == nil {
 			fids = append(fids, fid)
 		}
+	}
+	if len(fids) == 0 {
+		return
 	}
 	lists := map[string]bool{}
 	if cur, err := s.folderCol.Find(ctx, bson.M{"_id": bson.M{"$in": fids}, "gift_reservations": true}, options.Find().SetProjection(bson.M{"_id": 1})); err == nil {
@@ -918,6 +928,27 @@ func (s *Service) loadGifts(ctx context.Context, links []*Link, ids []string, vi
 		if cur.All(ctx, &fs) == nil {
 			for _, f := range fs {
 				lists[f.ID.Hex()] = true
+			}
+		}
+	}
+	if len(lists) == 0 {
+		return
+	}
+	listed := []string{}
+	for _, l := range links {
+		if l.Category == giftCategory && lists[l.FolderID] {
+			listed = append(listed, l.ID.Hex())
+		}
+	}
+	if len(listed) > 0 {
+		if cur, err := s.dones().Find(ctx, bson.M{"link_id": bson.M{"$in": listed}}, options.Find().SetProjection(bson.M{"_id": 0, "link_id": 1})); err == nil {
+			var done []struct {
+				LinkID string `bson:"link_id"`
+			}
+			if cur.All(ctx, &done) == nil {
+				for _, d := range done {
+					st.Gifts[d.LinkID] = "bought"
+				}
 			}
 		}
 	}
