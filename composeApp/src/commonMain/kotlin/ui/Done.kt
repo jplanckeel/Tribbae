@@ -522,7 +522,8 @@ private fun MemorySheet(req: MemoryRequest, done: DoneController, vm: LinkViewMo
                 Modifier.fillMaxWidth(), enabled = !busy && !uploading,
             )
             if (edit == null) {
-                TextButton(onClick = { run { done.mark(link, DoneInput()) } }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                // Sans souvenir, mais au jour choisi (le jour de la sortie depuis la question du lendemain)
+                TextButton(onClick = { run { done.mark(link, DoneInput(doneOn = day)) } }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
                     Text("Juste marquer comme fait", color = TerracottaDark, fontWeight = FontWeight.SemiBold)
                 }
             }
