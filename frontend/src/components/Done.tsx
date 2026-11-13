@@ -404,8 +404,9 @@ function MemorySheet({ link, opts, onClose, onMark, onUpdated }: {
 
           {error && <ErrorNote>{error}</ErrorNote>}
           <Button block loading={busy === "save"} disabled={uploading || !!busy} onClick={save}>{edit ? "Enregistrer" : "Garder ce souvenir"}</Button>
+          {/* Sans souvenir, mais au jour choisi (le jour de la sortie depuis la question du lendemain) */}
           {!edit && (
-            <button type="button" disabled={!!busy} onClick={() => run("quick", () => onMark({}))} className="-mt-1.5 h-10 text-sm font-semibold text-link disabled:opacity-55">
+            <button type="button" disabled={!!busy} onClick={() => run("quick", () => onMark({ doneOn: day }))} className="-mt-1.5 h-10 text-sm font-semibold text-link disabled:opacity-55">
               Juste marquer comme fait
             </button>
           )}
