@@ -62,6 +62,11 @@ export function useDone(): DoneApi {
   return ctx;
 }
 
+/** Comme useDone, mais null hors de l'app (cartes affichées sans DoneProvider). */
+export function useDoneIfAny(): DoneApi | null {
+  return useContext(DoneContext);
+}
+
 /** Suit les changements d'état « fait » d'une idée. */
 export function useDoneChange(linkId: string, onChange: (l: Link) => void) {
   const { subscribe } = useDone();

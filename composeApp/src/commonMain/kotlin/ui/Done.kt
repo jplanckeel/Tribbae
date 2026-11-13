@@ -597,7 +597,10 @@ fun DoneTick(link: Link, modifier: Modifier = Modifier, small: Boolean = false) 
     }
 }
 
-/** Méta d'une vignette : état fait (vert), ou « Samedi · c'était bien ? » ; null sinon. */
+/**
+ * Méta d'une vignette : état fait (vert), ou « Samedi · c'était bien ? » pour
+ * qui peut répondre (pas un lecteur du cercle) ; null sinon. Même règle que doneMeta (lib/done.ts).
+ */
 @Composable
 fun doneMeta(link: Link, enabled: Boolean): Pair<String, Color>? {
     val done = LocalDone.current
@@ -605,7 +608,7 @@ fun doneMeta(link: Link, enabled: Boolean): Pair<String, Color>? {
     val now = remember { System.currentTimeMillis() }
     return when {
         Done.isDone(link) -> Done.label(link, now) to DoneInk
-        Done.awaitingConfirmation(link, now) -> Done.awaitingLabel(link, now) to PeachInk
+        Done.awaitingConfirmation(link, now) && done.canMark(link) -> Done.awaitingLabel(link, now) to PeachInk
         else -> null
     }
 }

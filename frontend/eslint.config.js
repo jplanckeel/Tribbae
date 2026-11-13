@@ -21,7 +21,7 @@ export default defineConfig([
     },
     rules: {
       // Fichiers « Provider + hook » : le hook peut cohabiter avec son composant
-      'react-refresh/only-export-components': ['error', { allowExportNames: ['useFeedback', 'useMyData', 'useComposer', 'useDone', 'useDoneChange'] }],
+      'react-refresh/only-export-components': ['error', { allowExportNames: ['useFeedback', 'useMyData', 'useComposer', 'useDone', 'useDoneChange', 'useDoneIfAny'] }],
     },
   },
 ])
