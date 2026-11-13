@@ -19,9 +19,15 @@ export default function SharedFolder() {
   const session = useSession();
   const [version, setVersion] = useState(0);
   const res = useAsync(() => api.shared.get(token), [token, version]);
+  // Après une réservation, la liste se relit : on garde l'ancienne affichée,
+  // sinon la page repasse en chargement et la fiche du cadeau se referme
+  // avant « C'est vous qui l'offrez ! » ou « Vérifiez vos e-mails »
+  const [shown, setShown] = useState<{ token: string; data: typeof res.data }>();
+  if (res.data && res.data !== shown?.data) setShown({ token, data: res.data });
+  const data = res.data ?? (res.loading && shown?.token === token ? shown.data : undefined);
 
-  if (res.loading) return <PageSpinner />;
-  if (res.error || !res.data) {
+  if (res.loading && !data) return <PageSpinner />;
+  if (!data) {
     return (
       <div className="mx-auto max-w-md px-5 pt-16">
         <EmptyState
@@ -34,7 +40,7 @@ export default function SharedFolder() {
     );
   }
 
-  const { folder, links = [] } = res.data;
+  const { folder, links = [] } = data;
   // Liste de cadeaux : ses idées Cadeau se réservent, les autres restent des idées
   const gifts = links.filter((l) => l.category === "LINK_CATEGORY_CADEAU");
   const others = links.filter((l) => l.category !== "LINK_CATEGORY_CADEAU");
