@@ -13,7 +13,7 @@ import { AUDIENCE_LABEL, folderAudience } from "../lib/visibility";
 import { FolderCover, FolderGlyph } from "./FolderCover";
 import Icon from "./Icon";
 import { Avatar } from "./ui";
-import { DoneTick } from "./Done";
+import { DoneTick, useDoneIfAny } from "./Done";
 import { dimmedCard, dimmedTitle, doneMeta, familiesLabel, folderProgress } from "../lib/done";
 import GiftTag from "./GiftTag";
 import VisibilityBadge, { IdeaVisibility } from "./VisibilityBadge";
@@ -162,7 +162,8 @@ export function GridCard({ link, index = 0, onRequireAuth, onUnliked, highlight,
   const author = useAuthor(link);
   const morph = useIdeaMorph(link);
   const [now] = useState(() => Date.now());
-  const state = doneMeta(link, now, !!done);
+  const actions = useDoneIfAny();
+  const state = doneMeta(link, now, !!done, !!done && !!actions?.canMark(link));
   const families = familiesLabel(link.doneFamilies);
   return (
     <RouterLink
@@ -226,7 +227,8 @@ export function RowCard({ link, trailing, highlight, done }: { link: Link; trail
   const author = useAuthor(link);
   const morph = useIdeaMorph(link);
   const [now] = useState(() => Date.now());
-  const state = doneMeta(link, now, !!done);
+  const actions = useDoneIfAny();
+  const state = doneMeta(link, now, !!done, !!done && !!actions?.canMark(link));
   const isDone = (link.doneCount ?? 0) > 0;
   return (
     <RouterLink to={`/links/${link.id}`} {...morph.linkProps}

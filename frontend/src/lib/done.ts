@@ -263,11 +263,14 @@ export function dayChoices(now: number): { key: "today" | "yesterday"; label: st
   ];
 }
 
-/** Méta d'une vignette : état fait (vert), ou « Samedi · c'était bien ? » (terracotta). */
-export function doneMeta(link: Link, now: number, visible: boolean): { text: string; className: string } | null {
+/**
+ * Méta d'une vignette : état fait (vert), ou « Samedi · c'était bien ? »
+ * (terracotta) pour qui peut répondre — pas un lecteur du cercle.
+ */
+export function doneMeta(link: Link, now: number, visible: boolean, canAnswer = visible): { text: string; className: string } | null {
   if (!visible) return null;
   if (isDone(link)) return { text: doneLabel(link, now), className: "font-bold text-done" };
-  if (awaitingConfirmation(link, now)) return { text: awaitingLabel(link, now), className: "font-bold text-cadeau-ink" };
+  if (canAnswer && awaitingConfirmation(link, now)) return { text: awaitingLabel(link, now), className: "font-bold text-cadeau-ink" };
   return null;
 }
 

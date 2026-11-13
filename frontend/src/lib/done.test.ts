@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  awaitingConfirmation, awaitingLabel, celebrationTitle, dayChoices, dayOf, doneCounts, doneDay, doneDimmed, doneLabel, doneStamp,
+  awaitingConfirmation, awaitingLabel, celebrationTitle, doneMeta, dayChoices, dayOf, doneCounts, doneDay, doneDimmed, doneLabel, doneStamp,
   doneToast, doneWords, familiesLabel, folderProgress, formatDoneDay, inGiftList, matchesDoneFilter, memoryLine, progressHint,
   progressLabel, promptKicker, promptQuestion, sortTodoFirst, starWord,
 } from "./done";
@@ -63,6 +63,16 @@ describe("c'est fait", () => {
     expect(awaitingConfirmation({ ...past, donePromptDismissed: true }, NOW)).toBe(false);
     expect(awaitingConfirmation(link("6", "ACTIVITE"), NOW)).toBe(false);
     expect(awaitingConfirmation(link("7", "RECETTE", { eventDate: at(2026, 11, 7, 14) }), NOW)).toBe(false);
+  });
+
+  it("ne pose la question qu'à qui peut répondre", () => {
+    const past = link("1", "EVENEMENT", { eventDate: at(2026, 11, 7, 14) });
+    expect(doneMeta(past, NOW, true)?.text).toBe("Samedi · c'était bien ?");
+    // Lecteur du cercle : il voit l'état fait, pas la question
+    expect(doneMeta(past, NOW, true, false)).toBeNull();
+    expect(doneMeta(done("2", "ACTIVITE", "2026-10-26"), NOW, true, false)?.text).toBe("Fait le 26 oct.");
+    // Hors de la tribu et du dossier : rien
+    expect(doneMeta(done("2", "ACTIVITE", "2026-10-26"), NOW, false)).toBeNull();
   });
 
   it("mesure l'avancement d'un dossier", () => {
