@@ -68,6 +68,23 @@ object DonePrompts {
         return Plan(schedule, previouslyScheduled - schedule.map { it.linkId }.toSet())
     }
 
+    /** Une question ne reste affichée que deux semaines après la sortie (au-delà, l'alarme ne repart plus). */
+    const val ANSWER_DAYS = 14
+
+    /**
+     * Questions déjà affichées à retirer : la sortie a été faite, ou on a répondu
+     * « Pas cette fois » (sur cet appareil, sur le web ou par un autre membre de
+     * la tribu). Seules les sorties récentes sont regardées.
+     */
+    fun answered(links: List<Link>, now: Long): Set<String> = links.filter { l ->
+        (l.category == LinkCategory.ACTIVITE || l.category == LinkCategory.EVENEMENT) &&
+            (Done.isDone(l) || l.donePromptDismissed) &&
+            (Done.eventMs(l) ?: 0L) in (now - ANSWER_DAYS * Reminders.DAY_MS)..now
+    }.mapTo(mutableSetOf()) { it.id }
+
+    /** Identifiant de la notification d'une idée (le même que celui de son alarme). */
+    fun notificationId(linkId: String): Int = "done:$linkId".hashCode()
+
     /** Texte de la notification : « C'était hier. Un toucher pour garder le souvenir. » */
     fun body(l: Link, now: Long): String {
         val day = Done.promptDay(l, now).replaceFirstChar { it.lowercase() }

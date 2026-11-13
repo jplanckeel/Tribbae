@@ -50,6 +50,9 @@ object NotificationHelper {
         val asked = prefs.getStringSet(KEY_DONE_PROMPTS, emptySet()).orEmpty()
         val prompts = DonePrompts.plan(if (donePrompts) links else emptyList(), asked, now)
         prompts.cancel.forEach { alarmManager.cancel(donePromptIntent(context, it, null)) }
+        // Question déjà affichée mais résolue entre-temps : la notification part
+        val shown = androidx.core.app.NotificationManagerCompat.from(context)
+        DonePrompts.answered(links, now).forEach { shown.cancel(DonePrompts.notificationId(it)) }
         prompts.schedule.forEach { a -> alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, a.at, donePromptIntent(context, a.linkId, a)) }
 
         prefs.edit()

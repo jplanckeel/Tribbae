@@ -57,7 +57,7 @@ class ReminderReceiver : BroadcastReceiver() {
         val category = runCatching { LinkCategory.valueOf(intent.getStringExtra("link_category").orEmpty()) }.getOrDefault(LinkCategory.EVENEMENT)
         val eventAt = intent.getLongExtra("event_at", 0)
         val link = Link(id = linkId, title = title, url = "", category = category, eventDate = eventAt.takeIf { it > 0 })
-        val id = "done:$linkId".hashCode()
+        val id = DonePrompts.notificationId(linkId)
 
         val open = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -90,7 +90,7 @@ class ReminderReceiver : BroadcastReceiver() {
     /** « Pas cette fois » : la notification part, l'idée reste à faire et on ne redemande plus. */
     private fun dismissDonePrompt(context: Context, linkId: String) {
         if (linkId.isEmpty()) return
-        NotificationManagerCompat.from(context).cancel("done:$linkId".hashCode())
+        NotificationManagerCompat.from(context).cancel(DonePrompts.notificationId(linkId))
         val repository = AppGraph.repository(context)
         repository.links.value.find { it.id == linkId }?.let { repository.updateLink(it.copy(donePromptDismissed = true)) }
         val pending = goAsync()
