@@ -697,6 +697,11 @@
         "visibility": {
           "type": "string",
           "title": "\"private\" | \"public\""
+        },
+        "servings": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Recette : nombre de personnes ; 0 garde la valeur enregistrée (anciens clients)"
         }
       }
     },
@@ -820,6 +825,11 @@
         "visibility": {
           "type": "string",
           "title": "\"private\" | \"public\""
+        },
+        "servings": {
+          "type": "integer",
+          "format": "int32",
+          "title": "recette : nombre de personnes (0 = non précisé)"
         }
       }
     },
@@ -1020,6 +1030,11 @@
           "type": "integer",
           "format": "int32",
           "description": "Idée publique : nombre de tribus qui l'ont faite, renvoyé à partir de 5\n(0 en dessous). Anonyme : ni nom ni photo."
+        },
+        "servings": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Recette : nombre de personnes prévu par les ingrédients (0 = non précisé,\ncompté comme 4 par la liste de courses)"
         }
       }
     },

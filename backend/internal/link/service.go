@@ -28,7 +28,9 @@ type Link struct {
 	ReminderEnabled bool          `bson:"reminder_enabled" json:"reminder_enabled"`
 	Rating          int32         `bson:"rating"           json:"rating"`
 	Ingredients     []string      `bson:"ingredients"      json:"ingredients"`
-	Visibility      string        `bson:"visibility"       json:"visibility"` // "private" | "public"
+	// Recette : nombre de personnes prévu par les ingrédients (0 = non précisé)
+	Servings   int32  `bson:"servings,omitempty" json:"servings,omitempty"`
+	Visibility string `bson:"visibility"       json:"visibility"` // "private" | "public"
 	// Hidden : retirée par la modération. Son auteur la garde, sans pouvoir la
 	// republier ni l'exposer dans un dossier public.
 	Hidden    bool      `bson:"hidden,omitempty" json:"hidden,omitempty"`
@@ -488,6 +490,10 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 		"reminder_enabled": l.ReminderEnabled, "rating": l.Rating,
 		"ingredients": l.Ingredients, "visibility": l.Visibility, "updated_at": l.UpdatedAt,
 	}}
+	// 0 : client qui ne connaît pas le champ, on garde la valeur enregistrée
+	if l.Servings > 0 {
+		update["$set"].(bson.M)["servings"] = l.Servings
+	}
 	if _, err := s.col.UpdateOne(ctx, bson.M{"_id": id}, update); err != nil {
 		return nil, err
 	}

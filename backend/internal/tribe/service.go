@@ -155,6 +155,21 @@ func (s *Service) Peers(ctx context.Context, userID string) []string {
 	return peers
 }
 
+// Household retourne la clé du contenu commun à toute la tribu de userID (la
+// liste de courses) : l'identifiant de la tribu enregistrée, ou le compte seul
+// tant qu'il n'en a pas. Comme le contenu partagé de la tribu, tout membre y a
+// accès dès son arrivée. personal est vrai quand la clé est le compte seul.
+func (s *Service) Household(ctx context.Context, userID string) (key string, personal bool, err error) {
+	t, err := s.find(ctx, userID)
+	if err != nil {
+		return "", false, err
+	}
+	if t == nil {
+		return userID, true, nil
+	}
+	return t.ID.Hex(), false, nil
+}
+
 // Get retourne la tribu de userID (virtuelle s'il n'en a pas encore).
 func (s *Service) Get(ctx context.Context, userID string) (*Tribe, error) {
 	t, err := s.find(ctx, userID)
