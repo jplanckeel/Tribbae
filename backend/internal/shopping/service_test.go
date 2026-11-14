@@ -181,12 +181,21 @@ func TestCookedRecipeLeavesTheMenuTheNextDay(t *testing.T) {
 	}
 	f.apply("alice", Op{Type: "menu_add", LinkID: soupe}, Op{Type: "menu_add", LinkID: cake})
 	f.clock = f.clock.Add(2 * time.Hour)
+	before := f.get("bob").Version
+	f.clock = f.clock.Add(time.Minute)
 	if _, err := f.db.Collection("link_dones").InsertOne(f.ctx, bson.M{"link_id": soupe, "user_id": "bob", "created_at": f.clock}); err != nil {
 		t.Fatal(err)
 	}
-	v := f.get("alice")
+	// Un appareil à jour apprend quand même qu'elle est cuisinée : la version change
+	v, unchanged, err := f.svc.Get(f.ctx, "alice", before)
+	if err != nil || unchanged || v.Version == before {
+		t.Fatalf("recette cuisinée sans nouvelle version : unchanged=%v %v", unchanged, err)
+	}
 	if len(v.Menu) != 2 || !v.Menu[0].Cooked || v.Menu[1].Cooked {
 		t.Fatalf("le jour même, la soupe reste estompée : %+v", v.Menu)
+	}
+	if _, unchanged, _ := f.svc.Get(f.ctx, "alice", v.Version); !unchanged {
+		t.Error("relue sans changement : la version ne doit plus bouger")
 	}
 	f.clock = time.Date(2026, 11, 14, 0, 30, 0, 0, paris)
 	v = f.get("bob")

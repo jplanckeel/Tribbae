@@ -86,6 +86,9 @@ type entry struct {
 	Servings int32     `bson:"servings"`
 	AddedBy  string    `bson:"added_by"`
 	AddedAt  time.Time `bson:"added_at"`
+	// Marquée « C'est fait » depuis son ajout : enregistré pour que la version
+	// change et que les autres appareils estompent la carte
+	CookedAt *time.Time `bson:"cooked_at,omitempty"`
 }
 
 type item struct {
@@ -199,14 +202,13 @@ func (s *Service) Get(ctx context.Context, userID string, since int64) (*View, b
 	if err != nil {
 		return nil, false, err
 	}
-	l, cooked, err := s.tidy(ctx, l)
-	if err != nil {
+	if l, err = s.tidy(ctx, l); err != nil {
 		return nil, false, err
 	}
 	if since > 0 && since == l.Version {
 		return nil, true, nil
 	}
-	v, err := s.view(ctx, l, userID, cooked)
+	v, err := s.view(ctx, l, userID)
 	return v, false, err
 }
 
@@ -253,11 +255,10 @@ func (s *Service) Apply(ctx context.Context, userID string, ops []Op) (*View, er
 		if !saved {
 			continue // modifiée entre-temps : on rejoue sur la nouvelle version
 		}
-		l, cooked, err := s.tidy(ctx, l)
-		if err != nil {
+		if l, err = s.tidy(ctx, l); err != nil {
 			return nil, err
 		}
-		return s.view(ctx, l, userID, cooked)
+		return s.view(ctx, l, userID)
 	}
 	return nil, ErrConflict
 }
@@ -578,45 +579,58 @@ func newID() string {
 }
 
 // tidy range la liste avant lecture : une recette cuisinée depuis son ajout
-// quitte le menu le lendemain (heure de Paris), une recette supprimée aussi, et
-// « en magasin » s'efface après 2 h. Enregistré si quelque chose a changé.
-// Retourne aussi, pour chaque recette du menu, quand elle a été cuisinée.
-func (s *Service) tidy(ctx context.Context, l *list) (*list, map[string]time.Time, error) {
+// est notée cuisinée (la version change, les autres appareils estompent sa
+// carte) puis quitte le menu le lendemain (heure de Paris) ; une recette
+// supprimée quitte le menu ; « en magasin » s'efface après 2 h. Enregistré si
+// quelque chose a changé.
+func (s *Service) tidy(ctx context.Context, l *list) (*list, error) {
 	if l.Version == 0 {
-		return l, nil, nil
+		return l, nil
 	}
 	for range retries {
 		now := s.now()
 		cooked, alive, err := s.menuState(ctx, l)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		today := day(now)
 		gone := func(e entry) bool {
 			c, ok := cooked[e.LinkID]
 			return !alive[e.LinkID] || ok && day(c).Before(today)
 		}
+		// Cuisinée, ou plus cuisinée (souvenir retiré) depuis la dernière lecture
+		stale := func(e entry) bool {
+			c, ok := cooked[e.LinkID]
+			return ok != (e.CookedAt != nil) || ok && !c.Equal(*e.CookedAt)
+		}
 		expired := l.ShoppingSince != nil && now.Sub(*l.ShoppingSince) > shoppingTTL
-		if !slices.ContainsFunc(l.Menu, gone) && !expired {
-			return l, cooked, nil
+		if !slices.ContainsFunc(l.Menu, gone) && !slices.ContainsFunc(l.Menu, stale) && !expired {
+			return l, nil
 		}
 		before := l.Version
 		l.Menu = slices.DeleteFunc(l.Menu, gone)
+		for i := range l.Menu {
+			if c, ok := cooked[l.Menu[i].LinkID]; ok {
+				l.Menu[i].CookedAt = &c
+			} else {
+				l.Menu[i].CookedAt = nil
+			}
+		}
 		if expired {
 			l.ShopperID, l.ShoppingSince = "", nil
 		}
 		saved, err := s.save(ctx, l, before, now)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		if saved {
-			return l, cooked, nil
+			return l, nil
 		}
 		if l, err = s.load(ctx, l.Key); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
-	return nil, nil, ErrConflict
+	return nil, ErrConflict
 }
 
 func day(t time.Time) time.Time {
@@ -689,7 +703,7 @@ type recipe struct {
 // view : la liste pour userID, recettes du menu comprises. Une recette que le
 // lecteur ne peut plus voir (rendue privée par un auteur hors de la tribu) est
 // cachée de sa liste.
-func (s *Service) view(ctx context.Context, l *list, userID string, cooked map[string]time.Time) (*View, error) {
+func (s *Service) view(ctx context.Context, l *list, userID string) (*View, error) {
 	v := &View{
 		Version: l.Version, Items: l.Items, Checked: l.Checked, Quantities: l.Quantities, Aisles: l.Aisles,
 		AisleOrder: l.AisleOrder, Pantry: l.Pantry, Removed: l.Removed, ShopperID: l.ShopperID, ShoppingSince: l.ShoppingSince,
@@ -738,10 +752,9 @@ func (s *Service) view(ctx context.Context, l *list, userID string, cooked map[s
 		if servings <= 0 {
 			servings = base
 		}
-		_, done := cooked[e.LinkID]
 		v.Menu = append(v.Menu, MenuEntry{
 			LinkID: e.LinkID, Title: r.Title, ImageURL: r.ImageURL, Ingredients: r.Ingredients,
-			BaseServings: base, Servings: servings, AddedBy: e.AddedBy, AddedAt: e.AddedAt, Cooked: done,
+			BaseServings: base, Servings: servings, AddedBy: e.AddedBy, AddedAt: e.AddedAt, Cooked: e.CookedAt != nil,
 		})
 	}
 	return v, nil
