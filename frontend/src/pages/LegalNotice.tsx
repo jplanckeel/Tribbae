@@ -18,7 +18,6 @@ export default function LegalNotice() {
       <LegalSection title="Hébergeur">
         <p><LegalValue>{LEGAL.hostName}</LegalValue></p>
         <p><LegalValue>{LEGAL.hostAddress}</LegalValue></p>
-        <p>Téléphone : <LegalValue>{LEGAL.hostPhone}</LegalValue></p>
         <p>Données hébergées en <LegalValue>{LEGAL.hostCountry}</LegalValue></p>
       </LegalSection>
       <LegalSection title="Propriété intellectuelle">

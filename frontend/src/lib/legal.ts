@@ -16,7 +16,6 @@ export const LEGAL = {
   // (conditions générales d'Hostinger, section 2)
   hostName: "Hostinger International Ltd",
   hostAddress: "61 Lordou Vironos Street, 6023 Larnaca, Chypre",
-  hostPhone: "[à compléter : téléphone de l'hébergeur]",
   hostCountry: "France",
   contact: "contact@tribbae.fr",
   termsUpdated: "16 novembre 2026",
