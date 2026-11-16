@@ -13,12 +13,12 @@ export default function LegalNotice() {
         <p>Contact : <a href={`mailto:${LEGAL.contact}`} className="font-semibold text-link">{LEGAL.contact}</a></p>
       </LegalSection>
       <LegalSection title="Directeur de la publication">
-        <p><LegalValue>{LEGAL.publicationDirector}</LegalValue></p>
+        <p><LegalValue>{LEGAL.publicationDirector}</LegalValue>, joignable à la même adresse de contact.</p>
       </LegalSection>
       <LegalSection title="Hébergeur">
         <p><LegalValue>{LEGAL.hostName}</LegalValue></p>
         <p><LegalValue>{LEGAL.hostAddress}</LegalValue></p>
-        <p>Pays : <LegalValue>{LEGAL.hostCountry}</LegalValue></p>
+        <p>Données hébergées en <LegalValue>{LEGAL.hostCountry}</LegalValue></p>
       </LegalSection>
       <LegalSection title="Propriété intellectuelle">
         <p>
