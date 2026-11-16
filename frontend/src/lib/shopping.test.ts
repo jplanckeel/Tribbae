@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { buildShoppingList, ingredientKey, parseIngredient, pickRecipes } from "./shopping";
+import {
+  aisleOf,
+  aisleOrder,
+  arrange,
+  buildLines,
+  buildShoppingList,
+  ingredientKey,
+  isStaple,
+  parseIngredient,
+  pickRecipes,
+  scaleQty,
+  shareText,
+  suggestions,
+} from "./shopping";
 
 // Mêmes cas que ShoppingListTest (Android)
 const labels = (recipes: { title: string; ingredients: string[] }[]) => buildShoppingList(recipes).map((i) => i.label);
@@ -38,6 +51,7 @@ describe("ingredientKey", () => {
     expect(ingredientKey("Œufs")).toBe(ingredientKey("oeuf"));
     expect(ingredientKey("Citron(s) vert(s)")).toBe(ingredientKey("citron vert"));
     expect(ingredientKey("Crème fraîche")).toBe(ingredientKey("creme fraiche"));
+    expect(ingredientKey("Huile d’olive")).toBe(ingredientKey("huile d'olive"));
   });
 });
 
@@ -137,3 +151,182 @@ describe("recettes proposées", () => {
   });
 });
 
+
+// « Les courses » partagées : mêmes cas que ShoppingListTest (Android)
+const recipe = (title: string, ingredients: string[], baseServings = 4, servings = baseServings) => ({
+  title,
+  ingredients,
+  baseServings,
+  servings,
+});
+const show = (lines: { name: string; qty: string }[]) => lines.map((l) => (l.qty ? `${l.name} · ${l.qty}` : l.name));
+
+describe("rayons", () => {
+  it.each([
+    ["Pommes de terre", "fruits-legumes"],
+    ["pomme", "fruits-legumes"],
+    ["Lait", "cremerie"],
+    ["Lait de coco", "epicerie"],
+    ["Crème de coco", "epicerie"],
+    ["Crème fraîche", "cremerie"],
+    ["Œufs", "cremerie"],
+    ["Pain de campagne", "boulangerie"],
+    ["Blanc de poulet", "boucherie"],
+    ["Farine de châtaigne", "epicerie"],
+    ["Pâte feuilletée", "cremerie"],
+    ["Couches taille 4", "bebe-hygiene"],
+    ["Papier toilette", "maison"],
+    ["Gousse d'ail", "fruits-legumes"],
+    ["Quinoa soufflé", "epicerie"],
+    ["Bougie d'anniversaire", "autres"],
+  ])("%s → %s", (name, aisle) => {
+    expect(aisleOf(ingredientKey(name))).toBe(aisle);
+  });
+
+  it("complète l'ordre de la tribu par l'ordre par défaut", () => {
+    expect(aisleOrder(["epicerie", "inconnu", "boulangerie", "epicerie"]).slice(0, 4)).toEqual([
+      "epicerie",
+      "boulangerie",
+      "fruits-legumes",
+      "boucherie",
+    ]);
+    expect(aisleOrder()).toHaveLength(10);
+  });
+});
+
+describe("placard", () => {
+  it("reconnaît les produits de base, pas les produits proches", () => {
+    expect(isStaple(ingredientKey("Sel"))).toBe(true);
+    expect(isStaple(ingredientKey("Huile d’olive"))).toBe(true);
+    expect(isStaple(ingredientKey("Farine de blé"))).toBe(true);
+    expect(isStaple(ingredientKey("Farine de châtaigne"))).toBe(false);
+    expect(isStaple(ingredientKey("Beurre"))).toBe(false);
+  });
+});
+
+describe("parts", () => {
+  it.each([
+    [3, 0.75, "", 3],
+    [1, 1.5, "gousse", 2],
+    [1, 0.3, "", 1],
+    [125, 1.5, "g", 190],
+    [10, 1.24, "g", 12.5],
+    [250, 4 / 3, "ml", 335],
+    [1, 1.3, "c. à soupe", 1.5],
+    [2, 3, "pincée", 2],
+    [0.5, 1, "", 0.5],
+  ])("%s × %s %s → %s", (qty, factor, unit, expected) => {
+    expect(scaleQty(qty, factor, unit)).toBeCloseTo(expected);
+  });
+
+  it("recalcule les quantités pour les parts choisies", () => {
+    const lines = buildLines([recipe("Crêpes", ["250 g de farine", "3 oeufs", "50 cl de lait", "1 pincée de sel"], 6, 9)]);
+    expect(show(lines)).toEqual(["Farine · 375 g", "Oeufs · 5", "Lait · 75 cl", "Sel · 1 pincée"]);
+  });
+
+  it("ne touche pas aux quantités quand les parts sont celles de la recette", () => {
+    const lines = buildLines([recipe("A", ["⅓ citron"]), recipe("B", ["⅔ citron"])]);
+    expect(show(lines)).toEqual(["Citron · 1"]);
+  });
+});
+
+describe("buildLines", () => {
+  const menu = [
+    recipe("Crêpes", ["50 cl de lait", "30 g de beurre", "2 c. à soupe d'huile"], 6, 6),
+    recipe("Gratin", ["50 cl de lait", "20 g de beurre", "1 gousse d'ail", "Sel"], 4, 4),
+  ];
+
+  it("additionne par produit et garde le détail par recette", () => {
+    const lines = buildLines(menu);
+    expect(show(lines)).toEqual(["Lait · 1 l", "Beurre · 50 g", "Huile · 2 c. à soupe", "Ail · 1 gousse", "Sel"]);
+    expect(lines[0].from).toEqual([
+      { recipe: "Crêpes", qty: "50 cl" },
+      { recipe: "Gratin", qty: "50 cl" },
+    ]);
+    expect(lines[0].key).toBe("lait|1 l");
+    expect(lines[0].aisle).toBe("cremerie");
+    expect(lines.find((l) => l.product === "sel")?.staple).toBe(true);
+  });
+
+  it("additionne un produit cité deux fois dans la même recette", () => {
+    const lines = buildLines([recipe("Gâteau", ["2 oeufs", "1 oeuf"])]);
+    expect(lines[0].from).toEqual([{ recipe: "Gâteau", qty: "3" }]);
+  });
+
+  it("applique la quantité et le rayon choisis à la main", () => {
+    const lines = buildLines(menu, [], { quantities: { lait: "2 bouteilles" }, aisles: { beurre: "epicerie", ail: "pas-un-rayon" } });
+    expect(lines[0]).toMatchObject({ qty: "2 bouteilles", key: "lait|2 bouteilles", edited: true });
+    expect(lines[1].aisle).toBe("epicerie");
+    expect(lines.find((l) => l.product === "ail")?.aisle).toBe("fruits-legumes");
+  });
+
+  it("ajoute les articles libres avec leur rayon", () => {
+    const lines = buildLines([], [
+      { id: "a1", label: "Couches taille 4", quantity: "1 paquet", aisle: "", addedBy: "u2" },
+      { id: "a2", label: "bougies", quantity: "", aisle: "maison", addedBy: "u1" },
+      { id: "a3", label: "  ", quantity: "", aisle: "", addedBy: "u1" },
+    ]);
+    expect(lines.map((l) => [l.key, l.name, l.qty, l.aisle, l.addedBy])).toEqual([
+      ["item:a1", "Couches taille 4", "1 paquet", "bebe-hygiene", "u2"],
+      ["item:a2", "Bougies", "", "maison", "u1"],
+    ]);
+  });
+});
+
+describe("arrange", () => {
+  const lines = buildLines(
+    [recipe("Gratin", ["1 kg de pommes de terre", "50 cl de lait", "1 pincée de muscade", "Sel", "Pain"])],
+    [{ id: "x", label: "Lessive", quantity: "", aisle: "", addedBy: "u1" }],
+  );
+
+  it("range par rayon dans l'ordre de la tribu", () => {
+    const list = arrange(lines, { aisleOrder: ["maison", "cremerie"] });
+    expect(list.groups.map((g) => [g.name, g.lines.map((l) => l.name)])).toEqual([
+      ["Maison", ["Lessive"]],
+      ["Crèmerie et œufs", ["Lait"]],
+      ["Fruits et légumes", ["Pommes de terre"]],
+      ["Boulangerie", ["Pain"]],
+      ["Épicerie", ["Muscade", "Sel"]],
+    ]);
+    expect(list.remaining).toBe(6);
+    expect(list.total).toBe(6);
+    expect(list.staples.map((l) => l.name)).toEqual(["Muscade", "Sel"]);
+  });
+
+  it("sort du compte ce qu'on a, ce qu'on a retiré, et met le coché au panier", () => {
+    const list = arrange(lines, { checked: ["lait|50 cl", "item:x"], pantry: ["sel"], removed: ["pain", "lessive"] });
+    expect(list.cart.map((l) => l.name)).toEqual(["Lait", "Lessive"]);
+    expect(list.have.map((l) => l.name)).toEqual(["Sel"]);
+    expect(list.removed.map((l) => l.name)).toEqual(["Pain"]);
+    expect(list.groups.flatMap((g) => g.lines.map((l) => l.name))).toEqual(["Pommes de terre", "Muscade"]);
+    expect(list.remaining).toBe(2);
+    expect(list.total).toBe(4);
+  });
+
+  it("décoche une ligne dont la quantité a changé", () => {
+    const more = buildLines([recipe("Gratin", ["50 cl de lait"], 4, 8)]);
+    expect(arrange(more, { checked: ["lait|50 cl"] }).cart).toEqual([]);
+  });
+
+  it("écrit la liste en texte", () => {
+    expect(shareText(arrange(lines, { pantry: ["sel", "muscade"] }))).toBe(
+      "Courses Tribbae — 4 articles\n" +
+        "Fruits et légumes : pommes de terre (1 kg)\n" +
+        "Boulangerie : pain\n" +
+        "Crèmerie et œufs : lait (50 cl)\n" +
+        "Maison : lessive",
+    );
+  });
+});
+
+describe("suggestions", () => {
+  it("propose les articles fréquents absents de la liste", () => {
+    const lines = buildLines([recipe("A", ["1 l de lait", "2 oeufs"])]);
+    expect(suggestions(lines)).toEqual([
+      { label: "Pain", aisle: "boulangerie" },
+      { label: "Yaourts", aisle: "cremerie" },
+      { label: "Beurre", aisle: "cremerie" },
+      { label: "Café", aisle: "epicerie" },
+    ]);
+  });
+});
