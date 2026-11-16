@@ -334,4 +334,118 @@ class ShoppingListTest {
             ShoppingList.suggestions(lines),
         )
     }
+
+    // applyOp : mêmes cas que shopping.test.ts (web) et internal/shopping (serveur)
+    private val recipes = mapOf(
+        "r1" to ShoppingList.RecipeInfo("Crêpes", listOf("250 g de farine", "50 cl de lait"), servings = 6),
+        "r2" to ShoppingList.RecipeInfo("Soupe", listOf("1 potimarron")),
+    )
+    private fun op(type: String, linkId: String = "", servings: Int = 0, id: String = "", label: String = "", quantity: String = "", aisle: String = "", key: String = "", value: String = "", order: List<String> = emptyList()) =
+        ShoppingList.Op(type, linkId, servings, id, label, quantity, aisle, key, value, order)
+    private fun run(vararg ops: ShoppingList.Op, from: ShoppingList.Shared = ShoppingList.Shared()) =
+        ops.fold(from) { l, o -> ShoppingList.applyOp(l, o, "u1", 100) { recipes[it] } }
+
+    @Test
+    fun appliesOpsAddsRecipesWithServingsOnce() {
+        val l = run(op("menu_add", "r1"), op("menu_add", "r2", servings = 2), op("menu_add", "r1"), op("menu_add", "inconnue"))
+        assertEquals(listOf(listOf("r1", 6, 6, "u1"), listOf("r2", 4, 2, "u1")), l.menu.map { listOf(it.linkId, it.baseServings, it.servings, it.addedBy) })
+        assertEquals(3, run(op("menu_add", "r1", servings = 3), from = l).menu[0].servings)
+    }
+
+    @Test
+    fun appliesOpsChangesServingsAndRemovesRecipes() {
+        val l = run(op("menu_add", "r1"), op("menu_servings", "r1", servings = 9), op("menu_servings", "r1", servings = 0))
+        assertEquals(9, l.menu[0].servings)
+        assertEquals(emptyList(), run(op("menu_remove", "r1"), from = l).menu)
+    }
+
+    @Test
+    fun appliesOpsOnFreeItems() {
+        var l = run(
+            op("item_add", id = "a", label = "  Couches   taille 4 ", quantity = "1 paquet"),
+            op("item_add", id = "a", label = "Doublon"),
+            op("item_add", id = "b", label = "   "),
+            op("check", key = "item:a"),
+        )
+        assertEquals(listOf(listOf("a", "Couches taille 4", "1 paquet", "u1")), l.items.map { listOf(it.id, it.label, it.quantity, it.addedBy) })
+        l = run(op("item_update", id = "a", label = "Couches taille 5", quantity = "", aisle = "bebe-hygiene"), from = l)
+        assertEquals(Triple("Couches taille 5", "", "bebe-hygiene"), l.items[0].let { Triple(it.label, it.quantity, it.aisle) })
+        l = run(op("item_remove", id = "a"), from = l)
+        assertEquals(emptyList(), l.items)
+        assertEquals(emptyList(), l.checked)
+    }
+
+    @Test
+    fun appliesOpsOnChecksValuesPantryAndRemovals() {
+        val l = run(
+            op("check", key = "lait|50 cl"),
+            op("check", key = "farine|250 g"),
+            op("uncheck", key = "farine|250 g"),
+            op("quantity", key = "lait", value = "1 brique"),
+            op("aisle", key = "lait", value = "epicerie"),
+            op("aisle", key = "lait", value = ""),
+            op("pantry_have", key = "sel"),
+            op("pantry_have", key = "sel"),
+            op("pantry_have", key = "huile"),
+            op("pantry_out", key = "huile"),
+            op("remove", key = "pain"),
+            op("aisle_order", order = listOf("epicerie")),
+        )
+        assertEquals(listOf(ShoppingList.Check("lait|50 cl", "u1", 100)), l.checked)
+        assertEquals(listOf(ShoppingList.Value("lait", "1 brique")), l.quantities)
+        assertEquals(emptyList(), l.aisles)
+        assertEquals(listOf("sel"), l.pantry)
+        assertEquals(listOf("pain"), l.removed)
+        assertEquals(listOf("epicerie"), l.aisleOrder)
+        assertEquals(emptyList(), run(op("restore", key = "pain"), from = l).removed)
+    }
+
+    @Test
+    fun appliesOpsOnlyTheShopperStopsShopping() {
+        val l = run(op("shopping_start"))
+        assertEquals("u1" to 100L, l.shopperId to l.shoppingSince)
+        assertEquals("u1", ShoppingList.applyOp(l, op("shopping_stop"), "u2", 200).shopperId)
+        assertEquals("", run(op("shopping_stop"), from = l).shopperId)
+    }
+
+    @Test
+    fun appliesOpsFinishEmptiesTheCartAndKeepsMenuAndPantry() {
+        val l = run(
+            op("menu_add", "r2"),
+            op("item_add", id = "a", label = "Lait"),
+            op("item_add", id = "b", label = "Pain"),
+            op("check", key = "item:a"),
+            op("check", key = "potimarron|1"),
+            op("pantry_have", key = "sel"),
+            op("shopping_start"),
+            op("finish"),
+        )
+        assertEquals(listOf(1, listOf("b"), emptyList<ShoppingList.Check>(), listOf("sel"), ""), listOf(l.menu.size, l.items.map { it.id }, l.checked, l.pantry, l.shopperId))
+    }
+
+    @Test
+    fun appliesOpsClearKeepsPantryAndAisles() {
+        val l = run(
+            op("menu_add", "r1"),
+            op("item_add", id = "a", label = "Lait"),
+            op("quantity", key = "lait", value = "2"),
+            op("aisle", key = "lait", value = "epicerie"),
+            op("pantry_have", key = "sel"),
+            op("remove", key = "farine"),
+            op("aisle_order", order = listOf("maison")),
+            op("clear"),
+        )
+        assertEquals(listOf(emptyList<Any>(), emptyList(), emptyList(), emptyList()), listOf(l.menu, l.items, l.quantities, l.removed))
+        assertEquals(listOf(ShoppingList.Value("lait", "epicerie")), l.aisles)
+        assertEquals(listOf("sel"), l.pantry)
+        assertEquals(listOf("maison"), l.aisleOrder)
+    }
+
+    @Test
+    fun showsTheResultingList() {
+        val l = run(op("menu_add", "r1", servings = 3), op("check", key = "lait|25 cl"))
+        val arranged = ShoppingList.viewOf(l).arranged
+        assertEquals(listOf("Farine · 125 g"), arranged.groups.flatMap { show(it.lines) })
+        assertEquals(listOf("Lait · 25 cl"), show(arranged.cart))
+    }
 }

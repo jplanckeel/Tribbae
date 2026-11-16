@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   aisleOf,
+  applyOp,
+  emptyList,
+  viewOf,
   aisleOrder,
   arrange,
   buildLines,
@@ -328,5 +331,112 @@ describe("suggestions", () => {
       { label: "Beurre", aisle: "cremerie" },
       { label: "Café", aisle: "epicerie" },
     ]);
+  });
+});
+
+// Mêmes cas que ShoppingListTest.appliesOps* (Android) et internal/shopping (serveur)
+describe("applyOp", () => {
+  const recipes: Record<string, { title: string; ingredients: string[]; servings?: number }> = {
+    r1: { title: "Crêpes", ingredients: ["250 g de farine", "50 cl de lait"], servings: 6 },
+    r2: { title: "Soupe", ingredients: ["1 potimarron"] },
+  };
+  const find = (id: string) => recipes[id];
+  const run = (ops: Parameters<typeof applyOp>[1][], from = emptyList()) =>
+    ops.reduce((l, op) => applyOp(l, op, "u1", 100, find), from);
+
+  it("ajoute une recette au menu avec ses parts, sans doublon", () => {
+    const l = run([{ type: "menu_add", linkId: "r1" }, { type: "menu_add", linkId: "r2", servings: 2 }, { type: "menu_add", linkId: "r1" }, { type: "menu_add", linkId: "inconnue" }]);
+    expect(l.menu.map((e) => [e.linkId, e.baseServings, e.servings, e.addedBy])).toEqual([
+      ["r1", 6, 6, "u1"],
+      ["r2", 4, 2, "u1"],
+    ]);
+    expect(run([{ type: "menu_add", linkId: "r1", servings: 3 }], l).menu[0].servings).toBe(3);
+  });
+
+  it("change les parts et retire une recette", () => {
+    const l = run([{ type: "menu_add", linkId: "r1" }, { type: "menu_servings", linkId: "r1", servings: 9 }, { type: "menu_servings", linkId: "r1", servings: 0 }]);
+    expect(l.menu[0].servings).toBe(9);
+    expect(run([{ type: "menu_remove", linkId: "r1" }], l).menu).toEqual([]);
+  });
+
+  it("ajoute, modifie et retire un article libre, et oublie sa case cochée", () => {
+    let l = run([
+      { type: "item_add", id: "a", label: "  Couches   taille 4 ", quantity: "1 paquet" },
+      { type: "item_add", id: "a", label: "Doublon" },
+      { type: "item_add", id: "b", label: "   " },
+      { type: "check", key: "item:a" },
+    ]);
+    expect(l.items.map((it) => [it.id, it.label, it.quantity, it.addedBy])).toEqual([["a", "Couches taille 4", "1 paquet", "u1"]]);
+    l = run([{ type: "item_update", id: "a", label: "Couches taille 5", quantity: "", aisle: "bebe-hygiene" }], l);
+    expect(l.items[0]).toMatchObject({ label: "Couches taille 5", quantity: "", aisle: "bebe-hygiene" });
+    l = run([{ type: "item_remove", id: "a" }], l);
+    expect([l.items, l.checked]).toEqual([[], []]);
+  });
+
+  it("coche, décoche, retient quantités, rayons, placard et retraits", () => {
+    const l = run([
+      { type: "check", key: "lait|50 cl" },
+      { type: "check", key: "farine|250 g" },
+      { type: "uncheck", key: "farine|250 g" },
+      { type: "quantity", key: "lait", value: "1 brique" },
+      { type: "aisle", key: "lait", value: "epicerie" },
+      { type: "aisle", key: "lait", value: "" },
+      { type: "pantry_have", key: "sel" },
+      { type: "pantry_have", key: "sel" },
+      { type: "pantry_have", key: "huile" },
+      { type: "pantry_out", key: "huile" },
+      { type: "remove", key: "pain" },
+      { type: "aisle_order", order: ["epicerie"] },
+    ]);
+    expect(l.checked).toEqual([{ key: "lait|50 cl", by: "u1", at: 100 }]);
+    expect(l.quantities).toEqual([{ key: "lait", value: "1 brique" }]);
+    expect(l.aisles).toEqual([]);
+    expect(l.pantry).toEqual(["sel"]);
+    expect(l.removed).toEqual(["pain"]);
+    expect(l.aisleOrder).toEqual(["epicerie"]);
+    expect(run([{ type: "restore", key: "pain" }], l).removed).toEqual([]);
+  });
+
+  it("note qui est en magasin, et seul lui l'arrête", () => {
+    const l = run([{ type: "shopping_start" }]);
+    expect([l.shopperId, l.shoppingSince]).toEqual(["u1", 100]);
+    expect(applyOp(l, { type: "shopping_stop" }, "u2", 200).shopperId).toBe("u1");
+    expect(run([{ type: "shopping_stop" }], l).shopperId).toBe("");
+  });
+
+  it("termine les courses : vide le panier, garde le menu et le placard", () => {
+    const l = run([
+      { type: "menu_add", linkId: "r2" },
+      { type: "item_add", id: "a", label: "Lait" },
+      { type: "item_add", id: "b", label: "Pain" },
+      { type: "check", key: "item:a" },
+      { type: "check", key: "potimarron|1" },
+      { type: "pantry_have", key: "sel" },
+      { type: "shopping_start" },
+      { type: "finish" },
+    ]);
+    expect([l.menu.length, l.items.map((it) => it.id), l.checked, l.pantry, l.shopperId]).toEqual([1, ["b"], [], ["sel"], ""]);
+  });
+
+  it("recommence une liste en gardant placard et rayons", () => {
+    const l = run([
+      { type: "menu_add", linkId: "r1" },
+      { type: "item_add", id: "a", label: "Lait" },
+      { type: "quantity", key: "lait", value: "2" },
+      { type: "aisle", key: "lait", value: "epicerie" },
+      { type: "pantry_have", key: "sel" },
+      { type: "remove", key: "farine" },
+      { type: "aisle_order", order: ["maison"] },
+      { type: "clear" },
+    ]);
+    expect([l.menu, l.items, l.quantities, l.removed]).toEqual([[], [], [], []]);
+    expect([l.aisles, l.pantry, l.aisleOrder]).toEqual([[{ key: "lait", value: "epicerie" }], ["sel"], ["maison"]]);
+  });
+
+  it("montre la liste qui en découle", () => {
+    const l = run([{ type: "menu_add", linkId: "r1", servings: 3 }, { type: "check", key: "lait|25 cl" }]);
+    const { arranged } = viewOf(l);
+    expect(arranged.groups.flatMap((g) => show(g.lines))).toEqual(["Farine · 125 g"]);
+    expect(show(arranged.cart)).toEqual(["Lait · 25 cl"]);
   });
 });

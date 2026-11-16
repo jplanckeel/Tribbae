@@ -1,5 +1,6 @@
 package data
 
+import kotlinx.serialization.Serializable
 import java.text.Collator
 import java.text.Normalizer
 import java.util.Locale
@@ -286,7 +287,15 @@ object ShoppingList {
     data class MenuRecipe(val title: String, val ingredients: List<String>, val baseServings: Int, val servings: Int)
 
     /** Un article ajouté à la main. */
-    data class FreeItem(val id: String, val label: String, val quantity: String = "", val aisle: String = "", val addedBy: String = "")
+    @Serializable
+    data class FreeItem(
+        val id: String,
+        val label: String,
+        val quantity: String = "",
+        val aisle: String = "",
+        val addedBy: String = "",
+        val addedAt: Long = 0,
+    )
 
     data class Portion(val recipe: String, val qty: String)
 
@@ -466,5 +475,144 @@ object ShoppingList {
             "${g.name} : " + g.lines.joinToString(", ") { l -> l.name.lowercase() + if (l.qty.isNotEmpty()) " (${l.qty})" else "" }
         }
         return (listOf(head) + body).joinToString("\n")
+    }
+
+    // -----------------------------------------------------------------------
+    // La liste partagée telle que le serveur la renvoie, et les opérations qui la
+    // changent. applyOp rejoue une opération sur l'appareil, sans attendre le
+    // serveur (affichage immédiat, et hors ligne) ; la réponse du serveur, qui
+    // applique les mêmes règles (internal/shopping), la remplace.
+    // -----------------------------------------------------------------------
+
+    @Serializable
+    data class MenuEntry(
+        val linkId: String,
+        val title: String = "",
+        val imageUrl: String = "",
+        val ingredients: List<String> = emptyList(),
+        val baseServings: Int = DEFAULT_SERVINGS,
+        val servings: Int = DEFAULT_SERVINGS,
+        val addedBy: String = "",
+        val addedAt: Long = 0,
+        /** Marquée « C'est fait » depuis son ajout : estompée, quitte le menu le lendemain. */
+        val cooked: Boolean = false,
+    )
+
+    @Serializable
+    data class Check(val key: String, val by: String = "", val at: Long = 0)
+
+    @Serializable
+    data class Value(val key: String, val value: String)
+
+    @Serializable
+    data class Shared(
+        val version: Long = 0,
+        val menu: List<MenuEntry> = emptyList(),
+        val items: List<FreeItem> = emptyList(),
+        val checked: List<Check> = emptyList(),
+        val quantities: List<Value> = emptyList(),
+        val aisles: List<Value> = emptyList(),
+        val aisleOrder: List<String> = emptyList(),
+        val pantry: List<String> = emptyList(),
+        val removed: List<String> = emptyList(),
+        val shopperId: String = "",
+        val shoppingSince: Long = 0,
+    )
+
+    /** Une opération (même nom de champs que ShoppingOp côté serveur). */
+    @Serializable
+    data class Op(
+        val type: String,
+        val linkId: String = "",
+        val servings: Int = 0,
+        val id: String = "",
+        val label: String = "",
+        val quantity: String = "",
+        val aisle: String = "",
+        val key: String = "",
+        val value: String = "",
+        val order: List<String> = emptyList(),
+    )
+
+    /** Recette ajoutée au menu sur l'appareil : ce qu'il faut pour en tirer les ingrédients. */
+    data class RecipeInfo(val title: String, val ingredients: List<String>, val imageUrl: String = "", val servings: Int = 0)
+
+    const val DEFAULT_SERVINGS = 4
+
+    private fun tidy(s: String) = s.trim().split(spaces).filter { it.isNotEmpty() }.joinToString(" ")
+    private fun setValue(vs: List<Value>, key: String, value: String) = when {
+        value.isEmpty() -> vs.filter { it.key != key }
+        vs.any { it.key == key } -> vs.map { if (it.key == key) Value(key, value) else it }
+        else -> vs + Value(key, value)
+    }
+    private fun addKey(keys: List<String>, key: String) = if (key in keys) keys else keys + key
+
+    /**
+     * Applique une opération à la liste, comme le serveur : renvoie une nouvelle
+     * liste (la version ne change pas, c'est le serveur qui la donne). [now] en
+     * secondes ; [recipe] fournit le contenu d'une recette ajoutée au menu.
+     */
+    fun applyOp(list: Shared, op: Op, userId: String, now: Long, recipe: (String) -> RecipeInfo? = { null }): Shared {
+        val key = op.key.trim()
+        return when (op.type) {
+            "menu_add" -> {
+                if (list.menu.any { it.linkId == op.linkId }) {
+                    return if (op.servings != 0) applyOp(list, Op("menu_servings", linkId = op.linkId, servings = op.servings), userId, now) else list
+                }
+                val r = recipe(op.linkId) ?: return list
+                val base = if (r.servings > 0) r.servings else DEFAULT_SERVINGS
+                list.copy(
+                    menu = list.menu + MenuEntry(
+                        linkId = op.linkId, title = r.title, imageUrl = r.imageUrl, ingredients = r.ingredients, baseServings = base,
+                        servings = if (op.servings > 0) op.servings else base, addedBy = userId, addedAt = now,
+                    )
+                )
+            }
+            "menu_servings" -> if (op.servings < 1) list else list.copy(menu = list.menu.map { if (it.linkId == op.linkId) it.copy(servings = op.servings) else it })
+            "menu_remove" -> list.copy(menu = list.menu.filter { it.linkId != op.linkId })
+            "item_add" -> {
+                val label = tidy(op.label)
+                if (label.isEmpty() || op.id.isEmpty() || list.items.any { it.id == op.id }) list
+                else list.copy(items = list.items + FreeItem(op.id, label, tidy(op.quantity), op.aisle.trim(), userId, now))
+            }
+            "item_update" -> {
+                val label = tidy(op.label)
+                if (label.isEmpty()) list
+                else list.copy(items = list.items.map { if (it.id == op.id) it.copy(label = label, quantity = tidy(op.quantity), aisle = op.aisle.trim()) else it })
+            }
+            "item_remove" -> list.copy(items = list.items.filter { it.id != op.id }, checked = list.checked.filter { it.key != "item:${op.id}" })
+            "check" -> if (key.isEmpty()) list else list.copy(checked = list.checked.filter { it.key != key } + Check(key, userId, now))
+            "uncheck" -> list.copy(checked = list.checked.filter { it.key != op.key })
+            "quantity" -> if (key.isEmpty()) list else list.copy(quantities = setValue(list.quantities, key, op.value.trim()))
+            "aisle" -> if (key.isEmpty()) list else list.copy(aisles = setValue(list.aisles, key, op.value.trim()))
+            "aisle_order" -> list.copy(aisleOrder = op.order)
+            "pantry_have" -> if (key.isEmpty()) list else list.copy(pantry = addKey(list.pantry, key))
+            "pantry_out" -> list.copy(pantry = list.pantry.filter { it != op.key })
+            "remove" -> if (key.isEmpty()) list else list.copy(removed = addKey(list.removed, key))
+            "restore" -> list.copy(removed = list.removed.filter { it != op.key })
+            "shopping_start" -> list.copy(shopperId = userId, shoppingSince = now)
+            "shopping_stop" -> if (list.shopperId == userId) list.copy(shopperId = "", shoppingSince = 0) else list
+            // Le panier se vide : lignes cochées et articles libres achetés ; menu, placard et rayons restent
+            "finish" -> {
+                val bought = list.checked.map { it.key }.toSet()
+                list.copy(items = list.items.filter { "item:${it.id}" !in bought }, checked = emptyList(), shopperId = "", shoppingSince = 0)
+            }
+            // Nouvelle liste : on garde le placard, les rayons et leur ordre
+            "clear" -> list.copy(menu = emptyList(), items = emptyList(), checked = emptyList(), quantities = emptyList(), removed = emptyList(), shopperId = "", shoppingSince = 0)
+            else -> list
+        }
+    }
+
+    data class View(val lines: List<Line>, val arranged: Arranged)
+
+    /** La liste prête à afficher : lignes construites puis rangées. */
+    fun viewOf(list: Shared): View {
+        val lines = buildLines(
+            list.menu.map { MenuRecipe(it.title, it.ingredients, it.baseServings, it.servings) },
+            list.items,
+            quantities = list.quantities.associate { it.key to it.value },
+            aisles = list.aisles.associate { it.key to it.value },
+        )
+        return View(lines, arrange(lines, list.checked.map { it.key }.toSet(), list.pantry.toSet(), list.removed.toSet(), list.aisleOrder))
     }
 }

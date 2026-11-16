@@ -501,3 +501,158 @@ export function shareText(list: ArrangedList): string {
   );
   return [head, ...body].join("\n");
 }
+
+// ---------------------------------------------------------------------------
+// La liste partagée telle que le serveur la renvoie, et les opérations qui la
+// changent. applyOp rejoue une opération sur l'appareil, sans attendre le
+// serveur (affichage immédiat, et hors ligne sur Android) ; la réponse du
+// serveur, qui applique les mêmes règles (internal/shopping), la remplace.
+// ---------------------------------------------------------------------------
+
+export interface MenuEntry {
+  linkId: string;
+  title: string;
+  imageUrl?: string;
+  ingredients: string[];
+  baseServings: number;
+  servings: number;
+  addedBy?: string;
+  addedAt?: number;
+  /** Marquée « C'est fait » depuis son ajout : estompée, quitte le menu le lendemain. */
+  cooked?: boolean;
+}
+
+export interface SharedList {
+  version: number;
+  menu: MenuEntry[];
+  items: (FreeItem & { addedAt?: number })[];
+  checked: { key: string; by: string; at?: number }[];
+  quantities: { key: string; value: string }[];
+  aisles: { key: string; value: string }[];
+  aisleOrder: string[];
+  pantry: string[];
+  removed: string[];
+  shopperId: string;
+  shoppingSince: number;
+}
+
+export type ShoppingOpType =
+  | "menu_add" | "menu_servings" | "menu_remove"
+  | "item_add" | "item_update" | "item_remove"
+  | "check" | "uncheck" | "quantity" | "aisle" | "aisle_order"
+  | "pantry_have" | "pantry_out" | "remove" | "restore"
+  | "shopping_start" | "shopping_stop" | "finish" | "clear";
+
+export interface ShoppingOp {
+  type: ShoppingOpType;
+  linkId?: string;
+  servings?: number;
+  id?: string;
+  label?: string;
+  quantity?: string;
+  aisle?: string;
+  key?: string;
+  value?: string;
+  order?: string[];
+}
+
+export const emptyList = (): SharedList => ({
+  version: 0, menu: [], items: [], checked: [], quantities: [], aisles: [], aisleOrder: [], pantry: [], removed: [], shopperId: "", shoppingSince: 0,
+});
+
+/** Recette ajoutée au menu sur l'appareil : ce qu'il faut pour en tirer les ingrédients. */
+export interface RecipeInfo {
+  title: string;
+  imageUrl?: string;
+  ingredients: string[];
+  /** Nombre de personnes prévu par la recette (0 = non précisé : 4). */
+  servings?: number;
+}
+
+const DEFAULT_SERVINGS = 4;
+const tidy = (s = "") => s.trim().split(/\s+/).filter(Boolean).join(" ");
+const setValue = (vs: { key: string; value: string }[], key: string, value: string) =>
+  value ? (vs.some((v) => v.key === key) ? vs.map((v) => (v.key === key ? { key, value } : v)) : [...vs, { key, value }]) : vs.filter((v) => v.key !== key);
+const addKey = (keys: string[], key: string) => (keys.includes(key) ? keys : [...keys, key]);
+
+/**
+ * Applique une opération à la liste, comme le serveur : renvoie une nouvelle
+ * liste (la version ne change pas, c'est le serveur qui la donne). [now] en
+ * secondes ; [recipe] fournit le contenu d'une recette ajoutée au menu.
+ */
+export function applyOp(list: SharedList, op: ShoppingOp, userId: string, now: number, recipe?: (linkId: string) => RecipeInfo | undefined): SharedList {
+  const key = (op.key ?? "").trim();
+  switch (op.type) {
+    case "menu_add": {
+      const id = op.linkId ?? "";
+      if (list.menu.some((e) => e.linkId === id)) {
+        return op.servings ? applyOp(list, { type: "menu_servings", linkId: id, servings: op.servings }, userId, now) : list;
+      }
+      const r = recipe?.(id);
+      if (!r) return list;
+      const base = r.servings && r.servings > 0 ? r.servings : DEFAULT_SERVINGS;
+      const entry: MenuEntry = {
+        linkId: id, title: r.title, imageUrl: r.imageUrl, ingredients: r.ingredients, baseServings: base,
+        servings: op.servings && op.servings > 0 ? op.servings : base, addedBy: userId, addedAt: now, cooked: false,
+      };
+      return { ...list, menu: [...list.menu, entry] };
+    }
+    case "menu_servings":
+      if (!op.servings || op.servings < 1) return list;
+      return { ...list, menu: list.menu.map((e) => (e.linkId === op.linkId ? { ...e, servings: op.servings! } : e)) };
+    case "menu_remove":
+      return { ...list, menu: list.menu.filter((e) => e.linkId !== op.linkId) };
+    case "item_add": {
+      const label = tidy(op.label);
+      if (!label || !op.id || list.items.some((it) => it.id === op.id)) return list;
+      return { ...list, items: [...list.items, { id: op.id, label, quantity: tidy(op.quantity), aisle: (op.aisle ?? "").trim(), addedBy: userId, addedAt: now }] };
+    }
+    case "item_update": {
+      const label = tidy(op.label);
+      if (!label) return list;
+      return { ...list, items: list.items.map((it) => (it.id === op.id ? { ...it, label, quantity: tidy(op.quantity), aisle: (op.aisle ?? "").trim() } : it)) };
+    }
+    case "item_remove":
+      return { ...list, items: list.items.filter((it) => it.id !== op.id), checked: list.checked.filter((c) => c.key !== `item:${op.id}`) };
+    case "check":
+      if (!key) return list;
+      return { ...list, checked: [...list.checked.filter((c) => c.key !== key), { key, by: userId, at: now }] };
+    case "uncheck":
+      return { ...list, checked: list.checked.filter((c) => c.key !== op.key) };
+    case "quantity":
+      return key ? { ...list, quantities: setValue(list.quantities, key, (op.value ?? "").trim()) } : list;
+    case "aisle":
+      return key ? { ...list, aisles: setValue(list.aisles, key, (op.value ?? "").trim()) } : list;
+    case "aisle_order":
+      return { ...list, aisleOrder: op.order ?? [] };
+    case "pantry_have":
+      return key ? { ...list, pantry: addKey(list.pantry, key) } : list;
+    case "pantry_out":
+      return { ...list, pantry: list.pantry.filter((k) => k !== op.key) };
+    case "remove":
+      return key ? { ...list, removed: addKey(list.removed, key) } : list;
+    case "restore":
+      return { ...list, removed: list.removed.filter((k) => k !== op.key) };
+    case "shopping_start":
+      return { ...list, shopperId: userId, shoppingSince: now };
+    case "shopping_stop":
+      return list.shopperId === userId ? { ...list, shopperId: "", shoppingSince: 0 } : list;
+    case "finish": {
+      // Le panier se vide : lignes cochées et articles libres achetés ; menu, placard et rayons restent
+      const bought = new Set(list.checked.map((c) => c.key));
+      return { ...list, items: list.items.filter((it) => !bought.has(`item:${it.id}`)), checked: [], shopperId: "", shoppingSince: 0 };
+    }
+    case "clear":
+      // Nouvelle liste : on garde le placard, les rayons et leur ordre
+      return { ...list, menu: [], items: [], checked: [], quantities: [], removed: [], shopperId: "", shoppingSince: 0 };
+  }
+  return list;
+}
+
+/** La liste prête à afficher : lignes construites puis rangées. */
+export function viewOf(list: SharedList): { lines: ShoppingLine[]; arranged: ArrangedList } {
+  const toMap = (vs: { key: string; value: string }[]) => Object.fromEntries(vs.map((v) => [v.key, v.value]));
+  const lines = buildLines(list.menu, list.items, { quantities: toMap(list.quantities), aisles: toMap(list.aisles) });
+  const arranged = arrange(lines, { checked: list.checked.map((c) => c.key), pantry: list.pantry, removed: list.removed, aisleOrder: list.aisleOrder });
+  return { lines, arranged };
+}
