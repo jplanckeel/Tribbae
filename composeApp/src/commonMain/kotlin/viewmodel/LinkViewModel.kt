@@ -179,7 +179,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         tags: List<String>, ageRange: String, location: String, price: String,
         eventDate: Long? = null, reminderEnabled: Boolean = false, rating: Int = 0,
         imageUrl: String = "", ingredients: List<String> = emptyList(),
-        visibility: String = "private"
+        visibility: String = "private", servings: Int = 0,
     ): Link {
         val ownerDisplayName = sessionManager?.getDisplayName() ?: ""
         val link = Link(
@@ -188,7 +188,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             category = category, folderId = folderId,
             tags = tags, ageRange = ageRange, location = location, price = price,
             eventDate = eventDate, reminderEnabled = reminderEnabled, rating = rating,
-            imageUrl = imageUrl, ingredients = ingredients,
+            imageUrl = imageUrl, ingredients = ingredients, servings = servings,
             ownerDisplayName = ownerDisplayName,
             visibility = visibility,
             updatedAt = ""
@@ -1057,6 +1057,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
                 runCatching { client.listCircleInvitations() }.onSuccess { _circleInvitations.value = it }
                 performSync(client)
                 _syncStatus.value = "Synchronisé"
+                // Les courses : après les idées (une recette créée ici a maintenant son identifiant)
+                syncShopping()
                 // Photos prises sur ce téléphone avant leur envoi au serveur
                 uploadPendingPhotos(client)
                 // Les idées arrivées du serveur sans image : on tente de la récupérer
@@ -1123,6 +1125,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
             reminderEnabled = apiLink.reminderEnabled,
             rating = apiLink.rating,
             ingredients = apiLink.ingredients,
+            servings = apiLink.servings,
             favorite = apiLink.favorite,
             likeCount = apiLink.likeCount,
             likedByMe = apiLink.likedByMe,
@@ -1169,6 +1172,40 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         updateFilteredLinks()
     }
     
+    // ── Les courses ─────────────────────────────────────────────────────────
+
+    /** « Les courses » de la tribu : liste affichée, état de l'envoi (voir data.ShoppingRepository). */
+    val shopping: StateFlow<data.ShoppingRepository.State> = repository.shopping.state
+
+    /** Change la liste des courses : affiché tout de suite, envoyé dès que possible. */
+    fun changeShopping(op: data.ShoppingList.Op, recipe: data.ShoppingList.RecipeInfo? = null) {
+        currentUserId()?.let { repository.shopping.useAccount(it) }
+        repository.shopping.change(op, recipe)
+        syncShopping()
+    }
+
+    /** Recette mise au menu : ce qu'il faut pour l'afficher avant la réponse du serveur. */
+    fun recipeInfo(l: Link) = data.ShoppingList.RecipeInfo(l.title, l.ingredients, l.imageUrl, l.servings)
+
+    /** Envoie les changements des courses et relit la liste (ouverture, écran affiché, synchronisation). */
+    fun syncShopping() {
+        val client = authenticatedClient ?: return
+        val me = currentUserId() ?: return
+        viewModelScope.launch {
+            repository.shopping.useAccount(me)
+            // Ancienne sélection de recettes gardée sur ce téléphone : elle passe au menu de la tribu
+            val old = repository.takeOldShoppingRecipes()
+            if (old.isNotEmpty()) {
+                val menu = repository.shopping.state.value.list.menu.map { it.linkId }.toSet()
+                data.ShoppingList.pick(repository.links.value).first
+                    .filter { it.id in old && it.id !in menu }
+                    .forEach { repository.shopping.change(data.ShoppingList.Op("menu_add", linkId = it.id), recipeInfo(it)) }
+            }
+            val refused = repository.shopping.sync({ client.applyShoppingOps(it) }, { client.getShopping(it) })
+            if (refused != null) _actionErrors.tryEmit(refused)
+        }
+    }
+
     // ── Envoi des changements faits ici ──────────────────────────────────────
 
     /** Un seul envoi à la fois : une idée créée ici ne doit pas partir deux fois. */
@@ -1185,6 +1222,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         viewModelScope.launch {
             try {
                 pushPending(client)
+                // Une recette mise au menu avant son envoi peut maintenant partir aux courses
+                if (repository.shopping.state.value.pending > 0) syncShopping()
             } catch (e: Exception) {
                 _syncStatus.value = "Hors ligne : les changements partiront à la prochaine synchronisation"
             }
@@ -1335,14 +1374,14 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         folderId = l.folderId ?: "", title = l.title, url = l.url, description = l.description,
         category = "LINK_CATEGORY_${l.category.name}", tags = l.tags, ageRange = l.ageRange, location = l.location,
         price = l.price, imageUrl = l.imageUrl, eventDate = l.eventDate ?: 0, reminderEnabled = l.reminderEnabled,
-        rating = l.rating, ingredients = l.ingredients, visibility = l.visibility.ifBlank { "private" }.lowercase(),
+        rating = l.rating, ingredients = l.ingredients, servings = l.servings, visibility = l.visibility.ifBlank { "private" }.lowercase(),
     )
 
     private fun updateLinkRequest(l: Link) = data.UpdateLinkRequest(
         linkId = l.id, folderId = l.folderId ?: "", title = l.title, url = l.url, description = l.description,
         category = "LINK_CATEGORY_${l.category.name}", tags = l.tags, ageRange = l.ageRange, location = l.location,
         price = l.price, imageUrl = l.imageUrl, eventDate = l.eventDate ?: 0, reminderEnabled = l.reminderEnabled,
-        rating = l.rating, ingredients = l.ingredients, visibility = l.visibility.ifBlank { "private" }.lowercase(),
+        rating = l.rating, ingredients = l.ingredients, servings = l.servings, visibility = l.visibility.ifBlank { "private" }.lowercase(),
     )
 
     /**

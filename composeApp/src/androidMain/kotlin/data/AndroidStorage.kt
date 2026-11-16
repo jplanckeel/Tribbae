@@ -77,18 +77,25 @@ class AndroidStorage(context: Context) : Storage {
         return try { json.decodeFromString(raw) } catch (_: Exception) { emptyMap() }
     }
 
-    // Liste de courses : fichier à part, gardé à la déconnexion comme avant
+    // Courses : fichier à part. L'ancienne sélection (recettes choisies, avant la
+    // liste partagée) n'y est lue qu'une fois, pour passer au menu de la tribu
     private val courses: SharedPreferences =
         context.getSharedPreferences("tribbae_courses", Context.MODE_PRIVATE)
-
-    override fun saveShopping(selection: ShoppingSelection) {
-        courses.edit().putStringSet("recipes", selection.recipes).putStringSet("checked", selection.checked).apply()
-    }
 
     override fun loadShopping() = ShoppingSelection(
         recipes = courses.getStringSet("recipes", null)?.toSet().orEmpty(),
         checked = courses.getStringSet("checked", null)?.toSet().orEmpty(),
     )
+
+    override fun clearOldShopping() {
+        courses.edit().remove("recipes").remove("checked").apply()
+    }
+
+    override fun saveShoppingList(json: String) {
+        courses.edit().putString("shared", json).apply()
+    }
+
+    override fun loadShoppingList(): String? = courses.getString("shared", null)
 
     override fun saveLiked(links: List<Link>) {
         prefs.edit().putString("liked", json.encodeToString(links)).apply()

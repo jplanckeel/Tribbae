@@ -55,10 +55,11 @@ fun MyIdeasScreen(
     }
     val folderIds = remember(folders) { folders.map { it.id }.toSet() }
     val loose = remember(links, folderIds) { links.filter { it.folderId == null || it.folderId !in folderIds } }
-    // Même règle que la liste de courses
-    val recipes = remember(links) { data.ShoppingList.pick(links).first }
-    // Comme la liste de courses : un produit compte une fois, quelles que soient les recettes
-    val ingredientCount = remember(recipes) { data.ShoppingList.build(recipes.map { data.ShoppingList.Recipe(it.title, it.ingredients) }).size }
+    // « Les courses » de la tribu : la carte passe en sombre quand le menu n'est pas vide
+    val shopping by viewModel.shopping.collectAsState()
+    val toBuy = remember(shopping.list) { data.ShoppingList.viewOf(shopping.list).arranged.remaining }
+    val menuCount = shopping.list.menu.size
+    LaunchedEffect(Unit) { viewModel.syncShopping() }
     val children by viewModel.children.collectAsState()
     var folderSort by rememberSaveable { mutableStateOf("recent") }
     val pinned = remember(folders) { folders.filter { it.pinned } }
@@ -91,24 +92,29 @@ fun MyIdeasScreen(
 
             when (tab) {
                 0 -> {
+                    val dark = menuCount > 0
                     Row(
-                        Modifier.fillMaxWidth().card(RoundedCornerShape(18.dp), 4.dp).clickable(role = Role.Button, onClick = onOpenShopping).padding(horizontal = 14.dp, vertical = 12.dp),
+                        Modifier.fillMaxWidth().card(RoundedCornerShape(18.dp), 4.dp).then(if (dark) Modifier.background(Color(0xFF3A211B)) else Modifier)
+                            .clickable(role = Role.Button, onClick = onOpenShopping).padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         val c = categoryUi(LinkCategory.RECETTE)
-                        Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(c.bg), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Outlined.ShoppingCart, null, tint = c.tint, modifier = Modifier.size(20.dp))
+                        Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(if (dark) Terracotta else c.bg), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Outlined.ShoppingCart, null, tint = if (dark) Color.White else c.tint, modifier = Modifier.size(20.dp))
                         }
                         Column(Modifier.weight(1f)) {
-                            Text("Liste de courses", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Ecorce)
+                            Text("Les courses", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = if (dark) OnDark else Ecorce)
                             Text(
-                                if (recipes.isEmpty()) "À partir de vos recettes"
-                                else "$ingredientCount ingrédient${if (ingredientCount > 1) "s" else ""} · ${recipes.size} recette${if (recipes.size > 1) "s" else ""}",
-                                fontSize = 13.sp, color = TextSec
+                                when {
+                                    dark -> "$menuCount recette${if (menuCount > 1) "s" else ""} au menu · $toBuy à prendre"
+                                    toBuy > 0 -> "$toBuy à prendre"
+                                    else -> "Le menu de la semaine et la liste, avec la tribu"
+                                },
+                                fontSize = 13.sp, color = if (dark) OnDark.copy(alpha = 0.8f) else TextSec
                             )
                         }
-                        Icon(Icons.Outlined.ChevronRight, null, tint = TextMuted, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Outlined.ChevronRight, null, tint = if (dark) OnDark.copy(alpha = 0.7f) else TextMuted, modifier = Modifier.size(20.dp))
                     }
 
                     if (pinned.isNotEmpty()) {

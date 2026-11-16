@@ -1,9 +1,7 @@
 package data
 
 import kotlinx.serialization.Serializable
-import java.text.Collator
 import java.text.Normalizer
-import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.roundToLong
 
@@ -18,11 +16,6 @@ import kotlin.math.roundToLong
 data class ShoppingSelection(val recipes: Set<String> = emptySet(), val checked: Set<String> = emptySet())
 
 object ShoppingList {
-    data class Recipe(val title: String, val ingredients: List<String>)
-
-    /** [key] identifie la ligne pour la cocher ; il change quand la quantité change. */
-    data class Item(val key: String, val label: String, val from: List<String>)
-
     data class Parsed(val qty: Double?, val unit: String, val name: String)
 
     // Fin de mot explicite (comme sur le web) : « 4 gésiers » n'est pas « 4 g »
@@ -55,8 +48,6 @@ object ShoppingList {
     )
 
     private val PLURAL_UNITS = mapOf("morceau" to "morceaux", "c. à soupe" to "c. à soupe", "c. à café" to "c. à café")
-    // h aspiré : pas d'élision (« de haricots »)
-    private val H_ASPIRE = listOf("haricot", "hachis", "homard", "hareng", "houblon")
     private val FRACTIONS = mapOf('½' to 0.5, '¼' to 0.25, '¾' to 0.75, '⅓' to 1.0 / 3, '⅔' to 2.0 / 3, '⅛' to 0.125)
 
     private val quantity = Regex("^(\\d+\\s*[½¼¾⅓⅔⅛]|\\d+\\s*/\\s*\\d+|\\d+(?:[.,]\\d+)?|[½¼¾⅓⅔⅛])\\s*")
@@ -65,7 +56,6 @@ object ShoppingList {
     private val leadingParens = Regex("^\\s*\\([^)]*\\)")
     private val parens = Regex("\\([^)]*\\)")
     private val spaces = Regex("\\s+")
-    private val collator: Collator = Collator.getInstance(Locale.FRENCH)
 
     /** Enlève accents, ligatures, parenthèses et pluriels simples pour comparer les noms. */
     fun ingredientKey(name: String): String =
@@ -130,23 +120,11 @@ object ShoppingList {
         else -> "${formatNumber(qty)} ${if (qty > 1) PLURAL_UNITS[unit] ?: "${unit}s" else unit}"
     }
 
-    private fun elides(s: String): Boolean {
-        val k = ingredientKey(s)
-        return k.isNotEmpty() && k[0] in "aeiouyh" && H_ASPIRE.none { k.startsWith(it) }
-    }
-
     // Ordre des quantités : poids et volumes, autres unités, puis à l'unité
     private fun unitRank(unit: String) = when {
         unit == "g" || unit == "ml" -> 0
         unit.isNotEmpty() -> 1
         else -> 2
-    }
-
-    private class Group(val key: String) {
-        val lines = mutableListOf<String>()
-        val names = mutableListOf<String>()
-        val totals = linkedMapOf<String, Double>() // famille → quantité (dans l'ordre d'apparition)
-        val from = mutableListOf<String>()
     }
 
     /**
@@ -157,43 +135,6 @@ object ShoppingList {
         val (ready, missing) = links.filter { it.category == LinkCategory.RECETTE }
             .partition { r -> r.ingredients.any { it.isNotBlank() } }
         return ready to missing
-    }
-
-    /** Regroupe les ingrédients des recettes choisies, triés par nom. */
-    fun build(recipes: List<Recipe>): List<Item> {
-        val groups = linkedMapOf<String, Group>()
-        for (r in recipes) {
-            for (raw in r.ingredients) {
-                val line = raw.trim()
-                if (line.isEmpty()) continue
-                val p = parseIngredient(line)
-                val key = ingredientKey(p.name).ifEmpty { ingredientKey(line) }
-                if (key.isEmpty()) continue
-                val g = groups.getOrPut(key) { Group(key) }
-                g.lines += line
-                g.names += p.name
-                p.qty?.let { g.totals[p.unit] = (g.totals[p.unit] ?: 0.0) + it }
-                if (r.title !in g.from) g.from += r.title
-            }
-        }
-        return groups.values.map { g ->
-            val label = when {
-                // Une seule ligne : telle qu'écrite dans la recette
-                g.lines.size == 1 -> g.lines[0]
-                g.totals.isEmpty() -> g.names[0]
-                else -> {
-                    val count = g.totals[""] ?: 0.0
-                    // À l'unité, au pluriel : la variante du nom au pluriel si la recette l'écrit ainsi
-                    val picked = if (count > 1) g.names.firstOrNull { it.lowercase().endsWith("s") || it.lowercase().endsWith("x") } ?: g.names[0] else g.names[0]
-                    val name = picked.replaceFirstChar { it.lowercase() }
-                    // « 250 g + 2 c. à soupe de farine », « 100 g + 1 oignon »
-                    val parts = g.totals.entries.sortedBy { unitRank(it.key) }.map { formatQty(it.value, it.key) }
-                    val glue = if (count > 0) " " else if (elides(name)) " d'" else " de "
-                    parts.joinToString(" + ") + glue + name
-                }
-            }.replaceFirstChar { it.uppercase() }
-            Item("${g.key}|$label", label, g.from.toList())
-        }.sortedWith { a, b -> collator.compare(a.key, b.key) }
     }
 
     // -----------------------------------------------------------------------
@@ -535,6 +476,7 @@ object ShoppingList {
     )
 
     /** Recette ajoutée au menu sur l'appareil : ce qu'il faut pour en tirer les ingrédients. */
+    @Serializable
     data class RecipeInfo(val title: String, val ingredients: List<String>, val imageUrl: String = "", val servings: Int = 0)
 
     const val DEFAULT_SERVINGS = 4
