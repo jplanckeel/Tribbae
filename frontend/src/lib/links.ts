@@ -18,6 +18,7 @@ export function toInput(l: Link): LinkInput {
     reminderEnabled: !!l.reminderEnabled,
     rating: l.rating ?? 0,
     ingredients: l.ingredients ?? [],
+    servings: l.servings ?? 0,
     folderId: l.folderId ?? "",
     visibility: l.visibility === "public" ? "public" : "private",
   };

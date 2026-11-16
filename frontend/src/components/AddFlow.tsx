@@ -15,6 +15,7 @@ import { PublicFolderNote, PublishLockedNote } from "./VerifyEmailBanner";
 import type { Folder, Link, LinkInput, LinkPreview } from "../lib/types";
 import { FolderGlyph } from "./FolderCover";
 import FolderPicker from "./FolderPicker";
+import ServingsField from "./ServingsField";
 import Icon, { type IconName } from "./Icon";
 import { TipiMark } from "./Logo";
 import { PhotoInput, PhotoPreview } from "./PhotoUpload";
@@ -463,13 +464,16 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
 
           {/* Sans eux, la recette n'arrive pas dans la liste de courses */}
           {isRecipe && (
-            <TextArea
-              label="Ingrédients (un par ligne)"
-              placeholder={"250 g de farine\n2 œufs\n50 cl de lait"}
-              maxLength={5000}
-              value={ingredientsText}
-              onChange={(e) => setIngText(e.target.value)}
-            />
+            <>
+              <TextArea
+                label="Ingrédients (un par ligne)"
+                placeholder={"250 g de farine\n2 œufs\n50 cl de lait"}
+                maxLength={5000}
+                value={ingredientsText}
+                onChange={(e) => setIngText(e.target.value)}
+              />
+              <ServingsField value={draft.servings ?? 0} onChange={(n) => set({ servings: n })} />
+            </>
           )}
 
           <div className="flex flex-col gap-2">
