@@ -4,7 +4,8 @@ import { LEGAL } from "../lib/legal";
 
 /**
  * Conditions générales d'utilisation. Texte de départ, à faire relire par un
- * juriste avant la publication (âge minimum, responsabilité, droit applicable).
+ * juriste avant la production (âge minimum, responsabilité, modération, droit
+ * applicable).
  */
 export default function Terms() {
   return (
@@ -53,7 +54,8 @@ export default function Terms() {
         <p>
           Chacun peut signaler une idée, un commentaire ou un compte, et bloquer un compte pour ne plus voir ses contenus.
           L'éditeur examine les signalements et peut, sans préavis, retirer un contenu publié ou suspendre un compte qui ne
-          respecte pas ces conditions. Pour contester une décision, écrivez à{" "}
+          respecte pas ces conditions. Il indique alors le motif de sa décision par email à la personne concernée,
+          qui peut y répondre ou la contester en écrivant à{" "}
           <a href={`mailto:${LEGAL.contact}`} className="font-semibold text-link">{LEGAL.contact}</a>.
         </p>
       </LegalSection>
@@ -67,7 +69,7 @@ export default function Terms() {
         <p>
           Tribbae est fourni tel quel. L'éditeur fait de son mieux pour qu'il soit disponible et fiable, sans pouvoir le
           garantir. Les liens mènent vers des sites tiers dont l'éditeur ne contrôle pas le contenu. Chaque personne est
-          responsable de ce qu'elle publie.
+          responsable de ce qu'elle publie. Ces limitations ne s'appliquent pas dans la mesure où la loi l'interdit.
         </p>
       </LegalSection>
       <LegalSection title="8. Fin d'utilisation">
