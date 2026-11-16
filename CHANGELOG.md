@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/jplanckeel/Tribbae/compare/v0.4.0...v0.5.0) (2026-11-16)
+
+
+### Features
+
+* **backend:** share one shopping list per tribe ([#141](https://github.com/jplanckeel/Tribbae/issues/141)) ([6c437a3](https://github.com/jplanckeel/Tribbae/commit/6c437a3cacd38716abbd02756abbd6206a7caa08))
+
+
+### Bug Fixes
+
+* complete the legal notices and add an account deletion page ([#145](https://github.com/jplanckeel/Tribbae/issues/145)) ([ab37fb5](https://github.com/jplanckeel/Tribbae/commit/ab37fb5d981b7f72e3f5e086cb8261ca1dada02f))
+
 ## [0.4.0](https://github.com/jplanckeel/Tribbae/compare/v0.3.0...v0.4.0) (2026-11-13)
 
 
