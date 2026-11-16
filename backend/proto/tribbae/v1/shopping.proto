@@ -1,0 +1,129 @@
+syntax = "proto3";
+
+package tribbae.v1;
+
+import "google/api/annotations.proto";
+
+option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
+
+// « Les courses » : une liste par tribu, la même sur tous les appareils.
+// Le serveur garde ce que la tribu a décidé (menu, parts, articles libres,
+// lignes cochées, rayons, placard) ; les clients en déduisent la liste (addition
+// des ingrédients, rangement par rayon) avec la même logique des deux côtés.
+
+// Une recette au menu, avec ce qu'il faut pour en tirer les ingrédients.
+message ShoppingMenuEntry {
+  string link_id = 1;
+  string title = 2;
+  string image_url = 3;
+  repeated string ingredients = 4;
+  // Nombre de personnes prévu par la recette (4 si elle ne le précise pas)
+  int32 base_servings = 5;
+  // Parts choisies pour ce menu
+  int32 servings = 6;
+  string added_by = 7;
+  int64 added_at = 8;
+  // Marquée « C'est fait » depuis son ajout : la carte s'estompe, et la
+  // recette quitte le menu le lendemain
+  bool cooked = 9;
+}
+
+// Un article ajouté à la main (« Lait », « Couches taille 4 »).
+message ShoppingItem {
+  string id = 1;
+  string label = 2;
+  string quantity = 3;
+  // Rayon (voir ShoppingList.aisle_order) ; vide = rangé par le dictionnaire du client
+  string aisle = 4;
+  string added_by = 5;
+  int64 added_at = 6;
+}
+
+// Une ligne cochée : clé de la ligne (produit + quantité, calculée par le client)
+message ShoppingCheck {
+  string key = 1;
+  string by = 2;
+  int64 at = 3;
+}
+
+// Une valeur retenue pour un produit (clé normalisée du produit).
+message ShoppingProductValue {
+  string key = 1;
+  string value = 2;
+}
+
+message ShoppingList {
+  // Augmente à chaque changement : un client à jour n'a rien à relire
+  int64 version = 1;
+  repeated ShoppingMenuEntry menu = 2;
+  repeated ShoppingItem items = 3;
+  repeated ShoppingCheck checked = 4;
+  // Quantités tapées à la main (clé du produit → quantité affichée)
+  repeated ShoppingProductValue quantities = 5;
+  // Rayon choisi à la main pour un produit, retenu pour la tribu
+  repeated ShoppingProductValue aisles = 6;
+  // Ordre des rayons de la tribu (vide = ordre par défaut des clients)
+  repeated string aisle_order = 7;
+  // Produits de base qu'on a déjà (« on en a »), retenus d'une liste à l'autre
+  repeated string pantry = 8;
+  // Ingrédients de recette retirés de cette liste (clé du produit)
+  repeated string removed = 9;
+  // « X est en magasin » (vide sinon, oublié après 2 h)
+  string shopper_id = 10;
+  int64 shopping_since = 11;
+}
+
+// Un changement de la liste. Les opérations s'appliquent dans l'ordre ; deux
+// personnes qui changent la même ligne : la dernière l'emporte.
+message ShoppingOp {
+  // menu_add (link_id, servings facultatif), menu_servings (link_id, servings),
+  // menu_remove (link_id), item_add (label, quantity, aisle ; id facultatif,
+  // choisi par le client pour rejouer sans doublon), item_update (id, label,
+  // quantity, aisle), item_remove (id), check / uncheck (key), quantity (key,
+  // value ; vide efface), aisle (key, value ; vide efface), aisle_order (order),
+  // pantry_have / pantry_out (key), remove / restore (key), shopping_start,
+  // shopping_stop, finish (vide le panier, garde menu et placard), clear
+  // (nouvelle liste : tout sauf le placard, les rayons et leur ordre)
+  string type = 1;
+  string link_id = 2;
+  int32 servings = 3;
+  string id = 4;
+  string label = 5;
+  string quantity = 6;
+  string aisle = 7;
+  string key = 8;
+  string value = 9;
+  repeated string order = 10;
+}
+
+message GetShoppingListRequest {
+  // Version déjà connue : si rien n'a changé, la réponse est vide (unchanged)
+  int64 since_version = 1;
+}
+
+message GetShoppingListResponse {
+  ShoppingList list = 1;
+  bool unchanged = 2;
+}
+
+message ApplyShoppingOpsRequest {
+  repeated ShoppingOp ops = 1;
+}
+
+message ApplyShoppingOpsResponse {
+  ShoppingList list = 1;
+}
+
+service ShoppingService {
+  rpc GetShoppingList(GetShoppingListRequest) returns (GetShoppingListResponse) {
+    option (google.api.http) = {
+      get: "/v1/shopping"
+    };
+  }
+  rpc ApplyShoppingOps(ApplyShoppingOpsRequest) returns (ApplyShoppingOpsResponse) {
+    option (google.api.http) = {
+      post: "/v1/shopping/ops"
+      body: "*"
+    };
+  }
+}

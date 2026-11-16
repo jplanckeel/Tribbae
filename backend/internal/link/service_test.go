@@ -2,6 +2,7 @@ package link
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -386,4 +387,32 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 	))
 
 	properties.TestingRun(t)
+}
+
+// Nombre de personnes d'une recette : validé, et gardé quand un client qui ne
+// connaît pas le champ (0) met l'idée à jour.
+func TestRecipeServings(t *testing.T) {
+	_, db, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc := NewService(db.Collection("links"), db.Collection("folders"))
+
+	for _, bad := range []int32{-1, maxServings + 1} {
+		l := &Link{Title: "Crêpes", Category: "LINK_CATEGORY_RECETTE", Servings: bad}
+		if err := l.sanitize(); !errors.Is(err, ErrInvalidInput) {
+			t.Errorf("servings %d: %v, want ErrInvalidInput", bad, err)
+		}
+	}
+	created, err := svc.Create(ctx, "alice", &Link{Title: "Crêpes", Category: "LINK_CATEGORY_RECETTE", Servings: 6})
+	if err != nil || created.Servings != 6 {
+		t.Fatalf("create: %+v %v", created, err)
+	}
+	updated, err := svc.Update(ctx, created.ID.Hex(), "alice", &Link{Title: "Crêpes au sarrasin", Category: "LINK_CATEGORY_RECETTE"})
+	if err != nil || updated.Servings != 6 || updated.Title != "Crêpes au sarrasin" {
+		t.Errorf("update sans le champ : %+v %v, want 6 parts gardées", updated, err)
+	}
+	updated, err = svc.Update(ctx, created.ID.Hex(), "alice", &Link{Title: "Crêpes", Category: "LINK_CATEGORY_RECETTE", Servings: 8})
+	if err != nil || updated.Servings != 8 {
+		t.Errorf("update : %+v %v, want 8", updated, err)
+	}
 }

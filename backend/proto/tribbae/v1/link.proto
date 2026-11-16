@@ -66,6 +66,9 @@ message Link {
   // Idée publique : nombre de tribus qui l'ont faite, renvoyé à partir de 5
   // (0 en dessous). Anonyme : ni nom ni photo.
   int32 done_families = 33;
+  // Recette : nombre de personnes prévu par les ingrédients (0 = non précisé,
+  // compté comme 4 par la liste de courses)
+  int32 servings = 34;
 }
 
 // Un souvenir : une fois où l'idée a été faite
@@ -178,6 +181,7 @@ message CreateLinkRequest {
   repeated string ingredients = 14;
   bool favorite = 15;
   string visibility = 16;  // "private" | "public"
+  int32 servings = 17;  // recette : nombre de personnes (0 = non précisé)
 }
 
 message CreateLinkResponse {
@@ -220,6 +224,8 @@ message UpdateLinkRequest {
   repeated string ingredients = 15;
   bool favorite = 16;
   string visibility = 17;  // "private" | "public"
+  // Recette : nombre de personnes ; 0 garde la valeur enregistrée (anciens clients)
+  int32 servings = 18;
 }
 
 message UpdateLinkResponse {
