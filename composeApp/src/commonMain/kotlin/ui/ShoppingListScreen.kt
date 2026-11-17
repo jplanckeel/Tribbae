@@ -54,6 +54,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ui.campfire.*
 import viewmodel.LinkViewModel
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.Velocity
 
 /** Rayon : icône et couleurs (thème clair et sombre). */
 private data class AisleStyle(val icon: ImageVector, val bg: Color, val ink: Color)
@@ -795,6 +800,19 @@ private fun ShopMode(
 
 // ── Feuilles ─────────────────────────────────────────────────────────────────
 
+/**
+ * Garde la feuille en place quand la liste arrive en bas : sans lui, l'élan restant d'un
+ * défilement vers le bas remontait la feuille par à-coups (elle « sautait » sous la barre
+ * d'état). Tirer vers le bas en haut de la liste ferme toujours la feuille.
+ */
+private val KeepSheetInPlace = object : NestedScrollConnection {
+    override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset =
+        if (available.y < 0f) Offset(0f, available.y) else Offset.Zero
+
+    override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity =
+        if (available.y < 0f) Velocity(0f, available.y) else Velocity.Zero
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RecipePickerSheet(
@@ -832,7 +850,7 @@ private fun RecipePickerSheet(
                 listOf("Toutes", "J'aime", "Récentes").forEachIndexed { i, label -> OutlinePill(label, tab == i) { tab = i } }
             }
             Spacer(Modifier.height(12.dp))
-            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f).nestedScroll(KeepSheetInPlace).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (all.isEmpty()) {
                     EmptyBlock(Icons.Outlined.Restaurant, "Aucune recette pour l'instant", "Ajoutez une recette et listez ses ingrédients.") {
                         CampButton("Ajouter une recette", onAddRecipe, icon = Icons.Outlined.Add)
