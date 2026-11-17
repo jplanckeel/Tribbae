@@ -6,18 +6,19 @@ import { Page } from "../components/Shell";
 import { Toggle } from "../components/ui";
 import { LEGAL } from "../lib/legal";
 
-// À compléter avant publication : identité de l'éditeur (nom ou raison sociale,
-// adresse) et hébergeur du serveur (nom, pays). Obligatoires (RGPD art. 13,
-// loi pour la confiance dans l'économie numérique).
-// Identité de l'éditeur et de l'hébergeur : une seule source, lib/legal.ts
-const EDITOR = `${LEGAL.editorName}, ${LEGAL.editorAddress}`;
-const HOST = `${LEGAL.hostName}, ${LEGAL.hostCountry}`;
+// Identité de l'éditeur et de l'hébergeur (RGPD art. 13) : une seule source,
+// lib/legal.ts. L'éditeur est anonyme (LCEN art. 6 III-2) : seuls son statut et
+// l'adresse de contact sont publics.
+const EDITOR = LEGAL.editorName;
+const HOST = `${LEGAL.hostName}, sur des serveurs situés en ${LEGAL.hostCountry}`;
 const CONTACT = LEGAL.contact;
-const UPDATED = "20 octobre 2026";
+const UPDATED = "16 novembre 2026";
+/** Ancre stable de la section de suppression, donnée à Google Play : ne pas la changer. */
+const DELETE_ACCOUNT_ANCHOR = "supprimer-mon-compte";
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-2 rounded-large bg-card px-5 py-4 text-[15px] leading-relaxed text-ecorce-2">
+    <section id={id} className="flex scroll-mt-20 flex-col gap-2 rounded-large bg-card px-5 py-4 text-[15px] leading-relaxed text-ecorce-2">
       <h2 className="font-display text-lg font-bold text-ecorce">{title}</h2>
       {children}
     </section>
@@ -76,7 +77,8 @@ export default function Privacy() {
       </div>
       <p className="text-[15px] text-sec">
         En bref : vos idées sont privées par défaut, rien n'est vendu ni utilisé pour de la publicité, aucun cookie
-        n'est déposé, et vous pouvez à tout moment télécharger vos données ou supprimer votre compte. Mise à jour le {UPDATED}.
+        n'est déposé, et vous pouvez à tout moment télécharger vos données ou{" "}
+        <a href={`#${DELETE_ACCOUNT_ANCHOR}`} className="font-semibold text-terracotta">supprimer votre compte</a>. Mise à jour le {UPDATED}.
       </p>
 
       <Section title="Qui est responsable de vos données ?">
@@ -90,6 +92,7 @@ export default function Privacy() {
           <li><strong>Votre tribu</strong> : son nom et ses membres.</li>
           <li><strong>Ce que vous avez fait</strong> : quand vous marquez une idée comme faite (sortie, recette cuisinée, livre lu, achat), nous gardons le jour et, si vous les ajoutez, qui était là, une note, un petit mot et une photo. Ces souvenirs ne sont visibles que de votre tribu et des proches invités dans le dossier, même si l'idée est publique. Sur une idée publique, seul un nombre anonyme de familles qui l'ont faite peut s'afficher, à partir de cinq. Un souvenir disparaît quand vous le retirez, ou avec l'idée.</li>
           <li><strong>Les cadeaux que vous offrez</strong> sur une liste de cadeaux partagée : quel cadeau, et s'il est acheté. Sans compte, votre prénom et votre email servent seulement à confirmer la réservation et à vous écrire ; personne ne les voit, pas même la personne qui a fait la liste. Une réservation non confirmée est effacée au bout de 2 heures, et toute réservation disparaît quand vous libérez le cadeau ou que la liste est supprimée.</li>
+          <li><strong>Les courses</strong> : le menu de la semaine (recettes et parts), les articles ajoutés, les lignes cochées, les quantités et rayons choisis à la main, ce que vous avez au placard, et qui est en magasin (oublié au bout de 2 heures). La liste est commune à votre tribu, qui voit qui a ajouté ou coché une ligne ; « Nouvelle liste » efface tout sauf le placard et les rayons.</li>
           <li><strong>Les profils enfants</strong> : prénom et date de naissance, saisis par vous, uniquement pour proposer des idées adaptées à leur âge. Ils ne sont jamais publics.</li>
           <li><strong>Les applications que vous connectez</strong> (par exemple Claude) : le nom de l'application, les droits accordés, les dates d'autorisation et de dernier usage, et, pour chaque appel, l'outil utilisé, son résultat et sa date (jamais le contenu échangé). Les jetons d'accès ne sont gardés que sous forme chiffrée de façon irréversible.</li>
         </ul>
@@ -151,7 +154,7 @@ export default function Privacy() {
       <Section title="Cookies et stockage local">
         <p>
           Tribbae ne dépose aucun cookie. Votre navigateur ou l'application garde seulement votre jeton de connexion
-          (valable 30 jours) et votre liste de courses, pour que vous restiez connecté : c'est strictement nécessaire au
+          (valable 30 jours) pour que vous restiez connecté, et, dans l'application Android, une copie de vos idées et des courses pour s'en servir hors ligne : c'est strictement nécessaire au
           service et ne demande donc pas de consentement.
         </p>
       </Section>
@@ -167,13 +170,39 @@ export default function Privacy() {
       <Section title="Vos droits">
         <ul className="list-disc space-y-1 pl-5">
           <li><strong>Accès et portabilité</strong> : « Ma tribu » › Réglages › « Télécharger mes données » (fichier JSON).</li>
-          <li><strong>Effacement</strong> : « Ma tribu » › Réglages › « Supprimer mon compte ».</li>
+          <li><strong>Effacement</strong> : « Ma tribu » › Réglages › « Supprimer mon compte » (<a href={`#${DELETE_ACCOUNT_ANCHOR}`} className="font-semibold text-terracotta">détails</a>).</li>
           <li><strong>Rectification</strong> : modifiez vos idées, dossiers et le nom de la tribu dans l'application ; pour votre email, votre nom ou votre mot de passe, écrivez-nous.</li>
           <li><strong>Opposition, limitation</strong>, ou toute autre demande : {mail}. Nous répondons sous un mois.</li>
         </ul>
         <p>
           Si vous estimez que vos droits ne sont pas respectés, vous pouvez saisir la{" "}
           <a href="https://www.cnil.fr/fr/plaintes" className="font-semibold text-terracotta" rel="noopener" target="_blank">CNIL</a>.
+        </p>
+      </Section>
+
+      <Section id={DELETE_ACCOUNT_ANCHOR} title="Supprimer mon compte">
+        <p>
+          Dans l'application Android comme sur le site : « Ma tribu » › Réglages › « Compte et données » ›
+          « Supprimer mon compte », puis confirmez avec votre mot de passe.
+        </p>
+        <p>
+          Avant cela, vous pouvez récupérer vos données au même endroit, avec « Télécharger mes données » (fichier
+          JSON) : la suppression est irréversible.
+        </p>
+        <p>Sont effacés immédiatement et définitivement de la base :</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>votre compte : email, nom affiché, mot de passe ;</li>
+          <li>vos idées et vos dossiers, y compris ceux publiés dans la communauté, avec leurs photos, les commentaires et « j'aime » qu'ils ont reçus ;</li>
+          <li>les profils de vos enfants et vos souvenirs ;</li>
+          <li>vos commentaires, « j'aime », abonnements et l'accès des applications connectées.</li>
+        </ul>
+        <p>
+          Les idées que vos proches ont ajoutées dans vos dossiers leur restent. Si vous avez créé la tribu, elle revient
+          au membre le plus ancien. Un email vous confirme la suppression.
+        </p>
+        <p>
+          Vous n'avez plus accès à l'application ou à votre compte ? Demandez la suppression par email à {mail}, depuis
+          l'adresse de votre compte. Nous effaçons vos données et vous répondons sous un mois.
         </p>
       </Section>
 

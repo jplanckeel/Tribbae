@@ -77,6 +77,16 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 		"about":      "Export Tribbae de vos données personnelles (RGPD, articles 15 et 20).",
 		"account":    user,
 	}
+	// Les courses : sa liste, ou celle de sa tribu
+	households := bson.A{userID}
+	var t struct {
+		ID bson.ObjectID `bson:"_id"`
+	}
+	if err := s.col("tribes").FindOne(ctx, bson.M{"members.user_id": userID}).Decode(&t); err == nil {
+		households = append(households, t.ID.Hex())
+	} else if !errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, fmt.Errorf("tribes: %w", err)
+	}
 	sections := []struct {
 		key, col string
 		filter   bson.M
@@ -101,6 +111,7 @@ func (s *Service) Export(ctx context.Context, userID string) (map[string]any, er
 		{"reports", "reports", bson.M{"reporter_id": userID}},
 		{"blockedAccounts", "blocks", bson.M{"user_id": userID}},
 		// Cadeaux qu'il offre (avec son compte, ou sans compte avec son adresse)
+		{"shoppingList", "shopping_lists", bson.M{"key": bson.M{"$in": households}}},
 		{"giftReservations", "gift_reservations", bson.M{"$or": bson.A{bson.M{"user_id": userID}, bson.M{"email": strings.ToLower(fmt.Sprint(user["email"]))}}}},
 	}
 	// Demande de mot de passe oublié en cours : sa date seulement, pas le jeton
@@ -191,9 +202,23 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 	}
 
 	// 1. Tribu : on la quitte (le contenu des autres membres reste le leur)
+	var t struct {
+		ID bson.ObjectID `bson:"_id"`
+	}
+	tribeErr := s.col("tribes").FindOne(ctx, bson.M{"members.user_id": userID}).Decode(&t)
+	if tribeErr != nil && !errors.Is(tribeErr, mongo.ErrNoDocuments) {
+		return fmt.Errorf("tribes: %w", tribeErr)
+	}
 	if s.tribe != nil {
 		if err := s.tribe.Leave(ctx, userID); err != nil {
 			return fmt.Errorf("tribe: %w", err)
+		}
+	}
+	// Les courses de la tribu : ses articles et ses coches en partent ; la
+	// liste disparaît avec la tribu s'il en était le dernier membre
+	if tribeErr == nil {
+		if err := s.leaveShoppingList(ctx, t.ID, userID); err != nil {
+			return fmt.Errorf("shopping list: %w", err)
 		}
 	}
 
@@ -274,6 +299,8 @@ func (s *Service) Delete(ctx context.Context, userID string) error {
 		{"blocks", bson.M{"$or": bson.A{bson.M{"user_id": userID}, bson.M{"blocked_id": userID}}}},
 		// Liste de cadeaux : réservations (anonymes) faites sur ses dossiers
 		{"gift_reservations", bson.M{"$or": bson.A{bson.M{"owner_id": userID}, bson.M{"user_id": userID}, bson.M{"email": strings.ToLower(user.Email)}}}},
+		// Les courses du compte seul
+		{"shopping_lists", bson.M{"key": userID}},
 	}
 	for _, d := range deletes {
 		if _, err := s.col(d.col).DeleteMany(ctx, d.filter); err != nil {
@@ -308,4 +335,31 @@ func (s *Service) ids(ctx context.Context, col string, filter bson.M) ([]string,
 		out = append(out, d.ID.Hex())
 	}
 	return out, nil
+}
+
+// leaveShoppingList retire d'une liste de courses de tribu ce qui vient de
+// userID (articles ajoutés, lignes cochées, « en magasin ») et anonymise les
+// recettes qu'il a mises au menu. Si la tribu n'existe plus, la liste est effacée.
+func (s *Service) leaveShoppingList(ctx context.Context, tribeID bson.ObjectID, userID string) error {
+	key := tribeID.Hex()
+	if n, err := s.col("tribes").CountDocuments(ctx, bson.M{"_id": tribeID}); err != nil {
+		return err
+	} else if n == 0 {
+		_, err := s.col("shopping_lists").DeleteOne(ctx, bson.M{"key": key})
+		return err
+	}
+	if _, err := s.col("shopping_lists").UpdateOne(ctx, bson.M{"key": key}, bson.M{
+		"$pull": bson.M{"items": bson.M{"added_by": userID}, "checked": bson.M{"by": userID}},
+		"$inc":  bson.M{"version": 1},
+	}); err != nil {
+		return err
+	}
+	if _, err := s.col("shopping_lists").UpdateOne(ctx, bson.M{"key": key, "menu.added_by": userID},
+		bson.M{"$set": bson.M{"menu.$[m].added_by": ""}},
+		options.UpdateOne().SetArrayFilters([]any{bson.M{"m.added_by": userID}})); err != nil {
+		return err
+	}
+	_, err := s.col("shopping_lists").UpdateOne(ctx, bson.M{"key": key, "shopper_id": userID},
+		bson.M{"$unset": bson.M{"shopper_id": "", "shopping_since": ""}})
+	return err
 }

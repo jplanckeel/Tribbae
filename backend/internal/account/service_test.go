@@ -110,6 +110,21 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	insert(t, db, "oauth_tokens", bson.M{"user_id": alice, "kind": "refresh"})
 	insert(t, db, "oauth_requests", bson.M{"user_id": alice, "client_id": "c"})
 	insert(t, db, "mcp_audit", bson.M{"user_id": alice, "tool": "create_link", "outcome": "ok"})
+	// Les courses : la liste de la tribu (articles et coches d'Alice et de Bob)
+	// et une ancienne liste d'Alice seule
+	var tribeDoc struct {
+		ID bson.ObjectID `bson:"_id"`
+	}
+	if err := db.Collection("tribes").FindOne(ctx, bson.M{"members.user_id": alice}).Decode(&tribeDoc); err != nil {
+		t.Fatal(err)
+	}
+	householdKey := tribeDoc.ID.Hex()
+	insert(t, db, "shopping_lists", bson.M{"key": householdKey, "version": 3, "shopper_id": alice,
+		"menu":    bson.A{bson.M{"link_id": aliceIdea, "servings": 4, "added_by": alice}},
+		"items":   bson.A{bson.M{"id": "a1", "label": "Couches", "added_by": alice}, bson.M{"id": "b1", "label": "Lait", "added_by": bob}},
+		"checked": bson.A{bson.M{"key": "item:b1", "by": alice}, bson.M{"key": "lait|1 l", "by": bob}},
+	})
+	insert(t, db, "shopping_lists", bson.M{"key": alice, "version": 1, "items": bson.A{bson.M{"id": "x", "label": "Café", "added_by": alice}}})
 	var jpg bytes.Buffer
 	if err := jpeg.Encode(&jpg, image.NewRGBA(image.Rect(0, 0, 8, 8)), nil); err != nil {
 		t.Fatal(err)
@@ -131,6 +146,9 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 	}
 	if len(export["ideas"].([]bson.M)) != 1 || len(export["children"].([]bson.M)) != 1 || len(export["folderLikes"].([]bson.M)) != 1 || len(export["photos"].([]bson.M)) != 2 {
 		t.Errorf("export incomplet : %v", export)
+	}
+	if lists, _ := export["shoppingList"].([]bson.M); len(lists) != 2 {
+		t.Errorf("export des courses : %v", export["shoppingList"])
 	}
 	if apps, _ := export["connectedApps"].([]bson.M); len(apps) != 1 {
 		t.Errorf("export des applications connectées : %v", export["connectedApps"])
@@ -188,6 +206,11 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		{"demandes d'autorisation", "oauth_requests", bson.M{}, 0},
 		{"journal des applications", "mcp_audit", bson.M{}, 0},
 		{"photos d'Alice", "photos.files", bson.M{"metadata.owner_id": alice}, 0},
+		{"sa liste de courses à elle", "shopping_lists", bson.M{"key": alice}, 0},
+		{"ses articles dans les courses de la tribu", "shopping_lists", bson.M{"items.added_by": alice}, 0},
+		{"ses coches", "shopping_lists", bson.M{"checked.by": alice}, 0},
+		{"son nom sur le menu", "shopping_lists", bson.M{"menu.added_by": alice}, 0},
+		{"« Alice est en magasin »", "shopping_lists", bson.M{"shopper_id": alice}, 0},
 		// Ce qui est à Bob reste à Bob
 		{"compte de Bob", "users", bson.M{"_id": bobID}, 1},
 		{"idée de Bob, sortie du dossier supprimé", "links", bson.M{"_id": bobInAliceFolder, "folder_id": ""}, 1},
@@ -196,6 +219,7 @@ func TestDeleteErasesEverythingOfTheAccountOnly(t *testing.T) {
 		{"enfant de Bob", "children", bson.M{"ownerId": bobID}, 1},
 		{"photo de Bob", "photos.files", bson.M{"metadata.owner_id": bob}, 1},
 		{"morceaux de la photo de Bob seulement", "photos.chunks", bson.M{}, 1},
+		{"les courses de la tribu restent à Bob", "shopping_lists", bson.M{"key": householdKey, "items.added_by": bob, "checked.by": bob, "menu.0.added_by": ""}, 1},
 		{"Bob reprend la tribu", "tribes", bson.M{"members": bson.M{"$size": 1}, "members.user_id": bob, "members.role": "owner"}, 1},
 	}
 	for _, c := range checks {

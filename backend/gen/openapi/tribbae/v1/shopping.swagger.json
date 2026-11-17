@@ -1,0 +1,358 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "tribbae/v1/shopping.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "ShoppingService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/shopping": {
+      "get": {
+        "operationId": "ShoppingService_GetShoppingList",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetShoppingListResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "sinceVersion",
+            "description": "Version déjà connue : si rien n'a changé, la réponse est vide (unchanged)",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "ShoppingService"
+        ]
+      }
+    },
+    "/v1/shopping/ops": {
+      "post": {
+        "operationId": "ShoppingService_ApplyShoppingOps",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ApplyShoppingOpsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ApplyShoppingOpsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ShoppingService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1ApplyShoppingOpsRequest": {
+      "type": "object",
+      "properties": {
+        "ops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ShoppingOp"
+          }
+        }
+      }
+    },
+    "v1ApplyShoppingOpsResponse": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "$ref": "#/definitions/v1ShoppingList"
+        }
+      }
+    },
+    "v1GetShoppingListResponse": {
+      "type": "object",
+      "properties": {
+        "list": {
+          "$ref": "#/definitions/v1ShoppingList"
+        },
+        "unchanged": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1ShoppingCheck": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "by": {
+          "type": "string"
+        },
+        "at": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "Une ligne cochée : clé de la ligne (produit + quantité, calculée par le client)"
+    },
+    "v1ShoppingItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "aisle": {
+          "type": "string",
+          "title": "Rayon (voir ShoppingList.aisle_order) ; vide = rangé par le dictionnaire du client"
+        },
+        "addedBy": {
+          "type": "string"
+        },
+        "addedAt": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "description": "Un article ajouté à la main (« Lait », « Couches taille 4 »)."
+    },
+    "v1ShoppingList": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "format": "int64",
+          "title": "Augmente à chaque changement : un client à jour n'a rien à relire"
+        },
+        "menu": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ShoppingMenuEntry"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ShoppingItem"
+          }
+        },
+        "checked": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ShoppingCheck"
+          }
+        },
+        "quantities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ShoppingProductValue"
+          },
+          "title": "Quantités tapées à la main (clé du produit → quantité affichée)"
+        },
+        "aisles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ShoppingProductValue"
+          },
+          "title": "Rayon choisi à la main pour un produit, retenu pour la tribu"
+        },
+        "aisleOrder": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Ordre des rayons de la tribu (vide = ordre par défaut des clients)"
+        },
+        "pantry": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Produits de base qu'on a déjà (« on en a »), retenus d'une liste à l'autre"
+        },
+        "removed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Ingrédients de recette retirés de cette liste (clé du produit)"
+        },
+        "shopperId": {
+          "type": "string",
+          "title": "« X est en magasin » (vide sinon, oublié après 2 h)"
+        },
+        "shoppingSince": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1ShoppingMenuEntry": {
+      "type": "object",
+      "properties": {
+        "linkId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "baseServings": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Nombre de personnes prévu par la recette (4 si elle ne le précise pas)"
+        },
+        "servings": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Parts choisies pour ce menu"
+        },
+        "addedBy": {
+          "type": "string"
+        },
+        "addedAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "cooked": {
+          "type": "boolean",
+          "title": "Marquée « C'est fait » depuis son ajout : la carte s'estompe, et la\nrecette quitte le menu le lendemain"
+        }
+      },
+      "description": "Une recette au menu, avec ce qu'il faut pour en tirer les ingrédients."
+    },
+    "v1ShoppingOp": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "title": "menu_add (link_id, servings facultatif), menu_servings (link_id, servings),\nmenu_remove (link_id), item_add (label, quantity, aisle ; id facultatif,\nchoisi par le client pour rejouer sans doublon), item_update (id, label,\nquantity, aisle), item_remove (id), check / uncheck (key), quantity (key,\nvalue ; vide efface), aisle (key, value ; vide efface), aisle_order (order),\npantry_have / pantry_out (key), remove / restore (key), shopping_start,\nshopping_stop, finish (vide le panier, garde menu et placard), clear\n(nouvelle liste : tout sauf le placard, les rayons et leur ordre)"
+        },
+        "linkId": {
+          "type": "string"
+        },
+        "servings": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "aisle": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Un changement de la liste. Les opérations s'appliquent dans l'ordre ; deux\npersonnes qui changent la même ligne : la dernière l'emporte."
+    },
+    "v1ShoppingProductValue": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "description": "Une valeur retenue pour un produit (clé normalisée du produit)."
+    }
+  }
+}

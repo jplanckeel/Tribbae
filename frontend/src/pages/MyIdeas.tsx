@@ -8,7 +8,8 @@ import { Button, EmptyState, ErrorNote, PageHeader, PageSpinner } from "../compo
 import * as api from "../lib/api";
 import { categoryBySlug, normalizeCategory } from "../lib/categories";
 import { useMyData } from "../lib/data";
-import { buildShoppingList, pickRecipes } from "../lib/shopping";
+import { viewOf } from "../lib/shopping";
+import { useShopping } from "../lib/shoppingStore";
 import { plural } from "../lib/format";
 import { countdown, keyDateOf } from "../lib/folderStyle";
 import { byRecent, tagCounts } from "../lib/links";
@@ -63,10 +64,10 @@ export default function MyIdeas() {
   const others = sortFolders(folders.filter((f) => !f.pinned), folderSort);
   const tagTotal = useMemo(() => tagCounts(links).length, [links]);
   const tabCounts: Record<string, number> = { dossiers: folders.length, jaime: liked.data?.length ?? 0, tags: tagTotal };
-  // Même règle que la liste de courses
-  const recipes = pickRecipes(links).ready;
-  // Comme la liste de courses : un produit compte une fois, quelles que soient les recettes
-  const ingredientCount = buildShoppingList(recipes.map((r) => ({ title: r.title, ingredients: r.ingredients ?? [] }))).length;
+  // « Les courses » de la tribu : la carte passe en tête quand le menu n'est pas vide
+  const shopping = useShopping();
+  const toBuy = useMemo(() => viewOf(shopping.list).arranged.remaining, [shopping.list]);
+  const menuCount = shopping.list.menu.length;
 
   if (loading && !links.length && !folders.length) return <PageSpinner />;
 
@@ -140,17 +141,24 @@ export default function MyIdeas() {
 
       {tab === "dossiers" && (
         <>
-          <RouterLink to="/courses" className="flex items-center gap-3 rounded-[18px] bg-card px-3.5 py-3 shadow-card transition-transform hover:-translate-y-0.5 md:max-w-md">
-            <span className="flex h-10 w-10 items-center justify-center rounded-small bg-recette-bg text-recette-ic">
+          <RouterLink
+            to="/courses"
+            className={`flex items-center gap-3 rounded-[18px] px-3.5 py-3 shadow-card transition-transform hover:-translate-y-0.5 md:max-w-md ${menuCount ? "bg-ecorce text-sable" : "bg-card"}`}
+          >
+            <span className={`flex h-10 w-10 items-center justify-center rounded-small ${menuCount ? "bg-terracotta text-white" : "bg-recette-bg text-recette-ic"}`}>
               <Icon name="cart" size={20} />
             </span>
             <span className="flex flex-1 flex-col">
-              <span className="text-[15px] font-bold">Liste de courses</span>
-              <span className="text-[13px] text-sec">
-                {recipes.length ? `${plural(ingredientCount, "ingrédient", "ingrédients")} · ${plural(recipes.length, "recette", "recettes")}` : "À partir de vos recettes"}
+              <span className="text-[15px] font-bold">Les courses</span>
+              <span className={`text-[13px] ${menuCount ? "opacity-80" : "text-sec"}`}>
+                {menuCount
+                  ? `${plural(menuCount, "recette", "recettes")} au menu · ${toBuy} à prendre`
+                  : toBuy
+                    ? `${toBuy} à prendre`
+                    : "Le menu de la semaine et la liste, avec la tribu"}
               </span>
             </span>
-            <Icon name="chevronRight" size={20} className="text-muted" />
+            <Icon name="chevronRight" size={20} className={menuCount ? "opacity-70" : "text-muted"} />
           </RouterLink>
 
           {pinned.length > 0 && (

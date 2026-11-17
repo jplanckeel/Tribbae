@@ -69,7 +69,7 @@ jobs:
       - name: Verify APK signature
         run: |
           APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
-          "$APKSIGNER" verify --verbose --min-sdk-version 24 composeApp/build/outputs/apk/release/composeApp-release.apk
+          "$APKSIGNER" verify --verbose --min-sdk-version 26 composeApp/build/outputs/apk/release/composeApp-release.apk
           # L'AAB est signé avec la clé d'envoi (jarsigner) ; Google Play re-signe ensuite
           jarsigner -verify -strict composeApp/build/outputs/bundle/release/composeApp-release.aab
           rm -f "$ANDROID_KEYSTORE_PATH"

@@ -90,6 +90,7 @@ func (h *Handler) toProto(l *Link, st *Stats) *pb.Link {
 		ReminderEnabled:  l.ReminderEnabled,
 		Rating:           l.Rating,
 		Ingredients:      l.Ingredients,
+		Servings:         l.Servings,
 		CreatedAt:        timestamppb.New(l.CreatedAt),
 		UpdatedAt:        timestamppb.New(l.UpdatedAt),
 		LikeCount:        st.LikeCount[id],
@@ -131,7 +132,7 @@ func (h *Handler) many(ctx context.Context, links []*Link, userID string) []*pb.
 
 func fromRequest(folderID, title, url, description string, category pb.LinkCategory, tags []string,
 	ageRange, location, price, imageURL string, eventDate int64, reminder bool, rating int32,
-	ingredients []string, visibility string) *Link {
+	ingredients []string, visibility string, servings int32) *Link {
 	return &Link{
 		FolderID:        folderID,
 		Title:           title,
@@ -148,6 +149,7 @@ func fromRequest(folderID, title, url, description string, category pb.LinkCateg
 		Rating:          rating,
 		Ingredients:     ingredients,
 		Visibility:      visibility,
+		Servings:        servings,
 	}
 }
 
@@ -158,7 +160,7 @@ func (h *Handler) CreateLink(ctx context.Context, req *pb.CreateLinkRequest) (*p
 	}
 	l := fromRequest(req.FolderId, req.Title, req.Url, req.Description, req.Category, req.Tags,
 		req.AgeRange, req.Location, req.Price, req.ImageUrl, req.EventDate, req.ReminderEnabled,
-		req.Rating, req.Ingredients, req.Visibility)
+		req.Rating, req.Ingredients, req.Visibility, req.Servings)
 	if err := l.sanitize(); err != nil {
 		return nil, toStatus("create link", err)
 	}
@@ -226,7 +228,7 @@ func (h *Handler) UpdateLink(ctx context.Context, req *pb.UpdateLinkRequest) (*p
 	}
 	l := fromRequest(req.FolderId, req.Title, req.Url, req.Description, req.Category, req.Tags,
 		req.AgeRange, req.Location, req.Price, req.ImageUrl, req.EventDate, req.ReminderEnabled,
-		req.Rating, req.Ingredients, req.Visibility)
+		req.Rating, req.Ingredients, req.Visibility, req.Servings)
 	updated, err := h.svc.Update(ctx, req.LinkId, userID, l)
 	if err != nil {
 		return nil, toStatus("update link", err)

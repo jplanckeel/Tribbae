@@ -86,6 +86,7 @@ fun IdeaFormScreen(
     var description by remember { mutableStateOf(existing?.description ?: draft?.description.orEmpty()) }
     var imageUrl by remember { mutableStateOf(existing?.imageUrl ?: draft?.imageUrl.orEmpty()) }
     var ingredients by remember { mutableStateOf((existing?.ingredients ?: draft?.ingredients.orEmpty()).joinToString("\n")) }
+    var servings by remember { mutableStateOf(existing?.servings ?: draft?.servings ?: 0) }
     var folderId by remember { mutableStateOf(existing?.folderId ?: draft?.folderId ?: initialFolderId) }
     var tags by remember { mutableStateOf(existing?.tags ?: emptyList()) }
     var ageRange by remember { mutableStateOf(existing?.ageRange ?: draft?.ageRange.orEmpty()) }
@@ -181,7 +182,7 @@ fun IdeaFormScreen(
                     title = title.trim(), url = url.trim(), description = description.trim(), category = category,
                     folderId = folderId, tags = tags, ageRange = ageRange.trim(), location = location.trim(), price = price.trim(),
                     imageUrl = imageUrl, eventDate = eventDate, reminderEnabled = remind, rating = rating,
-                    ingredients = ing, visibility = visibility
+                    ingredients = ing, visibility = visibility, servings = if (category == LinkCategory.RECETTE) servings else existing.servings,
                 )
             )
         } else {
@@ -189,7 +190,7 @@ fun IdeaFormScreen(
                 title = title.trim(), url = url.trim(), description = description.trim(), category = category,
                 folderId = folderId, tags = tags, ageRange = ageRange.trim(), location = location.trim(), price = price.trim(),
                 eventDate = eventDate, reminderEnabled = remind, rating = rating, imageUrl = imageUrl,
-                ingredients = ing, visibility = visibility
+                ingredients = ing, visibility = visibility, servings = if (category == LinkCategory.RECETTE) servings else 0,
             )
         }
         onSaved()
@@ -274,6 +275,7 @@ fun IdeaFormScreen(
 
             if (category == LinkCategory.RECETTE) {
                 CampField("Ingrédients (un par ligne)", ingredients, { ingredients = it }, placeholder = "250 g de farine\n2 œufs\n50 cl de lait", singleLine = false, minLines = 4, maxLength = 5000)
+                ServingsField(servings) { servings = it }
             }
 
             // Dossier

@@ -92,6 +92,7 @@ private data class Draft(
     val category: LinkCategory = LinkCategory.IDEE, val imageUrl: String = "",
     val price: String = "", val location: String = "", val eventDate: Long? = null,
     val ingredients: List<String> = emptyList(), val ageRange: String = "", val isPublic: Boolean = false,
+    val servings: Int = 0,
 )
 
 /** Brouillon passé au formulaire complet (« Plus de détails »). */
@@ -99,6 +100,7 @@ data class AddDraft(
     val url: String?, val title: String?, val category: LinkCategory, val folderId: String?,
     val ingredients: List<String>, val description: String, val imageUrl: String, val price: String,
     val location: String, val eventDate: Long?, val ageRange: String, val isPublic: Boolean,
+    val servings: Int = 0,
 )
 
 private val SPRING = spring<Float>(Spring.DampingRatioMediumBouncy, Spring.StiffnessMediumLow)
@@ -194,7 +196,7 @@ fun AddFlowSheet(
             title = title, url = draft.url, description = draft.description, category = draft.category,
             folderId = folderId, tags = emptyList(), ageRange = draft.ageRange, location = draft.location, price = draft.price,
             eventDate = draft.eventDate, imageUrl = draft.imageUrl, ingredients = draft.ingredients,
-            visibility = if (draft.isPublic) "public" else "private",
+            visibility = if (draft.isPublic) "public" else "private", servings = draft.servings,
         )
         step = AddStep.Done
     }
@@ -247,7 +249,7 @@ fun AddFlowSheet(
                                     category = draft.category, folderId = folderId, ingredients = draft.ingredients,
                                     description = draft.description, imageUrl = draft.imageUrl, price = draft.price,
                                     location = draft.location, eventDate = draft.eventDate, ageRange = draft.ageRange,
-                                    isPublic = draft.isPublic,
+                                    isPublic = draft.isPublic, servings = draft.servings,
                                 ))
                             },
                         )
@@ -597,6 +599,7 @@ private fun SortStep(
             { ingredientsText = it; onDraft(draft.copy(ingredients = it.lines().map(String::trim).filter(String::isNotEmpty))) },
             placeholder = "250 g de farine\n2 œufs\n50 cl de lait", singleLine = false, minLines = 4, maxLength = 5000,
         )
+        ServingsField(draft.servings) { onDraft(draft.copy(servings = it)) }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

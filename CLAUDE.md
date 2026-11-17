@@ -82,6 +82,6 @@ Link categories (Idée, Cadeau, Activité, Sortie=`EVENEMENT`, Recette, Livre, D
 ## Reference docs (read the one for the area you touch)
 
 - [`docs/claude/backend.md`](docs/claude/backend.md) — server wiring, Mongo, sessions, auth, plain HTTP routes, GDPR, photos, domain/SEO/production, emails, link images, AI generation.
-- [`docs/claude/features.md`](docs/claude/features.md) — tribe, email verification, folder share link, circle invitations, moderation/blocking, comments, gift lists.
+- [`docs/claude/features.md`](docs/claude/features.md) — tribe, email verification, folder share link, circle invitations, moderation/blocking, comments, gift lists, shared shopping list.
 - [`docs/claude/assistants.md`](docs/claude/assistants.md) — OAuth 2.1, MCP server, connected apps, Gemini AppFunctions (with `docs/mcp.md`).
 - [`docs/claude/clients.md`](docs/claude/clients.md) — web and Android architecture, navigation, offline sync, Play Store/R8, and each screen (age picker, search, Explorer rotation, folder customization, visibility, likes, transitions, Ma tribu, add flow, wheel picker, shopping list, dark mode).

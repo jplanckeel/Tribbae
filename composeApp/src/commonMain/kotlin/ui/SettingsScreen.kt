@@ -140,7 +140,7 @@ fun SettingsScreen(s: SettingsState, a: SettingsActions, dataMessage: String?, m
         }
 
         Group("Outils") {
-            SettingsRow(Icons.Outlined.ShoppingCart, "Liste de courses", onClick = a.onShopping)
+            SettingsRow(Icons.Outlined.ShoppingCart, "Les courses", onClick = a.onShopping)
             SettingsRow(Icons.Outlined.AutoAwesome, "Applications connectées", sub = "Voir et retirer l'accès donné à Claude", tint = Prune, last = true, onClick = a.onApps)
         }
 

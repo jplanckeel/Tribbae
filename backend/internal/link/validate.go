@@ -28,6 +28,7 @@ const (
 	maxTagLen         = 50
 	maxIngredients    = 100
 	maxIngredientLen  = 200
+	maxServings       = 50
 )
 
 func invalid(msg string) error {
@@ -131,6 +132,9 @@ func (l *Link) sanitize() error {
 	}
 	if l.Ingredients, err = cleanList("ingredients", l.Ingredients, maxIngredients, maxIngredientLen); err != nil {
 		return err
+	}
+	if l.Servings < 0 || l.Servings > maxServings {
+		return invalid("servings must be between 0 and 50")
 	}
 	if l.Rating < 0 || l.Rating > 5 {
 		return invalid("rating must be between 0 and 5")
