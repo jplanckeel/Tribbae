@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.6.0](https://github.com/jplanckeel/Tribbae/compare/v0.5.0...v0.6.0) (2026-11-17)
+
+
+### Features
+
+* add the shared shopping list logic to both clients ([#147](https://github.com/jplanckeel/Tribbae/issues/147)) ([b8002a9](https://github.com/jplanckeel/Tribbae/commit/b8002a99b8d60bb8104c85b671d2ea27f20dc017))
+* **android:** share the shopping list with the tribe ([#149](https://github.com/jplanckeel/Tribbae/issues/149)) ([4af069e](https://github.com/jplanckeel/Tribbae/commit/4af069e541ac773ae6ea300e5043381a253f5e77))
+* **frontend:** share the shopping list with the tribe ([#148](https://github.com/jplanckeel/Tribbae/issues/148)) ([9081e84](https://github.com/jplanckeel/Tribbae/commit/9081e843c56efc090c14efac6819b00690936e7d))
+
+
+### Bug Fixes
+
+* **android:** keep the recipe picker sheet in place at the end of the list ([#151](https://github.com/jplanckeel/Tribbae/issues/151)) ([fa0a94d](https://github.com/jplanckeel/Tribbae/commit/fa0a94da81d9ef2e797314d3746f3ac54ca02357))
+* **link:** keep a copy of instagram, facebook and tiktok images ([#152](https://github.com/jplanckeel/Tribbae/issues/152)) ([3df7f2a](https://github.com/jplanckeel/Tribbae/commit/3df7f2a270a7d2ac7d64c7ab705c0dcf216ecfe9))
+
+
+### Dependencies
+
+* Bump gradle-wrapper from 9.9.0 to 9.9.1 in the kotlin-patch group ([#143](https://github.com/jplanckeel/Tribbae/issues/143)) ([1fbbe50](https://github.com/jplanckeel/Tribbae/commit/1fbbe5079ed3ce7db098042a5f8a68bf3e04f814))
+* Bump org.jetbrains.kotlinx:kotlinx-serialization-json from 1.12.0 to 1.13.0 in the kotlin-minor group across 1 directory ([#144](https://github.com/jplanckeel/Tribbae/issues/144)) ([0701604](https://github.com/jplanckeel/Tribbae/commit/0701604512b6e47c74d3d95e937c0071f2136591))
+* Bump the go-minor group across 1 directory with 3 updates ([#142](https://github.com/jplanckeel/Tribbae/issues/142)) ([d3f5b67](https://github.com/jplanckeel/Tribbae/commit/d3f5b673bb5882e0e6bb1e669efdb9501373fc90))
+
 ## [0.5.0](https://github.com/jplanckeel/Tribbae/compare/v0.4.0...v0.5.0) (2026-11-16)
 
 
