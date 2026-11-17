@@ -34,9 +34,13 @@ func (s *Service) RunImageBackfill(ctx context.Context, every time.Duration, bat
 	} else if res.ModifiedCount > 0 {
 		log.Printf("link: image_url normalization: %d links", res.ModifiedCount)
 	}
+	s.markExpiringImages(ctx)
 	for {
 		if filled, tried := s.backfillBatch(ctx, batch); tried > 0 {
 			log.Printf("link: image backfill: %d/%d links got an image", filled, tried)
+		}
+		if copied, tried := s.mirrorBatch(ctx, batch); tried > 0 {
+			log.Printf("link: image mirror: %d/%d expiring images copied", copied, tried)
 		}
 		select {
 		case <-ctx.Done():
@@ -99,8 +103,22 @@ func (s *Service) backfillOne(ctx context.Context, id bson.ObjectID, url string)
 	if img != "" {
 		set["image_url"] = img
 	}
+	expiring := ExpiringImage(img)
+	if expiring {
+		set["image_expiring"] = true
+	}
 	res, err := s.col.UpdateOne(ctx, bson.M{"_id": id, "image_url": bson.M{"$in": bson.A{"", nil}}}, bson.M{"$set": set})
-	return err == nil && img != "" && res.ModifiedCount > 0
+	ok := err == nil && img != "" && res.ModifiedCount > 0
+	// Image qui expire : copiée tout de suite (sans relire la page si elle a déjà disparu)
+	if ok && expiring && s.mirror != nil {
+		var owner struct {
+			OwnerID string `bson:"owner_id"`
+		}
+		if s.col.FindOne(ctx, bson.M{"_id": id}, options.FindOne().SetProjection(bson.M{"owner_id": 1})).Decode(&owner) == nil {
+			s.mirrorOne(ctx, id, owner.OwnerID, img, "")
+		}
+	}
+	return ok
 }
 
 // backfillSoon relance tout de suite la recherche d'image d'une idée (adresse

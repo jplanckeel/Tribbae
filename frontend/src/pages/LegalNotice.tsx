@@ -24,7 +24,9 @@ export default function LegalNotice() {
         <p>
           Le nom Tribbae, son logo, ses illustrations et l'application sont la propriété de l'éditeur. Les idées, photos et
           commentaires restent ceux de leurs auteurs, dans les conditions des{" "}
-          <RouterLink to="/cgu" className="font-semibold text-link">conditions d'utilisation</RouterLink>.
+          <RouterLink to="/cgu" className="font-semibold text-link">conditions d'utilisation</RouterLink>. Les images
+          d'Instagram, de Facebook et de TikTok liées à une idée sont copiées pour rester visibles : leur auteur peut en
+          demander le retrait à <a href={`mailto:${LEGAL.contact}`} className="font-semibold text-link">{LEGAL.contact}</a>.
         </p>
       </LegalSection>
       <LegalSection title="Données personnelles">

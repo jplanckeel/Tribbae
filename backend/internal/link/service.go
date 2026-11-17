@@ -12,22 +12,24 @@ import (
 )
 
 type Link struct {
-	ID              bson.ObjectID `bson:"_id,omitempty"    json:"id"`
-	OwnerID         string        `bson:"owner_id"         json:"owner_id"`
-	FolderID        string        `bson:"folder_id"        json:"folder_id"`
-	Title           string        `bson:"title"            json:"title"`
-	URL             string        `bson:"url"              json:"url"`
-	Description     string        `bson:"description"      json:"description"`
-	Category        string        `bson:"category"         json:"category"`
-	Tags            []string      `bson:"tags"             json:"tags"`
-	AgeRange        string        `bson:"age_range"        json:"age_range"`
-	Location        string        `bson:"location"         json:"location"`
-	Price           string        `bson:"price"            json:"price"`
-	ImageURL        string        `bson:"image_url"        json:"image_url"`
-	EventDate       int64         `bson:"event_date"       json:"event_date"`
-	ReminderEnabled bool          `bson:"reminder_enabled" json:"reminder_enabled"`
-	Rating          int32         `bson:"rating"           json:"rating"`
-	Ingredients     []string      `bson:"ingredients"      json:"ingredients"`
+	ID          bson.ObjectID `bson:"_id,omitempty"    json:"id"`
+	OwnerID     string        `bson:"owner_id"         json:"owner_id"`
+	FolderID    string        `bson:"folder_id"        json:"folder_id"`
+	Title       string        `bson:"title"            json:"title"`
+	URL         string        `bson:"url"              json:"url"`
+	Description string        `bson:"description"      json:"description"`
+	Category    string        `bson:"category"         json:"category"`
+	Tags        []string      `bson:"tags"             json:"tags"`
+	AgeRange    string        `bson:"age_range"        json:"age_range"`
+	Location    string        `bson:"location"         json:"location"`
+	Price       string        `bson:"price"            json:"price"`
+	ImageURL    string        `bson:"image_url"        json:"image_url"`
+	// ImageSource : adresse d'origine d'une image copiée chez Tribbae (voir mirror.go)
+	ImageSource     string   `bson:"image_source,omitempty" json:"-"`
+	EventDate       int64    `bson:"event_date"       json:"event_date"`
+	ReminderEnabled bool     `bson:"reminder_enabled" json:"reminder_enabled"`
+	Rating          int32    `bson:"rating"           json:"rating"`
+	Ingredients     []string `bson:"ingredients"      json:"ingredients"`
 	// Recette : nombre de personnes prévu par les ingrédients (0 = non précisé)
 	Servings   int32  `bson:"servings,omitempty" json:"servings,omitempty"`
 	Visibility string `bson:"visibility"       json:"visibility"` // "private" | "public"
@@ -65,6 +67,7 @@ type Service struct {
 	folderCol   *mongo.Collection
 	linkLikeCol *mongo.Collection
 	userCol     *mongo.Collection
+	mirror      ImageMirror
 }
 
 func NewService(col *mongo.Collection, folderCol *mongo.Collection) *Service {
@@ -331,6 +334,11 @@ func (s *Service) Create(ctx context.Context, ownerID string, l *Link) (*Link, e
 	if _, err := s.col.InsertOne(ctx, l); err != nil {
 		return nil, err
 	}
+	// Image d'Instagram, Facebook, TikTok : copiée avant qu'elle n'expire
+	if ExpiringImage(l.ImageURL) {
+		_, _ = s.col.UpdateOne(ctx, bson.M{"_id": l.ID}, bson.M{"$set": bson.M{"image_expiring": true}})
+		s.mirrorSoon(l.ID, ownerID, l.ImageURL, l.URL)
+	}
 	return l, nil
 }
 
@@ -481,6 +489,11 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 		}
 	}
 
+	// Un client qui ne connaît pas encore la copie de l'image renvoie l'adresse
+	// d'origine : on garde la copie
+	if l.ImageURL != "" && l.ImageURL == existing.ImageSource {
+		l.ImageURL = existing.ImageURL
+	}
 	l.UpdatedAt = time.Now()
 	update := bson.M{"$set": bson.M{
 		"folder_id": l.FolderID, "title": l.Title, "url": l.URL,
@@ -494,6 +507,14 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 	if l.Servings > 0 {
 		update["$set"].(bson.M)["servings"] = l.Servings
 	}
+	// Nouvelle image : marquée à copier si elle expire, adresse d'origine oubliée
+	if l.ImageURL != existing.ImageURL {
+		set, unset := imageFields(l.ImageURL)
+		for k, v := range set {
+			update["$set"].(bson.M)[k] = v
+		}
+		update["$unset"] = unset
+	}
 	if _, err := s.col.UpdateOne(ctx, bson.M{"_id": id}, update); err != nil {
 		return nil, err
 	}
@@ -501,6 +522,9 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 	// on cherche aussitôt l'image de la page, en arrière-plan
 	if l.ImageURL == "" && l.URL != "" && (l.URL != existing.URL || existing.ImageURL != "") {
 		s.backfillSoon(id, l.URL)
+	}
+	if l.ImageURL != existing.ImageURL && ExpiringImage(l.ImageURL) {
+		s.mirrorSoon(id, existing.OwnerID, l.ImageURL, l.URL)
 	}
 	return s.Get(ctx, linkID, userID)
 }
