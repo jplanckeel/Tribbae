@@ -60,6 +60,7 @@ data class Link(
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,           // 0 = pas de note, 1-5 étoiles
     val ingredients: List<String> = emptyList(),  // pour les recettes
+    val servings: Int = 0,         // recette : nombre de personnes (0 = non précisé)
     val favorite: Boolean = false,
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,

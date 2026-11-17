@@ -31,7 +31,11 @@ interface Storage {
     fun saveGiftPending(pending: Map<String, Long>) {}
     fun loadGiftPending(): Map<String, Long> = emptyMap()
 
-    /** Liste de courses (voir ShoppingSelection). */
-    fun saveShopping(selection: ShoppingSelection) {}
+    /** Ancienne liste de courses gardée sur l'appareil (avant la liste partagée) : lue une fois pour la reprendre. */
     fun loadShopping(): ShoppingSelection = ShoppingSelection()
+    fun clearOldShopping() {}
+
+    /** « Les courses » : liste de la tribu et changements en attente (voir ShoppingRepository), en JSON. */
+    fun saveShoppingList(json: String) {}
+    fun loadShoppingList(): String? = null
 }

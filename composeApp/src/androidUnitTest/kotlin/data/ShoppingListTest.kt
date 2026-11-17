@@ -2,7 +2,6 @@ package data
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
@@ -26,8 +25,6 @@ class ShoppingListTest {
         assertEquals(listOf("c", "d"), missing.map { it.id })
     }
 
-    private fun r(title: String, vararg ingredients: String) = ShoppingList.Recipe(title, ingredients.toList())
-    private fun labels(vararg recipes: ShoppingList.Recipe) = ShoppingList.build(recipes.toList()).map { it.label }
 
     @Test
     fun parsesQuantityUnitAndName() {
@@ -64,78 +61,6 @@ class ShoppingListTest {
         assertEquals(ShoppingList.ingredientKey("oeuf"), ShoppingList.ingredientKey("Œufs"))
         assertEquals(ShoppingList.ingredientKey("citron vert"), ShoppingList.ingredientKey("Citron(s) vert(s)"))
         assertEquals(ShoppingList.ingredientKey("creme fraiche"), ShoppingList.ingredientKey("Crème fraîche"))
-    }
-
-    @Test
-    fun addsUpQuantitiesOfTheSameProduct() {
-        assertEquals(
-            listOf("350 g de farine", "1 l de lait", "6 oeufs"),
-            labels(r("Crêpes", "250 g de farine", "4 oeufs", "½ litre lait"), r("Gâteau", "100 g de farine", "2 œufs", "50 cl de lait")),
-        )
-    }
-
-    @Test
-    fun keepsALineFromASingleRecipeAsWritten() {
-        assertEquals(listOf("1 kg de pommes de terre, épluchées", "Sel"), labels(r("Gratin", "1 kg de pommes de terre, épluchées", "Sel")))
-    }
-
-    @Test
-    fun convertsUnitsAndSwitchesToKiloOrLitre() {
-        assertEquals(
-            listOf("45 cl de crème", "45 ml d'huile", "1,1 kg de sucre"),
-            labels(r("A", "600 g de sucre", "20 cl de crème", "30 ml d'huile"), r("B", "0,5 kg de sucre", "25 cl de crème", "15 ml d'huile")),
-        )
-    }
-
-    @Test
-    fun putsUnconvertibleUnitsSideBySide() {
-        assertEquals(
-            listOf("250 g + 2 c. à soupe de farine", "100 g + 1 oignon"),
-            labels(r("A", "2 c. à soupe de farine"), r("B", "250 g de farine"), r("C", "1 oignon"), r("D", "100 g d'oignon")),
-        )
-    }
-
-    @Test
-    fun elidesBeforeAVowelOrMuteHButNotAspiratedH() {
-        assertEquals(
-            listOf("500 g de haricots verts", "3 c. à soupe d'huile"),
-            labels(r("A", "200 g d'haricots verts", "1 c. à soupe d'huile"), r("B", "300 g de haricots verts", "2 c. à soupe d'huile")),
-        )
-    }
-
-    @Test
-    fun keepsOnlyTheNameWithoutQuantities() {
-        assertEquals(listOf("Sel"), labels(r("A", "Sel"), r("B", "sel")))
-    }
-
-    @Test
-    fun usesThePluralNameWhenARecipeWritesIt() {
-        assertEquals(listOf("3 tomates"), labels(r("A", "1 tomate"), r("B", "2 tomates")))
-    }
-
-    @Test
-    fun addsUpFractions() {
-        assertEquals(listOf("1 citron"), labels(r("A", "⅓ citron"), r("B", "⅔ citron")))
-    }
-
-    @Test
-    fun recordsSourceRecipesOnce() {
-        val items = ShoppingList.build(listOf(r("Crêpes", "2 oeufs", "1 oeuf"), r("Gâteau", "3 oeufs")))
-        assertEquals(1, items.size)
-        assertEquals("6 oeufs", items[0].label)
-        assertEquals(listOf("Crêpes", "Gâteau"), items[0].from)
-    }
-
-    @Test
-    fun keyChangesWhenTheQuantityChanges() {
-        val one = ShoppingList.build(listOf(r("A", "2 oeufs")))[0].key
-        val two = ShoppingList.build(listOf(r("A", "2 oeufs"), r("B", "1 oeuf")))[0].key
-        assertNotEquals(one, two)
-    }
-
-    @Test
-    fun ignoresBlankLines() {
-        assertEquals(listOf("Poivre"), labels(r("A", "", "  ", "Poivre")))
     }
 
     // « Les courses » partagées : mêmes cas que shopping.test.ts (web)
@@ -248,6 +173,27 @@ class ShoppingListTest {
         assertTrue(lines[0].edited)
         assertEquals("epicerie", lines[1].aisle)
         assertEquals("fruits-legumes", lines.first { it.product == "ail" }.aisle)
+    }
+
+    @Test
+    fun convertsUnitsAndSwitchesToKiloOrLitre() {
+        val lines = ShoppingList.buildLines(listOf(
+            recipe("A", listOf("600 g de sucre", "20 cl de crème", "30 ml d'huile")),
+            recipe("B", listOf("0,5 kg de sucre", "25 cl de crème", "15 ml d'huile")),
+        ))
+        assertEquals(listOf("Sucre · 1,1 kg", "Crème · 45 cl", "Huile · 45 ml"), show(lines))
+    }
+
+    @Test
+    fun putsUnconvertibleUnitsSideBySide() {
+        val lines = ShoppingList.buildLines(listOf(recipe("A", listOf("2 c. à soupe de farine", "1 oignon")), recipe("B", listOf("250 g de farine", "100 g d'oignon"))))
+        assertEquals(listOf("Farine · 250 g + 2 c. à soupe", "Oignon · 100 g + 1"), show(lines))
+    }
+
+    @Test
+    fun usesThePluralNameAndIgnoresBlankLines() {
+        val lines = ShoppingList.buildLines(listOf(recipe("A", listOf("1 tomate", "", "  ")), recipe("B", listOf("2 tomates"))))
+        assertEquals(listOf("Tomates · 3"), show(lines))
     }
 
     @Test

@@ -126,6 +126,7 @@ data class ApiAuthLink(
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
     val ingredients: List<String> = emptyList(),
+    val servings: Int = 0,
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
     val favorite: Boolean = false,
@@ -248,6 +249,7 @@ data class CreateLinkRequest(
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
     val ingredients: List<String> = emptyList(),
+    val servings: Int = 0,
     val visibility: String = "private"
 )
 
@@ -268,6 +270,7 @@ data class UpdateLinkRequest(
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
     val ingredients: List<String> = emptyList(),
+    val servings: Int = 0,
     val visibility: String = "private"
 )
 
@@ -466,6 +469,24 @@ class AuthenticatedApiClient(
             kotlinx.serialization.json.buildJsonObject { put("action", kotlinx.serialization.json.JsonPrimitive(action)) })) { body ->
             val gift = json.parseToJsonElement(body).let { it as? kotlinx.serialization.json.JsonObject }?.get("gift") as? kotlinx.serialization.json.JsonObject
             (gift?.get("status") as? kotlinx.serialization.json.JsonPrimitive)?.content.orEmpty()
+        }
+
+    // « Les courses » : la liste de la tribu (data/ShoppingRepository.kt)
+    @Serializable
+    private data class ShoppingResponse(val list: ShoppingList.Shared = ShoppingList.Shared(), val unchanged: Boolean = false)
+
+    @Serializable
+    private data class ShoppingOpsRequest(val ops: List<ShoppingList.Op>)
+
+    /** null si rien n'a changé depuis [sinceVersion]. */
+    suspend fun getShopping(sinceVersion: Long): ShoppingList.Shared? =
+        request("/v1/shopping" + if (sinceVersion > 0) "?sinceVersion=$sinceVersion" else "", "GET") { body ->
+            json.decodeFromString<ShoppingResponse>(body).let { if (it.unchanged) null else it.list }
+        }
+
+    suspend fun applyShoppingOps(ops: List<ShoppingList.Op>): ShoppingList.Shared =
+        request("/v1/shopping/ops", "POST", json.encodeToString(ShoppingOpsRequest.serializer(), ShoppingOpsRequest(ops))) { body ->
+            json.decodeFromString<ShoppingResponse>(body).list
         }
 
     // « C'est fait » : marquer une idée comme faite et garder un souvenir (data/Done.kt)

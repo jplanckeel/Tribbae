@@ -309,11 +309,27 @@ fun LinkDetailScreen(
                                 Text(ing, fontSize = 15.sp, color = Ecorce2)
                             }
                         }
-                        if (onOpenShopping != null) {
-                            Text(
-                                "Préparer la liste de courses", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta,
-                                modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button, onClick = onOpenShopping).padding(vertical = 4.dp)
-                            )
+                        // « Au menu » des courses de la tribu (nos recettes seulement)
+                        if (onOpenShopping != null && viewModel != null) {
+                            val shopping by viewModel.shopping.collectAsState()
+                            val entry = shopping.list.menu.firstOrNull { it.linkId == link.id }
+                            if (entry != null) {
+                                Row(
+                                    Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(16.dp)).background(DoneBg)
+                                        .clickable(role = Role.Button, onClickLabel = "Voir les courses", onClick = onOpenShopping),
+                                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
+                                ) {
+                                    Icon(Icons.Outlined.Check, null, tint = DoneInk, modifier = Modifier.size(18.dp))
+                                    Text(" Au menu · ${entry.servings} pers.", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = DoneInk)
+                                    Icon(Icons.Outlined.ChevronRight, null, tint = DoneInk, modifier = Modifier.size(18.dp))
+                                }
+                            } else {
+                                CampButton(
+                                    "Au menu",
+                                    { viewModel.changeShopping(data.ShoppingList.Op("menu_add", linkId = link.id), viewModel.recipeInfo(link)) },
+                                    Modifier.fillMaxWidth(), icon = Icons.Outlined.Add, height = 48.dp,
+                                )
+                            }
                         }
                     }
                 }

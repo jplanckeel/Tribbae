@@ -4,19 +4,6 @@
 // Même logique dans data/ShoppingList.kt (Android) : shopping.test.ts ↔
 // ShoppingListTest, garder les mêmes cas.
 
-export interface ShoppingRecipe {
-  title: string;
-  ingredients: string[];
-}
-
-export interface ShoppingItem {
-  /** Identifie la ligne pour la cocher ; change quand la quantité change. */
-  key: string;
-  label: string;
-  /** Recettes d'où vient la ligne, dans l'ordre. */
-  from: string[];
-}
-
 // Unités : famille (g et ml se convertissent entre elles) et facteur vers la base.
 // Fin de mot explicite plutôt que \b, qui ne connaît pas les lettres accentuées
 // (« 4 gésiers » n'est pas « 4 g »).
@@ -47,8 +34,6 @@ const UNITS: [RegExp, string, number][] = [
 ];
 
 const PLURAL_UNITS: Record<string, string> = { morceau: "morceaux", "c. à soupe": "c. à soupe", "c. à café": "c. à café" };
-// h aspiré : pas d'élision (« de haricots »)
-const H_ASPIRE = ["haricot", "hachis", "homard", "hareng", "houblon"];
 const FRACTIONS: Record<string, number> = { "½": 0.5, "¼": 0.25, "¾": 0.75, "⅓": 1 / 3, "⅔": 2 / 3, "⅛": 0.125 };
 
 interface Parsed {
@@ -128,63 +113,9 @@ function formatQty(qty: number, unit: string): string {
   return `${formatNumber(qty)} ${qty > 1 ? (PLURAL_UNITS[unit] ?? `${unit}s`) : unit}`;
 }
 
-function elides(s: string): boolean {
-  const k = ingredientKey(s);
-  return /^[aeiouyh]/.test(k) && !H_ASPIRE.some((w) => k.startsWith(w));
-}
-
 // Ordre des quantités : poids et volumes, autres unités, puis à l'unité
 function unitRank(unit: string): number {
   return unit === "g" || unit === "ml" ? 0 : unit ? 1 : 2;
-}
-
-interface Group {
-  key: string;
-  lines: string[];
-  names: string[];
-  totals: Map<string, number>; // famille → quantité (dans l'ordre d'apparition)
-  from: string[];
-}
-
-/** Regroupe les ingrédients des recettes choisies, triés par nom. */
-export function buildShoppingList(recipes: ShoppingRecipe[]): ShoppingItem[] {
-  const groups = new Map<string, Group>();
-  for (const r of recipes) {
-    for (const raw of r.ingredients) {
-      const line = raw.trim();
-      if (!line) continue;
-      const p = parseIngredient(line);
-      const key = ingredientKey(p.name) || ingredientKey(line);
-      if (!key) continue;
-      const g: Group = groups.get(key) ?? { key, lines: [], names: [], totals: new Map(), from: [] };
-      g.lines.push(line);
-      g.names.push(p.name);
-      if (p.qty !== null) g.totals.set(p.unit, (g.totals.get(p.unit) ?? 0) + p.qty);
-      if (!g.from.includes(r.title)) g.from.push(r.title);
-      groups.set(key, g);
-    }
-  }
-  const items = [...groups.values()].map((g): ShoppingItem => {
-    let label: string;
-    if (g.lines.length === 1) {
-      // Une seule ligne : telle qu'écrite dans la recette
-      label = g.lines[0];
-    } else if (g.totals.size === 0) {
-      label = g.names[0];
-    } else {
-      const count = g.totals.get("") ?? 0;
-      // À l'unité, au pluriel : la variante du nom au pluriel si la recette l'écrit ainsi
-      const picked = count > 1 ? (g.names.find((n) => /[sx]$/i.test(n)) ?? g.names[0]) : g.names[0];
-      const name = picked.charAt(0).toLowerCase() + picked.slice(1);
-      // « 250 g + 2 c. à soupe de farine », « 100 g + 1 oignon »
-      const parts = [...g.totals.entries()].sort(([a], [b]) => unitRank(a) - unitRank(b)).map(([u, q]) => formatQty(q, u));
-      const glue = count > 0 ? " " : elides(name) ? " d'" : " de ";
-      label = parts.join(" + ") + glue + name;
-    }
-    label = label.charAt(0).toUpperCase() + label.slice(1);
-    return { key: `${g.key}|${label}`, label, from: g.from };
-  });
-  return items.sort((a, b) => a.key.localeCompare(b.key, "fr"));
 }
 
 /**

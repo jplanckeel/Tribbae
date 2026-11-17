@@ -7,7 +7,6 @@ import {
   aisleOrder,
   arrange,
   buildLines,
-  buildShoppingList,
   ingredientKey,
   isStaple,
   parseIngredient,
@@ -18,7 +17,6 @@ import {
 } from "./shopping";
 
 // Mêmes cas que ShoppingListTest (Android)
-const labels = (recipes: { title: string; ingredients: string[] }[]) => buildShoppingList(recipes).map((i) => i.label);
 
 describe("parseIngredient", () => {
   it.each([
@@ -55,85 +53,6 @@ describe("ingredientKey", () => {
     expect(ingredientKey("Citron(s) vert(s)")).toBe(ingredientKey("citron vert"));
     expect(ingredientKey("Crème fraîche")).toBe(ingredientKey("creme fraiche"));
     expect(ingredientKey("Huile d’olive")).toBe(ingredientKey("huile d'olive"));
-  });
-});
-
-describe("buildShoppingList", () => {
-  it("additionne les quantités d'un même produit", () => {
-    expect(
-      labels([
-        { title: "Crêpes", ingredients: ["250 g de farine", "4 oeufs", "½ litre lait"] },
-        { title: "Gâteau", ingredients: ["100 g de farine", "2 œufs", "50 cl de lait"] },
-      ]),
-    ).toEqual(["350 g de farine", "1 l de lait", "6 oeufs"]);
-  });
-
-  it("garde telle quelle une ligne présente dans une seule recette", () => {
-    expect(labels([{ title: "Gratin", ingredients: ["1 kg de pommes de terre, épluchées", "Sel"] }])).toEqual([
-      "1 kg de pommes de terre, épluchées",
-      "Sel",
-    ]);
-  });
-
-  it("convertit les unités et passe au kilo ou au litre", () => {
-    expect(
-      labels([
-        { title: "A", ingredients: ["600 g de sucre", "20 cl de crème", "30 ml d'huile"] },
-        { title: "B", ingredients: ["0,5 kg de sucre", "25 cl de crème", "15 ml d'huile"] },
-      ]),
-    ).toEqual(["45 cl de crème", "45 ml d'huile", "1,1 kg de sucre"]);
-  });
-
-  it("juxtapose des unités qui ne se convertissent pas", () => {
-    expect(
-      labels([
-        { title: "A", ingredients: ["2 c. à soupe de farine"] },
-        { title: "B", ingredients: ["250 g de farine"] },
-        { title: "C", ingredients: ["1 oignon"] },
-        { title: "D", ingredients: ["100 g d'oignon"] },
-      ]),
-    ).toEqual(["250 g + 2 c. à soupe de farine", "100 g + 1 oignon"]);
-  });
-
-  it("élide devant une voyelle ou un h muet, pas devant un h aspiré", () => {
-    expect(
-      labels([
-        { title: "A", ingredients: ["200 g d'haricots verts", "1 c. à soupe d'huile"] },
-        { title: "B", ingredients: ["300 g de haricots verts", "2 c. à soupe d'huile"] },
-      ]),
-    ).toEqual(["500 g de haricots verts", "3 c. à soupe d'huile"]);
-  });
-
-  it("ne garde que le nom quand aucune quantité n'est donnée", () => {
-    expect(labels([{ title: "A", ingredients: ["Sel"] }, { title: "B", ingredients: ["sel"] }])).toEqual(["Sel"]);
-  });
-
-  it("met le nom au pluriel quand une recette l'écrit ainsi", () => {
-    expect(labels([{ title: "A", ingredients: ["1 tomate"] }, { title: "B", ingredients: ["2 tomates"] }])).toEqual(["3 tomates"]);
-  });
-
-  it("additionne les fractions", () => {
-    expect(labels([{ title: "A", ingredients: ["⅓ citron"] }, { title: "B", ingredients: ["⅔ citron"] }])).toEqual(["1 citron"]);
-  });
-
-  it("note les recettes d'origine sans doublon", () => {
-    const items = buildShoppingList([
-      { title: "Crêpes", ingredients: ["2 oeufs", "1 oeuf"] },
-      { title: "Gâteau", ingredients: ["3 oeufs"] },
-    ]);
-    expect(items).toHaveLength(1);
-    expect(items[0].label).toBe("6 oeufs");
-    expect(items[0].from).toEqual(["Crêpes", "Gâteau"]);
-  });
-
-  it("change la clé quand la quantité change (une case cochée ne reste pas cochée)", () => {
-    const one = buildShoppingList([{ title: "A", ingredients: ["2 oeufs"] }])[0].key;
-    const two = buildShoppingList([{ title: "A", ingredients: ["2 oeufs"] }, { title: "B", ingredients: ["1 oeuf"] }])[0].key;
-    expect(one).not.toBe(two);
-  });
-
-  it("ignore les lignes vides", () => {
-    expect(labels([{ title: "A", ingredients: ["", "  ", "Poivre"] }])).toEqual(["Poivre"]);
   });
 });
 
@@ -261,6 +180,24 @@ describe("buildLines", () => {
     expect(lines[0]).toMatchObject({ qty: "2 bouteilles", key: "lait|2 bouteilles", edited: true });
     expect(lines[1].aisle).toBe("epicerie");
     expect(lines.find((l) => l.product === "ail")?.aisle).toBe("fruits-legumes");
+  });
+
+  it("convertit les unités et passe au kilo ou au litre", () => {
+    const lines = buildLines([
+      recipe("A", ["600 g de sucre", "20 cl de crème", "30 ml d'huile"]),
+      recipe("B", ["0,5 kg de sucre", "25 cl de crème", "15 ml d'huile"]),
+    ]);
+    expect(show(lines)).toEqual(["Sucre · 1,1 kg", "Crème · 45 cl", "Huile · 45 ml"]);
+  });
+
+  it("juxtapose des unités qui ne se convertissent pas", () => {
+    const lines = buildLines([recipe("A", ["2 c. à soupe de farine", "1 oignon"]), recipe("B", ["250 g de farine", "100 g d'oignon"])]);
+    expect(show(lines)).toEqual(["Farine · 250 g + 2 c. à soupe", "Oignon · 100 g + 1"]);
+  });
+
+  it("met le nom au pluriel quand une recette l'écrit ainsi, et ignore les lignes vides", () => {
+    const lines = buildLines([recipe("A", ["1 tomate", "", "  "]), recipe("B", ["2 tomates"])]);
+    expect(show(lines)).toEqual(["Tomates · 3"]);
   });
 
   it("ajoute les articles libres avec leur rayon", () => {

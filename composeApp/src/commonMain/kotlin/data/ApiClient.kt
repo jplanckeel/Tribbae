@@ -88,6 +88,7 @@ data class ApiLink(
     val reminderEnabled: Boolean = false,
     val rating: Int = 0,
     val ingredients: List<String> = emptyList(),
+    val servings: Int = 0,
     val likeCount: Int = 0,
     val likedByMe: Boolean = false,
     val ownerDisplayName: String = "",
