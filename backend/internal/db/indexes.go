@@ -269,6 +269,16 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 					SetPartialFilterExpression(bson.M{"image_url": ""}),
 			},
 		},
+		{
+			// Images qui expirent (Instagram, Facebook, TikTok) à copier : seules
+			// les idées marquées entrent dans l'index (link.mirrorBatch)
+			Collection: "links",
+			Model: mongo.IndexModel{
+				Keys: bson.D{{Key: "image_expiring", Value: 1}},
+				Options: options.Index().SetName("idx_links_expiring_image").
+					SetPartialFilterExpression(bson.M{"image_expiring": true}),
+			},
+		},
 
 		// ── link_likes ────────────────────────────────────────
 		{

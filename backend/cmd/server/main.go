@@ -107,7 +107,22 @@ func main() {
 	})
 	// Télécharge (si besoin) et charge le modèle local sans retarder le démarrage
 	go aiSvc.Warmup(context.Background())
-	// Rattrape en continu l'image des idées qui n'en ont pas (lots de 20 toutes les 10 min)
+	// Images d'Instagram, Facebook, TikTok : leurs adresses expirent, on en garde
+	// une copie comme une photo de l'auteur de l'idée (voir link/mirror.go)
+	photoSvc := photo.NewService(database.DB())
+	photoBase := strings.TrimRight(cfg.SiteURL, "/") + photo.Path
+	linkSvc.SetImageMirror(func(ctx context.Context, ownerID, imageURL string) (string, error) {
+		token, err := photoSvc.SaveFrom(ctx, ownerID, imageURL)
+		if errors.Is(err, photo.ErrSourceGone) || errors.Is(err, photo.ErrUnsupported) {
+			return "", errors.Join(link.ErrImageGone, err)
+		}
+		if err != nil {
+			return "", err
+		}
+		return photoBase + token, nil
+	})
+	// Rattrape en continu l'image des idées qui n'en ont pas et copie celles qui
+	// expirent (lots de 20 toutes les 10 min)
 	go linkSvc.RunImageBackfill(context.Background(), 10*time.Minute, 20)
 	go func() {
 		if n, err := linkSvc.MigrateFavorites(context.Background()); err != nil {
@@ -152,7 +167,6 @@ func main() {
 	accountSvc.SetNotifier(mailer)
 	accountH := account.NewHandler(accountSvc, authSvc, bearerUser)
 	// Photos des idées (GridFS) ; celles qu'aucune idée n'utilise sont effacées après un jour
-	photoSvc := photo.NewService(database.DB())
 	photoH := photo.NewHandler(photoSvc, bearerUser)
 	go photoSvc.RunCleanup(context.Background(), 6*time.Hour, 24*time.Hour)
 	// Applications connectées (connecteur Claude) : serveur d'autorisation

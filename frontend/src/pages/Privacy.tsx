@@ -12,7 +12,7 @@ import { LEGAL } from "../lib/legal";
 const EDITOR = LEGAL.editorName;
 const HOST = `${LEGAL.hostName}, sur des serveurs situés en ${LEGAL.hostCountry}`;
 const CONTACT = LEGAL.contact;
-const UPDATED = "16 novembre 2026";
+const UPDATED = "17 novembre 2026";
 /** Ancre stable de la section de suppression, donnée à Google Play : ne pas la changer. */
 const DELETE_ACCOUNT_ANCHOR = "supprimer-mon-compte";
 
@@ -124,8 +124,9 @@ export default function Privacy() {
         <p>
           Quand vous ajoutez un lien, notre serveur lit la page pour en récupérer le titre et l'image : le site visité
           voit notre serveur, pas vous. En revanche, les images des idées s'affichent depuis le site d'origine, qui
-          reçoit alors, comme pour toute image du web, l'adresse IP de votre appareil (sauf pour vos photos, servies par
-          Tribbae).
+          reçoit alors, comme pour toute image du web, l'adresse IP de votre appareil. Sauf pour vos photos, servies par
+          Tribbae, et pour les images d'Instagram, de Facebook et de TikTok : leurs adresses expirent au bout de quelques
+          jours, alors notre serveur en garde une copie (réduite, sans métadonnées), servie par Tribbae.
         </p>
         <p>
           Les emails liés à votre compte (bienvenue, ajout à une tribu, confirmation de suppression) sont envoyés par{" "}
