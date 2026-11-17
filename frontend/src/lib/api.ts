@@ -1,6 +1,7 @@
 import type { DoneInput, DoneSummary, LinkDone } from "./done";
 import { clearSession, getSession, setSession, shouldRenew } from "./session";
 import { withinLimits } from "./preview";
+import type { SharedList, ShoppingOp } from "./shopping";
 import type { AdminReport, AdminStats, AdminUser, AiIdea, BlockedUser, Child, CircleInvitation, CircleInvitationInfo, CollaboratorRole, Comment, ConnectedApp, Folder, FolderInput, GiftReservation, Link, LinkInput, LinkPreview, OAuthConsent, StatsPeriod, Tribe, TribeInvitationInfo, UserProfile } from "./types";
 
 const BASE = "/v1";
@@ -395,6 +396,50 @@ export const admin = {
     request<{ reports?: AdminReport[] }>(`/admin/reports${closed ? "?status=closed" : ""}`).then((r) => r.reports ?? []),
   resolve: (reportId: string, action: "dismiss" | "remove" | "suspend") =>
     request<void>(`/admin/reports/${encodeURIComponent(reportId)}/resolve`, { method: "POST", body: json({ action }) }),
+};
+
+/** Réponse brute du serveur : les int64 arrivent en chaînes, les listes vides manquent. */
+type RawShared = Partial<Record<keyof SharedList, unknown>>;
+
+const num = (v: unknown) => Number(v ?? 0) || 0;
+const arr = <T,>(v: unknown, map: (x: Record<string, unknown>) => T): T[] => (Array.isArray(v) ? v.map((x) => map(x ?? {})) : []);
+const str = (v: unknown) => (typeof v === "string" ? v : "");
+
+/** Liste partagée lue du serveur, avec toutes ses valeurs (voir lib/shopping.ts). */
+function toShared(raw: RawShared | undefined): SharedList {
+  const r = raw ?? {};
+  const pair = (x: Record<string, unknown>) => ({ key: str(x.key), value: str(x.value) });
+  return {
+    version: num(r.version),
+    menu: arr(r.menu, (e) => ({
+      linkId: str(e.linkId), title: str(e.title), imageUrl: str(e.imageUrl) || undefined,
+      ingredients: Array.isArray(e.ingredients) ? e.ingredients.map(String) : [],
+      baseServings: num(e.baseServings) || 4, servings: num(e.servings) || num(e.baseServings) || 4,
+      addedBy: str(e.addedBy), addedAt: num(e.addedAt), cooked: !!e.cooked,
+    })),
+    items: arr(r.items, (it) => ({
+      id: str(it.id), label: str(it.label), quantity: str(it.quantity), aisle: str(it.aisle), addedBy: str(it.addedBy), addedAt: num(it.addedAt),
+    })),
+    checked: arr(r.checked, (c) => ({ key: str(c.key), by: str(c.by), at: num(c.at) })),
+    quantities: arr(r.quantities, pair),
+    aisles: arr(r.aisles, pair),
+    aisleOrder: Array.isArray(r.aisleOrder) ? r.aisleOrder.map(String) : [],
+    pantry: Array.isArray(r.pantry) ? r.pantry.map(String) : [],
+    removed: Array.isArray(r.removed) ? r.removed.map(String) : [],
+    shopperId: str(r.shopperId),
+    shoppingSince: num(r.shoppingSince),
+  };
+}
+
+/** « Les courses » : une liste par tribu (lib/shopping.ts en déduit l'affichage). */
+export const shopping = {
+  /** null si rien n'a changé depuis [sinceVersion]. */
+  get: (sinceVersion = 0) =>
+    request<{ list?: RawShared; unchanged?: boolean }>(`/shopping${qs({ sinceVersion: sinceVersion || undefined })}`).then((r) =>
+      r.unchanged ? null : toShared(r.list),
+    ),
+  apply: (ops: ShoppingOp[]) =>
+    request<{ list?: RawShared }>("/shopping/ops", { method: "POST", body: json({ ops }) }).then((r) => toShared(r.list)),
 };
 
 /** Photos des idées : envoyées au serveur, qui les garde et renvoie leur adresse. */

@@ -28,6 +28,8 @@ export interface Link {
   reminderEnabled?: boolean;
   rating?: number;
   ingredients?: string[];
+  /** Recette : nombre de personnes prévu (0 ou absent = non précisé). */
+  servings?: number;
   favorite?: boolean;
   likeCount?: number;
   likedByMe?: boolean;
@@ -71,6 +73,8 @@ export interface LinkInput {
   reminderEnabled?: boolean;
   rating?: number;
   ingredients?: string[];
+  /** Recette : nombre de personnes (0 = inchangé). */
+  servings?: number;
   folderId?: string;
   visibility?: "private" | "public";
 }

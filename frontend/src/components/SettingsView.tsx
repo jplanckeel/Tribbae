@@ -70,7 +70,7 @@ export default function SettingsView(p: {
         </Group>
 
         <Group title="Outils">
-          <Row icon="cart" label="Liste de courses" to="/courses" />
+          <Row icon="cart" label="Les courses" to="/courses" />
           <Row icon="sparkles" iconClass="text-prune" label="Applications connectées" sub="Voir et retirer l'accès donné à Claude" onClick={p.onApps} last />
         </Group>
 

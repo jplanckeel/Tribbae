@@ -11,6 +11,7 @@ import { useCanPublish, useSession } from "../lib/session";
 import { PublicFolderNote, PublishLockedNote } from "./VerifyEmailBanner";
 import type { CategoryKey, LinkInput, LinkPreview } from "../lib/types";
 import AgePicker from "./AgePicker";
+import ServingsField from "./ServingsField";
 import Icon from "./Icon";
 import { PhotoInput, PhotoPreview } from "./PhotoUpload";
 import Sheet from "./Sheet";
@@ -320,12 +321,15 @@ export default function LinkFormSheet({ onClose, initial, editing, removed, auth
         />
 
         {isRecipe && (
-          <TextArea
-            label="Ingrédients (un par ligne)"
-            placeholder={"250 g de farine\n2 œufs\n50 cl de lait"}
-            value={ingredients}
-            onChange={(e) => setIngredients(e.target.value)}
-          />
+          <>
+            <TextArea
+              label="Ingrédients (un par ligne)"
+              placeholder={"250 g de farine\n2 œufs\n50 cl de lait"}
+              value={ingredients}
+              onChange={(e) => setIngredients(e.target.value)}
+            />
+            <ServingsField value={form.servings ?? 0} onChange={(n) => set("servings", n)} />
+          </>
         )}
 
         <div className="flex flex-col gap-1.5">

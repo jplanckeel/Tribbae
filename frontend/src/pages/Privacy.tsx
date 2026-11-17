@@ -92,6 +92,7 @@ export default function Privacy() {
           <li><strong>Votre tribu</strong> : son nom et ses membres.</li>
           <li><strong>Ce que vous avez fait</strong> : quand vous marquez une idée comme faite (sortie, recette cuisinée, livre lu, achat), nous gardons le jour et, si vous les ajoutez, qui était là, une note, un petit mot et une photo. Ces souvenirs ne sont visibles que de votre tribu et des proches invités dans le dossier, même si l'idée est publique. Sur une idée publique, seul un nombre anonyme de familles qui l'ont faite peut s'afficher, à partir de cinq. Un souvenir disparaît quand vous le retirez, ou avec l'idée.</li>
           <li><strong>Les cadeaux que vous offrez</strong> sur une liste de cadeaux partagée : quel cadeau, et s'il est acheté. Sans compte, votre prénom et votre email servent seulement à confirmer la réservation et à vous écrire ; personne ne les voit, pas même la personne qui a fait la liste. Une réservation non confirmée est effacée au bout de 2 heures, et toute réservation disparaît quand vous libérez le cadeau ou que la liste est supprimée.</li>
+          <li><strong>Les courses</strong> : le menu de la semaine (recettes et parts), les articles ajoutés, les lignes cochées, les quantités et rayons choisis à la main, ce que vous avez au placard, et qui est en magasin (oublié au bout de 2 heures). La liste est commune à votre tribu, qui voit qui a ajouté ou coché une ligne ; « Nouvelle liste » efface tout sauf le placard et les rayons.</li>
           <li><strong>Les profils enfants</strong> : prénom et date de naissance, saisis par vous, uniquement pour proposer des idées adaptées à leur âge. Ils ne sont jamais publics.</li>
           <li><strong>Les applications que vous connectez</strong> (par exemple Claude) : le nom de l'application, les droits accordés, les dates d'autorisation et de dernier usage, et, pour chaque appel, l'outil utilisé, son résultat et sa date (jamais le contenu échangé). Les jetons d'accès ne sont gardés que sous forme chiffrée de façon irréversible.</li>
         </ul>
@@ -153,7 +154,7 @@ export default function Privacy() {
       <Section title="Cookies et stockage local">
         <p>
           Tribbae ne dépose aucun cookie. Votre navigateur ou l'application garde seulement votre jeton de connexion
-          (valable 30 jours) et votre liste de courses, pour que vous restiez connecté : c'est strictement nécessaire au
+          (valable 30 jours) pour que vous restiez connecté, et, dans l'application Android, une copie de vos idées et des courses pour s'en servir hors ligne : c'est strictement nécessaire au
           service et ne demande donc pas de consentement.
         </p>
       </Section>

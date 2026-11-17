@@ -16,6 +16,7 @@ import { eventDateMs, formatShortDate, formatTime, hostname, mapsUrl, safeHref, 
 import { canEditFolder, copyInput, toInput } from "../lib/links";
 import { ideaSeoDescription, ideaSeoTitle } from "../lib/seo";
 import { useSession } from "../lib/session";
+import { changeShopping, useShopping } from "../lib/shoppingStore";
 import { createdViaLabel } from "../lib/oauth";
 import { shareOrCopy } from "../lib/share";
 import type { Comment, Link } from "../lib/types";
@@ -355,12 +356,8 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
                 </li>
               ))}
             </ul>
-            {/* La liste de courses ne reprend que nos recettes (celles de la tribu et du cercle comprises) */}
-            {myLinks.some((l) => l.id === link.id) && (
-              <RouterLink to={`/courses?recette=${encodeURIComponent(link.id)}`} className="self-start text-sm font-bold text-terracotta">
-                Préparer la liste de courses
-              </RouterLink>
-            )}
+            {/* Le menu des courses ne reprend que nos recettes (celles de la tribu et du cercle comprises) */}
+            {myLinks.some((l) => l.id === link.id) && <MenuButton link={link} />}
           </section>
         )}
 
@@ -620,5 +617,32 @@ function Comments({ linkId, list, loading, onChange, canModerate, onRequireAuth,
         </button>
       )}
     </div>
+  );
+}
+
+/** « Au menu » : ajoute la recette au menu des courses de la tribu, puis montre ses parts. */
+function MenuButton({ link }: { link: Link }) {
+  const navigate = useNavigate();
+  const { toast } = useFeedback();
+  const { list } = useShopping();
+  const entry = list.menu.find((e) => e.linkId === link.id);
+  if (entry) {
+    return (
+      <RouterLink to="/courses" className="flex h-11 items-center justify-center gap-2 rounded-medium bg-done-bg px-4 text-sm font-bold text-done">
+        <Icon name="check" size={16} strokeWidth={2.6} />Au menu · {entry.servings} pers.
+        <Icon name="chevronRight" size={16} />
+      </RouterLink>
+    );
+  }
+  return (
+    <Button
+      icon="plus"
+      onClick={() => {
+        changeShopping({ type: "menu_add", linkId: link.id }, { title: link.title, ingredients: link.ingredients ?? [], imageUrl: link.imageUrl, servings: link.servings });
+        toast("Ajoutée au menu des courses", "ok", { action: { label: "Voir", onClick: () => navigate("/courses") } });
+      }}
+    >
+      Au menu
+    </Button>
   );
 }
