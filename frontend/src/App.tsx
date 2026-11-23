@@ -7,6 +7,7 @@ import Explorer from "./pages/Explorer";
 import FolderDetail from "./pages/FolderDetail";
 import Home from "./pages/Home";
 import LinkDetail from "./pages/LinkDetail";
+import { GUIDE_LINKS } from "./lib/guides";
 
 /** Écran chargé à la demande ; `guard` : réservé aux comptes connectés. */
 function page(load: () => Promise<{ default: React.ComponentType }>, guard = false) {
@@ -50,6 +51,9 @@ const router = createBrowserRouter([
       { path: "/confidentialite", lazy: page(() => import("./pages/Privacy")) },
       { path: "/cgu", lazy: page(() => import("./pages/Terms")) },
       { path: "/mentions-legales", lazy: page(() => import("./pages/LegalNotice")) },
+      // Guides : une adresse par guide (guides.json), plus leur index
+      { path: "/guides", lazy: page(() => import("./pages/Guide").then((m) => ({ default: m.GuidesIndex }))) },
+      ...GUIDE_LINKS.map((g) => ({ path: `/${g.slug}`, lazy: page(() => import("./pages/Guide")) })),
       { path: "/mes-idees", lazy: page(() => import("./pages/MyIdeas"), true) },
       { path: "/courses", lazy: page(() => import("./pages/Shopping"), true) },
       { path: "/tribu", lazy: page(() => import("./pages/Tribe"), true) },

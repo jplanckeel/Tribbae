@@ -37,6 +37,17 @@ type Page struct {
 	Source      string // page d'origine de l'idée
 	Sections    []Section
 	FAQ         []QA
+	// Guides : paragraphes et listes sous un titre, puis questions fréquentes
+	Blocks    []Block
+	Questions []QA
+}
+
+// Block : un titre h2, des paragraphes, une liste (numérotée si Ordered).
+type Block struct {
+	Title      string
+	Paragraphs []string
+	Items      []string
+	Ordered    bool
 }
 
 type Crumb struct{ Name, Path string }
@@ -106,6 +117,19 @@ var bodyTmpl = template.Must(template.New("body").Parse(`<main class="seo-fallba
       <ul>{{range .Ingredients}}<li>{{.}}</li>{{end}}</ul>{{end}}
       {{- if .Tags}}
       <p class="tags">{{range .Tags}}#{{.}} {{end}}</p>{{end}}
+      {{- range .Blocks}}
+      <section>
+        <h2>{{.Title}}</h2>{{range .Paragraphs}}
+        <p>{{.}}</p>{{end}}{{if .Items}}{{if .Ordered}}
+        <ol>{{range .Items}}<li>{{.}}</li>{{end}}</ol>{{else}}
+        <ul>{{range .Items}}<li>{{.}}</li>{{end}}</ul>{{end}}{{end}}
+      </section>{{end}}
+      {{- if .Questions}}
+      <section>
+        <h2>Questions fréquentes</h2>{{range .Questions}}
+        <h3>{{.Q}}</h3>
+        <p>{{.A}}</p>{{end}}
+      </section>{{end}}
       {{- if .Source}}
       <p><a href="{{.Source}}" rel="nofollow ugc noopener">Voir la page d'origine</a></p>{{end}}
       {{- range .FAQ}}
