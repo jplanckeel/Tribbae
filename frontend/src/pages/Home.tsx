@@ -16,10 +16,15 @@ import { useSession } from "../lib/session";
 import { useAsync } from "../lib/useAsync";
 import { useDesktop } from "../lib/useMediaQuery";
 import Seo from "../components/Seo";
+import HomeVisitor from "./HomeVisitor";
 
 export default function Home() {
+  const session = useSession();
+  const desktop = useDesktop();
+  // Visiteur sans compte : ce qu'est Tribbae, les catégories et les idées publiées
+  if (!session) return <HomeVisitor />;
   // Deux mises en page distinctes (maquettes mobile et « Web · Accueil »)
-  return useDesktop() ? <HomeDesktop /> : <HomeMobile />;
+  return desktop ? <HomeDesktop /> : <HomeMobile />;
 }
 
 function HomeMobile() {
@@ -109,8 +114,7 @@ function HomeMobile() {
           </button>
         </form>
 
-        {session ? (
-          event ? (
+        {event ? (
             <RouterLink to={`/links/${event.id}`} className="ecorce-panel flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-3.5 transition-transform hover:-translate-y-0.5">
               <span className="flex h-16 w-[58px] shrink-0 flex-col items-center justify-center rounded-2xl bg-braise text-ecorce">
                 <span className="text-[11px] font-bold tracking-[0.6px] uppercase">{dayBadge(event.at).weekday}</span>
@@ -129,9 +133,6 @@ function HomeMobile() {
             </RouterLink>
           ) : (
             <NoEventCard />
-          )
-        ) : (
-          <JoinCard />
         )}
 
         <section className="flex flex-col gap-3">
@@ -144,8 +145,8 @@ function HomeMobile() {
               <CategoryTile
                 key={c.key}
                 cat={c}
-                count={session ? counts.get(c.key) ?? 0 : undefined}
-                to={session ? `/mes-idees?cat=${c.slug}` : `/category/${c.slug}`}
+                count={counts.get(c.key) ?? 0}
+                to={`/mes-idees?cat=${c.slug}`}
               />
             ))}
           </Rail>
@@ -300,14 +301,7 @@ function HomeDesktop() {
 
         <aside className={`ecorce-panel flex min-w-0 flex-[1_1_340px] flex-col gap-4 rounded-[28px] bg-ecorce p-6 text-sable ${session && next.length ? "" : "self-start"}`}>
           <h2 className="font-display text-xl font-bold">À venir pour la tribu</h2>
-          {!session ? (
-            <>
-              <p className="text-[15px] text-bark-soft">Créez votre tribu pour ranger vos sorties datées et recevoir un rappel la veille.</p>
-              <RouterLink to="/bienvenue" className="self-start rounded-[14px] bg-braise px-4 py-2.5 text-sm font-bold text-ecorce transition-colors hover:bg-soleil">
-                Créer ma tribu
-              </RouterLink>
-            </>
-          ) : next.length ? (
+          {next.length ? (
             <>
               {next.slice(0, 3).map((l, i) => {
                 const b = dayBadge(l.at);
@@ -432,20 +426,5 @@ function NoEventCard() {
       </span>
       <Icon name="plus" size={20} className="text-terracotta" />
     </button>
-  );
-}
-
-function JoinCard() {
-  return (
-    <RouterLink to="/bienvenue" className="ecorce-panel flex max-w-2xl items-center gap-3.5 rounded-large bg-ecorce p-4 text-sable transition-transform hover:-translate-y-0.5">
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-braise text-ecorce">
-        <Icon name="tribe" size={24} />
-      </span>
-      <span className="flex flex-1 flex-col gap-0.5">
-        <span className="font-display text-[17px] font-bold">Créez votre tribu</span>
-        <span className="text-[13px] text-bark-soft">Rangez vos idées, partagez-les avec vos proches.</span>
-      </span>
-      <Icon name="chevronRight" size={20} className="text-bark-soft" />
-    </RouterLink>
   );
 }
