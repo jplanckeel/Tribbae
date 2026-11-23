@@ -1,5 +1,6 @@
-import { useId, type CSSProperties, type MouseEvent } from "react";
+import { useContext, useId, type CSSProperties, type MouseEvent } from "react";
 import { useViewTransitionState } from "react-router";
+import { IdeaSequenceContext } from "./ideaSequence";
 import type { Link } from "./types";
 
 // Transitions d'écran (maquette « Transitions & navigation »), par l'API View
@@ -70,11 +71,13 @@ export function useIdeaMorph(link: Link) {
   const to = `/links/${link.id}`;
   const transitioning = useViewTransitionState(to);
   const shared = transitioning && openedFrom === id && currentMotion() === "open";
+  // Idée d'un dossier : la fiche passera aux voisines d'un glissement
+  const sequence = useContext(IdeaSequenceContext);
   return {
     linkProps: {
       viewTransition: true,
       // `preview` : la fiche s'affiche tout de suite avec la carte, le temps de charger l'idée
-      state: { motion: "open" as Motion, preview: link },
+      state: { motion: "open" as Motion, preview: link, sequence },
       onClick: (e: MouseEvent) => {
         if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
         openedFrom = id;

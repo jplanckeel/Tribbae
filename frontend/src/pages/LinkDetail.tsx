@@ -20,7 +20,8 @@ import { changeShopping, useShopping } from "../lib/shoppingStore";
 import { createdViaLabel } from "../lib/oauth";
 import { shareOrCopy } from "../lib/share";
 import type { Comment, Link } from "../lib/types";
-import { pushLink, useIdeaMorphTarget } from "../lib/transitions";
+import { neighbors, swipeDirection, type IdeaSequence } from "../lib/ideaSequence";
+import { pushLink, setMotion, useIdeaMorphTarget, type Motion } from "../lib/transitions";
 import { useAsync } from "../lib/useAsync";
 import { ideaAudience } from "../lib/visibility";
 import Seo from "../components/Seo";
@@ -57,6 +58,7 @@ export default function LinkDetail() {
 
 function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void }) {
   const morph = useIdeaMorphTarget(link.id);
+  const swipe = useIdeaSwipe(link.id);
   const session = useSession();
   const navigate = useNavigate();
   const { editLink } = useComposer();
@@ -212,7 +214,7 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   if (link.price) infos.push({ icon: "euro", label: "Prix", value: link.price });
 
   return (
-    <article className="mx-auto max-w-3xl md:px-8 md:pt-8">
+    <article className="mx-auto max-w-3xl md:px-8 md:pt-8" onTouchStart={swipe.onTouchStart} onTouchEnd={swipe.onTouchEnd}>
       <Seo
         title={ideaSeoTitle(link)}
         description={ideaSeoDescription(link, cat)}
@@ -250,7 +252,13 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
           </div>
         </div>
         {made && <DoneStamp label={doneStamp(link)} className="absolute right-5 bottom-11" />}
+        {swipe.around && (
+          <span className="vt-pop absolute top-7 left-1/2 -translate-x-1/2 rounded-full bg-white/92 px-3 py-1 text-[13px] font-bold text-ecorce" aria-live="polite">
+            {swipe.around.position} / {swipe.around.total}
+          </span>
+        )}
       </div>
+      {swipe.around && <SequenceArrows around={swipe.around} onGo={swipe.go} />}
 
       {/* Contenu */}
       <div className="vt-rise relative -mt-7 flex flex-col gap-4 rounded-t-xl bg-sable px-5 pt-[22px] pb-32 md:px-0 md:pb-12">
@@ -644,5 +652,81 @@ function MenuButton({ link }: { link: Link }) {
     >
       Au menu
     </Button>
+  );
+}
+
+/**
+ * Idée ouverte depuis un dossier : glisser sur le côté (ou ← → au clavier)
+ * passe à l'idée précédente ou suivante du dossier, dans l'ordre affiché.
+ * La fiche remplace la précédente dans l'historique : « Retour » ramène au dossier.
+ */
+function useIdeaSwipe(id: string) {
+  const navigate = useNavigate();
+  const { links } = useMyData();
+  const state = useLocation().state as { sequence?: IdeaSequence; motion?: Motion } | null;
+  const around = neighbors(state?.sequence, id);
+  const start = useRef<{ x: number; y: number; t: number } | null>(null);
+
+  const go = (to: string | undefined, dir: "forward" | "back") => {
+    if (!to) return;
+    setMotion("tab", dir);
+    navigate(`/links/${to}`, {
+      replace: true,
+      viewTransition: true,
+      // Le retour au dossier rejoue l'ouverture à l'envers, comme depuis la première fiche
+      state: { motion: state?.motion ?? "open", sequence: state?.sequence, preview: links.find((l) => l.id === to) },
+    });
+  };
+  const goEvent = useEffectEvent((key: string) => {
+    if (key === "ArrowRight") go(around?.next, "forward");
+    if (key === "ArrowLeft") go(around?.prev, "back");
+  });
+
+  useEffect(() => {
+    if (!around) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const t = e.target as HTMLElement | null;
+      // Pas pendant une saisie ni quand une feuille est ouverte
+      if (t?.closest("input, textarea, select, [contenteditable=true]") || document.querySelector("[role=dialog]")) return;
+      goEvent(e.key);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [around]);
+
+  return {
+    around,
+    go,
+    onTouchStart: (e: React.TouchEvent) => {
+      const t = e.target as HTMLElement;
+      // Pas depuis un champ, un rail qui défile sur le côté ou une feuille
+      const scroller = t.closest("input, textarea, [role=dialog], .overflow-x-auto, [data-no-swipe]");
+      start.current = around && e.touches.length === 1 && !scroller ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+    },
+    onTouchEnd: (e: React.TouchEvent) => {
+      const s = start.current;
+      start.current = null;
+      if (!s || !around) return;
+      const touch = e.changedTouches[0];
+      const dir = swipeDirection(touch.clientX - s.x, touch.clientY - s.y, Date.now() - s.t);
+      if (dir === -1) go(around.next, "forward");
+      if (dir === 1) go(around.prev, "back");
+    },
+  };
+}
+
+/** Sur ordinateur : flèches de part et d'autre de la fiche. */
+function SequenceArrows({ around, onGo }: { around: { prev?: string; next?: string }; onGo: (to: string | undefined, dir: "forward" | "back") => void }) {
+  const cls = "fixed top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-card shadow-card hover:bg-sable-2 disabled:opacity-30 md:flex";
+  return (
+    <>
+      <button type="button" onClick={() => onGo(around.prev, "back")} disabled={!around.prev} aria-label="Idée précédente du dossier" className={`${cls} left-6`}>
+        <Icon name="chevronLeft" size={24} />
+      </button>
+      <button type="button" onClick={() => onGo(around.next, "forward")} disabled={!around.next} aria-label="Idée suivante du dossier" className={`${cls} right-6`}>
+        <Icon name="chevronRight" size={24} />
+      </button>
+    </>
   );
 }
