@@ -1,3 +1,4 @@
+import { GUIDE_LINKS } from "../lib/guides";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { Navigate, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate } from "react-router";
 import { clearSession, useSession } from "../lib/session";
@@ -255,16 +256,28 @@ function DesktopSun() {
   );
 }
 
-/** Pied de page des grands écrans. */
+/**
+ * Pied de page : les guides puis les pages d'information. Aussi sur mobile, où
+ * il laisse la place de la barre de navigation (les moteurs lisent la version
+ * mobile : ces liens doivent y être).
+ */
 function Footer() {
   return (
-    <footer className="hidden border-t border-line px-6 py-6 text-center text-sm text-sec md:block">
+    <footer className="flex flex-col gap-3 border-t border-line px-5 pt-6 pb-[calc(124px+env(safe-area-inset-bottom))] text-center text-sm text-sec md:px-6 md:pb-6">
+      <nav aria-label="Guides" className="flex flex-wrap justify-center gap-x-4 gap-y-1.5">
+        <NavLink to="/guides" className="font-bold text-ecorce hover:text-terracotta">Guides :</NavLink>
+        {GUIDE_LINKS.map((g) => (
+          <NavLink key={g.slug} to={`/${g.slug}`} className="hover:text-terracotta">{g.short}</NavLink>
+        ))}
+      </nav>
+      <p>
       Tribbae — les idées de la tribu, au même endroit ·{" "}
       <NavLink to="/a-propos" className="font-semibold text-terracotta hover:text-terracotta-dark">À propos</NavLink> ·{" "}
       <NavLink to="/aide" className="font-semibold text-terracotta hover:text-terracotta-dark">Aide</NavLink> ·{" "}
       <NavLink to="/confidentialite" className="font-semibold text-terracotta hover:text-terracotta-dark">Confidentialité</NavLink> ·{" "}
       <NavLink to="/cgu" className="font-semibold text-terracotta hover:text-terracotta-dark">CGU</NavLink> ·{" "}
       <NavLink to="/mentions-legales" className="font-semibold text-terracotta hover:text-terracotta-dark">Mentions légales</NavLink>
+      </p>
     </footer>
   );
 }
@@ -306,7 +319,7 @@ export function AppLayout() {
           <DesktopSun />
           <TopBar />
           <VerifyEmailBanner />
-          <main id="contenu" className="relative pb-[calc(124px+env(safe-area-inset-bottom))] md:pb-16">
+          <main id="contenu" className="relative pb-10 md:pb-16">
             <ScreenTransitions>
               <Outlet />
             </ScreenTransitions>

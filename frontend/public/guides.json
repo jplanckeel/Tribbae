@@ -1,0 +1,322 @@
+[
+  {
+    "slug": "application-pour-garder-ses-idees",
+    "icon": "bookmark",
+    "title": "Appli pour garder ses idées et liens en famille · Tribbae",
+    "description": "Tribbae, l'application gratuite pour garder au même endroit les liens, recettes, sorties et idées cadeaux de la famille, et les partager avec ses proches.",
+    "h1": "Une application pour garder ses idées et ses liens, en famille",
+    "intro": "Tribbae est une application gratuite, sans publicité, qui sert à garder au même endroit les idées de la famille : un lien vers une sortie, une recette vue sur Instagram, un cadeau repéré en vitrine, un livre conseillé. On colle le lien, Tribbae récupère le titre et l'image, et l'idée se range dans un dossier que toute la famille retrouve, sur le web comme sur Android.",
+    "sections": [
+      {
+        "title": "Le problème : des idées éparpillées partout",
+        "paragraphs": [
+          "Une capture d'écran dans la galerie, un lien envoyé dans la conversation de famille, une recette enregistrée sur Instagram, une note sur le téléphone de l'un des parents : les bonnes idées existent, mais le jour où l'on en a besoin, plus personne ne sait où elles sont.",
+          "Les favoris du navigateur ou les enregistrements d'un réseau social ne se partagent pas avec le reste de la famille, et ne se rangent pas par thème (anniversaire, vacances, idées de week-end)."
+        ]
+      },
+      {
+        "title": "Ce que fait Tribbae",
+        "items": [
+          "Garder n'importe quel lien (site, Instagram, TikTok, Pinterest, boutique en ligne) avec son titre et son image, ou une photo prise sur place, ou une idée écrite à la main.",
+          "Ranger les idées dans sept catégories (activités, cadeaux, recettes, sorties, idées, livres, déco) et dans des dossiers personnalisés : « Vacances d'été », « Anniversaire de Léo », « Week-end pluvieux ».",
+          "Partager avec sa tribu : jusqu'à douze proches voient les mêmes idées et dossiers. Un dossier s'envoie aussi par lien à quelqu'un qui n'a pas de compte.",
+          "Retrouver l'idée au bon moment : recherche, filtres par âge et budget, rappel la veille d'une sortie datée.",
+          "Garder une trace : « C'est fait », avec la date, une note et une photo souvenir."
+        ]
+      },
+      {
+        "title": "Gratuit, privé par défaut",
+        "paragraphs": [
+          "Tribbae est gratuit, sans publicité et sans revente de données. Les idées sont privées par défaut : seule la tribu les voit. Celles que l'on choisit de publier rejoignent l'Explorer, où les autres familles peuvent piocher.",
+          "L'application fonctionne dans le navigateur (tribbae.fr) et sur Android, où les idées restent disponibles même sans connexion."
+        ]
+      }
+    ],
+    "steps": {
+      "title": "Commencer en trois minutes",
+      "items": [
+        "Créez votre tribu avec une adresse email et un mot de passe.",
+        "Collez le lien d'une idée, ou partagez-le depuis une autre application vers Tribbae.",
+        "Rangez-la dans un dossier, puis invitez vos proches par email."
+      ]
+    },
+    "faq": [
+      [
+        "Quelle application utiliser pour garder des liens et les retrouver facilement ?",
+        "Tribbae garde n'importe quel lien avec son titre et son image, le range par catégorie et par dossier, et permet de le retrouver par recherche ou par filtres. Contrairement aux favoris du navigateur, les dossiers se partagent avec la famille."
+      ],
+      [
+        "Tribbae est-il gratuit ?",
+        "Oui. Tribbae est gratuit, sans publicité et sans abonnement."
+      ],
+      [
+        "Peut-on l'utiliser sur téléphone ?",
+        "Oui, sur Android avec l'application, et sur tous les téléphones et ordinateurs dans le navigateur, sur tribbae.fr."
+      ],
+      [
+        "Mes idées sont-elles publiques ?",
+        "Non. Les idées sont privées par défaut et ne sont visibles que de votre tribu. Vous choisissez idée par idée celles que vous publiez."
+      ]
+    ],
+    "related": [
+      "sauvegarder-recettes-instagram-tiktok",
+      "liste-de-cadeaux-partagee",
+      "idees-activites-enfants"
+    ]
+  },
+  {
+    "slug": "sauvegarder-recettes-instagram-tiktok",
+    "icon": "recette",
+    "title": "Sauvegarder les recettes d'Instagram et TikTok · Tribbae",
+    "description": "Gardez les recettes, activités et idées repérées sur Instagram ou TikTok dans un même endroit, rangées et partagées avec la famille, avec leurs ingrédients.",
+    "h1": "Sauvegarder les recettes et les idées vues sur Instagram et TikTok",
+    "intro": "Pour ne plus perdre une recette ou une idée vue sur Instagram ou TikTok, il suffit de partager la publication vers Tribbae (ou de coller son lien) : l'application garde la légende et l'image, et la range dans une catégorie. La recette peut ensuite recevoir ses ingrédients, aller au menu de la semaine et remplir la liste de courses.",
+    "ideas": {
+      "category": "LINK_CATEGORY_RECETTE",
+      "title": "Des recettes gardées par les familles"
+    },
+    "sections": [
+      {
+        "title": "Pourquoi les enregistrements des réseaux sociaux ne suffisent pas",
+        "paragraphs": [
+          "Les publications enregistrées sur Instagram ou TikTok s'accumulent sans ordre, ne se partagent pas avec le reste de la famille, et disparaissent si le compte qui les a publiées les retire.",
+          "Tribbae garde une copie de l'image (les adresses des images d'Instagram, de Facebook et de TikTok expirent au bout de quelques jours), le titre et le lien d'origine, pour que l'idée reste lisible."
+        ]
+      },
+      {
+        "title": "Ce que devient une recette gardée",
+        "items": [
+          "Elle se range dans la catégorie Recettes, ou dans un dossier (« Goûters », « Repas de la semaine »).",
+          "On y ajoute ses ingrédients, un par ligne, et le nombre de personnes prévu.",
+          "Mise au menu, elle remplit la liste de courses de la tribu, quantités recalculées selon le nombre de parts.",
+          "Une fois cuisinée, on la marque « C'est fait », avec une note et une photo."
+        ]
+      }
+    ],
+    "steps": {
+      "title": "Garder une publication en deux gestes",
+      "items": [
+        "Sur Instagram ou TikTok, touchez « Partager », puis Tribbae (sur Android), ou copiez le lien.",
+        "Dans Tribbae, vérifiez le titre proposé, choisissez la catégorie et le dossier, puis enregistrez."
+      ]
+    },
+    "faq": [
+      [
+        "Comment sauvegarder une recette vue sur Instagram ?",
+        "Copiez le lien de la publication et collez-le dans Tribbae (ou partagez-la vers l'application Android) : la légende et l'image sont récupérées, et la recette se range dans la catégorie Recettes."
+      ],
+      [
+        "Et si la publication est supprimée ?",
+        "Tribbae garde une copie de l'image et le texte de l'idée : elle reste dans vos dossiers même si la publication d'origine disparaît."
+      ],
+      [
+        "Peut-on partager ces recettes avec sa famille ?",
+        "Oui : toute la tribu voit les mêmes idées. Un dossier peut aussi être envoyé par lien à quelqu'un qui n'a pas de compte."
+      ]
+    ],
+    "related": [
+      "liste-de-courses-partagee",
+      "application-pour-garder-ses-idees"
+    ]
+  },
+  {
+    "slug": "liste-de-cadeaux-partagee",
+    "icon": "cadeau",
+    "title": "Liste de cadeaux partagée, sans doublon ni inscription · Tribbae",
+    "description": "Une liste de cadeaux pour un anniversaire, Noël ou une naissance : vos proches réservent sans compte, sans doublon, et la surprise reste entière.",
+    "h1": "Une liste de cadeaux partagée, sans doublon et sans inscription",
+    "intro": "Avec Tribbae, un dossier d'idées cadeaux devient une liste de cadeaux : on l'envoie par lien aux grands-parents, parrains et amis, qui réservent un cadeau sans créer de compte. Les autres voient qu'il est pris, ce qui évite les doublons, et vous ne savez pas qui offre quoi : la surprise reste entière.",
+    "ideas": {
+      "category": "LINK_CATEGORY_CADEAU",
+      "title": "Des idées cadeaux partagées par les familles"
+    },
+    "sections": [
+      {
+        "title": "Pour quelles occasions",
+        "items": [
+          "L'anniversaire d'un enfant, avec un compte à rebours jusqu'au jour J.",
+          "Noël, avec une liste par enfant.",
+          "Une naissance ou une liste de naissance simple.",
+          "Une fête des pères ou des mères, un départ, un mariage."
+        ]
+      },
+      {
+        "title": "Comment se passe la réservation",
+        "paragraphs": [
+          "La personne ouvre le lien, choisit un cadeau et laisse son prénom et son adresse email, uniquement pour confirmer la réservation. Personne d'autre ne voit qui a réservé, pas même la personne qui a fait la liste.",
+          "Une réservation non confirmée est libérée au bout de deux heures ; un cadeau acheté s'affiche comme offert pour les autres membres de la tribu."
+        ]
+      }
+    ],
+    "steps": {
+      "title": "Créer la liste",
+      "items": [
+        "Créez un dossier (par exemple « Anniversaire de Jules, 8 ans ») et ajoutez-y vos idées cadeaux avec leur lien.",
+        "Activez la liste de cadeaux dans la personnalisation du dossier.",
+        "Envoyez le lien du dossier à vos proches."
+      ]
+    },
+    "faq": [
+      [
+        "Comment éviter que deux personnes offrent le même cadeau ?",
+        "Sur une liste de cadeaux Tribbae, un cadeau réservé apparaît comme pris pour tout le monde : les autres en choisissent un autre."
+      ],
+      [
+        "Les proches doivent-ils créer un compte ?",
+        "Non. Ils ouvrent le lien et réservent avec leur prénom et leur adresse email, qui ne servent qu'à confirmer la réservation."
+      ],
+      [
+        "Est-ce que je saurai qui offre quoi ?",
+        "Non : la personne qui a fait la liste ne voit pas qui a réservé. Elle voit seulement qu'un cadeau est pris."
+      ]
+    ],
+    "related": [
+      "organiser-anniversaire-enfant",
+      "application-pour-garder-ses-idees"
+    ]
+  },
+  {
+    "slug": "liste-de-courses-partagee",
+    "icon": "cart",
+    "title": "Liste de courses partagée en famille · Tribbae",
+    "description": "Une seule liste de courses pour la famille, remplie à partir du menu de la semaine, rangée par rayon, et cochée à plusieurs en magasin, même hors connexion.",
+    "h1": "Une liste de courses partagée en famille, faite à partir des recettes",
+    "intro": "Dans Tribbae, la liste de courses est commune à toute la tribu : on choisit les recettes de la semaine et le nombre de personnes, et les ingrédients s'ajoutent tout seuls, additionnés et rangés par rayon. L'un prépare le menu à la maison, l'autre coche en magasin ; chacun voit la même liste.",
+    "sections": [
+      {
+        "title": "Du menu de la semaine à la liste",
+        "items": [
+          "Ajoutez deux ou trois recettes au menu : leurs ingrédients rejoignent la liste.",
+          "Changez le nombre de personnes : les quantités sont recalculées (250 g de farine pour 4 deviennent 375 g pour 6).",
+          "Les produits de base (sel, huile, farine) sont proposés à part : ce que vous avez au placard sort de la liste.",
+          "Ajoutez à la main ce qui ne vient pas d'une recette : lait, couches, papier toilette."
+        ]
+      },
+      {
+        "title": "En magasin",
+        "paragraphs": [
+          "Le mode « en magasin » affiche de grandes lignes faciles à cocher et garde l'écran allumé. Ce qu'un proche coche de son côté apparaît chez vous, et la tribu voit qui est en train de faire les courses.",
+          "Sur Android, la liste fonctionne même sans réseau : les changements partent dès que la connexion revient."
+        ]
+      }
+    ],
+    "faq": [
+      [
+        "Comment partager une liste de courses avec son conjoint ?",
+        "Dans Tribbae, toute la tribu partage la même liste de courses : il suffit d'inviter son conjoint dans sa tribu. Chacun ajoute et coche, et la liste se met à jour pour tous."
+      ],
+      [
+        "Peut-on faire une liste de courses à partir de recettes ?",
+        "Oui : les recettes mises au menu ajoutent leurs ingrédients à la liste, additionnés par produit et adaptés au nombre de personnes."
+      ],
+      [
+        "La liste est-elle rangée par rayon ?",
+        "Oui, par rayon d'un supermarché (fruits et légumes, crèmerie, épicerie…). Un rayon choisi à la main pour un produit est retenu pour la tribu."
+      ]
+    ],
+    "related": [
+      "sauvegarder-recettes-instagram-tiktok",
+      "application-pour-garder-ses-idees"
+    ]
+  },
+  {
+    "slug": "idees-activites-enfants",
+    "icon": "activite",
+    "title": "Idées d'activités pour enfants, à faire en famille · Tribbae",
+    "description": "Des idées d'activités pour enfants partagées par les familles : bricolages, jeux, sorties nature, jours de pluie. Gardez-les, filtrez par âge et partagez-les.",
+    "h1": "Idées d'activités pour enfants, à faire en famille",
+    "intro": "Que faire avec les enfants ce week-end ? Sur Tribbae, les familles gardent et partagent leurs idées d'activités : bricolages, jeux, sorties nature, activités pour les jours de pluie. Chaque idée indique l'âge conseillé et le budget, et se garde en un geste dans ses propres dossiers.",
+    "ideas": {
+      "category": "LINK_CATEGORY_ACTIVITE",
+      "title": "Des activités partagées par les familles"
+    },
+    "sections": [
+      {
+        "title": "Trouver une activité adaptée",
+        "items": [
+          "Par âge : tout-petits, 3–6 ans, 6–10 ans, ados.",
+          "Par budget : gratuit, petit budget.",
+          "Par moment : ce week-end, les vacances, un jour de pluie.",
+          "Par envie : l'IA de Tribbae propose des idées à partir d'une phrase (« des activités d'intérieur pour un enfant de 5 ans »), que l'on choisit avant de les garder."
+        ]
+      },
+      {
+        "title": "Garder les idées qui plaisent",
+        "paragraphs": [
+          "Une activité repérée dans l'Explorer ou sur un site se garde dans un dossier (« Mercredis », « Vacances de la Toussaint »), avec l'âge des enfants de la tribu pour retrouver les idées adaptées.",
+          "Une fois l'activité faite, « C'est fait » garde la date, une note et une photo : les souvenirs de la famille restent avec l'idée."
+        ]
+      }
+    ],
+    "faq": [
+      [
+        "Que faire avec un enfant un jour de pluie ?",
+        "Bricolages, cabane en carton, chasse au trésor dans la maison, pâte à sel, cuisine à quatre mains : l'Explorer de Tribbae rassemble les idées d'activités d'intérieur partagées par les familles, filtrables par âge."
+      ],
+      [
+        "Comment trouver des activités pour un enfant de 3 à 6 ans ?",
+        "Dans l'Explorer de Tribbae, filtrez les activités par âge (3–6 ans) et par budget, ou décrivez votre envie à l'IA, qui propose des idées adaptées."
+      ],
+      [
+        "Peut-on partager ses idées d'activités ?",
+        "Oui : avec sa tribu, avec un proche par lien, ou avec toutes les familles en publiant l'idée dans l'Explorer."
+      ]
+    ],
+    "related": [
+      "organiser-anniversaire-enfant",
+      "application-pour-garder-ses-idees"
+    ]
+  },
+  {
+    "slug": "organiser-anniversaire-enfant",
+    "icon": "calendar",
+    "title": "Organiser l'anniversaire d'un enfant · Tribbae",
+    "description": "Activités, gâteau, déco et cadeaux de l'anniversaire d'un enfant dans un dossier partagé, avec compte à rebours et liste de cadeaux sans doublon.",
+    "h1": "Organiser l'anniversaire d'un enfant, à plusieurs",
+    "intro": "Pour organiser l'anniversaire d'un enfant sans rien oublier, Tribbae rassemble dans un même dossier les idées d'activités, le gâteau, la déco et les cadeaux, avec un compte à rebours jusqu'au jour J. Le dossier se partage avec la famille, et les idées cadeaux deviennent une liste que les invités réservent sans doublon.",
+    "ideas": {
+      "category": "LINK_CATEGORY_DECORATION",
+      "title": "Des idées déco partagées par les familles"
+    },
+    "sections": [
+      {
+        "title": "Un dossier pour tout l'anniversaire",
+        "items": [
+          "Une date clé et un compte à rebours, avec une couverture « anniversaire ».",
+          "Les activités et jeux pour les invités, avec l'âge conseillé.",
+          "La recette du gâteau, qui peut aller au menu et sur la liste de courses.",
+          "La déco, repérée sur Pinterest ou Instagram.",
+          "Les idées cadeaux, à transformer en liste de cadeaux pour les proches."
+        ]
+      },
+      {
+        "title": "À plusieurs",
+        "paragraphs": [
+          "La tribu voit et complète le dossier. Les grands-parents ou les parrains reçoivent le lien de la liste de cadeaux et réservent sans créer de compte, sans que l'enfant ni les parents sachent qui offre quoi."
+        ]
+      }
+    ],
+    "steps": {
+      "title": "En pratique",
+      "items": [
+        "Créez un dossier « Anniversaire de … » et réglez sa date.",
+        "Ajoutez les idées (activités, gâteau, déco, cadeaux) au fil des semaines.",
+        "Activez la liste de cadeaux, puis envoyez le lien aux proches."
+      ]
+    },
+    "faq": [
+      [
+        "Comment organiser l'anniversaire d'un enfant sans rien oublier ?",
+        "Rassemblez tout dans un dossier Tribbae daté : activités, gâteau, déco et cadeaux, avec un compte à rebours. La famille complète le dossier, et la liste de cadeaux évite les doublons."
+      ],
+      [
+        "Comment éviter les cadeaux en double à un anniversaire ?",
+        "Transformez le dossier d'idées cadeaux en liste de cadeaux Tribbae : les invités réservent un cadeau, et les autres voient qu'il est pris."
+      ]
+    ],
+    "related": [
+      "liste-de-cadeaux-partagee",
+      "idees-activites-enfants"
+    ]
+  }
+]

@@ -82,6 +82,10 @@ func newTestHandler(t *testing.T) *Handler {
 	if err := os.WriteFile(filepath.Join(dir, "about.json"), []byte(about), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	guides := `[{"slug":"liste-de-cadeaux-partagee","title":"Liste de cadeaux partagée · Tribbae","description":"Une liste de cadeaux sans doublon.","h1":"Une liste de cadeaux partagée","intro":"Tribbae fait des listes de cadeaux.","ideas":{"category":"LINK_CATEGORY_RECETTE","title":"Des recettes"},"sections":[{"title":"Pour quelles occasions","items":["Noël"]}],"steps":{"title":"Créer la liste","items":["Créez un dossier."]},"faq":[["Faut-il un compte ?","Non."]],"related":["autre-guide"]},{"slug":"autre-guide","title":"Autre · Tribbae","description":"Autre.","h1":"Un autre guide","intro":"Autre."},{"slug":"Pas Valide","h1":"x"}]`
+	if err := os.WriteFile(filepath.Join(dir, "guides.json"), []byte(guides), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	src := &fakeSource{
 		ideas: map[string]Idea{
 			"0000000000000000000000a1": {
@@ -434,5 +438,72 @@ func TestHomeNamesTheBrandAndVerifiesOwnership(t *testing.T) {
 	// La vérification ne figure que sur l'accueil
 	if strings.Contains(get(t, h, "/explorer").Body.String(), "google-site-verification") {
 		t.Error("balise de vérification hors de l'accueil")
+	}
+}
+
+func TestGuidePages(t *testing.T) {
+	h := newTestHandler(t)
+	w := get(t, h, "/liste-de-cadeaux-partagee")
+	body := w.Body.String()
+	if w.Code != http.StatusOK {
+		t.Fatalf("guide : %d", w.Code)
+	}
+	for _, want := range []string{
+		"<title data-seo>Liste de cadeaux partagée · Tribbae</title>",
+		"<h1>Une liste de cadeaux partagée</h1>",
+		"<h2>Pour quelles occasions</h2>",
+		"<ol><li>Créez un dossier.</li></ol>",
+		"<h2>Questions fréquentes</h2>",
+		"<h3>Faut-il un compte ?</h3>",
+		`href="/autre-guide"`,
+		`href="/links/0000000000000000000000a1"`,
+		`href="/category/recette"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("guide sans %q", want)
+		}
+	}
+	types := map[any]bool{}
+	for _, ld := range jsonLD(t, body) {
+		types[ld["@type"]] = true
+	}
+	for _, want := range []string{"Article", "FAQPage", "BreadcrumbList", "ItemList"} {
+		if !types[want] {
+			t.Errorf("guide sans schema %s (%v)", want, types)
+		}
+	}
+	// Index, liens depuis l'accueil et la catégorie, guide invalide ignoré
+	if !strings.Contains(get(t, h, "/guides").Body.String(), `href="/liste-de-cadeaux-partagee"`) {
+		t.Error("/guides ne liste pas le guide")
+	}
+	if !strings.Contains(get(t, h, "/").Body.String(), `href="/autre-guide"`) {
+		t.Error("l'accueil ne lie pas les guides")
+	}
+	if !strings.Contains(get(t, h, "/category/recette").Body.String(), `href="/liste-de-cadeaux-partagee"`) {
+		t.Error("la catégorie ne lie pas son guide")
+	}
+	if w := get(t, h, "/pas-un-guide"); w.Code != http.StatusNotFound {
+		t.Errorf("adresse inconnue : %d", w.Code)
+	}
+}
+
+func TestFeedsForSearchAndAI(t *testing.T) {
+	h := newTestHandler(t)
+	ctx := context.Background()
+	sm, err := h.sitemap(ctx)
+	if err != nil || !strings.Contains(string(sm), "https://tribbae.test/liste-de-cadeaux-partagee</loc>") || !strings.Contains(string(sm), "https://tribbae.test/guides</loc>") {
+		t.Errorf("sitemap sans guides (%v)", err)
+	}
+	llms, _ := h.llms(ctx)
+	for _, want := range []string{"## En bref", "## Guides", "/liste-de-cadeaux-partagee", "llms-full.txt"} {
+		if !strings.Contains(string(llms), want) {
+			t.Errorf("llms.txt sans %q", want)
+		}
+	}
+	full, _ := h.llmsFull(ctx)
+	for _, want := range []string{"## Une liste de cadeaux partagée", "Tribbae fait des listes de cadeaux.", "1. Créez un dossier.", "**Faut-il un compte ?**", "## À propos de Tribbae", "**Comment créer ma tribu ?**"} {
+		if !strings.Contains(string(full), want) {
+			t.Errorf("llms-full.txt sans %q", want)
+		}
 	}
 }

@@ -431,7 +431,7 @@ func withSPA(apiHandler http.Handler, siteURL string, content seo.Source, seoOpt
 	if err != nil {
 		log.Fatalf("seo: %v", err)
 	}
-	sitemap, llms := pages.Sitemap(), pages.LLMs()
+	sitemap, llms, llmsFull := pages.Sitemap(), pages.LLMs(), pages.LLMsFull()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Les routes API passent directement au handler gRPC-gateway
@@ -446,6 +446,9 @@ func withSPA(apiHandler http.Handler, siteURL string, content seo.Source, seoOpt
 			return
 		case "/llms.txt":
 			llms(w, r)
+			return
+		case "/llms-full.txt":
+			llmsFull(w, r)
 			return
 		}
 		// Fichier de clé IndexNow : prouve que les notifications viennent du site

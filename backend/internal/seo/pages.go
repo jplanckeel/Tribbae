@@ -107,6 +107,11 @@ func (h *Handler) page(ctx context.Context, path string, query url.Values) (*Pag
 		return legalNotice(), nil
 	case path == "/a-propos":
 		return h.aboutPage(), nil
+	case path == "/guides":
+		return h.guidesIndex(), nil
+	}
+	if g := h.guideBySlug(strings.TrimPrefix(path, "/")); g != nil {
+		return h.guidePage(ctx, g)
 	}
 	if title, ok := private[path]; ok {
 		return &Page{Status: http.StatusOK, Title: title + " · " + siteName, Description: siteDescription, NoIndex: true, H1: title}, nil
@@ -149,6 +154,9 @@ func (h *Handler) home(ctx context.Context) (*Page, error) {
 	}
 	if len(folders) > 0 {
 		p.Sections = append(p.Sections, folderSection(folders))
+	}
+	if len(h.guides) > 0 {
+		p.Sections = append(p.Sections, h.guidesSection("Guides pratiques", nil))
 	}
 	p.Sections = append(p.Sections, Section{Title: "En savoir plus", Items: []Item{
 		{Title: "À propos de Tribbae", Path: "/a-propos", Text: "pourquoi Tribbae existe et nos principes"},
@@ -203,6 +211,16 @@ func (h *Handler) category(ctx context.Context, slug string) (*Page, error) {
 	}
 	if len(ideas) == 0 {
 		p.Sections[0] = Section{Title: "Bientôt ici", Items: []Item{{Title: "Explorer toutes les idées", Path: "/explorer"}}}
+	}
+	// Les guides qui parlent de cette catégorie
+	var related []string
+	for _, g := range h.guides {
+		if g.Ideas != nil && g.Ideas.Category == c.Key {
+			related = append(related, g.Slug)
+		}
+	}
+	if len(related) > 0 {
+		p.Sections = append(p.Sections, h.guidesSection("Nos guides", related))
 	}
 	p.JSONLD = []any{h.collectionPage(p, ideaItems(ideas)), h.breadcrumbs(p.Breadcrumb)}
 	return p, nil

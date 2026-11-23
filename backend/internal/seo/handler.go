@@ -41,11 +41,12 @@ type Options struct {
 }
 
 type Handler struct {
-	site  string // origine publique, ex. https://tribbae.fr
-	opts  Options
-	src   Source
-	faq   []QA
-	about *aboutContent
+	site   string // origine publique, ex. https://tribbae.fr
+	opts   Options
+	src    Source
+	faq    []QA
+	about  *aboutContent
+	guides []guide
 
 	// index.html découpé autour de l'en-tête et de #root
 	beforeHead, betweenHeadRoot, afterRoot []byte
@@ -74,6 +75,7 @@ func New(site, staticDir string, src Source, opts ...Options) (*Handler, error) 
 	}
 	h.faq = loadFAQ(filepath.Join(staticDir, "faq.json"))
 	h.about = loadAbout(filepath.Join(staticDir, "about.json"))
+	h.guides = loadGuides(filepath.Join(staticDir, "guides.json"))
 	return h, nil
 }
 
@@ -221,6 +223,11 @@ func (h *Handler) Sitemap() http.HandlerFunc {
 }
 
 // LLMs sert /llms.txt.
+// LLMsFull sert /llms-full.txt (tout le contenu de référence en Markdown).
+func (h *Handler) LLMsFull() http.HandlerFunc {
+	return h.feed("llms-full.txt", "text/plain; charset=utf-8", h.llmsFull)
+}
+
 func (h *Handler) LLMs() http.HandlerFunc {
 	return h.feed("llms", "text/plain; charset=utf-8", h.llms)
 }
