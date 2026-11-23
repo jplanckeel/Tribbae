@@ -121,16 +121,40 @@ func notFound() *Page {
 	}
 }
 
+// homeIntro : ce qu'est Tribbae, en une phrase qui nomme la marque.
+const homeIntro = "Tribbae est l'appli gratuite, sans publicité, où la famille garde ses idées au même endroit : une sortie repérée sur Instagram, une recette, un cadeau pour Mamie, un livre conseillé. On les range en dossiers, on les partage avec sa tribu, et on pioche dans celles que les autres familles ont publiées."
+
+// homeTopics : ce que fait Tribbae, en quelques paragraphes (titres h2).
+var homeTopics = []QA{
+	{"Garder les idées de la famille au même endroit", "Collez un lien (site, Instagram, TikTok…), prenez une photo ou écrivez l'idée : Tribbae récupère le titre et l'image, et la range dans l'une des sept catégories (activités, cadeaux, recettes, sorties, idées, livres, déco). Les recettes gardent leurs ingrédients."},
+	{"Partager avec sa tribu", "Jusqu'à douze proches forment une tribu : ils voient les mêmes idées, dossiers et profils des enfants. Un dossier se partage aussi par lien avec ceux qui n'ont pas de compte, et une liste de cadeaux se réserve sans s'inscrire."},
+	{"Faire ensemble", "Rappel la veille d'une sortie, « C'est fait » et souvenirs, liste de courses commune tirée des recettes de la semaine : Tribbae accompagne la famille du repérage jusqu'au jour J."},
+	{"Piocher dans les idées des autres familles", "Les idées et dossiers que les familles choisissent de publier sont rassemblés dans l'Explorer, par catégorie, âge et budget. Tout le reste reste privé."},
+}
+
 func (h *Handler) home(ctx context.Context) (*Page, error) {
 	ideas, err := h.src.PublishedIdeas(ctx, "", listLimit)
 	if err != nil {
 		return nil, err
 	}
+	folders, err := h.src.PublishedFolders(ctx, 12)
+	if err != nil {
+		return nil, err
+	}
 	p := &Page{
 		Status: http.StatusOK, Title: siteTagline, Description: homeDescription, Path: "/",
-		H1: "Les idées de la famille au même endroit", Intro: siteDescription,
+		H1: "Tribbae, les idées de la famille au même endroit", Intro: homeIntro,
+		FAQ:      homeTopics,
 		Sections: []Section{categorySection(), ideaSection("Dernières idées partagées", ideas)},
 	}
+	if len(folders) > 0 {
+		p.Sections = append(p.Sections, folderSection(folders))
+	}
+	p.Sections = append(p.Sections, Section{Title: "En savoir plus", Items: []Item{
+		{Title: "À propos de Tribbae", Path: "/a-propos", Text: "pourquoi Tribbae existe et nos principes"},
+		{Title: "Aide et questions fréquentes", Path: "/aide"},
+		{Title: "Explorer les idées des familles", Path: "/explorer"},
+	}})
 	p.JSONLD = []any{h.siteGraph(), h.itemList("Dernières idées partagées sur Tribbae", ideaItems(ideas))}
 	return p, nil
 }
@@ -195,8 +219,8 @@ func (h *Handler) idea(ctx context.Context, id string) (*Page, error) {
 		Status: http.StatusOK, Title: ideaTitle(i),
 		Description: ideaDescription(i, c), Path: path, Image: absoluteImage(i.ImageURL), OGType: "article",
 		Published: i.Created, Modified: i.Updated, Section: c.Label,
-		Breadcrumb: []Crumb{{"Accueil", "/"}, {c.Plural, "/category/" + c.Slug}, {i.Title, path}},
-		H1:         i.Title, Intro: i.Description, Tags: i.Tags, Ingredients: i.Ingredients,
+		Breadcrumb: []Crumb{{"Accueil", "/"}, {c.Plural, "/category/" + c.Slug}, {cleanTitle(i.Title), path}},
+		H1:         ideaName(i), Intro: cleanDescription(i.Description), Tags: i.Tags, Ingredients: i.Ingredients,
 		Source: safeURL(i.URL),
 	}
 	if i.Author != "" {
@@ -294,7 +318,7 @@ func categorySection() Section {
 func ideaSection(title string, ideas []Idea) Section {
 	s := Section{Title: title}
 	for _, i := range ideas {
-		s.Items = append(s.Items, Item{Title: i.Title, Path: "/links/" + i.ID, Text: clip(i.Description, 140)})
+		s.Items = append(s.Items, Item{Title: cleanTitle(i.Title), Path: "/links/" + i.ID, Text: clip(cleanDescription(i.Description), 140)})
 	}
 	return s
 }
@@ -334,7 +358,7 @@ func ideaTitles(ideas []Idea, n int) string {
 		if len(t) == n {
 			break
 		}
-		t = append(t, i.Title)
+		t = append(t, cleanTitle(i.Title))
 	}
 	return strings.Join(t, ", ")
 }

@@ -47,6 +47,14 @@ type Config struct {
 	// MCPAllowedOrigins : en-têtes Origin acceptés sur /mcp en plus de SITE_URL
 	// (une requête sans Origin, de serveur à serveur, passe toujours)
 	MCPAllowedOrigins []string
+	// Référencement : codes de vérification de Google Search Console et de Bing
+	// Webmaster Tools (balises meta de l'accueil), profils officiels de la
+	// marque (fiche Google Play, réseaux sociaux : schema.org sameAs) et clé
+	// IndexNow (Bing, Yandex… prévenus dès qu'une page publique change)
+	GoogleSiteVerification string
+	BingSiteVerification   string
+	SiteSameAs             []string
+	IndexNowKey            string
 }
 
 // insecureJWTSecret est la valeur d'exemple de .env.example : elle n'est
@@ -80,6 +88,10 @@ func Load() *Config {
 	cfg.OAuthRedirectURIs = splitList(getEnv("OAUTH_REDIRECT_URIS", "https://claude.ai/api/mcp/auth_callback,https://claude.com/api/mcp/auth_callback"))
 	cfg.MCPDailyQuota = getEnvInt("MCP_DAILY_CREATE_QUOTA", 30)
 	cfg.MCPAllowedOrigins = splitList(getEnv("MCP_ALLOWED_ORIGINS", "https://claude.ai,https://claude.com"))
+	cfg.GoogleSiteVerification = getEnv("GOOGLE_SITE_VERIFICATION", "")
+	cfg.BingSiteVerification = getEnv("BING_SITE_VERIFICATION", "")
+	cfg.SiteSameAs = splitList(getEnv("SITE_SAME_AS", ""))
+	cfg.IndexNowKey = getEnv("INDEXNOW_KEY", "")
 	return cfg
 }
 

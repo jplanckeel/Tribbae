@@ -4,6 +4,9 @@
 # privés sont marqués noindex ; les liens de partage de dossier sont secrets.
 User-agent: *
 Allow: /
+# Les photos des idées publiées (images des fiches, du plan du site et des
+# aperçus) sont publiques ; le reste de l'API ne s'indexe pas
+Allow: /v1/photos/
 Disallow: /v1/
 Disallow: /share/
 Disallow: /admin

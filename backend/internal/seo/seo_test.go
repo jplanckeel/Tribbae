@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -296,6 +297,10 @@ func TestCleanTitle(t *testing.T) {
 		"Le ciel des tout-petits – Planetarium":                                                                  "Le ciel des tout-petits – Planetarium",
 		"Un titre unique beaucoup trop long pour tenir dans un résultat de recherche":                            "Un titre unique beaucoup trop long pour tenir…",
 		"Livre": "Livre",
+		`Lou Elsener sur Instagram: "Salade de pâtes croustillantes pour mes djeuns"`:  "Salade de pâtes croustillantes pour mes djeuns",
+		`CG | Nutritionniste on Instagram: "🍪 Cookies sans cuisson #recette #healthy"`: "Cookies sans cuisson",
+		`Zoe sur Instagram : « Cuire à 180°C pendant 20 min ✨ »`:                       "Cuire à 180°C pendant 20 min",
+		`Zoe sur Instagram: ""`: "Publication de Zoe sur Instagram",
 	} {
 		if got := cleanTitle(in); got != want {
 			t.Errorf("cleanTitle(%q) = %q, want %q", in, got, want)
@@ -312,6 +317,8 @@ func TestIdeaDescription(t *testing.T) {
 		{Idea{Title: "Le voleur", Description: "Un album.", AgeRange: "3–6 ans", Author: "Alice"}, "Livre partagé par Alice sur Tribbae, pour les 3–6 ans : Un album."},
 		{Idea{Title: "Le voleur", Description: "Le voleur", AgeRange: "Tous âges"}, "Livre partagé sur Tribbae, pour tous les âges : Le voleur."},
 		{Idea{Title: "Le voleur", AgeRange: "petits", Price: "12 €"}, "Livre partagé sur Tribbae, âge : petits : Le voleur. Prix : 12 €."},
+		{Idea{Title: `Lou sur Instagram: "Salade"`, Description: `151K likes, 788 comments - louloukitchen_ le October 9, 2025: "Salade"`}, "Livre partagé sur Tribbae : Salade."},
+		{Idea{Title: `Lou sur Instagram: "Salade"`, Description: `1 234 J’aime, 56 commentaires - lou le 9 octobre 2025 : « Une salade d'été 🥗 »`}, "Livre partagé sur Tribbae : Une salade d'été"},
 	} {
 		if got := ideaDescription(&c.idea, book); got != c.want {
 			t.Errorf("ideaDescription = %q, want %q", got, c.want)
@@ -376,5 +383,56 @@ func TestMalformedAddressesAreUnknownPages(t *testing.T) {
 		if body := w.Body.String(); strings.Contains(body, "<script>alert") || strings.Contains(body, "onerror") {
 			t.Errorf("%s : l'adresse se retrouve dans la page :\n%s", path, body)
 		}
+	}
+}
+
+func TestTrailingSlashRedirects(t *testing.T) {
+	h := newTestHandler(t)
+	for target, want := range map[string]string{
+		"/category/recette/":  "/category/recette",
+		"/explorer/?q=crepes": "/explorer?q=crepes",
+		"//evil.example/":     "/",
+	} {
+		w := get(t, h, target)
+		if w.Code != http.StatusMovedPermanently || w.Header().Get("Location") != want {
+			t.Errorf("%s → %d %q, want 301 %q", target, w.Code, w.Header().Get("Location"), want)
+		}
+	}
+	if w := get(t, h, "/"); w.Code != http.StatusOK {
+		t.Errorf("/ → %d", w.Code)
+	}
+}
+
+func TestHomeNamesTheBrandAndVerifiesOwnership(t *testing.T) {
+	h := newTestHandler(t)
+	h.opts = Options{GoogleVerification: "g-123", BingVerification: "b-456", SameAs: []string{"https://play.google.com/store/apps/details?id=fr.tribbae.app"}}
+	home := get(t, h, "/").Body.String()
+	for _, want := range []string{
+		"<h1>Tribbae, les idées de la famille au même endroit</h1>",
+		`<meta name="google-site-verification" content="g-123" />`,
+		`<meta name="msvalidate.01" content="b-456" />`,
+		"<h2>Partager avec sa tribu</h2>",
+		`href="/a-propos"`,
+	} {
+		if !strings.Contains(home, want) {
+			t.Errorf("accueil sans %q", want)
+		}
+	}
+	var org map[string]any
+	for _, ld := range jsonLD(t, home) {
+		if graph, ok := ld["@graph"].([]any); ok {
+			for _, n := range graph {
+				if m := n.(map[string]any); m["@type"] == "Organization" {
+					org = m
+				}
+			}
+		}
+	}
+	if org == nil || fmt.Sprint(org["sameAs"]) != "[https://play.google.com/store/apps/details?id=fr.tribbae.app]" {
+		t.Errorf("Organization sans sameAs : %v", org)
+	}
+	// La vérification ne figure que sur l'accueil
+	if strings.Contains(get(t, h, "/explorer").Body.String(), "google-site-verification") {
+		t.Error("balise de vérification hors de l'accueil")
 	}
 }

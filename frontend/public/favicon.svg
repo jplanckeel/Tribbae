@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Favicon Tribbae : le tipi au soleil (components/Logo.tsx) sur un fond sable arrondi -->
+  <rect width="100" height="100" rx="22" fill="#FBF3E7"/>
+  <g transform="translate(2 4) scale(0.96)">
+    <circle cx="76" cy="24" r="8" fill="#FFC857"/>
+    <path d="M50 24L81 80H19Z" fill="#D45A43" stroke="#3A211B" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M43 13L54 30M57 13L46 30" stroke="#3A211B" stroke-width="6" stroke-linecap="round"/>
+    <path d="M50 50L64 80H36Z" fill="#5E4558" stroke="#3A211B" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M10 80H90" stroke="#3A211B" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>

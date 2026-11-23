@@ -1,29 +1,20 @@
 import { createBrowserRouter, Navigate, RouterProvider, useParams } from "react-router";
 import { AppLayout, BareLayout, RequireAuth } from "./components/Shell";
-import Admin from "./pages/Admin";
+// Pages d'arrivée depuis un moteur de recherche (accueil, Explorer, catégories,
+// fiches, dossiers) : dans le paquet principal, pour s'afficher sans attente.
+// Les autres écrans se chargent à la demande (premier affichage plus rapide).
 import Explorer from "./pages/Explorer";
-import About from "./pages/About";
-import Faq from "./pages/Faq";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
-import LegalNotice from "./pages/LegalNotice";
 import FolderDetail from "./pages/FolderDetail";
 import Home from "./pages/Home";
-import CircleInvitation from "./pages/CircleInvitation";
-import OfferGift from "./pages/OfferGift";
-import ConnectApp from "./pages/ConnectApp";
-import Invitation from "./pages/Invitation";
 import LinkDetail from "./pages/LinkDetail";
-import MyIdeas from "./pages/MyIdeas";
-import { ForgotPassword, NewPassword } from "./pages/Password";
-import SharedFolder from "./pages/SharedFolder";
-import ShareTarget from "./pages/ShareTarget";
-import Shopping from "./pages/Shopping";
-import Tribe from "./pages/Tribe";
-import VerifyEmail from "./pages/VerifyEmail";
-import Welcome, { Auth } from "./pages/Welcome";
 
-const auth = (el: React.ReactNode) => <RequireAuth>{el}</RequireAuth>;
+/** Écran chargé à la demande ; `guard` : réservé aux comptes connectés. */
+function page(load: () => Promise<{ default: React.ComponentType }>, guard = false) {
+  return async () => {
+    const { default: Page } = await load();
+    return { element: guard ? <RequireAuth><Page /></RequireAuth> : <Page /> };
+  };
+}
 
 function LegacyCategory() {
   const { slug } = useParams();
@@ -34,16 +25,16 @@ const router = createBrowserRouter([
   {
     element: <BareLayout />,
     children: [
-      { path: "/bienvenue", element: <Welcome /> },
-      { path: "/connexion", element: <Auth /> },
-      { path: "/invitation", element: <Invitation /> },
-      { path: "/invitation-cercle", element: <CircleInvitation /> },
-      { path: "/offrir", element: <OfferGift /> },
-      { path: "/connecter-application", element: <ConnectApp /> },
-      { path: "/mot-de-passe/oublie", element: <ForgotPassword /> },
-      { path: "/mot-de-passe/nouveau", element: <NewPassword /> },
-      { path: "/verifier-email", element: <VerifyEmail /> },
-      { path: "/share/:token", element: <SharedFolder /> },
+      { path: "/bienvenue", lazy: page(() => import("./pages/Welcome")) },
+      { path: "/connexion", lazy: page(() => import("./pages/Welcome").then((m) => ({ default: m.Auth }))) },
+      { path: "/invitation", lazy: page(() => import("./pages/Invitation")) },
+      { path: "/invitation-cercle", lazy: page(() => import("./pages/CircleInvitation")) },
+      { path: "/offrir", lazy: page(() => import("./pages/OfferGift")) },
+      { path: "/connecter-application", lazy: page(() => import("./pages/ConnectApp")) },
+      { path: "/mot-de-passe/oublie", lazy: page(() => import("./pages/Password").then((m) => ({ default: m.ForgotPassword }))) },
+      { path: "/mot-de-passe/nouveau", lazy: page(() => import("./pages/Password").then((m) => ({ default: m.NewPassword }))) },
+      { path: "/verifier-email", lazy: page(() => import("./pages/VerifyEmail")) },
+      { path: "/share/:token", lazy: page(() => import("./pages/SharedFolder")) },
     ],
   },
   {
@@ -54,17 +45,17 @@ const router = createBrowserRouter([
       { path: "/category/:slug", element: <Explorer /> },
       { path: "/links/:id", element: <LinkDetail /> },
       { path: "/dossiers/:id", element: <FolderDetail /> },
-      { path: "/aide", element: <Faq /> },
-      { path: "/a-propos", element: <About /> },
-      { path: "/confidentialite", element: <Privacy /> },
-      { path: "/cgu", element: <Terms /> },
-      { path: "/mentions-legales", element: <LegalNotice /> },
-      { path: "/mes-idees", element: auth(<MyIdeas />) },
-      { path: "/courses", element: auth(<Shopping />) },
-      { path: "/tribu", element: auth(<Tribe />) },
+      { path: "/aide", lazy: page(() => import("./pages/Faq")) },
+      { path: "/a-propos", lazy: page(() => import("./pages/About")) },
+      { path: "/confidentialite", lazy: page(() => import("./pages/Privacy")) },
+      { path: "/cgu", lazy: page(() => import("./pages/Terms")) },
+      { path: "/mentions-legales", lazy: page(() => import("./pages/LegalNotice")) },
+      { path: "/mes-idees", lazy: page(() => import("./pages/MyIdeas"), true) },
+      { path: "/courses", lazy: page(() => import("./pages/Shopping"), true) },
+      { path: "/tribu", lazy: page(() => import("./pages/Tribe"), true) },
       { path: "/reglages", element: <Navigate to="/tribu?ouvrir=parametres" replace /> },
-      { path: "/admin", element: auth(<Admin />) },
-      { path: "/partager", element: auth(<ShareTarget />) },
+      { path: "/admin", lazy: page(() => import("./pages/Admin"), true) },
+      { path: "/partager", lazy: page(() => import("./pages/ShareTarget"), true) },
       // Anciennes URLs (favoris, liens partagés, référencement)
       { path: "/login", element: <Navigate to="/connexion" replace /> },
       { path: "/discover", element: <Navigate to="/explorer?vue=dossiers" replace /> },

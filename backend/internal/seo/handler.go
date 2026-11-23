@@ -30,8 +30,19 @@ const (
 	feedTTL       = 30 * time.Minute
 )
 
+// Options : réglages facultatifs du rendu (variables d'environnement, voir config).
+type Options struct {
+	// Codes de vérification de propriété : Google Search Console et Bing
+	// Webmaster Tools (balises meta de l'accueil).
+	GoogleVerification, BingVerification string
+	// SameAs : profils officiels de Tribbae ailleurs (fiche Google Play,
+	// réseaux sociaux) : ils relient la marque à son site (schema.org).
+	SameAs []string
+}
+
 type Handler struct {
 	site  string // origine publique, ex. https://tribbae.fr
+	opts  Options
 	src   Source
 	faq   []QA
 	about *aboutContent
@@ -49,12 +60,15 @@ type cachedFeed struct {
 }
 
 // New prépare le rendu à partir de l'index.html construit par Vite.
-func New(site, staticDir string, src Source) (*Handler, error) {
+func New(site, staticDir string, src Source, opts ...Options) (*Handler, error) {
 	index, err := os.ReadFile(filepath.Join(staticDir, "index.html"))
 	if err != nil {
 		return nil, err
 	}
 	h := &Handler{site: strings.TrimRight(site, "/"), src: src, feeds: map[string]cachedFeed{}}
+	if len(opts) > 0 {
+		h.opts = opts[0]
+	}
 	if err := h.split(index); err != nil {
 		return nil, err
 	}
@@ -105,6 +119,18 @@ func (h *Handler) ServeHTML(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, to, http.StatusMovedPermanently)
 		return
 	}
+	// Une seule adresse par page : « /category/recette/ » renvoie vers « /category/recette »
+	if len(r.URL.Path) > 1 && strings.HasSuffix(r.URL.Path, "/") {
+		to := strings.TrimRight(r.URL.Path, "/")
+		if to == "" || strings.HasPrefix(to, "//") {
+			to = "/"
+		}
+		if r.URL.RawQuery != "" {
+			to += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, to, http.StatusMovedPermanently)
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), renderTimeout)
 	defer cancel()
 	p, err := h.page(ctx, r.URL.Path, r.URL.Query())
@@ -135,7 +161,12 @@ func (h *Handler) ServeHTML(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) render(p *Page) ([]byte, error) {
-	head, err := p.head(h.site)
+	var verify Options
+	if p.Path == "/" {
+		// Vérification de propriété (Search Console, Bing) : sur l'accueil seulement
+		verify = h.opts
+	}
+	head, err := p.head(h.site, verify)
 	if err != nil {
 		return nil, err
 	}

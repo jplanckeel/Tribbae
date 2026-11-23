@@ -69,6 +69,8 @@ type Service struct {
 	// Emails d'ajout comme collaborateur déjà envoyés (limite d'envoi)
 	collabMu     sync.Mutex
 	collabEmails map[string][]collabEmail
+	// publicChanged : une page publique de dossier a changé (moteurs de recherche, IndexNow)
+	publicChanged func(paths ...string)
 }
 
 func NewService(col *mongo.Collection, linkCol *mongo.Collection, userCol *mongo.Collection, baseURL string) *Service {
@@ -145,6 +147,16 @@ func sanitizeFolder(name, bannerURL string, tags []string) (string, string, []st
 	return name, bannerURL, clean, nil
 }
 
+// SetPublicChange branche la notification des pages publiques modifiées
+// (création, modification ou suppression d'un dossier public).
+func (s *Service) SetPublicChange(f func(paths ...string)) { s.publicChanged = f }
+
+func (s *Service) notifyPublic(id string, public bool) {
+	if public && s.publicChanged != nil {
+		s.publicChanged("/dossiers/" + id)
+	}
+}
+
 func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibility, bannerURL string, tags []string, style Style) (*Folder, error) {
 	name, bannerURL, tags, err := sanitizeFolder(name, bannerURL, tags)
 	if err != nil {
@@ -174,6 +186,7 @@ func (s *Service) Create(ctx context.Context, ownerID, name, icon, color, visibi
 	if _, err := s.col.InsertOne(ctx, f); err != nil {
 		return nil, err
 	}
+	s.notifyPublic(f.ID.Hex(), f.Visibility == "public")
 	return f, nil
 }
 
@@ -256,6 +269,7 @@ func (s *Service) Update(ctx context.Context, folderID, userID, name, icon, colo
 	if _, err := s.col.UpdateOne(ctx, bson.M{"_id": id}, update); err != nil {
 		return nil, err
 	}
+	s.notifyPublic(folderID, visibility == "public" || existing.Visibility == "public")
 	return s.Get(ctx, folderID, userID)
 }
 
@@ -267,13 +281,14 @@ func (s *Service) Delete(ctx context.Context, folderID, ownerID string) error {
 	// Seuls le propriétaire et sa tribu peuvent supprimer
 	filter := s.ownedByTribe(ctx, ownerID)
 	filter["_id"] = id
-	res, err := s.col.DeleteOne(ctx, filter)
-	if err != nil {
+	var gone Folder
+	if err := s.col.FindOneAndDelete(ctx, filter).Decode(&gone); err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return errors.New("folder not found or not authorized to delete")
+		}
 		return err
 	}
-	if res.DeletedCount == 0 {
-		return errors.New("folder not found or not authorized to delete")
-	}
+	s.notifyPublic(folderID, gone.Visibility == "public")
 
 	s.forgetFolder(ctx, folderID)
 	if _, err := s.gifts().DeleteMany(ctx, bson.M{"folder_id": folderID}); err != nil {
