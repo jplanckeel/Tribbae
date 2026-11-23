@@ -36,6 +36,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.key
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -119,7 +129,8 @@ private sealed class Screen {
     ) : Screen()
     data class FolderForm(val existing: Folder? = null) : Screen()
     /** `origin` : visuel de la carte touchée, d'où la fiche s'ouvre (et où elle revient). */
-    data class Detail(val link: Link, val public: Boolean = false, val origin: Rect? = CardOrigins[link.id]) : Screen()
+    /** `sequence` : idées du dossier d'où l'on vient, dans l'ordre affiché (on y glisse d'une fiche à l'autre). */
+    data class Detail(val link: Link, val public: Boolean = false, val origin: Rect? = CardOrigins[link.id], val sequence: List<String> = emptyList()) : Screen()
     /** `fromLinkId` : idée d'où l'on a « creusé » vers ce dossier, surlignée. */
     data class FolderDetail(val folder: Folder, val fromLinkId: String? = null) : Screen()
     data class Category(val category: LinkCategory?) : Screen()
@@ -437,32 +448,68 @@ private fun ModernMainApp(
             is Screen.FolderForm -> FolderFormScreen(vm, ::pop, screen.existing?.let { e -> folders.find { it.id == e.id } ?: e })
 
             is Screen.Detail -> {
-                val fresh = if (screen.public) screen.link else links.find { it.id == screen.link.id } ?: screen.link
-                // Idée d'un dossier où l'on n'est que lecteur : en lecture, comme une idée de la communauté
-                val readOnly = screen.public || !data.Rights.canEditIdea(fresh, folders.find { it.id == fresh.folderId }, vm.currentUserId(), vm::isTribePeer)
-                LinkDetailScreen(
-                    link = fresh,
-                    onBack = ::pop,
-                    onDelete = { vm.deleteLink(fresh.id); pop() },
-                    onEdit = { push(Screen.IdeaForm(existing = fresh)) },
-                    onOpenUrl = vm.urlOpener,
-                    readOnly = readOnly,
-                    onSaveToMyList = if (readOnly) { l, folderId ->
-                        vm.addLink(
-                            title = l.title, url = l.url, description = l.description, category = l.category,
-                            folderId = folderId, tags = l.tags, ageRange = l.ageRange, location = l.location,
-                            price = l.price, eventDate = l.eventDate, imageUrl = l.imageUrl, rating = l.rating, ingredients = l.ingredients
+                // Une fiche : celle de l'idée affichée (le dossier peut en faire défiler plusieurs)
+                val detail: @Composable (Link) -> Unit = { fresh ->
+                    // Idée d'un dossier où l'on n'est que lecteur : en lecture, comme une idée de la communauté
+                    val readOnly = screen.public || !data.Rights.canEditIdea(fresh, folders.find { it.id == fresh.folderId }, vm.currentUserId(), vm::isTribePeer)
+                    LinkDetailScreen(
+                        link = fresh,
+                        onBack = ::pop,
+                        onDelete = { vm.deleteLink(fresh.id); pop() },
+                        onEdit = { push(Screen.IdeaForm(existing = fresh)) },
+                        onOpenUrl = vm.urlOpener,
+                        readOnly = readOnly,
+                        onSaveToMyList = if (readOnly) { l, folderId ->
+                            vm.addLink(
+                                title = l.title, url = l.url, description = l.description, category = l.category,
+                                folderId = folderId, tags = l.tags, ageRange = l.ageRange, location = l.location,
+                                price = l.price, eventDate = l.eventDate, imageUrl = l.imageUrl, rating = l.rating, ingredients = l.ingredients
+                            )
+                        } else null,
+                        folders = folders,
+                        followRepository = followRepository,
+                        sessionManager = sessionManager,
+                        commentRepository = commentRepository,
+                        viewModel = vm,
+                        ensureSignedIn = ::ensureSignedIn,
+                        onOpenFolder = { f -> push(Screen.FolderDetail(f, fromLinkId = fresh.id)) },
+                        onOpenShopping = if (readOnly) null else { { push(Screen.Shopping(fresh.id)) } },
+                    )
+            
+                }
+                val current = if (screen.public) screen.link else links.find { it.id == screen.link.id } ?: screen.link
+                // Ouverte depuis un dossier : glisser sur le côté passe aux idées voisines,
+                // dans l'ordre affiché ; « Retour » ramène au dossier
+                val sequence = remember(screen.sequence, links) {
+                    data.IdeaSequence.usable(screen.sequence, screen.link.id) { id -> links.any { it.id == id } }
+                }
+                if (screen.public || data.IdeaSequence.neighbors(sequence, current.id) == null) {
+                    detail(current)
+                } else {
+                    val pager = rememberPagerState(initialPage = sequence.indexOf(current.id).coerceAtLeast(0)) { sequence.size }
+                    // La fiche affichée devient celle de la pile : modifier, retour vers sa carte
+                    LaunchedEffect(pager, sequence) {
+                        snapshotFlow { pager.settledPage }.collect { page ->
+                            val id = sequence.getOrNull(page) ?: return@collect
+                            val top = stack.lastOrNull() as? Screen.Detail ?: return@collect
+                            if (top.link.id != id && top.sequence == screen.sequence) {
+                                links.find { it.id == id }?.let { stack[stack.lastIndex] = top.copy(link = it, origin = CardOrigins[id]) }
+                            }
+                        }
+                    }
+                    Box(Modifier.fillMaxSize()) {
+                        HorizontalPager(pager, key = { sequence[it] }, beyondViewportPageCount = 1) { page ->
+                            links.find { it.id == sequence[page] }?.let { detail(it) }
+                        }
+                        Text(
+                            "${pager.currentPage + 1} / ${sequence.size}",
+                            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = ui.Ecorce,
+                            modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 20.dp)
+                                .clip(CircleShape).background(ui.PhotoVeil).padding(horizontal = 12.dp, vertical = 5.dp)
+                                .semantics { liveRegion = LiveRegionMode.Polite },
                         )
-                    } else null,
-                    folders = folders,
-                    followRepository = followRepository,
-                    sessionManager = sessionManager,
-                    commentRepository = commentRepository,
-                    viewModel = vm,
-                    ensureSignedIn = ::ensureSignedIn,
-                    onOpenFolder = { f -> push(Screen.FolderDetail(f, fromLinkId = fresh.id)) },
-                    onOpenShopping = if (readOnly) null else { { push(Screen.Shopping(fresh.id)) } },
-                )
+                    }
+                }
             }
 
             is Screen.FolderDetail -> {
@@ -479,6 +526,7 @@ private fun ModernMainApp(
                     onAddIdea = { push(Screen.IdeaForm(folderId = fresh.id)) },
                     onAi = { push(Screen.Ai(folderId = fresh.id, prompt = fresh.name)) },
                     highlightLinkId = screen.fromLinkId,
+                    onOpenIdea = { id, sequence -> links.find { it.id == id }?.let { push(Screen.Detail(it, sequence = sequence)) } },
                 )
             }
 

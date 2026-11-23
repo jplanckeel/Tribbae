@@ -45,6 +45,8 @@ fun FolderDetailScreen(
     onAddIdea: () -> Unit = {},
     onAi: () -> Unit = {},
     highlightLinkId: String? = null,
+    /** Ouvre une idée avec l'ordre affiché du dossier : la fiche passe aux voisines d'un glissement. */
+    onOpenIdea: ((id: String, sequence: List<String>) -> Unit)? = null,
 ) {
     // Tri de la visite ; celui du dossier se règle dans « Personnaliser »
     var sort by remember(folder.id, folder.sort) { mutableStateOf(folder.sort.ifBlank { "recent" }) }
@@ -135,7 +137,10 @@ fun FolderDetailScreen(
         links = if (done != null) shown else items,
         emptyTitle = "Ce dossier attend ses premières idées",
         emptyText = if (canEdit) "Ajoutez un lien, une recette, une sortie… ou laissez l'IA le remplir." else null,
-        onLinkClick = onLinkClick,
+        onLinkClick = { id ->
+            val displayed = (if (done != null) shown else items).map { it.id }
+            onOpenIdea?.invoke(id, displayed) ?: onLinkClick(id)
+        },
         onFavorite = onSaveLink
     )
 

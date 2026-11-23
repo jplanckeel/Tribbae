@@ -1,3 +1,4 @@
+import { IdeaSequenceContext } from "../lib/ideaSequence";
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { AvatarStack, GridCard, LikeHeart, MosaicTile, RowCard } from "../components/cards";
@@ -106,6 +107,7 @@ function FolderView({ folder, links, virtual, onFolder }: {
   const progress = member ? folderProgress(shown, !!folder.giftReservations) : null;
   const counts = doneCounts(shown);
   const visible = member ? sorted.filter((l) => matchesDoneFilter(l, filter)) : sorted;
+  const sequence = useMemo(() => ({ ids: visible.map((l) => l.id) }), [visible]);
   // Première sortie datée passée, pas encore confirmée
   const asking = member ? sorted.find((l) => awaitingConfirmation(l, now) && done.canMark(l)) : undefined;
 
@@ -304,7 +306,9 @@ function FolderView({ folder, links, virtual, onFolder }: {
           </div>
         )}
         {visible.length ? (
-          folder.viewMode === "list" ? (
+          // Les cartes passent l'ordre affiché à la fiche : on y glisse d'une idée à l'autre
+          <IdeaSequenceContext value={sequence}>
+          {folder.viewMode === "list" ? (
             <div className="grid gap-2.5 md:grid-cols-2">
               {visible.map((l) => <RowCard key={l.id} link={l} highlight={mark(l.id)} done={member} />)}
             </div>
@@ -316,7 +320,8 @@ function FolderView({ folder, links, virtual, onFolder }: {
             <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
               {visible.map((l, i) => <GridCard key={l.id} link={l} index={i} highlight={mark(l.id)} done={member} onRequireAuth={() => navigate(`/bienvenue?next=/dossiers/${folder.id}`)} />)}
             </div>
-          )
+          )}
+          </IdeaSequenceContext>
         ) : shown.length ? (
           <div className="flex flex-col gap-1.5 rounded-[22px] px-5 py-7 text-center shadow-[inset_0_0_0_2px_var(--color-dash)]">
             <span className="font-display text-[17px] font-bold">{filter === "todo" ? "Tout est fait !" : "Rien de fait pour l'instant"}</span>
