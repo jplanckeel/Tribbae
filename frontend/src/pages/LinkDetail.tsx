@@ -5,6 +5,7 @@ import { useComposer } from "../components/Composer";
 import { useFeedback } from "../components/feedback";
 import { FolderGlyph } from "../components/FolderCover";
 import Icon, { type IconName } from "../components/Icon";
+import ImageViewer from "../components/ImageViewer";
 import { TipiMark } from "../components/Logo";
 import Sheet from "../components/Sheet";
 import { Avatar, Button, EmptyState, MenuItem, PageSpinner, Spinner, Toggle } from "../components/ui";
@@ -65,6 +66,8 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
   const { folders, upsertLink, removeLink, peers, isTribePeer, links: myLinks } = useMyData();
   const { toast, confirm } = useFeedback();
   const [menuOpen, setMenuOpen] = useState(false);
+  // Image en plein écran (montée seulement quand elle est ouverte)
+  const [zoomed, setZoomed] = useState(false);
   // Signalement en cours : l'idée, son auteur ou un commentaire
   const [reporting, setReporting] = useState<{ type: ReportTarget; id: string }>();
   const [liked, setLiked] = useState(!!link.likedByMe);
@@ -220,11 +223,14 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
         description={ideaSeoDescription(link, cat)}
         path={`/links/${link.id}`}
       />
+      {zoomed && img && !imgBroken && <ImageViewer src={img} alt={link.title} onClose={() => setZoomed(false)} />}
 
       {/* Visuel */}
       <div className={`relative h-[300px] overflow-hidden md:h-[360px] md:rounded-xl ${cat.bg}`} style={morph.visualStyle}>
         {img && !imgBroken ? (
-          <img src={img} alt="" referrerPolicy="no-referrer" onError={() => setBrokenSrc(img)} className="absolute inset-0 h-full w-full object-cover" />
+          <button type="button" onClick={() => setZoomed(true)} aria-label="Agrandir l'image" className="absolute inset-0 cursor-zoom-in">
+            <img src={img} alt="" referrerPolicy="no-referrer" onError={() => setBrokenSrc(img)} className="h-full w-full object-cover" />
+          </button>
         ) : (
           <>
             <div aria-hidden="true" className="absolute -bottom-[120px] left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-soleil" />
@@ -251,9 +257,9 @@ function Detail({ link, onChange }: { link: Link; onChange: (l: Link) => void })
             )}
           </div>
         </div>
-        {made && <DoneStamp label={doneStamp(link)} className="absolute right-5 bottom-11" />}
+        {made && <DoneStamp label={doneStamp(link)} className="pointer-events-none absolute right-5 bottom-11" />}
         {swipe.around && (
-          <span className="vt-pop absolute top-7 left-1/2 -translate-x-1/2 rounded-full bg-white/92 px-3 py-1 text-[13px] font-bold text-ecorce" aria-live="polite">
+          <span className="vt-pop pointer-events-none absolute top-7 left-1/2 -translate-x-1/2 rounded-full bg-white/92 px-3 py-1 text-[13px] font-bold text-ecorce" aria-live="polite">
             {swipe.around.position} / {swipe.around.total}
           </span>
         )}

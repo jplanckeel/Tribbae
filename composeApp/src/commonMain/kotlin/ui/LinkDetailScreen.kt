@@ -129,12 +129,19 @@ fun LinkDetailScreen(
         )
     }
 
+    var showImage by remember { mutableStateOf(false) }
+    if (showImage && link.imageUrl.isNotBlank()) ImageViewer(link.imageUrl, link.title) { showImage = false }
+
     Box(Modifier.fillMaxSize().background(Sable)) {
         Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(bottom = 110.dp)) {
             // ── Visuel ──
             Box(Modifier.fillMaxWidth().height(300.dp).background(cat.bg)) {
                 if (link.imageUrl.isNotBlank()) {
-                    AsyncImage(link.imageUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    // Toucher l'image l'ouvre en plein écran, pour l'agrandir
+                    AsyncImage(
+                        link.imageUrl, null, contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clickable(role = Role.Button, onClickLabel = "Agrandir l'image") { showImage = true },
+                    )
                 } else {
                     Box(Modifier.align(Alignment.BottomCenter).offset(y = 120.dp).size(320.dp).clip(CircleShape).background(SunDisc))
                     TipiMark(150.dp, stroke = 1.6f, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp))
