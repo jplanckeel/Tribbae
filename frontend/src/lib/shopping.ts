@@ -424,6 +424,31 @@ export function suggestions(lines: ShoppingLine[], max = 4): { label: string; ai
     .map((label) => ({ label, aisle: aisleOf(ingredientKey(label)) }));
 }
 
+const SPOKEN_NUMBERS: Record<string, string> = { deux: "2", trois: "3", quatre: "4", cinq: "5", six: "6", sept: "7", huit: "8", neuf: "9", dix: "10", douze: "12" };
+
+/**
+ * Courses dictées : « du pain et du sucre, 2 baguettes » → ["Pain", "Sucre", "2 baguettes"].
+ * Coupe sur les virgules, points, « et », « puis », retire l'article de tête
+ * et écrit en chiffres le nombre dit en lettres (« trois yaourts » → « 3 yaourts »).
+ */
+export function splitSpoken(text: string): string[] {
+  return text
+    .split(/\s*(?:[,;\n]|\.(?=\s|$))\s*|\s+(?:et|puis)\s+/i)
+    .map((part) => {
+      const words = part
+        .trim()
+        .replace(/[.!?]+$/, "")
+        .replace(/^(?:(?:du|des|de la|les|le|la|une|un)\s+|(?:de l|d|l)['’]\s*)/i, "")
+        .trim()
+        .split(/\s+/);
+      const n = SPOKEN_NUMBERS[words[0]?.toLowerCase()];
+      if (n && words.length > 1) words[0] = n;
+      const item = words.join(" ");
+      return item.charAt(0).toUpperCase() + item.slice(1);
+    })
+    .filter(Boolean);
+}
+
 /** La liste en texte, pour quelqu'un sans Tribbae : un rayon par ligne. */
 export function shareText(list: ArrangedList): string {
   const head = `Courses Tribbae — ${list.remaining} ${list.remaining > 1 ? "articles" : "article"}`;

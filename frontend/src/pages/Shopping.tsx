@@ -15,6 +15,7 @@ import {
   aisleName,
   pickRecipes,
   shareText,
+  splitSpoken,
   suggestions,
   viewOf,
   type AisleId,
@@ -182,6 +183,17 @@ export default function Shopping() {
   const addItem = (label: string, quantity = "", aisle = "") => {
     if (!label.trim()) return;
     changeShopping({ type: "item_add", id: newItemId(), label, quantity, aisle });
+  };
+
+  // Dictée : chaque article entendu est ajouté, « Annuler » les retire tous
+  const addDictated = (spoken: string) => {
+    const added = splitSpoken(spoken).map((text) => ({ id: newItemId(), ...splitQuantity(text) }));
+    if (!added.length) return;
+    for (const it of added) changeShopping({ type: "item_add", id: it.id, label: it.label, quantity: it.quantity, aisle: "" });
+    const names = added.map((it) => (it.quantity ? `${it.quantity} ${it.label}` : it.label)).join(", ");
+    toast(`${names} ${added.length > 1 ? "ajoutés" : "ajouté"}`, "ok", {
+      action: { label: "Annuler", onClick: () => added.forEach((it) => changeShopping({ type: "item_remove", id: it.id })) },
+    });
   };
 
   const status = snap.offline ? "hors ligne · envoyé au retour du réseau" : snap.pending ? "envoi…" : "à jour";
@@ -398,7 +410,11 @@ export default function Shopping() {
 
       {/* Ajouter un article */}
       <div className="flex flex-col gap-2.5 rounded-large bg-card p-3">
-        <AddItemField onAdd={(text) => { const { label, quantity } = splitQuantity(text); addItem(label, quantity); }} />
+        <AddItemField
+          onAdd={(text) => { const { label, quantity } = splitQuantity(text); addItem(label, quantity); }}
+          onDictate={addDictated}
+          onError={(text) => toast(text, "error")}
+        />
         {suggestions(lines).length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-sec">Souvent :</span>
@@ -651,13 +667,70 @@ function Stepper({ value, onChange, hint }: { value: number; onChange: (n: numbe
   );
 }
 
-function AddItemField({ onAdd }: { onAdd: (text: string) => void }) {
+// Reconnaissance vocale du navigateur (Chrome, Edge, Safari ; absente de Firefox)
+interface Recognition {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((e: SpeechRecognitionEvent) => void) | null;
+  onerror: ((e: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+}
+
+function recognitionClass(): (new () => Recognition) | undefined {
+  if (typeof window === "undefined") return undefined;
+  const w = window as unknown as { SpeechRecognition?: new () => Recognition; webkitSpeechRecognition?: new () => Recognition };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition;
+}
+
+function AddItemField({ onAdd, onDictate, onError }: { onAdd: (text: string) => void; onDictate: (spoken: string) => void; onError: (text: string) => void }) {
   const [text, setText] = useState("");
+  const [listening, setListening] = useState(false);
+  const recognition = useRef<Recognition | null>(null);
+  const Recognizer = recognitionClass();
+  useEffect(() => () => recognition.current?.abort(), []);
+
+  const dictate = () => {
+    if (recognition.current) {
+      recognition.current.stop();
+      return;
+    }
+    if (!Recognizer) return;
+    const r = new Recognizer();
+    r.lang = "fr-FR";
+    r.interimResults = true;
+    r.continuous = false;
+    let heard = "";
+    r.onresult = (e) => {
+      heard = Array.from(e.results, (res) => res[0].transcript).join(" ");
+      setText(heard);
+    };
+    r.onerror = (e) => {
+      heard = "";
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") onError("Autorise le micro pour dicter tes courses");
+      else if (e.error === "no-speech") onError("Je n'ai rien entendu, réessaie");
+      else if (e.error !== "aborted") onError("La dictée n'a pas marché, réessaie");
+    };
+    r.onend = () => {
+      recognition.current = null;
+      setListening(false);
+      setText("");
+      if (heard.trim()) onDictate(heard);
+    };
+    recognition.current = r;
+    setText("");
+    setListening(true);
+    r.start();
+  };
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        if (!text.trim()) return;
+        if (listening || !text.trim()) return;
         onAdd(text);
         setText("");
       }}
@@ -667,13 +740,28 @@ function AddItemField({ onAdd }: { onAdd: (text: string) => void }) {
       <input
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Ajouter un article…"
+        placeholder={listening ? "J'écoute… « pain et sucre »" : "Ajouter un article…"}
         aria-label="Ajouter un article"
-        maxLength={80}
+        maxLength={listening ? undefined : 80}
+        readOnly={listening}
         enterKeyHint="done"
         className="h-11 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted"
       />
-      {text.trim() && <button type="submit" className="text-sm font-bold text-terracotta">Ajouter</button>}
+      {text.trim() && !listening ? (
+        <button type="submit" className="text-sm font-bold text-terracotta">Ajouter</button>
+      ) : (
+        Recognizer && (
+          <button
+            type="button"
+            onClick={dictate}
+            aria-label={listening ? "Arrêter la dictée" : "Dicter des articles"}
+            aria-pressed={listening}
+            className={`-mr-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${listening ? "animate-pulse bg-terracotta text-white" : "text-sec hover:text-terracotta"}`}
+          >
+            <Icon name="mic" size={19} />
+          </button>
+        )
+      )}
     </form>
   );
 }

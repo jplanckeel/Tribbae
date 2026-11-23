@@ -409,6 +409,24 @@ object ShoppingList {
         return FREQUENT.filter { ingredientKey(it) !in present }.take(max).map { Suggestion(it, aisleOf(ingredientKey(it))) }
     }
 
+    private val SPOKEN_NUMBERS = mapOf("deux" to "2", "trois" to "3", "quatre" to "4", "cinq" to "5", "six" to "6", "sept" to "7", "huit" to "8", "neuf" to "9", "dix" to "10", "douze" to "12")
+    private val SPOKEN_SEPARATORS = Regex("\\s*(?:[,;\\n]|\\.(?=\\s|$))\\s*|\\s+(?:et|puis)\\s+", RegexOption.IGNORE_CASE)
+    private val SPOKEN_ARTICLE = Regex("^(?:(?:du|des|de la|les|le|la|une|un)\\s+|(?:de l|d|l)['’]\\s*)", RegexOption.IGNORE_CASE)
+
+    /**
+     * Courses dictées : « du pain et du sucre, 2 baguettes » → [Pain, Sucre, 2 baguettes] (comme le web).
+     * Coupe sur les virgules, points, « et », « puis », retire l'article de tête
+     * et écrit en chiffres le nombre dit en lettres (« trois yaourts » → « 3 yaourts »).
+     */
+    fun splitSpoken(text: String): List<String> =
+        text.split(SPOKEN_SEPARATORS).mapNotNull { part ->
+            val words = part.trim().replace(Regex("[.!?]+$"), "").replace(SPOKEN_ARTICLE, "").trim()
+                .split(Regex("\\s+")).toMutableList()
+            val n = SPOKEN_NUMBERS[words[0].lowercase()]
+            if (n != null && words.size > 1) words[0] = n
+            words.joinToString(" ").replaceFirstChar { it.uppercase() }.ifEmpty { null }
+        }
+
     /** La liste en texte, pour quelqu'un sans Tribbae : un rayon par ligne. */
     fun shareText(list: Arranged): String {
         val head = "Courses Tribbae — ${list.remaining} ${if (list.remaining > 1) "articles" else "article"}"
