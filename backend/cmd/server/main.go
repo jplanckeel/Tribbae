@@ -27,6 +27,7 @@ import (
 	"github.com/tribbae/backend/internal/follow"
 	"github.com/tribbae/backend/internal/httpx"
 	"github.com/tribbae/backend/internal/interceptor"
+	"github.com/tribbae/backend/internal/indexnow"
 	"github.com/tribbae/backend/internal/link"
 	"github.com/tribbae/backend/internal/mail"
 	"github.com/tribbae/backend/internal/mcpserver"
@@ -284,7 +285,15 @@ func main() {
 	photoLimiter := httpx.NewRateLimiter(30, time.Minute)
 	oauthLimiter := httpx.NewRateLimiter(60, time.Minute)
 
-	var handler http.Handler = withSPA(mux, cfg.SiteURL, seo.NewSource(linkSvc, folderSvc))
+	// IndexNow : Bing, Yandex… prévenus quand une idée ou un dossier public change
+	pinger := indexnow.New(cfg.SiteURL, cfg.IndexNowKey)
+	if pinger != nil {
+		linkSvc.SetPublicChange(pinger.Notify)
+		folderSvc.SetPublicChange(pinger.Notify)
+		go pinger.Run(context.Background())
+	}
+	seoOpts := seo.Options{GoogleVerification: cfg.GoogleSiteVerification, BingVerification: cfg.BingSiteVerification, SameAs: cfg.SiteSameAs}
+	var handler http.Handler = withSPA(mux, cfg.SiteURL, seo.NewSource(linkSvc, folderSvc), seoOpts, pinger)
 	handler = withPreview(preview.Handler(bearerUser), handler)
 	handler = withAI(aiH, handler)
 	handler = withAccount(accountH, handler)
@@ -401,7 +410,7 @@ func withPreview(preview http.HandlerFunc, next http.Handler) http.Handler {
 
 // withSPA sert les fichiers statiques du frontend depuis /public.
 // Si le fichier n'existe pas, renvoie index.html (SPA fallback).
-func withSPA(apiHandler http.Handler, siteURL string, content seo.Source) http.Handler {
+func withSPA(apiHandler http.Handler, siteURL string, content seo.Source, seoOpts seo.Options, pinger *indexnow.Client) http.Handler {
 	// STATIC_DIR : pour lancer le serveur hors Docker sur un build local du frontend
 	staticDir := os.Getenv("STATIC_DIR")
 	if staticDir == "" {
@@ -418,7 +427,7 @@ func withSPA(apiHandler http.Handler, siteURL string, content seo.Source) http.H
 	fs := http.FileServer(http.Dir(staticDir))
 	// Pages rendues pour les moteurs et assistants IA (en-tête et contenu propres
 	// à chaque adresse), plan du site et llms.txt
-	pages, err := seo.New(siteURL, staticDir, content)
+	pages, err := seo.New(siteURL, staticDir, content, seoOpts)
 	if err != nil {
 		log.Fatalf("seo: %v", err)
 	}
@@ -437,6 +446,12 @@ func withSPA(apiHandler http.Handler, siteURL string, content seo.Source) http.H
 			return
 		case "/llms.txt":
 			llms(w, r)
+			return
+		}
+		// Fichier de clé IndexNow : prouve que les notifications viennent du site
+		if pinger != nil && r.URL.Path == pinger.KeyPath() {
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			_, _ = w.Write([]byte(pinger.Key()))
 			return
 		}
 

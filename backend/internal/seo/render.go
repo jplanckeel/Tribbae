@@ -59,6 +59,10 @@ const (
 var headTmpl = template.Must(template.New("head").Parse(`<title data-seo>{{.Title}}</title>
     <meta data-seo name="description" content="{{.Description}}" />
     <meta data-seo name="robots" content="{{.Robots}}" />
+    {{- if .GoogleVerification}}
+    <meta name="google-site-verification" content="{{.GoogleVerification}}" />{{end}}
+    {{- if .BingVerification}}
+    <meta name="msvalidate.01" content="{{.BingVerification}}" />{{end}}
     {{- if .Canonical}}
     <link data-seo rel="canonical" href="{{.Canonical}}" />{{end}}
     <meta property="og:type" content="{{.OGType}}" />
@@ -104,17 +108,18 @@ var bodyTmpl = template.Must(template.New("body").Parse(`<main class="seo-fallba
       <p class="tags">{{range .Tags}}#{{.}} {{end}}</p>{{end}}
       {{- if .Source}}
       <p><a href="{{.Source}}" rel="nofollow ugc noopener">Voir la page d'origine</a></p>{{end}}
+      {{- range .FAQ}}
+      <h2>{{.Q}}</h2>
+      <p>{{.A}}</p>{{end}}
       {{- range .Sections}}
       <section>
         <h2>{{.Title}}</h2>
         <ul>{{range .Items}}<li><a href="{{.Path}}">{{.Title}}</a>{{if .Text}} — {{.Text}}{{end}}</li>{{end}}</ul>
       </section>{{end}}
-      {{- range .FAQ}}
-      <h2>{{.Q}}</h2>
-      <p>{{.A}}</p>{{end}}
     </main>`))
 
 type headData struct {
+	GoogleVerification, BingVerification                           string
 	Title, Description, Robots, Canonical, OGType, Image, ImageAlt string
 	Published, Modified, Section                                   string
 	ArticleTags                                                    []string
@@ -122,14 +127,16 @@ type headData struct {
 	JSONLD                                                         []template.JS
 }
 
-func (p *Page) head(site string) ([]byte, error) {
+func (p *Page) head(site string, verify Options) ([]byte, error) {
 	d := headData{
-		Title:       p.Title,
-		Description: clip(p.Description, maxDescriptionRunes),
-		Robots:      "index, follow, max-image-preview:large, max-snippet:-1",
-		OGType:      p.OGType,
-		Image:       p.Image,
-		ImageAlt:    p.H1,
+		GoogleVerification: verify.GoogleVerification,
+		BingVerification:   verify.BingVerification,
+		Title:              p.Title,
+		Description:        clip(p.Description, maxDescriptionRunes),
+		Robots:             "index, follow, max-image-preview:large, max-snippet:-1",
+		OGType:             p.OGType,
+		Image:              p.Image,
+		ImageAlt:           p.H1,
 	}
 	if d.OGType == "" {
 		d.OGType = "website"

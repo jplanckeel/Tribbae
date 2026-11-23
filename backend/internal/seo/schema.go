@@ -17,7 +17,9 @@ func (h *Handler) siteGraph() obj {
 		"@graph": []obj{
 			{
 				"@type": "WebSite", "@id": h.site + "/#website", "url": h.site + "/",
-				"name": siteName, "description": siteDescription, "inLanguage": "fr-FR",
+				// Nom du site dans les résultats Google : la marque, et son domaine en second
+				"name": siteName, "alternateName": []string{"tribbae.fr", "Tribbae, les idées de la famille"},
+				"description": siteDescription, "inLanguage": "fr-FR",
 				"publisher": obj{"@id": h.site + "/#organization"},
 				"potentialAction": obj{
 					"@type":       "SearchAction",
@@ -25,11 +27,7 @@ func (h *Handler) siteGraph() obj {
 					"query-input": "required name=search_term_string",
 				},
 			},
-			{
-				"@type": "Organization", "@id": h.site + "/#organization", "name": siteName, "url": h.site + "/",
-				"logo":  obj{"@type": "ImageObject", "url": h.site + "/tribbae.jpg", "width": 1024, "height": 1024},
-				"email": "contact@tribbae.fr",
-			},
+			h.organization(),
 			{
 				"@type": "WebApplication", "@id": h.site + "/#app", "name": siteName, "url": h.site + "/",
 				"applicationCategory": "LifestyleApplication", "operatingSystem": "Web, Android",
@@ -50,6 +48,23 @@ func (h *Handler) siteGraph() obj {
 	}
 }
 
+// organization : Tribbae comme marque (nom, logo, contact, profils officiels).
+func (h *Handler) organization() obj {
+	o := obj{
+		"@type": "Organization", "@id": h.site + "/#organization", "name": siteName, "url": h.site + "/",
+		"alternateName": "tribbae.fr",
+		"description":   siteDescription,
+		"logo":          obj{"@type": "ImageObject", "url": h.site + "/tribbae.jpg", "width": 1024, "height": 1024},
+		"image":         h.site + "/icon-512.png",
+		"email":         "contact@tribbae.fr",
+		"contactPoint":  obj{"@type": "ContactPoint", "email": "contact@tribbae.fr", "contactType": "customer support", "availableLanguage": "French"},
+	}
+	if len(h.opts.SameAs) > 0 {
+		o["sameAs"] = h.opts.SameAs
+	}
+	return o
+}
+
 func (h *Handler) breadcrumbs(crumbs []Crumb) obj {
 	items := make([]obj, 0, len(crumbs))
 	for i, c := range crumbs {
@@ -61,7 +76,7 @@ func (h *Handler) breadcrumbs(crumbs []Crumb) obj {
 func ideaItems(ideas []Idea) []Item {
 	items := make([]Item, 0, len(ideas))
 	for _, i := range ideas {
-		items = append(items, Item{Title: i.Title, Path: "/links/" + i.ID})
+		items = append(items, Item{Title: cleanTitle(i.Title), Path: "/links/" + i.ID})
 	}
 	return items
 }
@@ -90,7 +105,7 @@ func (h *Handler) collectionPage(p *Page, items []Item) obj {
 func (h *Handler) ideaSchema(i *Idea, c category, p *Page) obj {
 	o := obj{
 		"@context": schemaContext, "@type": "CreativeWork",
-		"name": i.Title, "url": h.site + p.Path, "inLanguage": "fr-FR",
+		"name": ideaName(i), "url": h.site + p.Path, "inLanguage": "fr-FR",
 		"description": clip(p.Description, 300),
 		"genre":       c.Label,
 	}

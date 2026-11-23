@@ -68,6 +68,18 @@ type Service struct {
 	linkLikeCol *mongo.Collection
 	userCol     *mongo.Collection
 	mirror      ImageMirror
+	// publicChanged : une page publique d'idée a changé (moteurs de recherche, IndexNow)
+	publicChanged func(paths ...string)
+}
+
+// SetPublicChange branche la notification des pages publiques modifiées
+// (création, modification ou retrait d'une idée publique).
+func (s *Service) SetPublicChange(f func(paths ...string)) { s.publicChanged = f }
+
+func (s *Service) notifyPublic(id bson.ObjectID, public bool) {
+	if public && s.publicChanged != nil {
+		s.publicChanged("/links/" + id.Hex())
+	}
 }
 
 func NewService(col *mongo.Collection, folderCol *mongo.Collection) *Service {
@@ -334,6 +346,7 @@ func (s *Service) Create(ctx context.Context, ownerID string, l *Link) (*Link, e
 	if _, err := s.col.InsertOne(ctx, l); err != nil {
 		return nil, err
 	}
+	s.notifyPublic(l.ID, l.Visibility == "public")
 	// Image d'Instagram, Facebook, TikTok : copiée avant qu'elle n'expire
 	if ExpiringImage(l.ImageURL) {
 		_, _ = s.col.UpdateOne(ctx, bson.M{"_id": l.ID}, bson.M{"$set": bson.M{"image_expiring": true}})
@@ -526,6 +539,8 @@ func (s *Service) Update(ctx context.Context, linkID, userID string, l *Link) (*
 	if l.ImageURL != existing.ImageURL && ExpiringImage(l.ImageURL) {
 		s.mirrorSoon(id, existing.OwnerID, l.ImageURL, l.URL)
 	}
+	// Publiée, modifiée en restant publique, ou rendue privée : la page publique change
+	s.notifyPublic(id, l.Visibility == "public" || existing.Visibility == "public")
 	return s.Get(ctx, linkID, userID)
 }
 
@@ -553,8 +568,11 @@ func (s *Service) Delete(ctx context.Context, linkID, userID string) error {
 			return err
 		}
 	}
-	_, err = s.col.DeleteOne(ctx, bson.M{"_id": id})
-	return err
+	if _, err = s.col.DeleteOne(ctx, bson.M{"_id": id}); err != nil {
+		return err
+	}
+	s.notifyPublic(id, existing.Visibility == "public")
+	return nil
 }
 
 // LikeLink ajoute un like à un lien

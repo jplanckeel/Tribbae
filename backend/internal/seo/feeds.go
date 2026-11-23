@@ -126,8 +126,8 @@ func (h *Handler) llms(ctx context.Context) ([]byte, error) {
 		b.WriteString("\n## Dernières idées publiées\n\n")
 		for _, i := range ideas {
 			c := categoryByKey(i.Category)
-			line := fmt.Sprintf("- [%s](%s/links/%s): %s", oneLine(i.Title), h.site, i.ID, c.Label)
-			if d := clip(i.Description, 140); d != "" {
+			line := fmt.Sprintf("- [%s](%s/links/%s): %s", oneLine(cleanTitle(i.Title)), h.site, i.ID, c.Label)
+			if d := clip(cleanDescription(i.Description), 140); d != "" {
 				line += " — " + d
 			}
 			b.WriteString(line + "\n")

@@ -30,6 +30,11 @@ services:
       SITE_URL: ${SITE_URL:-https://tribbae.fr}
       # Ancien domaine et www : tout est redirigé vers SITE_URL
       REDIRECT_HOSTS: ${REDIRECT_HOSTS:-tribbae.bananaops.cloud,www.tribbae.fr}
+      # Référencement : vérification Search Console / Bing, profils officiels, clé IndexNow
+      GOOGLE_SITE_VERIFICATION: ${GOOGLE_SITE_VERIFICATION:-}
+      BING_SITE_VERIFICATION: ${BING_SITE_VERIFICATION:-}
+      SITE_SAME_AS: ${SITE_SAME_AS:-}
+      INDEXNOW_KEY: ${INDEXNOW_KEY:-}
       OLLAMA_URL: http://ollama:11434
       # Petit modèle pour un VPS 2 CPU sans GPU (téléchargé automatiquement au démarrage)
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:1.7b}
