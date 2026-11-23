@@ -41,8 +41,12 @@ export default function HomeVisitor() {
         {/* ── Le frigo ── */}
         <section className="grid items-center gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-10">
           <div className="flex flex-col gap-7">
-            <h1 className="font-display text-[clamp(40px,5.4vw,62px)] leading-[1] font-extrabold tracking-[-2px]">
-              Chez nous, les bonnes idées finissaient toujours perdues.
+            {/* La marque dans le titre principal : c'est ce que Google lit en premier */}
+            <h1 className="flex flex-col gap-3">
+              <span className="font-hand text-[26px] leading-none text-terracotta">Tribbae, le frigo de la tribu</span>
+              <span className="font-display text-[clamp(40px,5.4vw,62px)] leading-[1] font-extrabold tracking-[-2px]">
+                Chez nous, les bonnes idées finissaient toujours perdues.
+              </span>
             </h1>
             <p className="max-w-[34ch] text-[19px] leading-relaxed text-ecorce-2 md:text-xl">
               Une capture d'écran par-ci, un lien dans la conversation de famille par-là, une recette au dos d'un ticket.
