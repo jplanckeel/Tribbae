@@ -57,7 +57,7 @@ export const HINTS: Record<BlankKey, string> = {
 export const BLANK_COLORS: Record<BlankKey, [string, string]> = {
   what: ["var(--color-cadeau-bg)", "var(--color-cadeau-ink)"],
   who: ["var(--color-activite-bg)", "var(--color-activite-ink)"],
-  when: ["var(--color-idee-bg)", "var(--color-idee-ink)"],
+  when: ["var(--color-miel-bg)", "var(--color-miel-ink)"],
   where: ["var(--color-recette-bg)", "var(--color-recette-ink)"],
   budget: ["var(--color-livre-bg)", "var(--color-livre-ink)"],
 };

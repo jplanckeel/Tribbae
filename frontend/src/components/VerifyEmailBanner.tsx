@@ -68,7 +68,7 @@ export function VerifyEmailNotice() {
 
   return (
     <div role="status" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[18px] border border-line bg-peach px-4 py-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-idee-bg text-idee-ink">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-miel-bg text-miel-ink">
         <Icon name="mail" size={18} />
       </span>
       <p className="min-w-0 flex-1 text-sm text-ecorce">

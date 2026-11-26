@@ -99,7 +99,7 @@ export default function AdminStats() {
           <Button variant="secondary" onClick={stats.reload}>Réessayer</Button>
         </div>
       ) : empty ? (
-        <EmptyState icon="idee" title="Rien sur la période" text={`Aucune idée ni aucun compte sur les ${meta.unit}.`} />
+        <EmptyState icon="calendar" title="Rien sur la période" text={`Aucune idée ni aucun compte sur les ${meta.unit}.`} />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
