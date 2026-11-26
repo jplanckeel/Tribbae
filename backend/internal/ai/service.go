@@ -217,7 +217,8 @@ func categoryFor(key string) string {
 			return c
 		}
 	}
-	return "LINK_CATEGORY_IDEE"
+	// Catégorie inconnue (dont l'ancienne « idee ») : la plus générale
+	return "LINK_CATEGORY_ACTIVITE"
 }
 
 func cleanTags(tags []string) []string {

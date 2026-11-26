@@ -17,33 +17,35 @@ export interface CategoryMeta {
   solid: string;
 }
 
-// Ordre d'affichage de la maquette : Activités, Cadeaux, Recettes, Sorties, Idées, Livres, Déco
+// Ordre d'affichage de la maquette : Activités, Cadeaux, Recettes, Sorties, Livres, Déco
+// (« Idée », trop fourre-tout, a été fusionnée dans Activité)
 export const CATEGORIES: CategoryMeta[] = [
   { key: "LINK_CATEGORY_ACTIVITE", slug: "activite", label: "Activité", plural: "Activités", intro: "Activités à faire en famille : jeux, bricolages, sorties nature et idées pour occuper les enfants, repérées et partagées par les familles de Tribbae.", icon: "activite", bg: "bg-activite-bg", ink: "text-activite-ink", ic: "text-activite-ic", solid: "var(--color-activite-ic)" },
   { key: "LINK_CATEGORY_CADEAU", slug: "cadeau", label: "Cadeau", plural: "Cadeaux", intro: "Idées de cadeaux pour enfants, ados et parents : des trouvailles testées et partagées par les familles de Tribbae.", icon: "cadeau", bg: "bg-cadeau-bg", ink: "text-cadeau-ink", ic: "text-cadeau-ic", solid: "var(--color-cadeau-ic)" },
   { key: "LINK_CATEGORY_RECETTE", slug: "recette", label: "Recette", plural: "Recettes", intro: "Recettes faciles à cuisiner en famille et avec les enfants : goûters, repas et desserts partagés par les familles de Tribbae.", icon: "recette", bg: "bg-recette-bg", ink: "text-recette-ink", ic: "text-recette-ic", solid: "var(--color-recette-ic)" },
   { key: "LINK_CATEGORY_EVENEMENT", slug: "sortie", label: "Sortie", plural: "Sorties", intro: "Sorties et événements en famille : spectacles, visites, fêtes et balades repérés par les familles de Tribbae.", icon: "calendar", bg: "bg-sortie-bg", ink: "text-sortie-ink", ic: "text-sortie-ic", solid: "var(--color-sortie-ic)" },
-  { key: "LINK_CATEGORY_IDEE", slug: "idee", label: "Idée", plural: "Idées", intro: "Idées pour la vie de famille : astuces, inspirations et bons plans partagés par les familles de Tribbae.", icon: "idee", bg: "bg-idee-bg", ink: "text-idee-ink", ic: "text-idee-ic", solid: "var(--color-idee-ic)" },
   { key: "LINK_CATEGORY_LIVRE", slug: "livre", label: "Livre", plural: "Livres", intro: "Livres pour enfants et ados : albums, romans et BD recommandés par les familles de Tribbae.", icon: "livre", bg: "bg-livre-bg", ink: "text-livre-ink", ic: "text-livre-ic", solid: "var(--color-livre-ic)" },
   { key: "LINK_CATEGORY_DECORATION", slug: "deco", label: "Déco", plural: "Déco", intro: "Idées déco pour la maison et la chambre des enfants, partagées par les familles de Tribbae.", icon: "deco", bg: "bg-deco-bg", ink: "text-deco-ink", ic: "text-deco-ic", solid: "var(--color-deco-ic)" },
 ];
 
 const BY_KEY = new Map(CATEGORIES.map((c) => [c.key, c]));
-// Anciennes URLs (/category/evenement, /category/decoration) conservées pour le référencement
-const SLUG_ALIASES: Record<string, string> = { evenement: "sortie", decoration: "deco" };
+// Anciennes URLs (/category/evenement, /category/decoration, /category/idee) conservées pour le référencement
+const SLUG_ALIASES: Record<string, string> = { evenement: "sortie", decoration: "deco", idee: "activite" };
+/** Catégorie d'une idée qui n'en a pas, ou de l'ancienne « Idée ». */
+export const DEFAULT_CATEGORY: CategoryKey = "LINK_CATEGORY_ACTIVITE";
 const NUM_TO_KEY: CategoryKey[] = [
-  "LINK_CATEGORY_IDEE", "LINK_CATEGORY_IDEE", "LINK_CATEGORY_CADEAU", "LINK_CATEGORY_ACTIVITE",
+  DEFAULT_CATEGORY, DEFAULT_CATEGORY, "LINK_CATEGORY_CADEAU", "LINK_CATEGORY_ACTIVITE",
   "LINK_CATEGORY_EVENEMENT", "LINK_CATEGORY_RECETTE", "LINK_CATEGORY_LIVRE", "LINK_CATEGORY_DECORATION",
 ];
 
-/** Normalise une catégorie (nom d'enum, numéro ou valeur vide) en clé connue. */
+/** Normalise une catégorie (nom d'enum, numéro ou valeur vide) en clé connue ; « Idée » devient Activité. */
 export function normalizeCategory(cat: unknown): CategoryKey {
-  if (typeof cat === "number") return NUM_TO_KEY[cat] ?? "LINK_CATEGORY_IDEE";
+  if (typeof cat === "number") return NUM_TO_KEY[cat] ?? DEFAULT_CATEGORY;
   if (typeof cat === "string") {
-    if (/^\d+$/.test(cat)) return NUM_TO_KEY[Number(cat)] ?? "LINK_CATEGORY_IDEE";
+    if (/^\d+$/.test(cat)) return NUM_TO_KEY[Number(cat)] ?? DEFAULT_CATEGORY;
     if (BY_KEY.has(cat as CategoryKey)) return cat as CategoryKey;
   }
-  return "LINK_CATEGORY_IDEE";
+  return DEFAULT_CATEGORY;
 }
 
 export function categoryMeta(cat: unknown): CategoryMeta {

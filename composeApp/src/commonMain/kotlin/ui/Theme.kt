@@ -112,7 +112,6 @@ val TextSecondary: Color get() = TextSec
 data class CategoryPalette(val bg: Color, val ink: Color, val icon: Color)
 
 internal val LightCategoryPalettes = mapOf(
-    "IDEE" to CategoryPalette(Color(0xFFFBEACB), Color(0xFF85560C), Color(0xFF9A6510)),
     "CADEAU" to CategoryPalette(Color(0xFFFCE3D0), Color(0xFFA04812), Color(0xFFC35A1C)),
     "ACTIVITE" to CategoryPalette(Color(0xFFDCEDF3), Color(0xFF235C77), Color(0xFF2F7393)),
     "EVENEMENT" to CategoryPalette(Color(0xFFF8DCD3), Color(0xFF9A3420), Color(0xFFB2412A)),
@@ -123,7 +122,6 @@ internal val LightCategoryPalettes = mapOf(
 
 // Le soir : fond sombre teinté, encre claire (≥ 6,8:1)
 internal val DarkCategoryPalettes = mapOf(
-    "IDEE" to CategoryPalette(Color(0xFF3A2D14), Color(0xFFF2C76B), Color(0xFFF2C76B)),
     "CADEAU" to CategoryPalette(Color(0xFF3D2617), Color(0xFFF5A66E), Color(0xFFF5A66E)),
     "ACTIVITE" to CategoryPalette(Color(0xFF17303A), Color(0xFF8CCBE3), Color(0xFF8CCBE3)),
     "EVENEMENT" to CategoryPalette(Color(0xFF3B201B), Color(0xFFF09A84), Color(0xFFF09A84)),

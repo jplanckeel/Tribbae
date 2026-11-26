@@ -99,8 +99,7 @@ private class IdeaCard(val id: Int, val idea: AiSuggestedLink) {
     var gone by mutableStateOf(false)
 }
 
-private fun toCategory(raw: String) =
-    runCatching { LinkCategory.valueOf(raw.removePrefix("LINK_CATEGORY_")) }.getOrDefault(LinkCategory.IDEE)
+private fun toCategory(raw: String) = LinkCategory.parse(raw)
 
 private fun blankColors(b: Blank): Pair<Color, Color> = when (b) {
     Blank.What -> PeachBg to PeachInk
@@ -655,7 +654,7 @@ private fun DoneStep(ideas: List<AiSuggestedLink>, folder: Folder?, onRestart: (
                 Box(
                     Modifier.padding(top = 10.dp).fillMaxSize().clip(RoundedCornerShape(0.dp, 16.dp, 16.dp, 16.dp)).background(ink),
                     contentAlignment = Alignment.Center
-                ) { Icon(folder?.let { folderGlyph(it.icon) } ?: Icons.Outlined.Lightbulb, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
+                ) { Icon(folder?.let { folderGlyph(it.icon) } ?: Icons.Outlined.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
                 if (spark.value in 0.001f..0.999f) {
                     listOf(Triple(0f, -52f, Braise), Triple(40f, -34f, Gold), Triple(50f, 4f, Terracotta), Triple(-40f, -34f, Ecorce), Triple(-50f, 2f, Braise))
                         .forEach { (dx, dy, c) ->

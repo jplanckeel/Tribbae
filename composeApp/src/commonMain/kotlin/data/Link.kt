@@ -1,6 +1,12 @@
 package data
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 data class Collaborator(
@@ -91,15 +97,37 @@ data class Link(
     val doneFamilies: Int = 0,
 )
 
-@Serializable
+/**
+ * Catégorie d'une idée. « Idée » (IDEE), devenue un fourre-tout, a été fusionnée
+ * dans Activité : [parse] et le sérialiseur la convertissent, pour les idées
+ * gardées sur le téléphone comme pour les réponses d'un serveur pas encore migré.
+ */
+@Serializable(with = LinkCategorySerializer::class)
 enum class LinkCategory(val label: String, val iconName: String) {
-    IDEE("Idée", "Lightbulb"),
     CADEAU("Cadeau", "CardGiftcard"),
     ACTIVITE("Activité", "DirectionsRun"),
     EVENEMENT("Sortie", "Event"),
     RECETTE("Recette", "Restaurant"),
     LIVRE("Livre", "MenuBook"),
-    DECORATION("Déco", "Palette")
+    DECORATION("Déco", "Palette");
+
+    companion object {
+        /** Catégorie d'une idée qui n'en a pas, ou de l'ancienne « Idée ». */
+        val DEFAULT = ACTIVITE
+
+        /** « RECETTE » ou « LINK_CATEGORY_RECETTE » ; inconnue, vide ou « IDEE » : [DEFAULT]. */
+        fun parse(raw: String?): LinkCategory {
+            val name = raw.orEmpty().removePrefix("LINK_CATEGORY_")
+            return entries.find { it.name == name } ?: DEFAULT
+        }
+    }
+}
+
+/** Enregistrée par son nom (« RECETTE ») ; relit l'ancienne « IDEE » en Activité. */
+object LinkCategorySerializer : KSerializer<LinkCategory> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("data.LinkCategory", PrimitiveKind.STRING)
+    override fun serialize(encoder: Encoder, value: LinkCategory) = encoder.encodeString(value.name)
+    override fun deserialize(decoder: Decoder): LinkCategory = LinkCategory.parse(decoder.decodeString())
 }
 
 @Serializable

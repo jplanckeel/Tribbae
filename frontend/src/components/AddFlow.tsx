@@ -4,7 +4,7 @@ import { Link as RouterLink, useNavigate } from "react-router";
 import { agoShort, bandsToAge, defaultFolder, exposesIdeas, selectedBands, suggestFolders, whoSees } from "../lib/addFlow";
 import { AGE_BANDS } from "../lib/age";
 import * as api from "../lib/api";
-import { AVATAR_COLORS, CATEGORIES, categoryMeta, folderColor } from "../lib/categories";
+import { AVATAR_COLORS, CATEGORIES, DEFAULT_CATEGORY, categoryMeta, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { eventDateMs, formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, toInput } from "../lib/links";
@@ -38,7 +38,7 @@ const STEPS: { label: string; at: Step }[] = [
 const ORDER: Step[] = ["choose", "link", "sort", "done"];
 
 const blank = (folderId?: string): LinkInput => ({
-  title: "", url: "", description: "", category: "LINK_CATEGORY_IDEE", tags: [], visibility: "private", folderId,
+  title: "", url: "", description: "", category: DEFAULT_CATEGORY, tags: [], visibility: "private", folderId,
 });
 
 /** À monter uniquement quand la feuille est ouverte. */
@@ -301,7 +301,7 @@ export default function AddFlow({ onClose, folderId: preset, onAi, onMore, onNew
           <span className="add-up mt-1 text-[13px] font-bold text-sec" style={{ animationDelay: "140ms" }}>Ou partir de…</span>
           <div className="grid grid-cols-3 gap-2.5">
             <Tile delay={180} icon="link" bg="var(--color-activite-bg)" ink="var(--color-activite-ink)" label="Un lien" onClick={() => start("link")} />
-            <Tile delay={230} icon="pencil" bg="var(--color-idee-bg)" ink="var(--color-idee-ink)" label="Je l'écris" onClick={() => start("write")} />
+            <Tile delay={230} icon="pencil" bg="var(--color-miel-bg)" ink="var(--color-miel-ink)" label="Je l'écris" onClick={() => start("write")} />
             <Tile delay={280} icon="camera" bg="var(--color-recette-bg)" ink="var(--color-recette-ink)" label="Une photo" onClick={pickPhoto} />
           </div>
 

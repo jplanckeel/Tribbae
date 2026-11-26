@@ -11,7 +11,7 @@ class AudienceTest {
     private fun folder(visibility: String = "VISIBILITY_PRIVATE", collaborators: List<Collaborator> = emptyList(), ownerId: String = "moi") =
         Folder(id = "1", name = "Dossier", visibility = visibility, collaborators = collaborators, ownerId = ownerId)
     private fun link(visibility: String = "private", ownerId: String = "moi") =
-        Link(id = "1", title = "Idée", url = "", category = LinkCategory.IDEE, visibility = visibility, ownerId = ownerId)
+        Link(id = "1", title = "Idée", url = "", category = LinkCategory.ACTIVITE, visibility = visibility, ownerId = ownerId)
 
     @Test
     fun folderOfTheAccountOrTribeIsPrivate() {

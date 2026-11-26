@@ -85,7 +85,7 @@ c'est le changer de l'autre.
 ## Fonctionnalités
 
 ### Idées et dossiers
-- 7 catégories : Idée, Cadeau, Activité, Sortie, Recette, Livre, Déco
+- 6 catégories : Activité, Cadeau, Sortie, Recette, Livre, Déco
 - Ajout en quelques étapes depuis un lien (copié, partagé vers l'app), un texte, une photo ou l'IA ;
   le lien est lu (titre, image, description) et trois dossiers sont suggérés
 - Dossiers personnalisables : couverture, bannière illustrée, couleur, date clé avec compte à rebours,

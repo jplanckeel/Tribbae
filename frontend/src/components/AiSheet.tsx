@@ -538,7 +538,7 @@ function Done({ links, folder, onRestart, onOpen }: { links: Link[]; folder?: Fo
         <div aria-hidden="true" className="add-bump absolute bottom-[46px] left-[calc(50%+30px)] h-[68px] w-[78px]">
           <span className="absolute top-0 left-0 h-3.5 w-[34px] rounded-t-[7px] rounded-tr-[9px]" style={{ background: ink }} />
           <span className="absolute inset-x-0 top-2.5 bottom-0 flex items-center justify-center rounded-[16px] rounded-tl-none text-white" style={{ background: ink }}>
-            {folder ? <FolderGlyph icon={folder.icon} size={28} /> : <Icon name="idee" size={28} />}
+            {folder ? <FolderGlyph icon={folder.icon} size={28} /> : <Icon name="sparkles" size={28} />}
           </span>
           {SPARKS.map(([dx, dy, bg, shape], i) => (
             <span

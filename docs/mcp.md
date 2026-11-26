@@ -19,7 +19,7 @@ Règles appliquées par le serveur, quoi que l'agent envoie :
 - **Mêmes droits que dans l'app** : dossiers de la tribu, ou partagés avec le compte comme éditeur.
 - **Adresse en `https` uniquement**, vers un site public : pas d'IP privée, pas de `localhost`, pas d'identifiants dans l'adresse.
 - **Validation des champs** :
-  - catégorie parmi `idee`, `cadeau`, `activite`, `sortie`, `recette`, `livre`, `deco` ;
+  - catégorie parmi `activite`, `cadeau`, `sortie`, `recette`, `livre`, `deco` (l'ancienne `idee` est encore acceptée et rangée dans `activite`) ;
   - 10 tags au plus, et des longueurs maximales pour chaque champ ;
   - date d'événement comprise entre un an avant et trois ans après aujourd'hui.
 - **Pas d'image fournie par l'agent.** Tribbae va chercher lui-même l'image de la page, comme pour toute idée.

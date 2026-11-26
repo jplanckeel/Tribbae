@@ -27,13 +27,17 @@ type LinkCategory int32
 
 const (
 	LinkCategory_LINK_CATEGORY_UNSPECIFIED LinkCategory = 0
-	LinkCategory_LINK_CATEGORY_IDEE        LinkCategory = 1
-	LinkCategory_LINK_CATEGORY_CADEAU      LinkCategory = 2
-	LinkCategory_LINK_CATEGORY_ACTIVITE    LinkCategory = 3
-	LinkCategory_LINK_CATEGORY_EVENEMENT   LinkCategory = 4
-	LinkCategory_LINK_CATEGORY_RECETTE     LinkCategory = 5
-	LinkCategory_LINK_CATEGORY_LIVRE       LinkCategory = 6
-	LinkCategory_LINK_CATEGORY_DECORATION  LinkCategory = 7
+	// Fusionnée dans Activité : lue et convertie en LINK_CATEGORY_ACTIVITE par le
+	// serveur (anciennes versions de l'app), jamais renvoyée.
+	//
+	// Deprecated: Marked as deprecated in tribbae/v1/link.proto.
+	LinkCategory_LINK_CATEGORY_IDEE       LinkCategory = 1
+	LinkCategory_LINK_CATEGORY_CADEAU     LinkCategory = 2
+	LinkCategory_LINK_CATEGORY_ACTIVITE   LinkCategory = 3
+	LinkCategory_LINK_CATEGORY_EVENEMENT  LinkCategory = 4
+	LinkCategory_LINK_CATEGORY_RECETTE    LinkCategory = 5
+	LinkCategory_LINK_CATEGORY_LIVRE      LinkCategory = 6
+	LinkCategory_LINK_CATEGORY_DECORATION LinkCategory = 7
 )
 
 // Enum value maps for LinkCategory.
@@ -2641,10 +2645,10 @@ const file_tribbae_v1_link_proto_rawDesc = "" +
 	"\x13ListNewLinksRequest\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\">\n" +
 	"\x14ListNewLinksResponse\x12&\n" +
-	"\x05links\x18\x01 \x03(\v2\x10.tribbae.v1.LinkR\x05links*\xea\x01\n" +
+	"\x05links\x18\x01 \x03(\v2\x10.tribbae.v1.LinkR\x05links*\xee\x01\n" +
 	"\fLinkCategory\x12\x1d\n" +
-	"\x19LINK_CATEGORY_UNSPECIFIED\x10\x00\x12\x16\n" +
-	"\x12LINK_CATEGORY_IDEE\x10\x01\x12\x18\n" +
+	"\x19LINK_CATEGORY_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x12LINK_CATEGORY_IDEE\x10\x01\x1a\x02\b\x01\x12\x18\n" +
 	"\x14LINK_CATEGORY_CADEAU\x10\x02\x12\x1a\n" +
 	"\x16LINK_CATEGORY_ACTIVITE\x10\x03\x12\x1b\n" +
 	"\x17LINK_CATEGORY_EVENEMENT\x10\x04\x12\x19\n" +

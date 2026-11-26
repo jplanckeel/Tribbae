@@ -89,7 +89,7 @@ private enum class LinkRead { Idle, Loading, Done, Failed }
 /** Brouillon de l'idée en cours d'ajout. */
 private data class Draft(
     val title: String = "", val url: String = "", val description: String = "",
-    val category: LinkCategory = LinkCategory.IDEE, val imageUrl: String = "",
+    val category: LinkCategory = LinkCategory.DEFAULT, val imageUrl: String = "",
     val price: String = "", val location: String = "", val eventDate: Long? = null,
     val ingredients: List<String> = emptyList(), val ageRange: String = "", val isPublic: Boolean = false,
     val servings: Int = 0,

@@ -19,7 +19,7 @@
   },
   {
     "title": "Idées & dossiers",
-    "icon": "idee",
+    "icon": "folder",
     "items": [
       [
         "Comment ajouter une idée ?",
@@ -27,7 +27,7 @@
       ],
       [
         "Quelles sont les catégories ?",
-        "Activité, Cadeau, Recette, Sortie, Idée, Livre et Déco. Chacune a sa couleur pour être repérée d'un coup d'œil."
+        "Activité, Cadeau, Recette, Sortie, Livre et Déco. Chacune a sa couleur pour être repérée d'un coup d'œil."
       ],
       [
         "Comment ranger mes idées ?",

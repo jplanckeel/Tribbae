@@ -126,6 +126,13 @@ func main() {
 	// expirent (lots de 20 toutes les 10 min)
 	go linkSvc.RunImageBackfill(context.Background(), 10*time.Minute, 20)
 	go func() {
+		if n, err := linkSvc.MigrateIdeaCategory(context.Background()); err != nil {
+			log.Printf("idea category migration: %v", err)
+		} else if n > 0 {
+			log.Printf("idea category migration: %d ideas moved to activite", n)
+		}
+	}()
+	go func() {
 		if n, err := linkSvc.MigrateFavorites(context.Background()); err != nil {
 			log.Printf("favorites migration: %v", err)
 		} else if n > 0 {

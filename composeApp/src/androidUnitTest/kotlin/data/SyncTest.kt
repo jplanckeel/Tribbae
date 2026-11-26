@@ -11,7 +11,7 @@ class SyncTest {
     private val srv2 = "6a00000000000000000000a2"
     private val srv3 = "6a00000000000000000000a3"
 
-    private fun link(id: String, title: String = id, folderId: String? = null) = Link(id = id, title = title, url = "", category = LinkCategory.IDEE, folderId = folderId)
+    private fun link(id: String, title: String = id, folderId: String? = null) = Link(id = id, title = title, url = "", category = LinkCategory.ACTIVITE, folderId = folderId)
 
     @Test
     fun recognizesLocalIds() {

@@ -45,11 +45,11 @@
   --color-ground: #f7b57f;
   --color-blush: #fff4ee;
   --color-peach: #fff4ea;
+  /* Miel : fond et encre ambrés (rayon épicerie, placard, rappels…), HoneyBg/HoneyInk sur Android */
+  --color-miel-bg: #fbeacb;
+  --color-miel-ink: #85560c;
 
   /* Catégories (fond · encre · icône) */
-  --color-idee-bg: #fbeacb;
-  --color-idee-ink: #85560c;
-  --color-idee-ic: #9a6510;
   --color-cadeau-bg: #fce3d0;
   --color-cadeau-ink: #a04812;
   --color-cadeau-ic: #c35a1c;
@@ -192,8 +192,9 @@
   --color-peach: #3d2617;
   --color-terracotta-dark: #f0855e;
 
+  --color-miel-bg: #3a2d14; --color-miel-ink: #f2c76b;
+
   /* Catégories : fond sombre teinté, encre claire (≥ 6,8:1) */
-  --color-idee-bg: #3a2d14; --color-idee-ink: #f2c76b; --color-idee-ic: #f2c76b;
   --color-cadeau-bg: #3d2617; --color-cadeau-ink: #f5a66e; --color-cadeau-ic: #f5a66e;
   --color-activite-bg: #17303a; --color-activite-ink: #8ccbe3; --color-activite-ic: #8ccbe3;
   --color-sortie-bg: #3b201b; --color-sortie-ink: #f09a84; --color-sortie-ic: #f09a84;

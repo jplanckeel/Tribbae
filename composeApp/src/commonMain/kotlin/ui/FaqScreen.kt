@@ -35,7 +35,7 @@ import ui.campfire.display
 /** Icônes des sections, mêmes noms que la page /aide du site. */
 private fun sectionIcon(name: String): ImageVector = when (name) {
     "tipi" -> Icons.Outlined.Cottage
-    "idee" -> Icons.Outlined.Lightbulb
+    "folder" -> Icons.Outlined.Folder
     "tribe" -> Icons.Outlined.Group
     "sparkles" -> Icons.Outlined.AutoAwesome
     "lock" -> Icons.Outlined.Lock

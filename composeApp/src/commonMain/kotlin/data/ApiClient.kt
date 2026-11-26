@@ -113,7 +113,7 @@ data class ApiLink(
         title = title,
         url = url,
         description = description,
-        category = runCatching { LinkCategory.valueOf(category.removePrefix("LINK_CATEGORY_")) }.getOrDefault(LinkCategory.IDEE),
+        category = LinkCategory.parse(category),
         folderId = folderId.ifBlank { null },
         tags = tags,
         ageRange = ageRange,

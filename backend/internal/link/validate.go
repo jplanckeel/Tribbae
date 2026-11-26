@@ -109,6 +109,7 @@ func cleanList(field string, in []string, maxItems, maxLen int) ([]string, error
 // sanitize valide et normalise les champs saisis par l'utilisateur.
 func (l *Link) sanitize() error {
 	var err error
+	l.Category = normalizeCategory(l.Category)
 	l.Title = strings.TrimSpace(l.Title)
 	if err = checkLen("title", l.Title, maxTitleLen); err != nil {
 		return err

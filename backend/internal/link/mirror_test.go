@@ -81,7 +81,7 @@ func TestImageMirror(t *testing.T) {
 
 	// À la création : copiée en arrière-plan, l'adresse d'origine retenue
 	insta := "https://scontent.cdninstagram.com/a.jpg?oe=" + future
-	l, err := svc.Create(ctx, "u1", &Link{Title: "Post", URL: "https://www.instagram.com/p/abc/", Category: "LINK_CATEGORY_IDEE", ImageURL: insta})
+	l, err := svc.Create(ctx, "u1", &Link{Title: "Post", URL: "https://www.instagram.com/p/abc/", Category: "LINK_CATEGORY_ACTIVITE", ImageURL: insta})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestImageMirror(t *testing.T) {
 	}
 
 	// Un client qui renvoie l'adresse d'origine garde la copie
-	if _, err := svc.Update(ctx, l.ID.Hex(), "u1", &Link{Title: "Post modifié", URL: "https://www.instagram.com/p/abc/", Category: "LINK_CATEGORY_IDEE", ImageURL: insta}); err != nil {
+	if _, err := svc.Update(ctx, l.ID.Hex(), "u1", &Link{Title: "Post modifié", URL: "https://www.instagram.com/p/abc/", Category: "LINK_CATEGORY_ACTIVITE", ImageURL: insta}); err != nil {
 		t.Fatal(err)
 	}
 	if got := get(l.ID); got["image_url"] != "https://tribbae.fr/v1/photos/00000000000000000000000000000001" {

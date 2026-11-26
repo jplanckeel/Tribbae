@@ -1,5 +1,5 @@
+// « Idée » (LINK_CATEGORY_IDEE) a été fusionnée dans Activité : normalizeCategory la convertit.
 export type CategoryKey =
-  | "LINK_CATEGORY_IDEE"
   | "LINK_CATEGORY_CADEAU"
   | "LINK_CATEGORY_ACTIVITE"
   | "LINK_CATEGORY_EVENEMENT"

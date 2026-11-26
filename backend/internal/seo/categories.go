@@ -15,8 +15,6 @@ var categories = []category{
 		"Recettes faciles à cuisiner en famille et avec les enfants : goûters, repas et desserts partagés par les familles de Tribbae."},
 	{"LINK_CATEGORY_EVENEMENT", "sortie", "Sortie", "Sorties",
 		"Sorties et événements en famille : spectacles, visites, fêtes et balades repérés par les familles de Tribbae."},
-	{"LINK_CATEGORY_IDEE", "idee", "Idée", "Idées",
-		"Idées pour la vie de famille : astuces, inspirations et bons plans partagés par les familles de Tribbae."},
 	{"LINK_CATEGORY_LIVRE", "livre", "Livre", "Livres",
 		"Livres pour enfants et ados : albums, romans et BD recommandés par les familles de Tribbae."},
 	{"LINK_CATEGORY_DECORATION", "deco", "Déco", "Déco",
@@ -29,7 +27,7 @@ func categoryByKey(key string) category {
 			return c
 		}
 	}
-	return categories[4] // Idée
+	return categories[0] // Activité
 }
 
 func categoryBySlug(slug string) (category, bool) {

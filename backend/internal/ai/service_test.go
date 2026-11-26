@@ -33,7 +33,7 @@ func TestParseIdeasNormalizes(t *testing.T) {
 		{"title":"  Crêpes   légères ","description":"Une pâte sans sucre.","category":"recette","tags":["#Goûter","goûter","rapide","facile"],"ageRange":"N/A"},
 		{"title":"Pique-nique","description":"Au parc.","category":"sortie","tags":[],"ageRange":"3-6 ans"},
 		{"title":"crêpes légères","description":"doublon","category":"recette","tags":[],"ageRange":""},
-		{"title":"","description":"sans titre","category":"idee","tags":[],"ageRange":""},
+		{"title":"","description":"sans titre","category":"activite","tags":[],"ageRange":""},
 		{"title":"Cadre photo","description":"DIY","category":"décoration","tags":[],"ageRange":""}
 	]}`
 	ideas, err := parseIdeas(raw, 5)
@@ -132,7 +132,7 @@ func TestGenerateOmitsThinkForPlainModels(t *testing.T) {
 
 func TestGenerateBusy(t *testing.T) {
 	var think atomic.Value
-	ollama := fakeOllama(t, false, `{"ideas":[{"title":"X","description":"","category":"idee","tags":[],"ageRange":""}]}`, 300*time.Millisecond, &think)
+	ollama := fakeOllama(t, false, `{"ideas":[{"title":"X","description":"","category":"activite","tags":[],"ageRange":""}]}`, 300*time.Millisecond, &think)
 	defer ollama.Close()
 	svc := NewService(Config{OllamaURL: ollama.URL, OllamaModel: "test"})
 
@@ -182,7 +182,7 @@ func TestUserPromptListsExcluded(t *testing.T) {
 
 func TestGenerateHonorsCount(t *testing.T) {
 	var think atomic.Value
-	answer := `{"ideas":[{"title":"A","description":"","category":"idee","tags":[],"ageRange":"","why":""},{"title":"B","description":"","category":"idee","tags":[],"ageRange":"","why":""},{"title":"C","description":"","category":"idee","tags":[],"ageRange":"","why":""}]}`
+	answer := `{"ideas":[{"title":"A","description":"","category":"activite","tags":[],"ageRange":"","why":""},{"title":"B","description":"","category":"activite","tags":[],"ageRange":"","why":""},{"title":"C","description":"","category":"activite","tags":[],"ageRange":"","why":""}]}`
 	ollama := fakeOllama(t, false, answer, 0, &think)
 	defer ollama.Close()
 	svc := NewService(Config{OllamaURL: ollama.URL, OllamaModel: "test"})
@@ -207,6 +207,26 @@ func TestExpectedCategoryPrefersFirstHint(t *testing.T) {
 	for in, want := range cases {
 		if got := expectedCategory(in); got != want {
 			t.Errorf("expectedCategory(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// « idee » n'est plus proposée au modèle ; s'il la renvoie quand même, ou une
+// catégorie inconnue, l'idée est rangée dans Activité.
+func TestCategoryForFallsBackToActivity(t *testing.T) {
+	for in, want := range map[string]string{
+		"recette":   "LINK_CATEGORY_RECETTE",
+		"Sortie":    "LINK_CATEGORY_EVENEMENT",
+		"idee":      "LINK_CATEGORY_ACTIVITE",
+		"n'importe": "LINK_CATEGORY_ACTIVITE",
+	} {
+		if got := categoryFor(in); got != want {
+			t.Errorf("categoryFor(%q) = %q, want %q", in, got, want)
+		}
+	}
+	for _, c := range categoryEnum {
+		if c == "idee" {
+			t.Error("« idee » encore proposée au modèle")
 		}
 	}
 }

@@ -19,11 +19,11 @@ object AssistantRequests {
     /**
      * Catégorie depuis son nom (« RECETTE », « LINK_CATEGORY_RECETTE ») ou son
      * libellé (« Recette », « Sortie », « Déco »), sans tenir compte des
-     * majuscules ni des accents. Vide : Idée.
+     * majuscules ni des accents. Vide, ou l'ancienne « Idée » (fusionnée) : Activité.
      */
     fun category(raw: String?): LinkCategory {
         val key = norm(raw.orEmpty()).removePrefix("link_category_")
-        if (key.isEmpty()) return LinkCategory.IDEE
+        if (key.isEmpty() || key == "idee") return LinkCategory.DEFAULT
         return LinkCategory.entries.find { norm(it.name) == key || norm(it.label) == key }
             ?: throw Invalid("unknown category: use one of ${LinkCategory.entries.joinToString { it.name }}")
     }

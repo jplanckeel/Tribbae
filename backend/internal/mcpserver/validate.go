@@ -25,7 +25,6 @@ const (
 
 // categories : valeur de l'outil → valeur stockée (enum de link.proto).
 var categories = map[string]string{
-	"idee":     "LINK_CATEGORY_IDEE",
 	"cadeau":   "LINK_CATEGORY_CADEAU",
 	"activite": "LINK_CATEGORY_ACTIVITE",
 	"sortie":   "LINK_CATEGORY_EVENEMENT",
@@ -33,6 +32,10 @@ var categories = map[string]string{
 	"livre":    "LINK_CATEGORY_LIVRE",
 	"deco":     "LINK_CATEGORY_DECORATION",
 }
+
+// categoryAliases : anciennes valeurs de l'outil, encore acceptées (« idee »
+// a été fusionnée dans « activite »).
+var categoryAliases = map[string]string{"idee": "LINK_CATEGORY_ACTIVITE"}
 
 // categoryName : valeur stockée → valeur de l'outil.
 func categoryName(stored string) string {

@@ -60,7 +60,7 @@ describe("ingredientKey", () => {
 describe("recettes proposées", () => {
   const links = [
     { id: "a", category: "LINK_CATEGORY_RECETTE", ingredients: ["200 g de farine"] },
-    { id: "b", category: "LINK_CATEGORY_IDEE", ingredients: ["2 œufs"] },
+    { id: "b", category: "LINK_CATEGORY_ACTIVITE", ingredients: ["2 œufs"] },
     { id: "c", category: "LINK_CATEGORY_RECETTE", ingredients: [] },
     { id: "d", category: "LINK_CATEGORY_RECETTE", ingredients: ["  "] },
     { id: "e", category: "LINK_CATEGORY_ACTIVITE" },

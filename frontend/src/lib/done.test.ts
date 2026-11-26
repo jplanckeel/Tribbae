@@ -22,7 +22,6 @@ describe("c'est fait", () => {
     expect(doneWords("LINK_CATEGORY_RECETTE").verb).toBe("On l'a cuisinée");
     expect(doneWords("LINK_CATEGORY_LIVRE").verb).toBe("On l'a lu");
     expect(doneWords("LINK_CATEGORY_CADEAU").verb).toBe("Acheté");
-    expect(doneWords("LINK_CATEGORY_IDEE").verb).toBe("C'est fait");
     expect(doneWords("LINK_CATEGORY_DECORATION").verb).toBe("C'est fait");
     expect(doneWords("LINK_CATEGORY_EVENEMENT").again).toBe("On y est retournés");
 
@@ -32,7 +31,7 @@ describe("c'est fait", () => {
     expect(doneLabel(done("3", "RECETTE", "2026-11-03", 3), NOW)).toBe("Cuisinée 3 fois");
     expect(doneLabel(done("4", "LIVRE", "2026-10-12"), NOW)).toBe("Lu en octobre");
     expect(doneLabel(done("5", "CADEAU", "2026-11-02"), NOW)).toBe("Acheté le 2 nov.");
-    expect(doneLabel(done("6", "IDEE", "2026-11-05"), NOW)).toBe("Fait le 5 nov.");
+    expect(doneLabel(done("6", "DECORATION", "2026-11-05"), NOW)).toBe("Fait le 5 nov.");
     expect(doneLabel(done("7", "DECORATION", "2026-11-01", 2), NOW)).toBe("Fait le 1er nov.");
     expect(doneLabel(link("8", "ACTIVITE"), NOW)).toBe("");
   });
@@ -78,7 +77,7 @@ describe("c'est fait", () => {
   it("mesure l'avancement d'un dossier", () => {
     const links = [
       done("1", "ACTIVITE", "2026-10-26"), done("2", "RECETTE", "2026-11-08", 3), link("3", "EVENEMENT"),
-      link("4", "LIVRE"), link("5", "CADEAU"), done("6", "IDEE", "2026-11-05"),
+      link("4", "LIVRE"), link("5", "CADEAU"), done("6", "DECORATION", "2026-11-05"),
     ];
     const p = folderProgress(links);
     expect(p).toEqual({ done: 2, total: 4 });
@@ -88,7 +87,7 @@ describe("c'est fait", () => {
     expect(progressHint({ done: 4, total: 4 })).toBe("Bravo, tout est fait !");
     // Moins de 3 idées comptées, ou liste de cadeaux : ni anneau ni barre
     expect(folderProgress(links.slice(0, 2))).toBeNull();
-    expect(folderProgress([link("a", "CADEAU"), link("b", "IDEE"), link("c", "DECORATION")])).toBeNull();
+    expect(folderProgress([link("a", "CADEAU"), link("b", "DECORATION"), link("c", "DECORATION")])).toBeNull();
     expect(folderProgress(links, true)).toBeNull();
     expect(doneToast(p)).toBe("2 sur 4 faites");
     expect(doneToast(null)).toBe("C'est noté");
@@ -100,7 +99,7 @@ describe("c'est fait", () => {
       link("recente", "RECETTE", { createdAt: "2026-11-01T10:00:00Z" }),
       link("a-venir", "EVENEMENT", { eventDate: at(2026, 11, 22), createdAt: "2026-08-01T10:00:00Z" }),
       done("faite-oct", "LIVRE", "2026-10-12", 1, { createdAt: "2026-09-02T10:00:00Z" }),
-      link("ancienne", "IDEE", { createdAt: "2026-06-01T10:00:00Z" }),
+      link("ancienne", "DECORATION", { createdAt: "2026-06-01T10:00:00Z" }),
       link("passee", "EVENEMENT", { eventDate: at(2026, 11, 7), createdAt: "2026-07-01T10:00:00Z" }),
     ];
     expect(sortTodoFirst(links, NOW).map((l) => l.id)).toEqual(["passee", "a-venir", "recente", "ancienne", "faite-oct", "faite-nov"]);

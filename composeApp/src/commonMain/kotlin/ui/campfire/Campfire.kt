@@ -86,7 +86,6 @@ private fun categoryOrder(palettes: Map<String, CategoryPalette>): List<Category
     Triple(LinkCategory.CADEAU, "Cadeaux", Icons.Outlined.CardGiftcard),
     Triple(LinkCategory.RECETTE, "Recettes", Icons.Outlined.Restaurant),
     Triple(LinkCategory.EVENEMENT, "Sorties", Icons.Outlined.CalendarMonth),
-    Triple(LinkCategory.IDEE, "Idées", Icons.Outlined.Lightbulb),
     Triple(LinkCategory.LIVRE, "Livres", Icons.Outlined.MenuBook),
     Triple(LinkCategory.DECORATION, "Déco", Icons.Outlined.Palette),
 ).map { (cat, plural, icon) ->

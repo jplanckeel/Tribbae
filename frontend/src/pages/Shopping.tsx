@@ -30,7 +30,7 @@ const AISLE_STYLE: Record<AisleId, { icon: IconName; tone: string }> = {
   boulangerie: { icon: "bread", tone: "bg-cadeau-bg text-cadeau-ink" },
   boucherie: { icon: "meat", tone: "bg-sortie-bg text-sortie-ink" },
   cremerie: { icon: "milk", tone: "bg-activite-bg text-activite-ink" },
-  epicerie: { icon: "jar", tone: "bg-idee-bg text-idee-ink" },
+  epicerie: { icon: "jar", tone: "bg-miel-bg text-miel-ink" },
   surgeles: { icon: "snow", tone: "bg-activite-bg text-activite-ink" },
   boissons: { icon: "bottle", tone: "bg-livre-bg text-livre-ink" },
   "bebe-hygiene": { icon: "drop", tone: "bg-deco-bg text-deco-ink" },
@@ -39,7 +39,7 @@ const AISLE_STYLE: Record<AisleId, { icon: IconName; tone: string }> = {
 };
 
 // Teintes des cartes du menu sans photo, dans l'ordre
-const MENU_TINTS = ["bg-cadeau-bg text-cadeau-ink", "bg-idee-bg text-idee-ink", "bg-recette-bg text-recette-ink", "bg-sortie-bg text-sortie-ink"];
+const MENU_TINTS = ["bg-cadeau-bg text-cadeau-ink", "bg-miel-bg text-miel-ink", "bg-recette-bg text-recette-ink", "bg-sortie-bg text-sortie-ink"];
 
 // Ancienne liste gardée dans le navigateur (avant la liste partagée) : reprise une fois
 const OLD_STORE = "tribbae.courses";
@@ -418,7 +418,7 @@ export default function Shopping() {
 
       {/* Placard */}
       {arranged.staples.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-large bg-idee-bg p-3.5 text-idee-ink">
+        <div className="flex flex-col gap-3 rounded-large bg-miel-bg p-3.5 text-miel-ink">
           <div className="flex items-start gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-small bg-card"><Icon name="jar" size={18} /></span>
             <span className="flex flex-col">
@@ -435,7 +435,7 @@ export default function Shopping() {
                   type="button"
                   aria-pressed={have}
                   onClick={() => changeShopping({ type: have ? "pantry_out" : "pantry_have", key: l.product })}
-                  className={`flex h-9 items-center gap-1 rounded-full px-3.5 text-[13px] font-bold ${have ? "bg-done-solid text-on-solid" : "bg-card text-idee-ink"}`}
+                  className={`flex h-9 items-center gap-1 rounded-full px-3.5 text-[13px] font-bold ${have ? "bg-done-solid text-on-solid" : "bg-card text-miel-ink"}`}
                 >
                   {have && <Icon name="check" size={13} strokeWidth={3} />}
                   {l.name}
@@ -474,7 +474,7 @@ export default function Shopping() {
                       <span className="flex min-w-0 flex-1 flex-col py-2">
                         <span className="flex items-center gap-1.5 text-[15px] font-semibold">
                           {l.name}
-                          {l.staple && <span className="rounded-full bg-idee-bg px-1.5 text-[11px] font-bold text-idee-ink">placard ?</span>}
+                          {l.staple && <span className="rounded-full bg-miel-bg px-1.5 text-[11px] font-bold text-miel-ink">placard ?</span>}
                         </span>
                         <span className="truncate text-xs text-sec">{lineSub(l, nameOf)}</span>
                       </span>

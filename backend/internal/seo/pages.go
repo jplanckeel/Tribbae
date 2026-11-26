@@ -45,6 +45,9 @@ var redirects = map[string]string{
 	"/folders":  "/mes-idees",
 	"/tags":     "/mes-idees?vue=tags",
 	"/children": "/tribu",
+	// Catégorie Idée fusionnée dans Activité
+	"/category/idee":  "/category/activite",
+	"/categorie/idee": "/category/activite",
 }
 
 // redirect retourne la nouvelle adresse d'une ancienne, ou "".
@@ -131,7 +134,7 @@ const homeIntro = "Tribbae est l'appli gratuite, sans publicité, où la famille
 
 // homeTopics : ce que fait Tribbae, en quelques paragraphes (titres h2).
 var homeTopics = []QA{
-	{"Garder les idées de la famille au même endroit", "Collez un lien (site, Instagram, TikTok…), prenez une photo ou écrivez l'idée : Tribbae récupère le titre et l'image, et la range dans l'une des sept catégories (activités, cadeaux, recettes, sorties, idées, livres, déco). Les recettes gardent leurs ingrédients."},
+	{"Garder les idées de la famille au même endroit", "Collez un lien (site, Instagram, TikTok…), prenez une photo ou écrivez l'idée : Tribbae récupère le titre et l'image, et la range dans l'une des six catégories (activités, cadeaux, recettes, sorties, livres, déco). Les recettes gardent leurs ingrédients."},
 	{"Partager avec sa tribu", "Jusqu'à douze proches forment une tribu : ils voient les mêmes idées, dossiers et profils des enfants. Un dossier se partage aussi par lien avec ceux qui n'ont pas de compte, et une liste de cadeaux se réserve sans s'inscrire."},
 	{"Faire ensemble", "Rappel la veille d'une sortie, « C'est fait » et souvenirs, liste de courses commune tirée des recettes de la semaine : Tribbae accompagne la famille du repérage jusqu'au jour J."},
 	{"Piocher dans les idées des autres familles", "Les idées et dossiers que les familles choisissent de publier sont rassemblés dans l'Explorer, par catégorie, âge et budget. Tout le reste reste privé."},
