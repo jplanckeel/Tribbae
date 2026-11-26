@@ -158,6 +158,8 @@
   --av-5-bg: #f7dde6; --av-5-ink: #9c3a5c;
   /* Porte du tipi : prune le jour, lumière le soir */
   --tipi-door: #5e4558;
+  /* Cadre du téléphone des écrans de démonstration (accueil visiteur) */
+  --phone-frame: #2b1a15;
   /* Séries des graphiques (statistiques admin), validées daltonisme et contraste */
   --chart-1: #c8492c;
   --chart-2: #2a85ad;
@@ -221,6 +223,7 @@
   --av-4-bg: #3a2d14; --av-4-ink: #f2c76b;
   --av-5-bg: #3b1f29; --av-5-ink: #ee9db8;
   --tipi-door: #ffc857;
+  --phone-frame: #0d0806;
 }
 
 /* Les feuilles (et la barre de navigation) sont une surface élevée */
