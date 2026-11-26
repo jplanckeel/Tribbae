@@ -247,7 +247,10 @@ func TestReservedGiftShowsInTheFolder(t *testing.T) {
 	if _, err := db.Collection("folders").InsertOne(ctx, bson.M{"_id": fid, "owner_id": "alice", "name": "Noël", "gift_reservations": true}); err != nil {
 		t.Fatal(err)
 	}
-	gift, _ := svc.Create(ctx, "alice", &Link{Title: "Lego", Category: "LINK_CATEGORY_CADEAU", FolderID: fid.Hex()})
+	gift, err := svc.Create(ctx, "alice", &Link{Title: "Lego", Category: "LINK_CATEGORY_CADEAU", FolderID: fid.Hex()})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := db.Collection("gift_reservations").InsertOne(ctx, bson.M{"link_id": gift.ID.Hex(), "folder_id": fid.Hex(), "owner_id": "alice", "status": "reserved", "user_id": "bob"}); err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +286,10 @@ func TestReservedGiftShowsOnlyInItsList(t *testing.T) {
 	if _, err := db.Collection("folders").InsertOne(ctx, bson.M{"_id": noel, "owner_id": "alice", "name": "Noël", "visibility": "public", "gift_reservations": true}); err != nil {
 		t.Fatal(err)
 	}
-	gift, _ := svc.Create(ctx, "alice", &Link{Title: "Lego", Category: "LINK_CATEGORY_CADEAU", FolderID: noel.Hex()})
+	gift, err := svc.Create(ctx, "alice", &Link{Title: "Lego", Category: "LINK_CATEGORY_CADEAU", FolderID: noel.Hex()})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := db.Collection("links").UpdateByID(ctx, gift.ID, bson.M{"$set": bson.M{"visibility": "public"}}); err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +322,10 @@ func TestReservedGiftShowsOnlyInItsList(t *testing.T) {
 	if _, err := db.Collection("folders").InsertOne(ctx, bson.M{"_id": davesList, "owner_id": "dave", "name": "Noël de Léo", "gift_reservations": true}); err != nil {
 		t.Fatal(err)
 	}
-	copied, _ := svc.Create(ctx, "dave", &Link{Title: gift.Title, Category: gift.Category, FolderID: davesList.Hex()})
+	copied, err := svc.Create(ctx, "dave", &Link{Title: gift.Title, Category: gift.Category, FolderID: davesList.Hex()})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if got := h.many(ctx, []*Link{copied}, "dave", giftsInList)[0].GiftStatus; got != "" {
 		t.Errorf("the copy in another list shows %q, want free", got)
 	}
