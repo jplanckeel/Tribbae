@@ -11,6 +11,8 @@ Screen-level behavior, mockups followed, and where logic is duplicated between w
 
 Idea age (`ageRange`) stays a string server-side but is entered with an age picker (bands = Explorer filter bands, shortcuts from the tribe's children ages, precise steppers by 6 months under 2 years) and always written in one canonical form (« 3–6 ans », « 18 mois – 3 ans », « 10 ans et + », « Tous âges »); parsing/formatting live in `frontend/src/lib/age.ts` and `composeApp/.../data/AgeRange.kt` (keep in sync; `AgeRangesTest` pins the cases). Legacy free-text values are still read.
 
+A category opened from the home tiles (web `MyIdeas` `?cat=<slug>&tag=<tag>`, Android `CategoryDetailScreen`) shows its ideas' tags as chips (« Tous », then `#tag n` by use, French alphabetical order) to filter by one tag; a tag no longer on those ideas is ignored. Logic in `tagFilter`/`tagCounts` (`lib/links.ts`) and `data/Tags.kt` (`links.test.ts` ↔ `TagsTest`, same cases); the « Mes idées » Tags tab uses the same counts.
+
 Searching in Explorer also shows « Dans vos idées » above the community results (three rows, then « Voir tout »; own public ideas only appear there). Logic in `searchMine` (`lib/links.ts`) and `data/IdeaSearch.kt` (`links.test.ts` ↔ `IdeaSearchTest`, same cases).
 
 Explorer default order « À la une » is a weighted shuffle reseeded every 6 h (`rotationScore`, FNV-1a + u^(1/weight), weight from likes and freshness), implemented identically in `frontend/src/lib/links.ts` and `ui/ExploreScreen.kt` — keep them in sync (`androidUnitTest/.../RotationScoreTest.kt` pins reference values from the web).

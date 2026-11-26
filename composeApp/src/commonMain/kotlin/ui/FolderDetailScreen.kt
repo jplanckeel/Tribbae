@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +14,8 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -28,6 +31,7 @@ import data.Folder
 import data.FolderStyle
 import data.Link
 import data.LinkCategory
+import data.Tags
 import ui.campfire.*
 
 /** Dossier : bandeau à sa couleur, membres, actions, idées en mosaïque. */
@@ -293,10 +297,15 @@ fun CategoryDetailScreen(
     onExplore: () -> Unit = {},
 ) {
     val cat = category?.let { categoryUi(it) }
+    // Affiner par tag (mêmes règles que le web : data.Tags ↔ tagFilter)
+    var selectedTag by rememberSaveable(category) { mutableStateOf<String?>(null) }
+    val sorted = remember(links) { links.sortedByDescending { it.createdAt.ifEmpty { it.updatedAt } } }
+    val tagged = remember(sorted, selectedTag) { Tags.filter(sorted, selectedTag) }
+    fun count(n: Int) = "$n idée${if (n > 1) "s" else ""}"
     CollectionScaffold(
         // « Nos recettes » : Explorer garde « Recettes » pour les idées de la communauté
         title = cat?.let { if (it.plural == "Déco") "Notre déco" else "Nos ${it.plural.lowercase()}" } ?: "Non rangées",
-        subtitle = "${links.size} idée${if (links.size > 1) "s" else ""} dans la tribu",
+        subtitle = tagged.active?.let { "${count(tagged.links.size)} sur ${links.size} · #$it" } ?: "${count(links.size)} dans la tribu",
         bg = cat?.bg ?: Sable2,
         solid = cat?.tint ?: TextSec,
         icon = cat?.icon ?: Icons.Outlined.BookmarkBorder,
@@ -305,7 +314,16 @@ fun CategoryDetailScreen(
             CampButton("Ajouter", onAdd, icon = Icons.Outlined.Add, height = 40.dp)
             if (cat != null) CampButton("Voir la communauté", onExplore, kind = ButtonKind.Ghost, icon = Icons.Outlined.Explore, height = 40.dp)
         },
-        links = links.sortedByDescending { it.createdAt.ifEmpty { it.updatedAt } },
+        beforeIdeas = when {
+            tagged.tags.isNotEmpty() -> {
+                { TagChips(tagged.tags, tagged.active) { selectedTag = it } }
+            }
+            cat != null && links.isNotEmpty() -> {
+                { Text("Ajoutez des tags à vos ${cat.plural.lowercase()} (#pluie, #été…) pour les retrouver ici d'un geste.", fontSize = 14.sp, color = TextSec) }
+            }
+            else -> null
+        },
+        links = tagged.links,
         emptyTitle = if (cat != null) "Aucune ${cat.label.lowercase()} pour l'instant" else "Tout est rangé !",
         emptyText = null,
         onLinkClick = { id -> links.find { it.id == id }?.let(onLinkClick) },
@@ -415,8 +433,34 @@ private fun CollectionScaffold(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { buttons() }
+            beforeIdeas?.invoke()
             Ideas(links, "grid", emptyTitle, emptyText, onLinkClick, onFavorite)
         }
+    }
+}
+
+/** Tags des idées affichées : « Tous » puis « #tag  n », un seul retenu à la fois (défilement horizontal). */
+@Composable
+private fun TagChips(tags: List<Pair<String, Int>>, active: String?, onSelect: (String?) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        @Composable
+        fun chip(label: String, on: Boolean, onClick: () -> Unit) = Text(
+            label,
+            fontSize = 14.sp,
+            color = if (on) Sable else TextSec,
+            fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines = 1,
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(if (on) Ecorce else Sable2)
+                .clickable(role = Role.Checkbox, onClickLabel = if (on) "Retirer le filtre" else "Filtrer") { onClick() }
+                .padding(horizontal = 12.dp, vertical = 7.dp)
+        )
+        chip("Tous", active == null) { onSelect(null) }
+        tags.forEach { (t, n) -> chip("#$t  $n", t == active) { onSelect(if (t == active) null else t) } }
     }
 }
 

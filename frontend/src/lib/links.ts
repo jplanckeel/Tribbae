@@ -97,6 +97,25 @@ export function tagCounts(links: Link[]): [string, number][] {
   return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "fr"));
 }
 
+export interface TagFilter {
+  /** Tags des idées, du plus utilisé au moins utilisé. */
+  tags: [string, number][];
+  /** Tag retenu : "" si aucun, ou s'il ne figure plus sur ces idées (ancienne adresse…). */
+  active: string;
+  /** Idées portant le tag retenu, toutes sinon. */
+  list: Link[];
+}
+
+/**
+ * Filtre par tag d'une liste d'idées (catégorie ouverte depuis l'accueil).
+ * Mêmes cas que TagsTest côté Android.
+ */
+export function tagFilter(links: Link[], selected: string): TagFilter {
+  const tags = tagCounts(links);
+  const active = tags.some(([t]) => t === selected) ? selected : "";
+  return { tags, active, list: active ? links.filter((l) => l.tags?.includes(active)) : links };
+}
+
 /** Propriétaire ou collaborateur éditeur du dossier. */
 /**
  * L'utilisateur peut ajouter ou modifier des idées dans ce dossier : le sien,

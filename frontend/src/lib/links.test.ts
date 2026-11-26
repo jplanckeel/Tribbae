@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { byRotation, canEditFolder, copyInput, extractUrl, ROTATION_MS, rotationScore, searchMine, tagCounts } from "./links";
+import { byRotation, canEditFolder, copyInput, extractUrl, ROTATION_MS, rotationScore, searchMine, tagCounts, tagFilter } from "./links";
 import type { Folder, Link } from "./types";
 
 describe("ordre « À la une »", () => {
@@ -69,6 +69,38 @@ describe("canEditFolder", () => {
 it("compte les tags, du plus utilisé au moins utilisé", () => {
   const links = [{ tags: ["pluie", "été"] }, { tags: ["été"] }, {}, { tags: ["automne"] }] as Link[];
   expect(tagCounts(links)).toEqual([["été", 2], ["automne", 1], ["pluie", 1]]);
+});
+
+// Mêmes cas que TagsTest côté Android
+describe("filtre par tag d'une catégorie", () => {
+  const links = [
+    { id: "1", tags: ["pluie", "été"] },
+    { id: "2", tags: ["été"] },
+    { id: "3" },
+    { id: "4", tags: ["zoo"] },
+    { id: "5", tags: ["automne"] },
+  ] as Link[];
+
+  it("liste les tags par usage puis dans l'ordre alphabétique français", () => {
+    expect(tagFilter(links, "").tags).toEqual([["été", 2], ["automne", 1], ["pluie", 1], ["zoo", 1]]);
+  });
+
+  it("garde les idées du tag choisi", () => {
+    const f = tagFilter(links, "été");
+    expect(f.active).toBe("été");
+    expect(f.list.map((l) => l.id)).toEqual(["1", "2"]);
+  });
+
+  it("montre tout sans tag, ou avec un tag qui n'est plus sur ces idées", () => {
+    expect(tagFilter(links, "").list).toHaveLength(5);
+    const stale = tagFilter(links, "noël");
+    expect(stale.active).toBe("");
+    expect(stale.list).toHaveLength(5);
+  });
+
+  it("n'a rien à proposer sans tag", () => {
+    expect(tagFilter([{ id: "1" }, { id: "2", tags: [] }] as Link[], "pluie")).toEqual({ tags: [], active: "", list: [{ id: "1" }, { id: "2", tags: [] }] });
+  });
 });
 
 describe("copie d'une idée", () => {
