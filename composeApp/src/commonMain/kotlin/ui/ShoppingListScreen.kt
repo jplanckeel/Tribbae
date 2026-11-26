@@ -405,10 +405,24 @@ private fun PrepMode(
 
             // Ajouter un article
             Column(pad.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(CardColor).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                AddItemField { text ->
-                    val (label, qty) = splitQuantity(text)
-                    if (label.isNotBlank()) change(Op("item_add", id = newItemId(), label = label, quantity = qty), null)
-                }
+                AddItemField(
+                    onAdd = { text ->
+                        val (label, qty) = splitQuantity(text)
+                        if (label.isNotBlank()) change(Op("item_add", id = newItemId(), label = label, quantity = qty), null)
+                    },
+                    // Dictée : chaque article entendu est ajouté, « Annuler » les retire tous
+                    onDictate = { spoken ->
+                        val added = ShoppingList.splitSpoken(spoken).map { newItemId() to splitQuantity(it) }
+                        if (added.isNotEmpty()) {
+                            added.forEach { (id, item) -> change(Op("item_add", id = id, label = item.first, quantity = item.second), null) }
+                            val names = added.joinToString(", ") { (_, item) -> if (item.second.isEmpty()) item.first else "${item.second} ${item.first}" }
+                            onToast("$names ${if (added.size > 1) "ajoutés" else "ajouté"}") {
+                                added.forEach { (id, _) -> change(Op("item_remove", id = id), null) }
+                            }
+                        }
+                    },
+                    onError = { onToast(it, null) },
+                )
                 if (suggestions.isNotEmpty()) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                         Text("Souvent :", fontSize = 12.sp, color = TextSec)
@@ -659,8 +673,26 @@ private fun StepButton(icon: ImageVector, label: String, enabled: Boolean, onCli
 }
 
 @Composable
-private fun AddItemField(onAdd: (String) -> Unit) {
+private fun AddItemField(onAdd: (String) -> Unit, onDictate: (String) -> Unit, onError: (String) -> Unit) {
     var text by rememberSaveable { mutableStateOf("") }
+    // Dictée : la reconnaissance vocale du système (pas de permission micro pour l'app)
+    val dictation = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val spoken = result.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        if (!spoken.isNullOrBlank()) onDictate(spoken)
+    }
+    fun dictate() {
+        val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
+            .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Dis tes courses : « pain et sucre »")
+        try {
+            dictation.launch(intent)
+        } catch (_: android.content.ActivityNotFoundException) {
+            onError("La dictée vocale n'est pas disponible sur ce téléphone")
+        }
+    }
     fun submit() {
         if (text.isBlank()) return
         onAdd(text)
@@ -687,6 +719,11 @@ private fun AddItemField(onAdd: (String) -> Unit) {
         )
         if (text.isNotBlank()) {
             Text("Ajouter", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Terracotta, modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button) { submit() }.padding(8.dp))
+        } else {
+            Box(
+                Modifier.size(40.dp).clip(CircleShape).clickable(role = Role.Button, onClickLabel = "Dicter des articles") { dictate() },
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Outlined.Mic, "Dicter des articles", tint = TextSec, modifier = Modifier.size(20.dp)) }
         }
     }
 }

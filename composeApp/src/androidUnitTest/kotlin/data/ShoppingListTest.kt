@@ -394,4 +394,15 @@ class ShoppingListTest {
         assertEquals(listOf("Farine · 125 g"), arranged.groups.flatMap { show(it.lines) })
         assertEquals(listOf("Lait · 25 cl"), show(arranged.cart))
     }
+
+    @Test
+    fun splitsDictatedShopping() {
+        assertEquals(listOf("Pain", "Sucre"), ShoppingList.splitSpoken("pain et sucre"))
+        assertEquals(listOf("Pain", "Confiture", "Œufs"), ShoppingList.splitSpoken("du pain, de la confiture et des œufs"))
+        assertEquals(listOf("3 yaourts", "2 baguettes"), ShoppingList.splitSpoken("trois yaourts puis 2 baguettes."))
+        assertEquals(listOf("Huile d’olive"), ShoppingList.splitSpoken("de l'huile d’olive"))
+        assertEquals(listOf("1.5 kg de pommes"), ShoppingList.splitSpoken("1.5 kg de pommes"))
+        assertEquals(listOf("Deux"), ShoppingList.splitSpoken("deux"))
+        assertEquals(emptyList(), ShoppingList.splitSpoken(""))
+    }
 }

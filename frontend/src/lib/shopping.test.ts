@@ -13,6 +13,7 @@ import {
   pickRecipes,
   scaleQty,
   shareText,
+  splitSpoken,
   suggestions,
 } from "./shopping";
 
@@ -272,6 +273,20 @@ describe("suggestions", () => {
 });
 
 // Mêmes cas que ShoppingListTest.appliesOps* (Android) et internal/shopping (serveur)
+describe("courses dictées", () => {
+  it.each([
+    ["pain et sucre", ["Pain", "Sucre"]],
+    ["du pain, de la confiture et des œufs", ["Pain", "Confiture", "Œufs"]],
+    ["trois yaourts puis 2 baguettes.", ["3 yaourts", "2 baguettes"]],
+    ["de l'huile d’olive", ["Huile d’olive"]],
+    ["1.5 kg de pommes", ["1.5 kg de pommes"]],
+    ["deux", ["Deux"]],
+    ["", []],
+  ])("%s", (spoken, items) => {
+    expect(splitSpoken(spoken)).toEqual(items);
+  });
+});
+
 describe("applyOp", () => {
   const recipes: Record<string, { title: string; ingredients: string[]; servings?: number }> = {
     r1: { title: "Crêpes", ingredients: ["250 g de farine", "50 cl de lait"], servings: 6 },
