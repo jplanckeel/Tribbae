@@ -6,13 +6,13 @@ import Icon from "../components/Icon";
 import { Page } from "../components/Shell";
 import { Button, EmptyState, ErrorNote, PageHeader, PageSpinner } from "../components/ui";
 import * as api from "../lib/api";
-import { categoryBySlug, normalizeCategory } from "../lib/categories";
+import { categoryBySlug, normalizeCategory, type CategoryMeta } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { viewOf } from "../lib/shopping";
 import { useShopping } from "../lib/shoppingStore";
 import { plural } from "../lib/format";
 import { countdown, keyDateOf } from "../lib/folderStyle";
-import { byRecent, tagCounts } from "../lib/links";
+import { byRecent, tagCounts, tagFilter } from "../lib/links";
 import type { Folder, Link } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 import Seo from "../components/Seo";
@@ -71,40 +71,16 @@ export default function MyIdeas() {
 
   if (loading && !links.length && !folders.length) return <PageSpinner />;
 
-  // Vue filtrée par catégorie (depuis les tuiles de l'accueil)
+  // Vue filtrée par catégorie (depuis les tuiles de l'accueil), affinée par tag
   if (cat) {
-    const list = links.filter((l) => normalizeCategory(l.category) === cat.key).sort(byRecent);
     return (
-      <Page>
-        <Seo title={`Mes ${cat.plural.toLowerCase()} · Tribbae`} noindex />
-        <div className="flex items-center gap-3">
-          <RouterLink to="/mes-idees" aria-label="Retour à mes idées" className="flex h-11 w-11 items-center justify-center rounded-full bg-card shadow-soft hover:bg-sable-2">
-            <Icon name="chevronLeft" size={22} />
-          </RouterLink>
-          <span className={`flex h-11 w-11 items-center justify-center rounded-[14px] ${cat.bg} ${cat.ic}`}>
-            <Icon name={cat.icon} size={22} />
-          </span>
-          <div className="flex flex-col">
-            <h1 className="font-display text-[28px] leading-tight font-extrabold tracking-[-0.6px]">{cat.plural}</h1>
-            <span className="text-sm text-sec">{plural(list.length, "idée", "idées")} dans la tribu</span>
-          </div>
-        </div>
-        {list.length ? (
-          <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
-            {list.map((l, i) => <GridCard key={l.id} link={l} index={i} />)}
-          </div>
-        ) : (
-          <EmptyState
-            icon={cat.icon}
-            title={`Aucune ${cat.label.toLowerCase()} pour l'instant`}
-            action={<Button icon="plus" onClick={() => newLink({ category: cat.key })}>Ajouter</Button>}
-          />
-        )}
-        <RouterLink to={`/category/${cat.slug}`} className="flex items-center gap-2 self-start text-sm font-bold text-terracotta">
-          <Icon name="compass" size={18} />
-          Voir les {cat.plural.toLowerCase()} de la communauté
-        </RouterLink>
-      </Page>
+      <CategoryIdeas
+        cat={cat}
+        links={links}
+        tag={tag}
+        onTag={(t) => setParams(t ? { cat: cat.slug, tag: t } : { cat: cat.slug }, { replace: true })}
+        onAdd={() => newLink({ category: cat.key })}
+      />
     );
   }
 
@@ -301,5 +277,74 @@ function Tags({ selected, onSelect }: { selected: string; onSelect: (t: string) 
         </div>
       )}
     </div>
+  );
+}
+
+/** Idées de la tribu dans une catégorie, avec ses tags pour affiner. */
+function CategoryIdeas({ cat, links, tag, onTag, onAdd }: {
+  cat: CategoryMeta;
+  links: Link[];
+  tag: string;
+  onTag: (t: string) => void;
+  onAdd: () => void;
+}) {
+  const inCat = useMemo(() => links.filter((l) => normalizeCategory(l.category) === cat.key).sort(byRecent), [links, cat.key]);
+  const { tags, active, list } = useMemo(() => tagFilter(inCat, tag), [inCat, tag]);
+  return (
+    <Page>
+      <Seo title={`Mes ${cat.plural.toLowerCase()} · Tribbae`} noindex />
+      <div className="flex items-center gap-3">
+        <RouterLink to="/mes-idees" aria-label="Retour à mes idées" className="flex h-11 w-11 items-center justify-center rounded-full bg-card shadow-soft hover:bg-sable-2">
+          <Icon name="chevronLeft" size={22} />
+        </RouterLink>
+        <span className={`flex h-11 w-11 items-center justify-center rounded-[14px] ${cat.bg} ${cat.ic}`}>
+          <Icon name={cat.icon} size={22} />
+        </span>
+        <div className="flex flex-col">
+          <h1 className="font-display text-[28px] leading-tight font-extrabold tracking-[-0.6px]">{cat.plural}</h1>
+          <span className="text-sm text-sec">
+            {active ? `${plural(list.length, "idée", "idées")} sur ${inCat.length} · #${active}` : `${plural(inCat.length, "idée", "idées")} dans la tribu`}
+          </span>
+        </div>
+      </div>
+      {tags.length > 0 ? (
+        <div role="group" aria-label="Filtrer par tag" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0">
+          <TagChip label="Tous" on={!active} onClick={() => onTag("")} />
+          {tags.map(([t, n]) => (
+            <TagChip key={t} label={`#${t}`} count={n} on={t === active} onClick={() => onTag(t === active ? "" : t)} />
+          ))}
+        </div>
+      ) : inCat.length > 0 && (
+        <p className="text-sm text-sec">Ajoutez des tags à vos {cat.plural.toLowerCase()} (#pluie, #été…) pour les retrouver ici d'un geste.</p>
+      )}
+      {list.length ? (
+        <div className="columns-2 gap-3 md:columns-3 lg:columns-4">
+          {list.map((l, i) => <GridCard key={l.id} link={l} index={i} />)}
+        </div>
+      ) : (
+        <EmptyState
+          icon={cat.icon}
+          title={`Aucune ${cat.label.toLowerCase()} pour l'instant`}
+          action={<Button icon="plus" onClick={onAdd}>Ajouter</Button>}
+        />
+      )}
+      <RouterLink to={`/category/${cat.slug}`} className="flex items-center gap-2 self-start text-sm font-bold text-terracotta">
+        <Icon name="compass" size={18} />
+        Voir les {cat.plural.toLowerCase()} de la communauté
+      </RouterLink>
+    </Page>
+  );
+}
+
+function TagChip({ label, count, on, onClick }: { label: string; count?: number; on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={`shrink-0 rounded-[10px] px-3 py-1.5 text-sm whitespace-nowrap transition-colors ${on ? "bg-ecorce font-semibold text-sable" : "bg-sable-2 text-sec hover:bg-line"}`}
+    >
+      {label}{count != null && <span className="opacity-60"> {count}</span>}
+    </button>
   );
 }

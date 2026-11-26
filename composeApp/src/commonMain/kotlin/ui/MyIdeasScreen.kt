@@ -175,9 +175,7 @@ fun MyIdeasScreen(
                 }
 
                 else -> {
-                    val tagCounts = remember(links) {
-                        links.flatMap { it.tags }.groupingBy { it }.eachCount().entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
-                    }
+                    val tagCounts = remember(links) { data.Tags.counts(links) }
                     if (tagCounts.isEmpty()) {
                         EmptyBlock(Icons.Outlined.Sell, "Aucun tag", "Ajoutez des tags à vos idées (#automne, #pluie…) pour les retrouver par thème.")
                     } else {
