@@ -4,15 +4,15 @@ go 1.26.0
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.33.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.34.0
 	github.com/leanovate/gopter v0.2.11
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/refraction-networking/utls v1.8.2
 	go.mongodb.org/mongo-driver/v2 v2.10.0
 	golang.org/x/crypto v0.59.0
 	golang.org/x/image v0.48.0
-	golang.org/x/net v0.62.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20261026165753-2ffab32bce7e
+	golang.org/x/net v0.63.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20261110000943-09e21b237f2c
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
 )
@@ -33,5 +33,5 @@ require (
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261104224025-d1e00e9f33ab // indirect
 )
