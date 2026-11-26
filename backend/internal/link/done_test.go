@@ -321,7 +321,7 @@ func TestDoneSummaryCountsEveryTime(t *testing.T) {
 	outing, _ := svc.Create(ctx, "bob", &Link{Title: "Musée", Category: "LINK_CATEGORY_EVENEMENT"})
 	activity, _ := svc.Create(ctx, "alice", &Link{Title: "Cabane", Category: "LINK_CATEGORY_ACTIVITE"})
 	book, _ := svc.Create(ctx, "alice", &Link{Title: "BD", Category: "LINK_CATEGORY_LIVRE"})
-	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Ranger le garage", Category: "LINK_CATEGORY_ACTIVITE"})
+	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Ranger le garage", Category: "LINK_CATEGORY_DECORATION"})
 	theirs, _ := svc.Create(ctx, "dave", &Link{Title: "Chez Dave", Category: "LINK_CATEGORY_RECETTE"})
 
 	for _, d := range []string{"2025-03-02", "2025-03-09", "2025-03-30"} {
