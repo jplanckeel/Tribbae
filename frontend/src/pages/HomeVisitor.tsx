@@ -1,6 +1,7 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import { Link as RouterLink } from "react-router";
 import { IdeaVisual } from "../components/cards";
+import DemoPhone from "../components/DemoPhone";
 import Icon, { type IconName } from "../components/Icon";
 import Logo, { TipiMark } from "../components/Logo";
 import { Page } from "../components/Shell";
@@ -8,24 +9,19 @@ import Seo from "../components/Seo";
 import { Avatar } from "../components/ui";
 import * as api from "../lib/api";
 import { CATEGORIES, categoryMeta } from "../lib/categories";
+import { DEMO_TRIBE } from "../lib/demo";
 import { byPopularity } from "../lib/links";
 import type { Link } from "../lib/types";
 import { useAsync } from "../lib/useAsync";
 
 const SIGN_UP = "/connexion?mode=inscription";
 
-// La tribu de démonstration des écrans (avatars aux couleurs de l'appli)
-const TRIBE = [
-  { name: "Léa", color: "var(--av-0-bg)", ink: "var(--av-0-ink)" },
-  { name: "Mamie", color: "var(--av-1-bg)", ink: "var(--av-1-ink)" },
-  { name: "Thomas", color: "var(--av-2-bg)", ink: "var(--av-2-ink)" },
-  { name: "Paul", color: "var(--av-3-bg)", ink: "var(--av-3-ink)" },
-];
+const TRIBE = DEMO_TRIBE;
 
 /**
  * Accueil d'un visiteur sans compte : dire tout de suite ce qu'est Tribbae et
- * le montrer. Un téléphone avec un dossier de la tribu (rempli des vraies idées
- * publiées), puis quatre usages avec leur écran (garder, partager, courses,
+ * le montrer. Un téléphone où l'on navigue dans l'appli avec une famille
+ * fictive (components/DemoPhone), puis quatre usages avec leur écran (garder, partager, courses,
  * cadeaux), les idées des autres familles et un mot pour finir.
  * Les écrans sont dessinés en HTML avec les styles de l'appli, pas des captures.
  * Un compte connecté voit l'accueil de sa tribu (Home.tsx).
@@ -33,7 +29,6 @@ const TRIBE = [
 export default function HomeVisitor() {
   const ideas = useAsync(() => api.community.links(undefined, 60), []);
   const popular = useMemo(() => [...(ideas.data ?? [])].sort(byPopularity), [ideas.data]);
-  const shown = useMemo(() => [...popular.filter((l) => l.imageUrl), ...popular.filter((l) => !l.imageUrl)].slice(0, 4), [popular]);
   const wall = useMemo(() => popular.slice(0, 8), [popular]);
 
   return (
@@ -81,7 +76,7 @@ export default function HomeVisitor() {
               <span className="text-sm text-sec">Gratuit, sans publicité · sur Android et sur le web</span>
             </div>
           </div>
-          <PhoneFolder ideas={shown} />
+          <DemoPhone />
         </section>
 
         {/* ── Ce que fait Tribbae ── */}
@@ -182,83 +177,6 @@ export default function HomeVisitor() {
 }
 
 // ── Écrans de démonstration ──────────────────────────────────────────────────
-
-/** Un téléphone qui affiche un dossier de la tribu, avec de vraies idées publiées. */
-function PhoneFolder({ ideas }: { ideas: Link[] }) {
-  const rows = ideas.length
-    ? ideas.map((l, i) => ({ id: l.id, title: l.title, category: l.category, link: l as Link | undefined, by: TRIBE[i % TRIBE.length], done: i === 1 }))
-    : [
-        { id: "a", title: "Cabane en carton", category: "LINK_CATEGORY_ACTIVITE", link: undefined, by: TRIBE[0], done: false },
-        { id: "b", title: "Crêpes de la Chandeleur", category: "LINK_CATEGORY_RECETTE", link: undefined, by: TRIBE[2], done: true },
-        { id: "c", title: "Le Petit Prince", category: "LINK_CATEGORY_LIVRE", link: undefined, by: TRIBE[1], done: false },
-        { id: "d", title: "Vélo 20 pouces", category: "LINK_CATEGORY_CADEAU", link: undefined, by: TRIBE[3], done: false },
-      ];
-  return (
-    <div aria-hidden="true" className="relative mx-auto w-full max-w-[330px]">
-      <span className="absolute -inset-8 rounded-full bg-[radial-gradient(closest-side,var(--color-soleil),transparent)]" />
-      <div className="relative rounded-[46px] border-[10px] border-(--phone-frame) bg-sable shadow-[0_24px_50px_rgba(58,33,27,0.25)]">
-        <span className="absolute top-2 left-1/2 h-5 w-24 -translate-x-1/2 rounded-full bg-(--phone-frame)" />
-        <div className="flex flex-col gap-3 px-4 pt-10 pb-5">
-          <div className="flex items-center gap-2 text-sec">
-            <Icon name="chevronLeft" size={18} />
-            <span className="text-xs font-semibold">Mes idées</span>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-small bg-activite-bg text-activite-ic">
-                <Icon name="folder" size={22} />
-              </span>
-              <div className="min-w-0">
-                <div className="truncate font-display text-lg leading-tight font-extrabold">Idées de la tribu</div>
-                <div className="text-xs text-sec">{rows.length} idées · partagé</div>
-              </div>
-            </div>
-            <AvatarStack />
-          </div>
-          <div className="flex gap-1.5">
-            {["Toutes", "Sorties", "Recettes", "Cadeaux"].map((c, i) => (
-              <span key={c} className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${i === 0 ? "bg-ecorce text-sable" : "bg-card text-sec"}`}>{c}</span>
-            ))}
-          </div>
-          <ul className="flex flex-col gap-2">
-            {rows.map((r) => {
-              const cat = categoryMeta(r.category);
-              return (
-                <li key={r.id} className="flex items-center gap-3 rounded-medium bg-card p-2 shadow-card">
-                  {r.link ? (
-                    <IdeaVisual link={r.link} height={52} iconSize={22} className="w-[52px] shrink-0 rounded-small" />
-                  ) : (
-                    <span className={`flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-small ${cat.bg} ${cat.ic}`}>
-                      <Icon name={cat.icon} size={22} />
-                    </span>
-                  )}
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <span className="line-clamp-1 text-[13px] leading-tight font-bold">{r.title}</span>
-                    <span className="flex items-center gap-1.5 text-[11px]">
-                      <span className={`font-bold ${cat.ink}`}>{cat.label}</span>
-                      <span className="text-muted">·</span>
-                      <Avatar name={r.by.name} color={r.by.color} ink={r.by.ink} size={14} />
-                      <span className="truncate text-sec">{r.by.name}</span>
-                    </span>
-                  </div>
-                  {r.done && (
-                    <span className="flex shrink-0 items-center gap-1 rounded-full bg-done-bg px-2 py-0.5 text-[10px] font-bold text-done">
-                      <Icon name="check" size={11} strokeWidth={3} />
-                      Fait
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          <span className="mx-auto mt-1 flex h-12 w-12 items-center justify-center rounded-[16px] bg-terracotta text-white shadow-nav">
-            <Icon name="plus" size={24} strokeWidth={2.6} />
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function AvatarStack({ size = 24 }: { size?: number }) {
   return (
