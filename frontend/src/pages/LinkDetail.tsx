@@ -35,9 +35,15 @@ import VisibilityBadge from "../components/VisibilityBadge";
 
 export default function LinkDetail() {
   const { id = "" } = useParams();
-  const res = useAsync(() => api.links.get(id), [id]);
   const { links } = useMyData();
   const state = useLocation().state as { preview?: Link } | null;
+  const res = useAsync(async () => {
+    const l = await api.links.get(id);
+    // Comme sur Android : un cadeau réservé garde le statut de la liste d'où l'on
+    // vient (nos idées, un dossier) ; ouvert depuis Explorer, il n'en a pas
+    const from = links.find((m) => m.id === id) ?? (state?.preview?.id === id ? state.preview : undefined);
+    return from ? { ...l, giftStatus: from.giftStatus } : l;
+  }, [id]);
   // Idée déjà connue (cache, carte d'origine) : affichée tout de suite pendant le
   // chargement, pour que la carte puisse devenir la fiche sans écran d'attente
   const known = links.find((l) => l.id === id) ?? (state?.preview?.id === id ? state.preview : undefined);
