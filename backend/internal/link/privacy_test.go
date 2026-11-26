@@ -103,13 +103,13 @@ func TestStatsTellWhichIdeasAPublicFolderExposes(t *testing.T) {
 
 	h := &Handler{svc: svc}
 	st := svc.LoadStats(ctx, []*Link{own, collab, hidden}, "")
-	if !h.toProto(own, st).PublicViaFolder {
+	if !h.toProto(own, st, giftsInList).PublicViaFolder {
 		t.Error("l'idée de la propriétaire est visible de tous")
 	}
-	if h.toProto(collab, st).PublicViaFolder {
+	if h.toProto(collab, st, giftsInList).PublicViaFolder {
 		t.Error("l'idée d'un collaborateur reste réservée aux membres")
 	}
-	if h.toProto(hidden, st).PublicViaFolder {
+	if h.toProto(hidden, st, giftsInList).PublicViaFolder {
 		t.Error("un dossier privé n'expose rien")
 	}
 }
@@ -267,5 +267,57 @@ func TestReservedGiftShowsInTheFolder(t *testing.T) {
 	}
 	if svc.LoadStats(ctx, []*Link{gift}, "alice").Gifts[gift.ID.Hex()] != "" {
 		t.Error("reservations are hidden once the folder is no longer a gift list")
+	}
+}
+
+// Une réservation appartient à la liste : Explorer, les nouveautés et les
+// « J'aime » ne montrent jamais « pris » ou « offert », même à l'auteur, et la
+// même idée ajoutée à une autre liste y reste libre.
+func TestReservedGiftShowsOnlyInItsList(t *testing.T) {
+	_, db, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+	svc := NewService(db.Collection("links"), db.Collection("folders"))
+	h := NewHandler(svc)
+	noel := bson.NewObjectID()
+	if _, err := db.Collection("folders").InsertOne(ctx, bson.M{"_id": noel, "owner_id": "alice", "name": "Noël", "visibility": "public", "gift_reservations": true}); err != nil {
+		t.Fatal(err)
+	}
+	gift, _ := svc.Create(ctx, "alice", &Link{Title: "Lego", Category: "LINK_CATEGORY_CADEAU", FolderID: noel.Hex()})
+	if _, err := db.Collection("links").UpdateByID(ctx, gift.ID, bson.M{"$set": bson.M{"visibility": "public"}}); err != nil {
+		t.Fatal(err)
+	}
+	gift.Visibility = "public"
+	if _, err := db.Collection("gift_reservations").InsertOne(ctx, bson.M{"link_id": gift.ID.Hex(), "folder_id": noel.Hex(), "owner_id": "alice", "status": "reserved", "user_id": "bob"}); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, viewer := range []string{"alice", "bob", "dave", ""} {
+		if got := h.many(ctx, []*Link{gift}, viewer, giftsHidden)[0].GiftStatus; got != "" {
+			t.Errorf("Explorer as %q shows %q, want nothing", viewer, got)
+		}
+	}
+	if got := h.many(ctx, []*Link{gift}, "alice", giftsInList)[0].GiftStatus; got != "reserved" {
+		t.Errorf("the list shows %q, want reserved", got)
+	}
+	// L'idée seule : sa tribu la voit réservée, qui l'offre voit « mine », un autre rien
+	if got := h.one(ctx, gift, "alice").GiftStatus; got != "reserved" {
+		t.Errorf("owner opening the idea sees %q, want reserved", got)
+	}
+	if got := h.one(ctx, gift, "bob").GiftStatus; got != "mine" {
+		t.Errorf("giver opening the idea sees %q, want mine", got)
+	}
+	if got := h.one(ctx, gift, "dave").GiftStatus; got != "" {
+		t.Errorf("a stranger opening the public idea sees %q, want nothing", got)
+	}
+
+	// Dave ajoute la même idée à sa propre liste : elle y est libre
+	davesList := bson.NewObjectID()
+	if _, err := db.Collection("folders").InsertOne(ctx, bson.M{"_id": davesList, "owner_id": "dave", "name": "Noël de Léo", "gift_reservations": true}); err != nil {
+		t.Fatal(err)
+	}
+	copied, _ := svc.Create(ctx, "dave", &Link{Title: gift.Title, Category: gift.Category, FolderID: davesList.Hex()})
+	if got := h.many(ctx, []*Link{copied}, "dave", giftsInList)[0].GiftStatus; got != "" {
+		t.Errorf("the copy in another list shows %q, want free", got)
 	}
 }

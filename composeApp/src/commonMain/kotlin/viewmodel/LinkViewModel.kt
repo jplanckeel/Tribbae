@@ -578,8 +578,8 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
         val client = authenticatedClient ?: return Result.failure(Exception("Not authenticated"))
         return try {
             val status = data.Gifts.mineFrom(client.giftAction(linkId, action))
+            // Seulement dans nos idées (la liste) : une réservation ne s'affiche jamais dans Explorer
             repository.links.value.find { it.id == linkId }?.let { repository.updateLink(it.copy(giftStatus = status)) }
-            _communityLinks.value = _communityLinks.value.map { if (it.id == linkId) it.copy(giftStatus = status) else it }
             updateFilteredLinks()
             Result.success(status)
         } catch (e: Exception) {
