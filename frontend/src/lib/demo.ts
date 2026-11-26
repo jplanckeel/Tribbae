@@ -1,12 +1,10 @@
-import type { IconName } from "../components/Icon";
-
 // Famille fictive de l'aperçu interactif de l'accueil visiteur (components/DemoPhone)
 
 export const DEMO_TRIBE = [
-  { name: "Léa", role: "Maman · moi", color: "var(--av-0-bg)", ink: "var(--av-0-ink)" },
-  { name: "Thomas", role: "Papa", color: "var(--av-2-bg)", ink: "var(--av-2-ink)" },
-  { name: "Mamie", role: "Grand-mère", color: "var(--av-1-bg)", ink: "var(--av-1-ink)" },
-  { name: "Paul", role: "Tonton, sans l'appli", color: "var(--av-3-bg)", ink: "var(--av-3-ink)" },
+  { name: "Léa", role: "Maman · moi", home: true, color: "var(--av-0-bg)", ink: "var(--av-0-ink)" },
+  { name: "Thomas", role: "Papa", home: true, color: "var(--av-2-bg)", ink: "var(--av-2-ink)" },
+  { name: "Mamie", role: "Grand-mère", home: true, color: "var(--av-1-bg)", ink: "var(--av-1-ink)" },
+  { name: "Paul", role: "Tonton · voit les dossiers partagés, sans l'appli", home: false, color: "var(--av-3-bg)", ink: "var(--av-3-ink)" },
 ];
 export type Member = (typeof DEMO_TRIBE)[number];
 const [LEA, THOMAS, MAMIE, PAUL] = DEMO_TRIBE;
@@ -27,12 +25,16 @@ export interface Idea {
   reserved?: boolean;
 }
 
-export const FOLDERS = [
-  { id: "ete", name: "Vacances d'été", icon: "beach" as IconName, tone: "bg-activite-bg text-activite-ic" },
-  { id: "jules", name: "8 ans de Jules", icon: "cadeau" as IconName, tone: "bg-cadeau-bg text-cadeau-ic" },
-  { id: "dimanche", name: "Recettes du dimanche", icon: "recette" as IconName, tone: "bg-recette-bg text-recette-ic" },
+export interface DemoFolder { id: string; name: string; color: string; icon: string }
+// Couleurs et icônes des dossiers de l'appli (FOLDER_COLORS, FOLDER_ICONS) ; le nom choisit le dessin
+export const FOLDERS: DemoFolder[] = [
+  { id: "ete", name: "Vacances d'été", color: "BLUE", icon: "BEACH" },
+  { id: "jules", name: "Anniversaire de Jules", color: "ORANGE", icon: "CAKE" },
+  { id: "dimanche", name: "Recettes du dimanche", color: "GREEN", icon: "RESTAURANT" },
 ];
 
+/** La prochaine sortie datée, en tête de l'accueil. */
+export const EVENT = { id: "fraises", weekday: "Sam.", day: "6", meta: "10:00 · Ferme de Viltain" };
 const ACT = "LINK_CATEGORY_ACTIVITE", SORTIE = "LINK_CATEGORY_EVENEMENT", LIVRE = "LINK_CATEGORY_LIVRE";
 const CADEAU = "LINK_CATEGORY_CADEAU", RECETTE = "LINK_CATEGORY_RECETTE", IDEE = "LINK_CATEGORY_IDEE", DECO = "LINK_CATEGORY_DECORATION";
 
