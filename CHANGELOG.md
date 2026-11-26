@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.6.0](https://github.com/jplanckeel/Tribbae/compare/v0.5.0...v0.6.0) (2026-11-26)
+
+
+### Features
+
+* add the shared shopping list logic to both clients ([#147](https://github.com/jplanckeel/Tribbae/issues/147)) ([b8002a9](https://github.com/jplanckeel/Tribbae/commit/b8002a99b8d60bb8104c85b671d2ea27f20dc017))
+* **android:** share the shopping list with the tribe ([#149](https://github.com/jplanckeel/Tribbae/issues/149)) ([4af069e](https://github.com/jplanckeel/Tribbae/commit/4af069e541ac773ae6ea300e5043381a253f5e77))
+* **frontend:** share the shopping list with the tribe ([#148](https://github.com/jplanckeel/Tribbae/issues/148)) ([9081e84](https://github.com/jplanckeel/Tribbae/commit/9081e843c56efc090c14efac6819b00690936e7d))
+* **frontend:** show visitors the app on the home page ([#164](https://github.com/jplanckeel/Tribbae/issues/164)) ([781f7c5](https://github.com/jplanckeel/Tribbae/commit/781f7c5453b51b6923438ecf5b65bdceb1bc1556))
+* **frontend:** show visitors what tribbae is on the home page ([#160](https://github.com/jplanckeel/Tribbae/issues/160)) ([d07c4a1](https://github.com/jplanckeel/Tribbae/commit/d07c4a160f2e8137b4b7c43e768fd3044d63da32))
+* open an idea's image full screen ([#159](https://github.com/jplanckeel/Tribbae/issues/159)) ([9f97c6d](https://github.com/jplanckeel/Tribbae/commit/9f97c6dca7fb2bce619958faa6fa84b041be71e3))
+* **seo:** add guides for family searches and content for ai assistants ([#162](https://github.com/jplanckeel/Tribbae/issues/162)) ([ab03a96](https://github.com/jplanckeel/Tribbae/commit/ab03a9699a97a800d54e145e1cd0e8949657cfe4))
+* **seo:** get tribbae indexed and ranked on its name ([#161](https://github.com/jplanckeel/Tribbae/issues/161)) ([9654dfe](https://github.com/jplanckeel/Tribbae/commit/9654dfe95412660ade764533c088047095aef40f))
+* swipe between the ideas of a folder ([#158](https://github.com/jplanckeel/Tribbae/issues/158)) ([22c212a](https://github.com/jplanckeel/Tribbae/commit/22c212a8da32e5169f0104baa97b3430da89288d))
+
+
+### Bug Fixes
+
+* **android:** keep the recipe picker sheet in place at the end of the list ([#151](https://github.com/jplanckeel/Tribbae/issues/151)) ([fa0a94d](https://github.com/jplanckeel/Tribbae/commit/fa0a94da81d9ef2e797314d3746f3ac54ca02357))
+* **frontend:** keep the gift status of the list an idea was opened from ([#166](https://github.com/jplanckeel/Tribbae/issues/166)) ([d374b92](https://github.com/jplanckeel/Tribbae/commit/d374b921cb1d9b91f0dd067f6664759a3af6740b))
+* **link:** keep a copy of instagram, facebook and tiktok images ([#152](https://github.com/jplanckeel/Tribbae/issues/152)) ([3df7f2a](https://github.com/jplanckeel/Tribbae/commit/3df7f2a270a7d2ac7d64c7ab705c0dcf216ecfe9))
+* **link:** show a gift reservation only in its list ([#165](https://github.com/jplanckeel/Tribbae/issues/165)) ([5561fd9](https://github.com/jplanckeel/Tribbae/commit/5561fd90b7482ae4e87f7f79303c4fbb4a264e8d))
+
+
+### Dependencies
+
+* Bump gradle-wrapper from 9.9.0 to 9.9.1 in the kotlin-patch group ([#143](https://github.com/jplanckeel/Tribbae/issues/143)) ([1fbbe50](https://github.com/jplanckeel/Tribbae/commit/1fbbe5079ed3ce7db098042a5f8a68bf3e04f814))
+* Bump org.jetbrains.kotlinx:kotlinx-serialization-json from 1.12.0 to 1.13.0 in the kotlin-minor group across 1 directory ([#144](https://github.com/jplanckeel/Tribbae/issues/144)) ([0701604](https://github.com/jplanckeel/Tribbae/commit/0701604512b6e47c74d3d95e937c0071f2136591))
+* Bump the go-minor group across 1 directory with 3 updates ([#142](https://github.com/jplanckeel/Tribbae/issues/142)) ([d3f5b67](https://github.com/jplanckeel/Tribbae/commit/d3f5b673bb5882e0e6bb1e669efdb9501373fc90))
+* Bump the kotlin-patch group with 4 updates ([#156](https://github.com/jplanckeel/Tribbae/issues/156)) ([bdedd46](https://github.com/jplanckeel/Tribbae/commit/bdedd4654bd5ab39d4d713a408d9ad0349d14103))
+
 ## [0.5.0](https://github.com/jplanckeel/Tribbae/compare/v0.4.0...v0.5.0) (2026-11-16)
 
 
