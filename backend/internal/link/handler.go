@@ -70,7 +70,32 @@ func toStatus(op string, err error) error {
 	}
 }
 
-func (h *Handler) toProto(l *Link, st *Stats) *pb.Link {
+// giftScope : où le statut d'un cadeau réservé peut s'afficher. Une réservation
+// appartient à une liste (le dossier) : elle se voit dans la liste, jamais dans
+// Explorer, les nouveautés ou les « J'aime », où l'idée publique peut être
+// ajoutée à une autre liste et y être offerte par quelqu'un d'autre.
+type giftScope int
+
+const (
+	giftsHidden giftScope = iota // Explorer, nouveautés, « J'aime »
+	giftsInList                  // liste d'un dossier ou idées de la tribu
+	giftsMember                  // une idée seule : sa tribu, ses collaborateurs, ou qui l'offre
+)
+
+func giftStatus(scope giftScope, st *Stats, id string) string {
+	s := st.Gifts[id]
+	switch scope {
+	case giftsInList:
+		return s
+	case giftsMember:
+		if st.DoneVisible[id] || s == "mine" || s == "mine_bought" {
+			return s
+		}
+	}
+	return ""
+}
+
+func (h *Handler) toProto(l *Link, st *Stats, gifts giftScope) *pb.Link {
 	id := l.ID.Hex()
 	owner := st.Owners[l.OwnerID]
 	out := &pb.Link{
@@ -102,7 +127,7 @@ func (h *Handler) toProto(l *Link, st *Stats) *pb.Link {
 		CreatedVia:       l.CreatedVia,
 		PublicViaFolder:  l.FolderID != "" && st.PublicFolders[l.FolderID] == l.OwnerID && !l.Hidden,
 		Hidden:           l.Hidden,
-		GiftStatus:       st.Gifts[id],
+		GiftStatus:       giftStatus(gifts, st, id),
 		DoneFamilies:     st.DoneFamilies[id],
 	}
 	// « C'est fait » : seulement pour la tribu de l'idée et les membres de son dossier
@@ -118,14 +143,14 @@ func (h *Handler) toProto(l *Link, st *Stats) *pb.Link {
 }
 
 func (h *Handler) one(ctx context.Context, l *Link, userID string) *pb.Link {
-	return h.toProto(l, h.svc.LoadStats(ctx, []*Link{l}, userID))
+	return h.toProto(l, h.svc.LoadStats(ctx, []*Link{l}, userID), giftsMember)
 }
 
-func (h *Handler) many(ctx context.Context, links []*Link, userID string) []*pb.Link {
+func (h *Handler) many(ctx context.Context, links []*Link, userID string, gifts giftScope) []*pb.Link {
 	st := h.svc.LoadStats(ctx, links, userID)
 	out := make([]*pb.Link, 0, len(links))
 	for _, l := range links {
-		out = append(out, h.toProto(l, st))
+		out = append(out, h.toProto(l, st, gifts))
 	}
 	return out
 }
@@ -208,7 +233,7 @@ func (h *Handler) ListLinks(ctx context.Context, req *pb.ListLinksRequest) (*pb.
 	if err != nil {
 		return nil, toStatus("list links", err)
 	}
-	out := h.many(ctx, links, userID)
+	out := h.many(ctx, links, userID, giftsInList)
 	if req.Status == "todo" || req.Status == "done" {
 		kept := out[:0]
 		for _, l := range out {
@@ -280,7 +305,7 @@ func (h *Handler) ListLikedLinks(ctx context.Context, _ *pb.ListLikedLinksReques
 	if err != nil {
 		return nil, toStatus("list liked links", err)
 	}
-	return &pb.ListLikedLinksResponse{Links: h.many(ctx, links, userID)}, nil
+	return &pb.ListLikedLinksResponse{Links: h.many(ctx, links, userID, giftsHidden)}, nil
 }
 
 func (h *Handler) ToggleFavoriteLink(ctx context.Context, req *pb.ToggleFavoriteLinkRequest) (*pb.ToggleFavoriteLinkResponse, error) {
@@ -303,7 +328,7 @@ func (h *Handler) ListCommunityLinks(ctx context.Context, req *pb.ListCommunityL
 	if err != nil {
 		return nil, toStatus("list community links", err)
 	}
-	return &pb.ListCommunityLinksResponse{Links: h.many(ctx, h.withoutBlocked(ctx, userID, links), userID)}, nil
+	return &pb.ListCommunityLinksResponse{Links: h.many(ctx, h.withoutBlocked(ctx, userID, links), userID, giftsHidden)}, nil
 }
 
 func (h *Handler) ListNewLinks(ctx context.Context, req *pb.ListNewLinksRequest) (*pb.ListNewLinksResponse, error) {
@@ -313,7 +338,7 @@ func (h *Handler) ListNewLinks(ctx context.Context, req *pb.ListNewLinksRequest)
 	if err != nil {
 		return nil, toStatus("list new links", err)
 	}
-	return &pb.ListNewLinksResponse{Links: h.many(ctx, h.withoutBlocked(ctx, userID, links), userID)}, nil
+	return &pb.ListNewLinksResponse{Links: h.many(ctx, h.withoutBlocked(ctx, userID, links), userID, giftsHidden)}, nil
 }
 
 func doneToProto(d *LinkDone) *pb.LinkDone {
