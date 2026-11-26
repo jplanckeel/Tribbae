@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/jplanckeel/Tribbae/compare/v0.6.0...v0.7.0) (2026-11-26)
+
+
+### Features
+
+* merge the idee category into activite ([#167](https://github.com/jplanckeel/Tribbae/issues/167)) ([f04e7f4](https://github.com/jplanckeel/Tribbae/commit/f04e7f402d1b71b642eef8fb4d8be7c89b22bab1))
+
 ## [0.6.0](https://github.com/jplanckeel/Tribbae/compare/v0.5.0...v0.6.0) (2026-11-26)
 
 
