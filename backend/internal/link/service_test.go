@@ -114,7 +114,7 @@ func TestProperty_LinkResponsesIncludeOwnerDisplayName(t *testing.T) {
 				Title:       "Test Link",
 				URL:         "https://example.com",
 				Description: "Test Description",
-				Category:    "LINK_CATEGORY_IDEE",
+				Category:    "LINK_CATEGORY_ACTIVITE",
 				Tags:        []string{},
 				Ingredients: []string{},
 				Visibility:  "private",
@@ -217,7 +217,7 @@ func TestProperty_PublicLinksInCommunityListings(t *testing.T) {
 				link := &Link{
 					ID: bson.NewObjectID(), OwnerID: "test_owner",
 					FolderID: folderID.Hex(), Title: "Link " + bson.NewObjectID().Hex(),
-					URL: "https://example.com", Category: "LINK_CATEGORY_IDEE",
+					URL: "https://example.com", Category: "LINK_CATEGORY_ACTIVITE",
 					Tags: []string{}, Ingredients: []string{},
 					Visibility: normalizedVisibility, CreatedAt: time.Now(), UpdatedAt: time.Now(),
 				}
@@ -287,7 +287,7 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 				description = "Test Description"
 			}
 			if category == "" {
-				category = "LINK_CATEGORY_IDEE"
+				category = "LINK_CATEGORY_ACTIVITE"
 			}
 
 			// Create a test user
@@ -315,7 +315,7 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 				Title:       "Initial Title",
 				URL:         "https://example.com",
 				Description: "Initial Description",
-				Category:    "LINK_CATEGORY_IDEE",
+				Category:    "LINK_CATEGORY_ACTIVITE",
 				Tags:        []string{},
 				Ingredients: []string{},
 				Visibility:  "private",
@@ -378,7 +378,7 @@ func TestProperty_LinkUpdateTimestamp(t *testing.T) {
 		gen.AlphaString(),
 		// Generate random category from valid options
 		gen.OneConstOf(
-			"LINK_CATEGORY_IDEE",
+			"LINK_CATEGORY_LIVRE",
 			"LINK_CATEGORY_CADEAU",
 			"LINK_CATEGORY_ACTIVITE",
 			"LINK_CATEGORY_EVENEMENT",

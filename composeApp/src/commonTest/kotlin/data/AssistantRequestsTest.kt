@@ -22,8 +22,11 @@ class AssistantRequestsTest {
 
     @Test
     fun categoryFromNameOrLabel() {
-        assertEquals(LinkCategory.IDEE, AssistantRequests.category(null))
-        assertEquals(LinkCategory.IDEE, AssistantRequests.category(" "))
+        assertEquals(LinkCategory.ACTIVITE, AssistantRequests.category(null))
+        assertEquals(LinkCategory.ACTIVITE, AssistantRequests.category(" "))
+        // « Idée » a été fusionnée dans Activité
+        assertEquals(LinkCategory.ACTIVITE, AssistantRequests.category("IDEE"))
+        assertEquals(LinkCategory.ACTIVITE, AssistantRequests.category("Idée"))
         assertEquals(LinkCategory.RECETTE, AssistantRequests.category("recette"))
         assertEquals(LinkCategory.RECETTE, AssistantRequests.category("LINK_CATEGORY_RECETTE"))
         assertEquals(LinkCategory.EVENEMENT, AssistantRequests.category("Sortie"))

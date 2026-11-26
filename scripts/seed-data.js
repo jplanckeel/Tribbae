@@ -120,8 +120,6 @@ const linkTemplates = {
     { title: 'Parc zoologique', description: 'Rencontre avec les animaux', url: 'https://example.com/zoo', location: 'Vincennes', price: '19€', ageRange: '2 ans' },
     { title: 'Bowling', description: 'Partie en famille', url: 'https://example.com/bowling', location: 'Centre commercial', price: '15€', ageRange: '5 ans' },
     { title: 'Piscine à vagues', description: 'Parc aquatique', url: 'https://example.com/piscine', location: 'Banlieue', price: '18€', ageRange: '4 ans' },
-  ],
-  IDEE: [
     { title: 'Organiser un pique-nique', description: 'Sortie en plein air', url: 'https://example.com/pique-nique', location: 'Parc local' },
     { title: 'Soirée jeux de société', description: 'Moment convivial en famille', url: 'https://example.com/jeux-societe' },
     { title: 'Atelier bricolage DIY', description: 'Créer des objets déco', url: 'https://example.com/diy' },
@@ -147,7 +145,7 @@ const linkTemplates = {
   ],
 };
 
-const categories = ['LINK_CATEGORY_RECETTE', 'LINK_CATEGORY_CADEAU', 'LINK_CATEGORY_ACTIVITE', 'LINK_CATEGORY_IDEE', 'LINK_CATEGORY_EVENEMENT'];
+const categories = ['LINK_CATEGORY_RECETTE', 'LINK_CATEGORY_CADEAU', 'LINK_CATEGORY_ACTIVITE', 'LINK_CATEGORY_EVENEMENT'];
 
 // État global pour stocker les utilisateurs créés
 let users = [];
@@ -250,7 +248,7 @@ function createFolder(user, folderName) {
 
 function createLink(user, folder, category) {
   const categoryKey = category.replace('LINK_CATEGORY_', '');
-  const templates = linkTemplates[categoryKey] || linkTemplates.IDEE;
+  const templates = linkTemplates[categoryKey] || linkTemplates.ACTIVITE;
   const template = randomElement(templates);
 
   const payload = {

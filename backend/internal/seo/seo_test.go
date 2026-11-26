@@ -241,7 +241,7 @@ func TestListingsAndFAQ(t *testing.T) {
 
 func TestLegacyRedirects(t *testing.T) {
 	h := newTestHandler(t)
-	for from, to := range map[string]string{"/login": "/connexion", "/categorie/recette": "/category/recette", "/discover": "/explorer?vue=dossiers"} {
+	for from, to := range map[string]string{"/login": "/connexion", "/categorie/recette": "/category/recette", "/discover": "/explorer?vue=dossiers", "/category/idee": "/category/activite", "/categorie/idee": "/category/activite"} {
 		w := get(t, h, from)
 		if w.Code != http.StatusMovedPermanently || w.Header().Get("Location") != to {
 			t.Errorf("%s → %d %s, want 301 %s", from, w.Code, w.Header().Get("Location"), to)

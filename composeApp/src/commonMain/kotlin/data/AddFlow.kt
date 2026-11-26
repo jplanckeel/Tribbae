@@ -86,7 +86,7 @@ object AddFlow {
         folder != null && isPublic(folder) && (folder.ownerId.isBlank() || folder.ownerId == me)
 
     private fun pluralOf(c: LinkCategory) = when (c) {
-        LinkCategory.IDEE -> "Idées"; LinkCategory.CADEAU -> "Cadeaux"; LinkCategory.ACTIVITE -> "Activités"
+        LinkCategory.CADEAU -> "Cadeaux"; LinkCategory.ACTIVITE -> "Activités"
         LinkCategory.EVENEMENT -> "Sorties"; LinkCategory.RECETTE -> "Recettes"; LinkCategory.LIVRE -> "Livres"
         LinkCategory.DECORATION -> "Déco"
     }

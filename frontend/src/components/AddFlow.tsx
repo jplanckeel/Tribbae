@@ -4,7 +4,7 @@ import { Link as RouterLink, useNavigate } from "react-router";
 import { agoShort, bandsToAge, defaultFolder, exposesIdeas, selectedBands, suggestFolders, whoSees } from "../lib/addFlow";
 import { AGE_BANDS } from "../lib/age";
 import * as api from "../lib/api";
-import { AVATAR_COLORS, CATEGORIES, categoryMeta, folderColor } from "../lib/categories";
+import { AVATAR_COLORS, CATEGORIES, DEFAULT_CATEGORY, categoryMeta, folderColor } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { eventDateMs, formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, toInput } from "../lib/links";
@@ -38,7 +38,7 @@ const STEPS: { label: string; at: Step }[] = [
 const ORDER: Step[] = ["choose", "link", "sort", "done"];
 
 const blank = (folderId?: string): LinkInput => ({
-  title: "", url: "", description: "", category: "LINK_CATEGORY_IDEE", tags: [], visibility: "private", folderId,
+  title: "", url: "", description: "", category: DEFAULT_CATEGORY, tags: [], visibility: "private", folderId,
 });
 
 /** À monter uniquement quand la feuille est ouverte. */

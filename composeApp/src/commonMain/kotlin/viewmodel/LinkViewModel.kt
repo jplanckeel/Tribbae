@@ -756,9 +756,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
 
     fun saveAiIdeas(ideas: List<AiSuggestedLink>, folderId: String?) {
         ideas.forEach { idea ->
-            val category = try {
-                LinkCategory.valueOf(idea.category.removePrefix("LINK_CATEGORY_"))
-            } catch (_: Exception) { LinkCategory.IDEE }
+            val category = LinkCategory.parse(idea.category)
             addLink(
                 title = idea.title,
                 url = "",
@@ -1106,9 +1104,7 @@ class LinkViewModel(val repository: LinkRepository = LinkRepository()) : ViewMod
     }
     
     private fun apiLinkToLink(apiLink: data.ApiAuthLink): Link {
-        val category = try {
-            LinkCategory.valueOf(apiLink.category.removePrefix("LINK_CATEGORY_"))
-        } catch (_: Exception) { LinkCategory.IDEE }
+        val category = LinkCategory.parse(apiLink.category)
         return Link(
             id = apiLink.id,
             title = apiLink.title,

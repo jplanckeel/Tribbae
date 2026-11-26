@@ -19,7 +19,7 @@ class PublishConfirmTest {
     fun countsOnlyTheIdeasTheFolderExposes() {
         val folder = Folder(id = "d", name = "", ownerId = "alice")
         fun idea(folderId: String, ownerId: String, visibility: String) =
-            Link(id = "1", title = "", url = "", category = LinkCategory.IDEE, folderId = folderId, ownerId = ownerId, visibility = visibility)
+            Link(id = "1", title = "", url = "", category = LinkCategory.ACTIVITE, folderId = folderId, ownerId = ownerId, visibility = visibility)
         assertEquals(true, PublishConfirm.exposedBy(idea("d", "alice", "private"), folder))
         assertEquals(false, PublishConfirm.exposedBy(idea("d", "dan", "private"), folder))
         assertEquals(true, PublishConfirm.exposedBy(idea("d", "dan", "public"), folder))

@@ -9,7 +9,9 @@ option go_package = "github.com/tribbae/backend/gen/tribbae/v1;tribbaev1";
 
 enum LinkCategory {
   LINK_CATEGORY_UNSPECIFIED = 0;
-  LINK_CATEGORY_IDEE = 1;
+  // Fusionnée dans Activité : lue et convertie en LINK_CATEGORY_ACTIVITE par le
+  // serveur (anciennes versions de l'app), jamais renvoyée.
+  LINK_CATEGORY_IDEE = 1 [deprecated = true];
   LINK_CATEGORY_CADEAU = 2;
   LINK_CATEGORY_ACTIVITE = 3;
   LINK_CATEGORY_EVENEMENT = 4;

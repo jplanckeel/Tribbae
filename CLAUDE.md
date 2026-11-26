@@ -77,7 +77,7 @@ CI (`.github/workflows/test.yml`): `go build` + `go vet` + `go test -race` (with
 
 ## Cross-cutting changes
 
-Link categories (Idée, Cadeau, Activité, Sortie=`EVENEMENT`, Recette, Livre, Déco=`DECORATION`) and their colors are duplicated in places that must stay in sync: `backend/proto/tribbae/v1/link.proto`, `frontend/src/lib/categories.ts` + `src/index.css`, `composeApp/src/commonMain/kotlin/data/Link.kt` + `ui/Theme.kt` (`CategoryPalettes`, `TribbaeTheme`). Likewise, a new/changed field typically touches: proto → `task backend:proto` → Go service/Mongo mapping → `frontend/src/lib/types.ts` + `lib/api.ts` → Kotlin model + repository.
+Link categories (Activité, Cadeau, Sortie=`EVENEMENT`, Recette, Livre, Déco=`DECORATION`; the former Idée=`IDEE` was merged into Activité: the proto keeps the value as deprecated, the backend rewrites it on write and migrates it at startup with `link.MigrateIdeaCategory`, both clients read it as Activité) and their colors are duplicated in places that must stay in sync: `backend/proto/tribbae/v1/link.proto`, `frontend/src/lib/categories.ts` + `src/index.css`, `composeApp/src/commonMain/kotlin/data/Link.kt` + `ui/Theme.kt` (`CategoryPalettes`, `TribbaeTheme`). Likewise, a new/changed field typically touches: proto → `task backend:proto` → Go service/Mongo mapping → `frontend/src/lib/types.ts` + `lib/api.ts` → Kotlin model + repository.
 
 ## Reference docs (read the one for the area you touch)
 

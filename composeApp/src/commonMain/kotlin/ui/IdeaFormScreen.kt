@@ -80,7 +80,7 @@ fun IdeaFormScreen(
     val allLinks by viewModel.repository.links.collectAsState()
     val scope = rememberCoroutineScope()
 
-    var category by remember { mutableStateOf(existing?.category ?: draft?.category ?: initialCategory ?: LinkCategory.IDEE) }
+    var category by remember { mutableStateOf(existing?.category ?: draft?.category ?: initialCategory ?: LinkCategory.DEFAULT) }
     var url by remember { mutableStateOf(existing?.url ?: draft?.url ?: initialUrl.orEmpty()) }
     var title by remember { mutableStateOf(existing?.title ?: draft?.title ?: initialTitle.orEmpty()) }
     var description by remember { mutableStateOf(existing?.description ?: draft?.description.orEmpty()) }
@@ -106,7 +106,7 @@ fun IdeaFormScreen(
     // Resynchronisation d'une idée existante : les infos de la page remplacent les siennes
     var previewResync by remember { mutableStateOf(false) }
     // La catégorie suggérée par la page ne remplace pas un choix explicite
-    var categoryChosen by remember { mutableStateOf(existing != null || (draft?.category ?: initialCategory ?: LinkCategory.IDEE) != LinkCategory.IDEE) }
+    var categoryChosen by remember { mutableStateOf(existing != null || (draft?.category ?: initialCategory ?: LinkCategory.DEFAULT) != LinkCategory.DEFAULT) }
     val autoFilled = remember { AutoFilled() }
     var requestId by remember { mutableStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }

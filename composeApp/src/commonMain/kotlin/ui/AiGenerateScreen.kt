@@ -99,8 +99,7 @@ private class IdeaCard(val id: Int, val idea: AiSuggestedLink) {
     var gone by mutableStateOf(false)
 }
 
-private fun toCategory(raw: String) =
-    runCatching { LinkCategory.valueOf(raw.removePrefix("LINK_CATEGORY_")) }.getOrDefault(LinkCategory.IDEE)
+private fun toCategory(raw: String) = LinkCategory.parse(raw)
 
 private fun blankColors(b: Blank): Pair<Color, Color> = when (b) {
     Blank.What -> PeachBg to PeachInk

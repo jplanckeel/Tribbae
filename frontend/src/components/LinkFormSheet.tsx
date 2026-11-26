@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type FormEvent, type SyntheticEvent } from "react";
 import { useFeedback } from "./feedback";
 import * as api from "../lib/api";
-import { CATEGORIES, categoryMeta } from "../lib/categories";
+import { CATEGORIES, DEFAULT_CATEGORY, categoryMeta } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { formatShortDate, formatTime, hostname, safeImage } from "../lib/format";
 import { canEditFolder, extractUrl, tagCounts } from "../lib/links";
@@ -88,7 +88,7 @@ export default function LinkFormSheet({ onClose, initial, editing, removed, auth
     initialUrl ? { status: "loading", url: initialUrl, images: [] } : { status: "idle", images: [] },
   );
   // La catégorie suggérée par la page ne remplace pas un choix explicite
-  const [categoryChosen, setCategoryChosen] = useState(editing || initial.category !== "LINK_CATEGORY_IDEE");
+  const [categoryChosen, setCategoryChosen] = useState(editing || initial.category !== DEFAULT_CATEGORY);
   const autoFilled = useRef<AutoFilled>({});
   const requestId = useRef(0);
 

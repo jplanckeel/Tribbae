@@ -1050,7 +1050,8 @@
         "LINK_CATEGORY_LIVRE",
         "LINK_CATEGORY_DECORATION"
       ],
-      "default": "LINK_CATEGORY_UNSPECIFIED"
+      "default": "LINK_CATEGORY_UNSPECIFIED",
+      "description": " - LINK_CATEGORY_IDEE: Fusionnée dans Activité : lue et convertie en LINK_CATEGORY_ACTIVITE par le\nserveur (anciennes versions de l'app), jamais renvoyée."
     },
     "v1LinkDone": {
       "type": "object",

@@ -15,7 +15,7 @@ class ShoppingListTest {
         val (ready, missing) = ShoppingList.pick(
             listOf(
                 idea("a", LinkCategory.RECETTE, listOf("200 g de farine")),
-                idea("b", LinkCategory.IDEE, listOf("2 œufs")),
+                idea("b", LinkCategory.ACTIVITE, listOf("2 œufs")),
                 idea("c", LinkCategory.RECETTE),
                 idea("d", LinkCategory.RECETTE, listOf("  ")),
                 idea("e", LinkCategory.ACTIVITE),

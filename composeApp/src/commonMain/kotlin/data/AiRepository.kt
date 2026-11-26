@@ -14,7 +14,7 @@ import java.net.URL
 data class AiSuggestedLink(
     val title: String = "",
     val description: String = "",
-    val category: String = "LINK_CATEGORY_IDEE",
+    val category: String = "LINK_CATEGORY_ACTIVITE",
     val tags: List<String> = emptyList(),
     val ageRange: String = "",
     /** Pourquoi l'idée colle à la demande (« Parfait pour un jour de pluie »). */

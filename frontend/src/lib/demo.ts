@@ -36,7 +36,7 @@ export const FOLDERS: DemoFolder[] = [
 /** La prochaine sortie datée, en tête de l'accueil. */
 export const EVENT = { id: "fraises", weekday: "Sam.", day: "6", meta: "10:00 · Ferme de Viltain" };
 const ACT = "LINK_CATEGORY_ACTIVITE", SORTIE = "LINK_CATEGORY_EVENEMENT", LIVRE = "LINK_CATEGORY_LIVRE";
-const CADEAU = "LINK_CATEGORY_CADEAU", RECETTE = "LINK_CATEGORY_RECETTE", IDEE = "LINK_CATEGORY_IDEE", DECO = "LINK_CATEGORY_DECORATION";
+const CADEAU = "LINK_CATEGORY_CADEAU", RECETTE = "LINK_CATEGORY_RECETTE", DECO = "LINK_CATEGORY_DECORATION";
 
 export const IDEAS: Idea[] = [
   { id: "paddle", title: "Paddle sur le lac d'Annecy", category: SORTIE, folder: "ete", by: THOMAS, tags: ["dès 6 ans", "25 € / h", "Annecy"], text: "Location à la plage d'Albigny, gilets fournis. Y aller tôt le matin, le lac est calme.", likes: 9, done: "Fait le 14 juillet", comment: { by: LEA, text: "Jules veut y retourner !" } },
@@ -55,7 +55,7 @@ export const IDEAS: Idea[] = [
     { name: "Farine", qty: "200 g", aisle: "Épicerie" }, { name: "Beurre", qty: "125 g", aisle: "Crèmerie" }, { name: "Pépites de chocolat", qty: "100 g", aisle: "Épicerie" },
   ] },
   // Explorer : idées publiées par d'autres familles
-  { id: "escape", title: "Escape game à la maison", category: IDEE, by: "Famille Durand", tags: ["dès 8 ans", "Gratuit"], text: "Des énigmes imprimées cachées dans la maison, un cadenas à code sur la boîte du goûter.", likes: 42 },
+  { id: "escape", title: "Escape game à la maison", category: ACT, by: "Famille Durand", tags: ["dès 8 ans", "Gratuit"], text: "Des énigmes imprimées cachées dans la maison, un cadenas à code sur la boîte du goûter.", likes: 42 },
   { id: "poterie", title: "Atelier poterie parent-enfant", category: ACT, by: "Famille Nguyen", tags: ["dès 5 ans", "30 €"], text: "Deux heures le samedi matin, on récupère les pièces cuites la semaine suivante.", likes: 27 },
   { id: "guirlande", title: "Guirlande en papier", category: DECO, by: "Famille Martin", tags: ["dès 3 ans", "Gratuit"], text: "Des bandes de papier coloré collées en anneaux : parfait pour un anniversaire.", likes: 19 },
   { id: "loup", title: "Le loup qui voulait changer de couleur", category: LIVRE, by: "Famille Leroy", tags: ["dès 3 ans", "6 €"], text: "Un album drôle pour apprendre les jours de la semaine.", likes: 23 },

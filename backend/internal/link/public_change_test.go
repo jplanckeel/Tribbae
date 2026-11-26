@@ -17,11 +17,11 @@ func TestPublicChangeNotifications(t *testing.T) {
 	var got []string
 	svc.SetPublicChange(func(paths ...string) { got = append(got, paths...) })
 
-	private, err := svc.Create(ctx, "u1", &Link{Title: "Privée", Category: "LINK_CATEGORY_IDEE"})
+	private, err := svc.Create(ctx, "u1", &Link{Title: "Privée", Category: "LINK_CATEGORY_ACTIVITE"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	public, err := svc.Create(ctx, "u1", &Link{Title: "Publique", Category: "LINK_CATEGORY_IDEE", Visibility: "public"})
+	public, err := svc.Create(ctx, "u1", &Link{Title: "Publique", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "public"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,10 +29,10 @@ func TestPublicChangeNotifications(t *testing.T) {
 	if len(got) != 1 || got[0] != path {
 		t.Fatalf("création : %v", got)
 	}
-	if _, err := svc.Update(ctx, public.ID.Hex(), "u1", &Link{Title: "Rendue privée", Category: "LINK_CATEGORY_IDEE", Visibility: "private"}); err != nil {
+	if _, err := svc.Update(ctx, public.ID.Hex(), "u1", &Link{Title: "Rendue privée", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "private"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Update(ctx, private.ID.Hex(), "u1", &Link{Title: "Toujours privée", Category: "LINK_CATEGORY_IDEE", Visibility: "private"}); err != nil {
+	if _, err := svc.Update(ctx, private.ID.Hex(), "u1", &Link{Title: "Toujours privée", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "private"}); err != nil {
 		t.Fatal(err)
 	}
 	if err := svc.Delete(ctx, private.ID.Hex(), "u1"); err != nil {

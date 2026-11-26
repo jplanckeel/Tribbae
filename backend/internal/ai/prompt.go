@@ -10,7 +10,6 @@ import (
 // Catégories proposées au modèle sous une forme courte (moins de jetons à
 // générer qu'avec les noms d'enum complets), puis converties.
 var categoryKeys = map[string]string{
-	"idee":     "LINK_CATEGORY_IDEE",
 	"cadeau":   "LINK_CATEGORY_CADEAU",
 	"activite": "LINK_CATEGORY_ACTIVITE",
 	"sortie":   "LINK_CATEGORY_EVENEMENT",
@@ -19,7 +18,7 @@ var categoryKeys = map[string]string{
 	"deco":     "LINK_CATEGORY_DECORATION",
 }
 
-var categoryEnum = []string{"activite", "sortie", "recette", "cadeau", "livre", "deco", "idee"}
+var categoryEnum = []string{"activite", "sortie", "recette", "cadeau", "livre", "deco"}
 
 const (
 	defaultIdeas = 5

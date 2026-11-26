@@ -40,7 +40,6 @@ class DoneTest {
         assertEquals("On l'a cuisinée", Done.words(LinkCategory.RECETTE).verb)
         assertEquals("On l'a lu", Done.words(LinkCategory.LIVRE).verb)
         assertEquals("Acheté", Done.words(LinkCategory.CADEAU).verb)
-        assertEquals("C'est fait", Done.words(LinkCategory.IDEE).verb)
         assertEquals("C'est fait", Done.words(LinkCategory.DECORATION).verb)
         assertEquals("On y est retournés", Done.words(LinkCategory.EVENEMENT).again)
 
@@ -50,7 +49,7 @@ class DoneTest {
         assertEquals("Cuisinée 3 fois", Done.label(done("3", LinkCategory.RECETTE, "2026-11-03", 3), now))
         assertEquals("Lu en octobre", Done.label(done("4", LinkCategory.LIVRE, "2026-10-12"), now))
         assertEquals("Acheté le 2 nov.", Done.label(done("5", LinkCategory.CADEAU, "2026-11-02"), now))
-        assertEquals("Fait le 5 nov.", Done.label(done("6", LinkCategory.IDEE, "2026-11-05"), now))
+        assertEquals("Fait le 5 nov.", Done.label(done("6", LinkCategory.DECORATION, "2026-11-05"), now))
         assertEquals("Fait le 1er nov.", Done.label(done("7", LinkCategory.DECORATION, "2026-11-01", 2), now))
         assertEquals("", Done.label(link("8", LinkCategory.ACTIVITE), now))
     }
@@ -89,7 +88,7 @@ class DoneTest {
     fun measuresTheProgressOfAFolder() {
         val links = listOf(
             done("1", LinkCategory.ACTIVITE, "2026-10-26"), done("2", LinkCategory.RECETTE, "2026-11-08", 3), link("3", LinkCategory.EVENEMENT),
-            link("4", LinkCategory.LIVRE), link("5", LinkCategory.CADEAU), done("6", LinkCategory.IDEE, "2026-11-05"),
+            link("4", LinkCategory.LIVRE), link("5", LinkCategory.CADEAU), done("6", LinkCategory.DECORATION, "2026-11-05"),
         )
         val p = Done.folderProgress(links)
         assertEquals(Done.Progress(2, 4), p)
@@ -99,7 +98,7 @@ class DoneTest {
         assertEquals("Bravo, tout est fait !", Done.progressHint(Done.Progress(4, 4)))
         // Moins de 3 idées comptées, ou liste de cadeaux : ni anneau ni barre
         assertNull(Done.folderProgress(links.take(2)))
-        assertNull(Done.folderProgress(listOf(link("a", LinkCategory.CADEAU), link("b", LinkCategory.IDEE), link("c", LinkCategory.DECORATION))))
+        assertNull(Done.folderProgress(listOf(link("a", LinkCategory.CADEAU), link("b", LinkCategory.DECORATION), link("c", LinkCategory.DECORATION))))
         assertNull(Done.folderProgress(links, giftList = true))
         assertEquals("2 sur 4 faites", Done.toast(p))
         assertEquals("C'est noté", Done.toast(null))
@@ -112,7 +111,7 @@ class DoneTest {
             link("recente", LinkCategory.RECETTE, createdAt = "2026-11-01T10:00:00Z"),
             link("a-venir", LinkCategory.EVENEMENT, at(2026, 11, 22), "2026-08-01T10:00:00Z"),
             done("faite-oct", LinkCategory.LIVRE, "2026-10-12", createdAt = "2026-09-02T10:00:00Z"),
-            link("ancienne", LinkCategory.IDEE, createdAt = "2026-06-01T10:00:00Z"),
+            link("ancienne", LinkCategory.DECORATION, createdAt = "2026-06-01T10:00:00Z"),
             link("passee", LinkCategory.EVENEMENT, at(2026, 11, 7), "2026-07-01T10:00:00Z"),
         )
         assertEquals(listOf("passee", "a-venir", "recente", "ancienne", "faite-oct", "faite-nov"), Done.sortTodoFirst(links, now).map { it.id })

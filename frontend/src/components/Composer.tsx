@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
 import * as api from "../lib/api";
+import { DEFAULT_CATEGORY } from "../lib/categories";
 import { useMyData } from "../lib/data";
 import { toInput } from "../lib/links";
 import { useSession } from "../lib/session";
@@ -29,7 +30,7 @@ type LinkState = { initial: LinkInput; link?: Link; onSaved?: (l: Link) => void 
 type FolderState = { folder?: Folder; onSaved?: (f: Folder) => void };
 
 const blank = (d: Partial<LinkInput> = {}): LinkInput => ({
-  title: "", url: "", description: "", category: "LINK_CATEGORY_IDEE", tags: [], visibility: "private", ...d,
+  title: "", url: "", description: "", category: DEFAULT_CATEGORY, tags: [], visibility: "private", ...d,
 });
 
 export function ComposerProvider({ children }: { children: ReactNode }) {

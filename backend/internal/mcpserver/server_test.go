@@ -205,6 +205,21 @@ func TestCreateLinkIsPrivateAndMarked(t *testing.T) {
 		l.Category != "LINK_CATEGORY_EVENEMENT" || len(l.Tags) != 2 || l.EventDate == 0 || l.ImageURL != "" {
 		t.Errorf("idée enregistrée = %+v", l)
 	}
+	// Ancienne catégorie « idee » encore envoyée par un assistant : rangée dans Activité
+	legacy := validIdea(f.folder["mine"])
+	legacy["category"] = "idee"
+	out, errMsg = call(t, f.session(t, "tok-"+f.alice), "create_link", legacy)
+	if errMsg != "" {
+		t.Fatal(errMsg)
+	}
+	legacyID, _ := bson.ObjectIDFromHex(out["id"].(string))
+	var saved link.Link
+	if err := f.db.Collection("links").FindOne(context.Background(), bson.M{"_id": legacyID}).Decode(&saved); err != nil {
+		t.Fatal(err)
+	}
+	if saved.Category != link.ActivityCategory {
+		t.Errorf("catégorie « idee » enregistrée en %q, want %q", saved.Category, link.ActivityCategory)
+	}
 	// Dossier de Bob où Alice est éditrice : autorisé, comme dans l'app
 	if _, errMsg := call(t, f.session(t, "tok-"+f.alice), "create_link", validIdea(f.folder["editor"])); errMsg != "" {
 		t.Errorf("dossier où Alice est éditrice : %s", errMsg)

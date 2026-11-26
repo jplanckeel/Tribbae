@@ -367,7 +367,6 @@ fun getCategoryColor(category: LinkCategory): Color {
         LinkCategory.CADEAU -> Color(0xFFC8492C)
         LinkCategory.RECETTE -> Color(0xFF4C7A3C)
         LinkCategory.EVENEMENT -> Color(0xFFB2412A)
-        LinkCategory.IDEE -> Color(0xFF9A6510)
         LinkCategory.LIVRE -> Color(0xFF5E4558)
         LinkCategory.DECORATION -> Color(0xFF9C3A5C)
     }
@@ -379,7 +378,6 @@ fun getCategoryEmoji(category: LinkCategory): String {
         LinkCategory.CADEAU -> "🎁"
         LinkCategory.RECETTE -> "🍳"
         LinkCategory.EVENEMENT -> "📅"
-        LinkCategory.IDEE -> "💡"
         LinkCategory.LIVRE -> "📚"
         LinkCategory.DECORATION -> "🎨"
     }

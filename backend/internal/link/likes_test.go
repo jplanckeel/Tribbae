@@ -57,8 +57,8 @@ func TestListLikedHidesIdeasNoLongerVisible(t *testing.T) {
 	ctx := context.Background()
 	svc := NewService(db.Collection("links"), db.Collection("folders"))
 
-	first, _ := svc.Create(ctx, "alice", &Link{Title: "Première", Category: "LINK_CATEGORY_IDEE", Visibility: "public"})
-	second, _ := svc.Create(ctx, "alice", &Link{Title: "Seconde", Category: "LINK_CATEGORY_IDEE", Visibility: "public"})
+	first, _ := svc.Create(ctx, "alice", &Link{Title: "Première", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "public"})
+	second, _ := svc.Create(ctx, "alice", &Link{Title: "Seconde", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "public"})
 	for _, l := range []*Link{first, second} {
 		if _, err := svc.LikeLink(ctx, l.ID.Hex(), "bob"); err != nil {
 			t.Fatal(err)
@@ -92,7 +92,7 @@ func TestMigrateFavoritesRunsOncePerIdea(t *testing.T) {
 	ctx := context.Background()
 	svc := NewService(db.Collection("links"), db.Collection("folders"))
 
-	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Favorite", Category: "LINK_CATEGORY_IDEE"})
+	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Favorite", Category: "LINK_CATEGORY_ACTIVITE"})
 	if _, err := svc.ToggleFavorite(ctx, idea.ID.Hex(), "alice"); err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestDeletedIdeasLeaveNoLikes(t *testing.T) {
 	ctx := context.Background()
 	svc := NewService(db.Collection("links"), db.Collection("folders"))
 
-	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Idée", Category: "LINK_CATEGORY_IDEE", Visibility: "public"})
+	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Idée", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "public"})
 	if _, err := svc.LikeLink(ctx, idea.ID.Hex(), "bob"); err != nil {
 		t.Fatal(err)
 	}

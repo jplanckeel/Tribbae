@@ -204,7 +204,7 @@ type createLinkInput struct {
 	Title       string   `json:"title" jsonschema:"short title, at most 200 characters"`
 	URL         string   `json:"url" jsonschema:"https URL of the page describing the idea"`
 	Description string   `json:"description,omitempty" jsonschema:"at most 2000 characters"`
-	Category    string   `json:"category" jsonschema:"one of: idee, cadeau, activite, sortie, recette, livre, deco"`
+	Category    string   `json:"category" jsonschema:"one of: activite, cadeau, sortie, recette, livre, deco"`
 	Tags        []string `json:"tags,omitempty" jsonschema:"at most 10 tags of 40 characters"`
 	AgeRange    string   `json:"age_range,omitempty" jsonschema:"suitable ages, e.g. 3–6 ans"`
 	Location    string   `json:"location,omitempty" jsonschema:"place or city"`
@@ -251,9 +251,12 @@ func buildLink(in createLinkInput, now time.Time) (*link.Link, error) {
 	if l.URL, err = validURL(in.URL); err != nil {
 		return nil, err
 	}
+	key := strings.ToLower(strings.TrimSpace(in.Category))
 	var ok bool
-	if l.Category, ok = categories[strings.ToLower(strings.TrimSpace(in.Category))]; !ok {
-		return nil, invalid("category must be one of: idee, cadeau, activite, sortie, recette, livre, deco")
+	if l.Category, ok = categories[key]; !ok {
+		if l.Category, ok = categoryAliases[key]; !ok {
+			return nil, invalid("category must be one of: activite, cadeau, sortie, recette, livre, deco")
+		}
 	}
 	if l.Tags, err = cleanTags(in.Tags); err != nil {
 		return nil, err

@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 /** Mêmes cas que « recherche dans ses idées » de frontend/src/lib/links.test.ts. */
 class IdeaSearchTest {
     private fun idea(id: String, title: String = "", createdAt: String = "", tags: List<String> = emptyList(), location: String = "") =
-        Link(id = id, title = title, url = "", category = LinkCategory.IDEE, createdAt = createdAt, tags = tags, location = location)
+        Link(id = id, title = title, url = "", category = LinkCategory.ACTIVITE, createdAt = createdAt, tags = tags, location = location)
 
     private val links = listOf(
         idea("a", "Crêpes de Mamie", "2026-10-01"),

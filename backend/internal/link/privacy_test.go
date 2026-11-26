@@ -32,7 +32,7 @@ func TestLinkIsPrivateByDefault(t *testing.T) {
 	ctx := context.Background()
 	svc := NewService(db.Collection("links"), db.Collection("folders"))
 
-	l, err := svc.Create(ctx, "alice", &Link{Title: "Idée", Category: "LINK_CATEGORY_IDEE"})
+	l, err := svc.Create(ctx, "alice", &Link{Title: "Idée", Category: "LINK_CATEGORY_ACTIVITE"})
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
@@ -55,9 +55,9 @@ func TestPublicFolderDoesNotPublishCollaboratorsIdeas(t *testing.T) {
 	svc := NewService(db.Collection("links"), db.Collection("folders"))
 
 	folderID := insertFolder(t, ctx, svc, "alice", "public", "bob")
-	own, _ := svc.Create(ctx, "alice", &Link{Title: "D'Alice", Category: "LINK_CATEGORY_IDEE", FolderID: folderID})
-	collab, _ := svc.Create(ctx, "bob", &Link{Title: "De Bob", Category: "LINK_CATEGORY_IDEE", FolderID: folderID})
-	published, _ := svc.Create(ctx, "bob", &Link{Title: "De Bob, publiée", Category: "LINK_CATEGORY_IDEE", FolderID: folderID, Visibility: "public"})
+	own, _ := svc.Create(ctx, "alice", &Link{Title: "D'Alice", Category: "LINK_CATEGORY_ACTIVITE", FolderID: folderID})
+	collab, _ := svc.Create(ctx, "bob", &Link{Title: "De Bob", Category: "LINK_CATEGORY_ACTIVITE", FolderID: folderID})
+	published, _ := svc.Create(ctx, "bob", &Link{Title: "De Bob, publiée", Category: "LINK_CATEGORY_ACTIVITE", FolderID: folderID, Visibility: "public"})
 
 	// Visiteur anonyme : idées de la propriétaire + celles que Bob a publiées lui-même
 	if !svc.CanView(ctx, own.ID.Hex(), "") {
@@ -97,9 +97,9 @@ func TestStatsTellWhichIdeasAPublicFolderExposes(t *testing.T) {
 
 	public := insertFolder(t, ctx, svc, "alice", "public", "bob")
 	private := insertFolder(t, ctx, svc, "alice", "private")
-	own, _ := svc.Create(ctx, "alice", &Link{Title: "D'Alice", Category: "LINK_CATEGORY_IDEE", FolderID: public})
-	collab, _ := svc.Create(ctx, "bob", &Link{Title: "De Bob", Category: "LINK_CATEGORY_IDEE", FolderID: public})
-	hidden, _ := svc.Create(ctx, "alice", &Link{Title: "Privée", Category: "LINK_CATEGORY_IDEE", FolderID: private})
+	own, _ := svc.Create(ctx, "alice", &Link{Title: "D'Alice", Category: "LINK_CATEGORY_ACTIVITE", FolderID: public})
+	collab, _ := svc.Create(ctx, "bob", &Link{Title: "De Bob", Category: "LINK_CATEGORY_ACTIVITE", FolderID: public})
+	hidden, _ := svc.Create(ctx, "alice", &Link{Title: "Privée", Category: "LINK_CATEGORY_ACTIVITE", FolderID: private})
 
 	h := &Handler{svc: svc}
 	st := svc.LoadStats(ctx, []*Link{own, collab, hidden}, "")
@@ -122,15 +122,15 @@ func TestOnlyAuthorCanMoveIdeaToAnotherFolder(t *testing.T) {
 
 	shared := insertFolder(t, ctx, svc, "alice", "private", "bob")
 	bobsPublic := insertFolder(t, ctx, svc, "bob", "public")
-	l, _ := svc.Create(ctx, "alice", &Link{Title: "Privée", Category: "LINK_CATEGORY_IDEE", FolderID: shared})
+	l, _ := svc.Create(ctx, "alice", &Link{Title: "Privée", Category: "LINK_CATEGORY_ACTIVITE", FolderID: shared})
 
 	// Bob, éditeur du dossier partagé, ne peut pas déplacer l'idée d'Alice dans son dossier public
-	_, err := svc.Update(ctx, l.ID.Hex(), "bob", &Link{Title: "Privée", Category: "LINK_CATEGORY_IDEE", FolderID: bobsPublic})
+	_, err := svc.Update(ctx, l.ID.Hex(), "bob", &Link{Title: "Privée", Category: "LINK_CATEGORY_ACTIVITE", FolderID: bobsPublic})
 	if !errors.Is(err, ErrForbidden) {
 		t.Fatalf("update = %v, want ErrForbidden", err)
 	}
 	// Il peut toujours la modifier sur place, sans pouvoir la publier
-	updated, err := svc.Update(ctx, l.ID.Hex(), "bob", &Link{Title: "Renommée", Category: "LINK_CATEGORY_IDEE", FolderID: shared, Visibility: "public"})
+	updated, err := svc.Update(ctx, l.ID.Hex(), "bob", &Link{Title: "Renommée", Category: "LINK_CATEGORY_ACTIVITE", FolderID: shared, Visibility: "public"})
 	if err != nil {
 		t.Fatalf("update in place: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestTribeSharesIdeasButNotPublication(t *testing.T) {
 		return []string{u}
 	})
 	alicesPublic := insertFolder(t, ctx, svc, "alice", "public")
-	l, _ := svc.Create(ctx, "bob", &Link{Title: "Idée de Bob", Category: "LINK_CATEGORY_IDEE"})
+	l, _ := svc.Create(ctx, "bob", &Link{Title: "Idée de Bob", Category: "LINK_CATEGORY_ACTIVITE"})
 
 	mine, _ := svc.List(ctx, "alice", "")
 	if len(mine) != 1 || !svc.CanView(ctx, l.ID.Hex(), "alice") {
@@ -162,12 +162,12 @@ func TestTribeSharesIdeasButNotPublication(t *testing.T) {
 		t.Error("Eve, hors tribu, ne doit pas voir l'idée privée de Bob")
 	}
 	// Alice modifie l'idée de Bob, sans pouvoir la publier
-	updated, err := svc.Update(ctx, l.ID.Hex(), "alice", &Link{Title: "Renommée par Alice", Category: "LINK_CATEGORY_IDEE", Visibility: "public"})
+	updated, err := svc.Update(ctx, l.ID.Hex(), "alice", &Link{Title: "Renommée par Alice", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "public"})
 	if err != nil || updated.Title != "Renommée par Alice" || updated.Visibility != "private" {
 		t.Fatalf("update par la tribu : %+v, %v", updated, err)
 	}
 	// …ni la ranger dans son dossier public (ce serait la publier à la place de Bob)
-	if _, err := svc.Update(ctx, l.ID.Hex(), "alice", &Link{Title: "x", Category: "LINK_CATEGORY_IDEE", FolderID: alicesPublic}); !errors.Is(err, ErrForbidden) {
+	if _, err := svc.Update(ctx, l.ID.Hex(), "alice", &Link{Title: "x", Category: "LINK_CATEGORY_ACTIVITE", FolderID: alicesPublic}); !errors.Is(err, ErrForbidden) {
 		t.Errorf("déplacement vers un dossier public : err = %v, want ErrForbidden", err)
 	}
 	if _, err := svc.ToggleFavorite(ctx, l.ID.Hex(), "alice"); err != nil {
@@ -189,7 +189,7 @@ func TestHiddenIdeaStaysUnpublished(t *testing.T) {
 	svc := NewService(db.Collection("links"), db.Collection("folders"))
 
 	public := insertFolder(t, ctx, svc, "alice", "public")
-	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Retirée", Category: "LINK_CATEGORY_IDEE", FolderID: public})
+	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Retirée", Category: "LINK_CATEGORY_ACTIVITE", FolderID: public})
 	if !svc.CanView(ctx, idea.ID.Hex(), "") {
 		t.Fatal("before removal, the owner's idea in a public folder is visible")
 	}
@@ -218,8 +218,8 @@ func TestDeletingAnIdeaDeletesItsComments(t *testing.T) {
 	defer cleanup()
 	ctx := context.Background()
 	svc := NewService(db.Collection("links"), db.Collection("folders"))
-	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Idée", Category: "LINK_CATEGORY_IDEE"})
-	other, _ := svc.Create(ctx, "alice", &Link{Title: "Autre", Category: "LINK_CATEGORY_IDEE"})
+	idea, _ := svc.Create(ctx, "alice", &Link{Title: "Idée", Category: "LINK_CATEGORY_ACTIVITE"})
+	other, _ := svc.Create(ctx, "alice", &Link{Title: "Autre", Category: "LINK_CATEGORY_ACTIVITE"})
 	for _, l := range []*Link{idea, other} {
 		if _, err := db.Collection("comments").InsertOne(ctx, bson.M{"link_id": l.ID.Hex(), "user_id": "bob", "text": "Super"}); err != nil {
 			t.Fatal(err)

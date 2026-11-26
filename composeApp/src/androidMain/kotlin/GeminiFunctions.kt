@@ -90,7 +90,7 @@ abstract class GeminiFunctions : AppFunctionService() {
      * @param title Short title of the idea (required, at most 200 characters).
      * @param url Optional web page about the idea (http or https).
      * @param description Optional description (at most 2000 characters).
-     * @param category Optional category: IDEE (default), CADEAU (gift), ACTIVITE (activity),
+     * @param category Optional category: ACTIVITE (activity, default), CADEAU (gift),
      *   EVENEMENT (outing), RECETTE (recipe), LIVRE (book) or DECORATION.
      * @param folderName Optional folder to save the idea in. An existing folder with this name is
      *   used, otherwise a private folder is created. Without it, the idea is in no folder.

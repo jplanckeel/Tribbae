@@ -31,14 +31,14 @@ func TestPublishingRequiresVerifiedEmail(t *testing.T) {
 	public := insertFolder(t, ctx, svc, "alice", "public")
 	private := insertFolder(t, ctx, svc, "alice", "private")
 
-	idea, err := svc.Create(ctx, "alice", &Link{Title: "Privée", Category: "LINK_CATEGORY_IDEE", FolderID: private})
+	idea, err := svc.Create(ctx, "alice", &Link{Title: "Privée", Category: "LINK_CATEGORY_ACTIVITE", FolderID: private})
 	if err != nil {
 		t.Fatalf("idée privée refusée : %v", err)
 	}
-	if _, err := svc.Create(ctx, "alice", &Link{Title: "Publique", Category: "LINK_CATEGORY_IDEE", Visibility: "public"}); !errors.Is(err, auth.ErrEmailNotVerified) {
+	if _, err := svc.Create(ctx, "alice", &Link{Title: "Publique", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "public"}); !errors.Is(err, auth.ErrEmailNotVerified) {
 		t.Errorf("idée publique sans adresse confirmée : %v", err)
 	}
-	if _, err := svc.Create(ctx, "alice", &Link{Title: "Dossier public", Category: "LINK_CATEGORY_IDEE", FolderID: public}); !errors.Is(err, auth.ErrEmailNotVerified) {
+	if _, err := svc.Create(ctx, "alice", &Link{Title: "Dossier public", Category: "LINK_CATEGORY_ACTIVITE", FolderID: public}); !errors.Is(err, auth.ErrEmailNotVerified) {
 		t.Errorf("idée dans un dossier public sans adresse confirmée : %v", err)
 	}
 	idea.Visibility = "public"
@@ -56,14 +56,14 @@ func TestPublishingRequiresVerifiedEmail(t *testing.T) {
 
 	// Une idée déjà publiée (avant la confirmation d'adresse) reste modifiable
 	old := bson.NewObjectID()
-	if _, err := svc.col.InsertOne(ctx, bson.M{"_id": old, "owner_id": "alice", "title": "Ancienne", "category": "LINK_CATEGORY_IDEE", "visibility": "public"}); err != nil {
+	if _, err := svc.col.InsertOne(ctx, bson.M{"_id": old, "owner_id": "alice", "title": "Ancienne", "category": "LINK_CATEGORY_ACTIVITE", "visibility": "public"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.Update(ctx, old.Hex(), "alice", &Link{Title: "Ancienne, corrigée", Category: "LINK_CATEGORY_IDEE", Visibility: "public"}); err != nil {
+	if _, err := svc.Update(ctx, old.Hex(), "alice", &Link{Title: "Ancienne, corrigée", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "public"}); err != nil {
 		t.Errorf("modification d'une idée déjà publique refusée : %v", err)
 	}
 
-	if _, err := svc.Create(ctx, "bob", &Link{Title: "De Bob", Category: "LINK_CATEGORY_IDEE", Visibility: "public"}); err != nil {
+	if _, err := svc.Create(ctx, "bob", &Link{Title: "De Bob", Category: "LINK_CATEGORY_ACTIVITE", Visibility: "public"}); err != nil {
 		t.Errorf("publication avec adresse confirmée refusée : %v", err)
 	}
 }

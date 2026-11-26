@@ -55,9 +55,9 @@ class TribePageTest {
         val emma = Child(id = "e", name = "Emma", birthDate = java.time.Instant.parse("2020-11-16T12:00:00Z").toEpochMilli())
         val folders = listOf(Folder(id = "anniv", name = "Anniv. Emma", childIds = listOf("e")))
         val links = listOf(
-            Link(id = "1", title = "", url = "", category = LinkCategory.IDEE, folderId = "anniv"),
-            Link(id = "2", title = "", url = "", category = LinkCategory.IDEE, ageRange = "3–6 ans"),
-            Link(id = "3", title = "", url = "", category = LinkCategory.IDEE, ageRange = "10 ans et +"),
+            Link(id = "1", title = "", url = "", category = LinkCategory.ACTIVITE, folderId = "anniv"),
+            Link(id = "2", title = "", url = "", category = LinkCategory.ACTIVITE, ageRange = "3–6 ans"),
+            Link(id = "3", title = "", url = "", category = LinkCategory.ACTIVITE, ageRange = "10 ans et +"),
         )
         assertEquals(2, TribePage.ideasForChild(links, folders, emma, now))
         assertEquals("Anniversaire le 16 novembre", TribePage.birthdayLabel(emma.birthDate))
